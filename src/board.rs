@@ -1,7 +1,12 @@
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
+
+use bitboard::BitBoard;
 use piece;
 
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
+#[derive(Clone, Copy)]
 pub enum Square {
     a1 = 0,
     b1,
@@ -77,14 +82,13 @@ pub enum CastlePermission {
     BQ = 0x08,
 }
 
-// BitBoard
-pub type BB = u64;
+
 
 #[allow(dead_code)]
 pub struct Board {
-    board_bb: BB,
-    piece_bb: [BB; 12],
-    colour_bb: [BB; 2],
+    board_bb: BitBoard,
+    piece_bb: [BitBoard; 12],
+    colour_bb: [BitBoard; 2],
     side_to_move: piece::Colour,
     en_pass_sq: Square,
     castle_perm: u8,
