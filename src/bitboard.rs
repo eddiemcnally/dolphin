@@ -38,16 +38,6 @@ pub fn pop_1st_bit(bb: &mut BitBoard) -> Square {
     *bb = *bb & mask;
 
     return sq_clear;
-
-    // uint8_t bit = (uint8_t) __builtin_ctzll(*bb);
-    //
-    // clear the bit
-    // bb = *bb & (uint64_t) (~(0x01ull << bit));
-    // return bit;
-    //
-    //
-
-
 }
 
 

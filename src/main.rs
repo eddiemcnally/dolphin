@@ -11,7 +11,7 @@ use piece::Piece;
 use square::Square;
 
 fn main() {
-    println!("pawn piece value {}", piece::get_value(Piece::WQueen));
+    println!("pawn piece value {}", Piece::WQueen.value());
 
 
     let x: u64 = util::set_bit(0, 5);

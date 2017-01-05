@@ -2,11 +2,15 @@ use piece;
 use board;
 use square::Square;
 
+/// For a given piece =on a given square, this function returns a bitboard
+/// representing the squares that the piece can legally move to (assuming
+/// an empty board)
 pub fn get_occupancy_mask(pce: piece::Piece, sq: Square) -> u64 {
     let offset = sq as usize;
     let retval;
 
     match pce {
+        // no occupancy masks (yet) for pawns
         piece::Piece::WPawn => panic!("Not valid for WPawn"),
         piece::Piece::BPawn => panic!("Not valid for BPawn"),
         piece::Piece::WBishop => retval = BISHOP_OCCUPANCY_MASKS[offset],
@@ -19,7 +23,6 @@ pub fn get_occupancy_mask(pce: piece::Piece, sq: Square) -> u64 {
         piece::Piece::BQueen => retval = QUEEN_OCCUPANCY_MASKS[offset],
         piece::Piece::WKing => retval = KING_OCCUPANCY_MASKS[offset],
         piece::Piece::BKing => retval = KING_OCCUPANCY_MASKS[offset],
-
     }
     retval
 }
