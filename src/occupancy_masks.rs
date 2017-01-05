@@ -1,7 +1,8 @@
 use piece;
 use board;
+use square::Square;
 
-pub fn get_occupancy_mask(pce: piece::Piece, sq: board::Square) -> u64 {
+pub fn get_occupancy_mask(pce: piece::Piece, sq: Square) -> u64 {
     let offset = sq as usize;
     let retval;
 
