@@ -34,7 +34,7 @@ impl Piece {
         }
     }
 
-    fn label(self) -> &'static str {
+    pub fn label(self) -> &'static str {
         match self {
             Piece::WPawn => "P",
             Piece::BPawn => "p",
@@ -51,7 +51,7 @@ impl Piece {
         }
     }
 
-    fn colour(self) -> Colour {
+    pub fn colour(self) -> Colour {
         match self {
             Piece::WPawn => Colour::White,
             Piece::BPawn => Colour::Black,
