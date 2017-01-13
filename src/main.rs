@@ -14,9 +14,7 @@ fn main() {
 
 
     let y: u64 = occupancy_masks::get_occupancy_mask(piece::Piece::WQueen, Square::d1);
-    println!("occ mask {}", y);
-
-
+    println!("{:?}", Square::d6);
 
 
 }

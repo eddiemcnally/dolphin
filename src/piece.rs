@@ -34,6 +34,25 @@ impl Piece {
         }
     }
 
+    pub fn from_char(piece_char: char) -> Option<Piece> {
+        let pce = match piece_char {
+            'P' => Piece::WPawn,
+            'B' => Piece::WBishop,
+            'N' => Piece::WKnight,
+            'R' => Piece::WRook,
+            'Q' => Piece::WQueen,
+            'K' => Piece::WKing,
+            'p' => Piece::BPawn,
+            'b' => Piece::BBishop,
+            'n' => Piece::BKnight,
+            'r' => Piece::BRook,
+            'q' => Piece::BQueen,
+            'k' => Piece::BKing,
+            _ => return None,
+        };
+        Some(pce)
+    }
+
     pub fn label(self) -> &'static str {
         match self {
             Piece::WPawn => "P",
