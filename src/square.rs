@@ -1,3 +1,4 @@
+use std::mem::transmute;
 
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
@@ -92,7 +93,7 @@ impl Square {
             5 => Rank::Rank6,
             6 => Rank::Rank7,
             7 => Rank::Rank8,
-            _ => panic!(),
+            _ => panic!("invalid rank number"),
         }
     }
 
@@ -108,8 +109,18 @@ impl Square {
             5 => File::FileF,
             6 => File::FileG,
             7 => File::FileH,
-            _ => panic!(),
+            _ => panic!("invalid file number"),
         }
+    }
+
+    pub fn get_square(rank: Rank, file: File) -> Square {
+
+        let sq = rank as u8 * 8 + file as u8;
+
+        // todo: find a way of removing the "unsafe" code
+        let retval: Square = unsafe { transmute(sq as u8) };
+
+        return retval;
     }
 }
 
