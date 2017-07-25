@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 #[derive(Debug)]
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Hash)]
 pub enum Piece {
     WPawn = 0,
     BPawn,

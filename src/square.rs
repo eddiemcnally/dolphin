@@ -4,7 +4,7 @@ use std::mem::transmute;
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
 #[derive(Debug)]
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Hash)]
 pub enum Square {
     a1 = 0,
     b1,
