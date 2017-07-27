@@ -1,7 +1,5 @@
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
-
-
 #[allow(dead_code)]
 pub enum CastlePermissionBitMap {
     WK = 0x01,
@@ -13,11 +11,16 @@ pub enum CastlePermissionBitMap {
 // bitboard type
 pub type CastlePermission = u8;
 
+struct MoveCounter {
+    half_move: u16,
+    full_move: u16,
+}
 
-pub struct position{
-	// pieces and squares
-	board : Board,
-	 // side to move
+
+pub struct position {
+    // pieces and squares
+    board: Board,
+    // side to move
     side_to_move: piece::Colour,
     // the en passant square
     en_pass_sq: Square,

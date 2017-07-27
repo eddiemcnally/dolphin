@@ -99,6 +99,14 @@ pub enum Colour {
     White = 0,
     Black,
 }
+impl Default for Colour {
+    fn default() -> Colour {
+        Colour::White
+    }
+}
+
+
+
 #[allow(dead_code)]
 pub const NUM_COLOURS: usize = 2;
 

@@ -6,14 +6,6 @@ use piece;
 use square::Square;
 // use bitboard::BitManipulation;
 
-#[allow(dead_code)]
-pub enum CastlePermission {
-    WK = 0x01,
-    WQ = 0x02,
-    BK = 0x04,
-    BQ = 0x08,
-}
-
 
 // TODO: look into decomposing this into a set of sub-structs and Impl's
 // to improve manageability
@@ -25,12 +17,6 @@ pub struct Board {
     piece_bb: [BitBoard; piece::NUM_PIECES],
     // bitboard for each Colour
     colour_bb: [BitBoard; piece::NUM_COLOURS],
-    // side to move
-    side_to_move: piece::Colour,
-    // the en passant square
-    en_pass_sq: Square,
-    // castle permissions
-    castle_perm: u8,
 }
 
 
@@ -42,10 +28,6 @@ impl Board {
     }
 
     pub fn remove_piece(&self) {}
-
-    pub fn set_piece_to_move(&mut self, col: piece::Colour) {
-        self.side_to_move = col;
-    }
 }
 
 

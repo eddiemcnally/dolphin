@@ -71,6 +71,11 @@ pub enum Square {
     g8,
     h8,
 }
+impl Default for Square {
+    fn default() -> Square {
+        Square::a1
+    }
+}
 
 // inline uint8_t get_rank(enum square sq){
 // 	return (uint8_t)(sq >> 3);
