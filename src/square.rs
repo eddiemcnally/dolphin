@@ -77,13 +77,6 @@ impl Default for Square {
     }
 }
 
-// inline uint8_t get_rank(enum square sq){
-// 	return (uint8_t)(sq >> 3);
-// }
-//
-// inline uint8_t get_file(enum square sq){
-// 	return (uint8_t)(sq % 8);
-// }
 
 impl Square {
     pub fn rank(self) -> Rank {
@@ -126,6 +119,16 @@ impl Square {
         let retval: Square = unsafe { transmute(sq as u8) };
 
         return retval;
+    }
+
+    pub fn get_from_string(square_str: &str) -> Square {
+        let f = square_str.chars().nth(0).unwrap();
+        let r = square_str.chars().nth(1).unwrap();
+
+        let file = File::from_char(f);
+        let rank = Rank::from_char(r);
+
+        Square::get_square(rank, file)
     }
 }
 
@@ -171,6 +174,21 @@ impl Rank {
             _ => panic!(),
         }
     }
+
+    pub fn from_char(rank: char) -> Rank {
+        match rank {
+            '1' => Rank::Rank1,
+            '2' => Rank::Rank2,
+            '3' => Rank::Rank3,
+            '4' => Rank::Rank4,
+            '5' => Rank::Rank5,
+            '6' => Rank::Rank6,
+            '7' => Rank::Rank7,
+            '8' => Rank::Rank8,
+            _ => panic!("Invalid rank character {}", rank),
+        }
+
+    }
 }
 
 #[derive(Debug)]
@@ -210,6 +228,21 @@ impl File {
             File::FileH => File::FileG,
             _ => panic!(),
         }
+    }
+
+    pub fn from_char(file: char) -> File {
+        match file {
+            'a' => File::FileA,
+            'b' => File::FileB,
+            'c' => File::FileC,
+            'd' => File::FileD,
+            'e' => File::FileE,
+            'f' => File::FileF,
+            'g' => File::FileG,
+            'h' => File::FileH,
+            _ => panic!("Invalid file character {}", file),
+        }
+
     }
 }
 

@@ -33,7 +33,7 @@ pub fn get_position(fen: &str) -> ParsedFen {
 
     let piece_pos: Vec<&str> = fen.split(' ').collect();
 
-    let positions = populate_piece_positions(piece_pos[0]);
+    let positions = extract_piece_locations(piece_pos[0]);
 
     // [0] = piece positions
     // [1] = side to move
@@ -46,7 +46,7 @@ pub fn get_position(fen: &str) -> ParsedFen {
 }
 
 /// takes the list of ranks (starting at rank 8)
-fn populate_piece_positions(pieces: &str) -> HashMap<Square, Piece> {
+fn extract_piece_locations(pieces: &str) -> HashMap<Square, Piece> {
     let ranks: Vec<_> = pieces.split('/').collect();
     let mut retval: HashMap<Square, Piece> = HashMap::new();
     for (rank, pieces) in ranks.iter().rev().enumerate() {
@@ -70,7 +70,7 @@ fn populate_piece_positions(pieces: &str) -> HashMap<Square, Piece> {
 
                             retval.insert(sq, piece);
                         }
-                        None => panic!("Unexpected FEN piece"),
+                        None => panic!("Unexpected FEN piece. Parsed character '{c}'"),
                     }
                 }
             }
@@ -80,11 +80,20 @@ fn populate_piece_positions(pieces: &str) -> HashMap<Square, Piece> {
 }
 
 
-pub fn get_side_to_move(side: &str) -> Colour {
+fn get_side_to_move(side: &str) -> Colour {
     match side.trim() {
         "w" => Colour::White,
         "b" => Colour::Black,
-        _ => panic!("Unexpected side-to-move. {}", side),
+        _ => panic!("Unexpected side-to-move. Parsed character '{}'", side),
+    }
+}
+
+
+fn get_en_passant_sq(en_pass: &str) -> Option<Square> {
+    if en_pass == "-" {
+        None
+    } else {
+        Some(Square::get_from_string(en_pass))
     }
 }
 
@@ -96,18 +105,17 @@ mod tests {
     use super::Piece;
     use super::Rank;
     use super::File;
-    use fen::populate_piece_positions;
+    use super::Colour;
+    use fen::extract_piece_locations;
+    use fen::get_side_to_move;
     use std::collections::HashMap;
 
     #[test]
     pub fn test_piece_positions() {
-
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-
-
         let piece_pos: Vec<&str> = fen.split(' ').collect();
 
-        let sq_pce = populate_piece_positions(piece_pos[0]);
+        let sq_pce = extract_piece_locations(piece_pos[0]);
 
         assert_eq!(sq_pce.len(), 32);
 
@@ -150,5 +158,28 @@ mod tests {
         assert_eq!(sq_pce[&Square::d8], Piece::BKing);
         assert_eq!(sq_pce[&Square::g8], Piece::BBishop);
         assert_eq!(sq_pce[&Square::h8], Piece::BPawn);
+    }
+
+    #[test]
+    pub fn test_side_to_move_white() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let side_to_move = get_side_to_move(piece_pos[1]);
+        assert_eq!(side_to_move, Colour::White);
+    }
+    #[test]
+    pub fn test_side_to_move_black() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b - - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let side_to_move = get_side_to_move(piece_pos[1]);
+        assert_eq!(side_to_move, Colour::Black);
+    }
+    #[test]
+    #[should_panic]
+    pub fn test_side_to_move_invalid_panics() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n X - - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let side_to_move = get_side_to_move(piece_pos[1]);
+
     }
 }
