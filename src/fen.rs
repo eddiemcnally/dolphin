@@ -1,10 +1,10 @@
 #[allow(dead_code)]
 
 use piece::Piece;
-use square::Rank;
-use square::Square;
-use square::File;
 use piece::Colour;
+use square::Square;
+use square::rank::Rank;
+use square::file::File;
 use std::mem::transmute;
 use std::collections::HashMap;
 
@@ -46,7 +46,7 @@ pub fn get_position(fen: &str) -> ParsedFen {
 }
 
 /// takes the list of ranks (starting at rank 8)
-fn extract_piece_locations(pieces: &str) -> HashMap<Square, Piece> {
+pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, Piece> {
     let ranks: Vec<_> = pieces.split('/').collect();
     let mut retval: HashMap<Square, Piece> = HashMap::new();
     for (rank, pieces) in ranks.iter().rev().enumerate() {

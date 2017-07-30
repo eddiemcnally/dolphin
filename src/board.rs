@@ -3,7 +3,7 @@
 
 use bitboard::BitBoard;
 use piece;
-use square::Square;
+use square;
 // use bitboard::BitManipulation;
 
 
