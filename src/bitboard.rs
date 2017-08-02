@@ -48,14 +48,17 @@ impl BitManipulation for BitBoard {
 
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::BitBoard;
     use super::BitManipulation;
     use square::Square;
+    use utils;
+    use std::collections::HashMap;
+
 
 
     #[test]
-    fn test_bit_counting() {
+    pub fn test_bit_counting() {
         let mut n: BitBoard = 0b01001100u64;
         assert_eq!(n.count_bits(), 3);
 
@@ -74,89 +77,47 @@ mod tests {
 
 
     #[test]
-    fn test_pop_bit() {
+    pub fn test_pop_bit() {
+        let set = utils::get_square_set();
 
+        // set all bits
         let mut bb: BitBoard = 0;
-        bb.set_bit(Square::a1);
-        bb.set_bit(Square::f1);
-        bb.set_bit(Square::b2);
-        bb.set_bit(Square::h2);
-        bb.set_bit(Square::a3);
-        bb.set_bit(Square::e3);
-        bb.set_bit(Square::h8);
+        for sq in &set {
+            bb.set_bit(*sq);
+        }
+        // all bits set
+        assert_eq!(0xffffffffffffffffu64, bb);
 
+        // pop all bits
+        for sq in &set {
+            let mut popped: Square = bb.pop_1st_bit();
+            assert_eq!(popped, *sq);
+        }
 
-        let mut popped = bb.pop_1st_bit();
-        assert_eq!(popped, Square::a1);
-
-        popped = bb.pop_1st_bit();
-        assert_eq!(popped, Square::f1);
-
-        popped = bb.pop_1st_bit();
-        assert_eq!(popped, Square::b2);
-
-        popped = bb.pop_1st_bit();
-        assert_eq!(popped, Square::h2);
-
-        popped = bb.pop_1st_bit();
-        assert_eq!(popped, Square::a3);
-
-        popped = bb.pop_1st_bit();
-        assert_eq!(popped, Square::e3);
-
-        popped = bb.pop_1st_bit();
-        assert_eq!(popped, Square::h8);
-
+        // all bits should be zero
         assert_eq!(bb as u64, 0);
     }
 
 
     #[test]
-    fn test_bit_manipulation() {
-        test_set_check_clear_bits(Square::a1);
-        test_set_check_clear_bits(Square::a2);
-        test_set_check_clear_bits(Square::a3);
-        test_set_check_clear_bits(Square::a4);
-        test_set_check_clear_bits(Square::a5);
-        test_set_check_clear_bits(Square::a6);
-        test_set_check_clear_bits(Square::a7);
-        test_set_check_clear_bits(Square::a8);
+    pub fn test_bit_manipulation() {
+        let map = utils::get_square_rank_file_map();
+        for (square, _) in map {
 
-        test_set_check_clear_bits(Square::b1);
-        test_set_check_clear_bits(Square::b2);
-        test_set_check_clear_bits(Square::b3);
-        test_set_check_clear_bits(Square::b4);
-        test_set_check_clear_bits(Square::b5);
-        test_set_check_clear_bits(Square::b6);
-        test_set_check_clear_bits(Square::b7);
-        test_set_check_clear_bits(Square::b8);
+            let mut bb: BitBoard = 0;
+            // check the set an check functionality
+            bb.set_bit(square);
+            let mut is_set = bb.is_set(square);
+            assert!(is_set == true);
+            assert!(bb as u64 != 0);
 
-        test_set_check_clear_bits(Square::h1);
-        test_set_check_clear_bits(Square::h2);
-        test_set_check_clear_bits(Square::h3);
-        test_set_check_clear_bits(Square::h4);
-        test_set_check_clear_bits(Square::h5);
-        test_set_check_clear_bits(Square::h6);
-        test_set_check_clear_bits(Square::h7);
-        test_set_check_clear_bits(Square::h8);
-
-
+            // clear the bit and check it
+            bb.clear_bit(square);
+            is_set = bb.is_set(square);
+            assert!(is_set == false);
+            assert!(bb as u64 == 0);
+        }
     }
 
 
-    fn test_set_check_clear_bits(sq: Square) {
-        let mut bb: BitBoard = 0;
-
-        // check the set an check functionality
-        bb.set_bit(sq);
-        let mut is_set = bb.is_set(sq);
-        assert!(is_set == true);
-        assert!(bb as u64 != 0);
-
-        // clear the bit and check it
-        bb.clear_bit(sq);
-        is_set = bb.is_set(sq);
-        assert!(is_set == false);
-        assert!(bb as u64 == 0);
-    }
 }

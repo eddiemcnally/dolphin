@@ -3,7 +3,8 @@
 mod piece;
 mod fen;
 mod square;
-
+mod bitboard;
+mod utils;
 
 
 fn main() {

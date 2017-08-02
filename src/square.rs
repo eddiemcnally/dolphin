@@ -3,6 +3,7 @@ use std::fmt;
 use square::rank::Rank;
 use square::file::File;
 
+
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
@@ -137,6 +138,8 @@ impl Square {
     }
 }
 
+
+
 pub mod rank {
     #[derive(Debug)]
     #[derive(Eq, PartialEq, Hash)]
@@ -230,11 +233,14 @@ pub mod tests {
     use super::Square;
     use super::Rank;
     use super::File;
+    use utils;
     use std::collections::HashMap;
+
+
 
     #[test]
     pub fn test_rank_from_square() {
-        let map = get_square_rank_file_map();
+        let map = utils::get_square_rank_file_map();
         for (square, (rank, _)) in map {
             assert_eq!(square.rank(), rank);
         }
@@ -243,7 +249,7 @@ pub mod tests {
 
     #[test]
     pub fn test_file_from_square() {
-        let map = get_square_rank_file_map();
+        let map = utils::get_square_rank_file_map();
         for (square, (_, file)) in map {
             assert_eq!(square.file(), file);
         }
@@ -314,7 +320,7 @@ pub mod tests {
 
     #[test]
     pub fn test_square_from_rank_and_file() {
-        let map = get_square_rank_file_map();
+        let map = utils::get_square_rank_file_map();
         for (square, (rank, file)) in map {
             let sq = Square::get_square(rank, file);
             assert_eq!(square, sq);
@@ -324,7 +330,7 @@ pub mod tests {
 
     #[test]
     pub fn test_square_from_string() {
-        let map = get_square_rank_file_map();
+        let map = utils::get_square_rank_file_map();
         for (square, _) in map {
             let str = square.to_string();
             let sq = Square::get_from_string(&str);
@@ -332,83 +338,5 @@ pub mod tests {
         }
     }
 
-
-    fn get_square_rank_file_map() -> HashMap<Square, (Rank, File)> {
-        let mut map: HashMap<Square, (Rank, File)> = HashMap::new();
-
-        map.insert(Square::a1, (Rank::Rank1, File::FileA));
-        map.insert(Square::a2, (Rank::Rank2, File::FileA));
-        map.insert(Square::a3, (Rank::Rank3, File::FileA));
-        map.insert(Square::a4, (Rank::Rank4, File::FileA));
-        map.insert(Square::a5, (Rank::Rank5, File::FileA));
-        map.insert(Square::a6, (Rank::Rank6, File::FileA));
-        map.insert(Square::a7, (Rank::Rank7, File::FileA));
-        map.insert(Square::a8, (Rank::Rank8, File::FileA));
-
-        map.insert(Square::b1, (Rank::Rank1, File::FileB));
-        map.insert(Square::b2, (Rank::Rank2, File::FileB));
-        map.insert(Square::b3, (Rank::Rank3, File::FileB));
-        map.insert(Square::b4, (Rank::Rank4, File::FileB));
-        map.insert(Square::b5, (Rank::Rank5, File::FileB));
-        map.insert(Square::b6, (Rank::Rank6, File::FileB));
-        map.insert(Square::b7, (Rank::Rank7, File::FileB));
-        map.insert(Square::b8, (Rank::Rank8, File::FileB));
-
-        map.insert(Square::c1, (Rank::Rank1, File::FileC));
-        map.insert(Square::c2, (Rank::Rank2, File::FileC));
-        map.insert(Square::c3, (Rank::Rank3, File::FileC));
-        map.insert(Square::c4, (Rank::Rank4, File::FileC));
-        map.insert(Square::c5, (Rank::Rank5, File::FileC));
-        map.insert(Square::c6, (Rank::Rank6, File::FileC));
-        map.insert(Square::c7, (Rank::Rank7, File::FileC));
-        map.insert(Square::c8, (Rank::Rank8, File::FileC));
-
-        map.insert(Square::d1, (Rank::Rank1, File::FileD));
-        map.insert(Square::d2, (Rank::Rank2, File::FileD));
-        map.insert(Square::d3, (Rank::Rank3, File::FileD));
-        map.insert(Square::d4, (Rank::Rank4, File::FileD));
-        map.insert(Square::d5, (Rank::Rank5, File::FileD));
-        map.insert(Square::d6, (Rank::Rank6, File::FileD));
-        map.insert(Square::d7, (Rank::Rank7, File::FileD));
-        map.insert(Square::d8, (Rank::Rank8, File::FileD));
-
-        map.insert(Square::e1, (Rank::Rank1, File::FileE));
-        map.insert(Square::e2, (Rank::Rank2, File::FileE));
-        map.insert(Square::e3, (Rank::Rank3, File::FileE));
-        map.insert(Square::e4, (Rank::Rank4, File::FileE));
-        map.insert(Square::e5, (Rank::Rank5, File::FileE));
-        map.insert(Square::e6, (Rank::Rank6, File::FileE));
-        map.insert(Square::e7, (Rank::Rank7, File::FileE));
-        map.insert(Square::e8, (Rank::Rank8, File::FileE));
-
-        map.insert(Square::f1, (Rank::Rank1, File::FileF));
-        map.insert(Square::f2, (Rank::Rank2, File::FileF));
-        map.insert(Square::f3, (Rank::Rank3, File::FileF));
-        map.insert(Square::f4, (Rank::Rank4, File::FileF));
-        map.insert(Square::f5, (Rank::Rank5, File::FileF));
-        map.insert(Square::f6, (Rank::Rank6, File::FileF));
-        map.insert(Square::f7, (Rank::Rank7, File::FileF));
-        map.insert(Square::f8, (Rank::Rank8, File::FileF));
-
-        map.insert(Square::g1, (Rank::Rank1, File::FileG));
-        map.insert(Square::g2, (Rank::Rank2, File::FileG));
-        map.insert(Square::g3, (Rank::Rank3, File::FileG));
-        map.insert(Square::g4, (Rank::Rank4, File::FileG));
-        map.insert(Square::g5, (Rank::Rank5, File::FileG));
-        map.insert(Square::g6, (Rank::Rank6, File::FileG));
-        map.insert(Square::g7, (Rank::Rank7, File::FileG));
-        map.insert(Square::g8, (Rank::Rank8, File::FileG));
-
-        map.insert(Square::h1, (Rank::Rank1, File::FileH));
-        map.insert(Square::h2, (Rank::Rank2, File::FileH));
-        map.insert(Square::h3, (Rank::Rank3, File::FileH));
-        map.insert(Square::h4, (Rank::Rank4, File::FileH));
-        map.insert(Square::h5, (Rank::Rank5, File::FileH));
-        map.insert(Square::h6, (Rank::Rank6, File::FileH));
-        map.insert(Square::h7, (Rank::Rank7, File::FileH));
-        map.insert(Square::h8, (Rank::Rank8, File::FileH));
-
-        return map;
-    }
 
 }

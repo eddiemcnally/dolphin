@@ -35,6 +35,10 @@ pub fn get_position(fen: &str) -> ParsedFen {
 
     let positions = extract_piece_locations(piece_pos[0]);
 
+    let side_to_mode = get_side_to_move(piece_pos[1]);
+
+    let enpass = get_en_passant_sq(piece_pos[3]);
+
     // [0] = piece positions
     // [1] = side to move
     // [2] = castle permissions
