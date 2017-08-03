@@ -4,88 +4,87 @@ use square::rank::Rank;
 use square::file::File;
 use square::Square;
 use std::collections::HashMap;
-use std::collections::HashSet;
+use std::vec::Vec;
 
 
+pub fn get_ordered_square_list_by_file() -> Vec<Square> {
+    let mut list: Vec<Square> = Vec::new();
 
+    list.push(Square::a1);
+    list.push(Square::b1);
+    list.push(Square::c1);
+    list.push(Square::d1);
+    list.push(Square::e1);
+    list.push(Square::f1);
+    list.push(Square::g1);
+    list.push(Square::h1);
 
-pub fn get_square_set() -> HashSet<Square> {
-    let mut set = HashSet::new();
+    list.push(Square::a2);
+    list.push(Square::b2);
+    list.push(Square::c2);
+    list.push(Square::d2);
+    list.push(Square::e2);
+    list.push(Square::f2);
+    list.push(Square::g2);
+    list.push(Square::h2);
 
-    set.insert(Square::a1);
-    set.insert(Square::a2);
-    set.insert(Square::a3);
-    set.insert(Square::a4);
-    set.insert(Square::a5);
-    set.insert(Square::a6);
-    set.insert(Square::a7);
-    set.insert(Square::a8);
+    list.push(Square::a3);
+    list.push(Square::b3);
+    list.push(Square::c3);
+    list.push(Square::d3);
+    list.push(Square::e3);
+    list.push(Square::f3);
+    list.push(Square::g3);
+    list.push(Square::h3);
 
-    set.insert(Square::b1);
-    set.insert(Square::b2);
-    set.insert(Square::b3);
-    set.insert(Square::b4);
-    set.insert(Square::b5);
-    set.insert(Square::b6);
-    set.insert(Square::b7);
-    set.insert(Square::b8);
+    list.push(Square::a4);
+    list.push(Square::b4);
+    list.push(Square::c4);
+    list.push(Square::d4);
+    list.push(Square::e4);
+    list.push(Square::f4);
+    list.push(Square::g4);
+    list.push(Square::h4);
 
-    set.insert(Square::c1);
-    set.insert(Square::c2);
-    set.insert(Square::c3);
-    set.insert(Square::c4);
-    set.insert(Square::c5);
-    set.insert(Square::c6);
-    set.insert(Square::c7);
-    set.insert(Square::c8);
+    list.push(Square::a5);
+    list.push(Square::b5);
+    list.push(Square::c5);
+    list.push(Square::d5);
+    list.push(Square::e5);
+    list.push(Square::f5);
+    list.push(Square::g5);
+    list.push(Square::h5);
 
-    set.insert(Square::d1);
-    set.insert(Square::d2);
-    set.insert(Square::d3);
-    set.insert(Square::d4);
-    set.insert(Square::d5);
-    set.insert(Square::d6);
-    set.insert(Square::d7);
-    set.insert(Square::d8);
+    list.push(Square::a6);
+    list.push(Square::b6);
+    list.push(Square::c6);
+    list.push(Square::d6);
+    list.push(Square::e6);
+    list.push(Square::f6);
+    list.push(Square::g6);
+    list.push(Square::h6);
 
-    set.insert(Square::e1);
-    set.insert(Square::e2);
-    set.insert(Square::e3);
-    set.insert(Square::e4);
-    set.insert(Square::e5);
-    set.insert(Square::e6);
-    set.insert(Square::e7);
-    set.insert(Square::e8);
+    list.push(Square::a7);
+    list.push(Square::b7);
+    list.push(Square::c7);
+    list.push(Square::d7);
+    list.push(Square::e7);
+    list.push(Square::f7);
+    list.push(Square::g7);
+    list.push(Square::h7);
 
-    set.insert(Square::f1);
-    set.insert(Square::f2);
-    set.insert(Square::f3);
-    set.insert(Square::f4);
-    set.insert(Square::f5);
-    set.insert(Square::f6);
-    set.insert(Square::f7);
-    set.insert(Square::f8);
+    list.push(Square::a8);
+    list.push(Square::b8);
+    list.push(Square::c8);
+    list.push(Square::d8);
+    list.push(Square::e8);
+    list.push(Square::f8);
+    list.push(Square::g8);
+    list.push(Square::h8);
 
-    set.insert(Square::g1);
-    set.insert(Square::g2);
-    set.insert(Square::g3);
-    set.insert(Square::g4);
-    set.insert(Square::g5);
-    set.insert(Square::g6);
-    set.insert(Square::g7);
-    set.insert(Square::g8);
-
-    set.insert(Square::h1);
-    set.insert(Square::h2);
-    set.insert(Square::h3);
-    set.insert(Square::h4);
-    set.insert(Square::h5);
-    set.insert(Square::h6);
-    set.insert(Square::h7);
-    set.insert(Square::h8);
-
-    return set;
+    return list;
 }
+
 
 
 

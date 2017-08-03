@@ -36,11 +36,12 @@ impl BitManipulation for BitBoard {
         let bit_being_cleared = self.trailing_zeros();
 
         // todo: find a way of removing the "unsafe" code
+        //let sq_clear: Square = bit_being_cleared as Square;
+
         let sq_clear: Square = unsafe { transmute(bit_being_cleared as u8) };
 
         // clear the bit
-        let mask = !(1u64 << bit_being_cleared);
-        *self = *self & mask;
+        self.clear_bit(sq_clear);
 
         return sq_clear;
     }
@@ -77,19 +78,19 @@ pub mod tests {
 
 
     #[test]
-    pub fn test_pop_bit() {
-        let set = utils::get_square_set();
+    pub fn test_pop_bit_all_squares() {
+        let sq_list = utils::get_ordered_square_list_by_file();
 
         // set all bits
         let mut bb: BitBoard = 0;
-        for sq in &set {
+        for sq in &sq_list {
             bb.set_bit(*sq);
         }
         // all bits set
         assert_eq!(0xffffffffffffffffu64, bb);
 
         // pop all bits
-        for sq in &set {
+        for sq in &sq_list {
             let mut popped: Square = bb.pop_1st_bit();
             assert_eq!(popped, *sq);
         }
@@ -99,8 +100,30 @@ pub mod tests {
     }
 
 
+    pub fn test_pop_bit_random_selection_squares() {
+        let mut bb: BitBoard = 0b000100100101001u64;
+
+        let mut sq = bb.pop_1st_bit();
+        assert_eq!(sq, Square::a1);
+
+        sq = bb.pop_1st_bit();
+        assert_eq!(sq, Square::d1);
+
+        sq = bb.pop_1st_bit();
+        assert_eq!(sq, Square::f1);
+
+        sq = bb.pop_1st_bit();
+        assert_eq!(sq, Square::a2);
+
+        sq = bb.pop_1st_bit();
+        assert_eq!(sq, Square::d2);
+    }
+
+
+
+
     #[test]
-    pub fn test_bit_manipulation() {
+    pub fn test_set_and_clear_bit_manipulation() {
         let map = utils::get_square_rank_file_map();
         for (square, _) in map {
 
