@@ -5,6 +5,7 @@ use piece::Colour;
 use square::Square;
 use square::rank::Rank;
 use square::file::File;
+use position::CastlePermissionBitMap;
 use std::mem::transmute;
 use std::collections::HashMap;
 
@@ -34,10 +35,10 @@ pub fn get_position(fen: &str) -> ParsedFen {
     let piece_pos: Vec<&str> = fen.split(' ').collect();
 
     let positions = extract_piece_locations(piece_pos[0]);
-
     let side_to_mode = get_side_to_move(piece_pos[1]);
-
+    let castperm = get_castle_permissions(piece_pos[2]);
     let enpass = get_en_passant_sq(piece_pos[3]);
+
 
     // [0] = piece positions
     // [1] = side to move
@@ -102,6 +103,27 @@ fn get_en_passant_sq(en_pass: &str) -> Option<Square> {
 }
 
 
+fn get_castle_permissions(castleperm: &str) -> u8 {
+    if castleperm == "-" {
+        return CastlePermissionBitMap::None as u8;
+    } else {
+        let mut cp: u8 = 0;
+        if castleperm.contains("K") {
+            cp = CastlePermissionBitMap::set_perm(CastlePermissionBitMap::WK, cp);
+        }
+        if castleperm.contains("Q") {
+            cp = CastlePermissionBitMap::set_perm(CastlePermissionBitMap::WQ, cp);
+        }
+        if castleperm.contains("k") {
+            cp = CastlePermissionBitMap::set_perm(CastlePermissionBitMap::BK, cp);
+        }
+        if castleperm.contains("q") {
+            cp = CastlePermissionBitMap::set_perm(CastlePermissionBitMap::BQ, cp);
+        }
+        return cp as u8;
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -112,7 +134,9 @@ mod tests {
     use super::Colour;
     use fen::extract_piece_locations;
     use fen::get_side_to_move;
+    use fen::get_castle_permissions;
     use std::collections::HashMap;
+    use position::CastlePermissionBitMap;
 
     #[test]
     pub fn test_piece_positions() {
@@ -184,6 +208,16 @@ mod tests {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n X - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let side_to_move = get_side_to_move(piece_pos[1]);
+    }
+
+
+    #[test]
+    pub fn test_castle_permissions_white_kingside() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b K - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let perm = get_castle_permissions(piece_pos[2]);
+        assert_eq!(CastlePermissionBitMap::WK as u8, perm);
 
     }
+
 }

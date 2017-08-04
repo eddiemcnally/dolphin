@@ -5,6 +5,9 @@ mod fen;
 mod square;
 mod bitboard;
 mod utils;
+mod board;
+mod position;
+
 
 
 fn main() {
