@@ -6,6 +6,7 @@ use square::Square;
 use square::rank::Rank;
 use square::file::File;
 use position::CastlePermissionBitMap;
+use position::CastlePermission;
 use std::mem::transmute;
 use std::collections::HashMap;
 
@@ -14,13 +15,26 @@ use std::collections::HashMap;
 pub struct ParsedFen {
     piece_positions: HashMap<Square, Piece>,
     side_to_move: Colour,
-    castle_perm: u8,
-    en_pass_sq: Square,
+    castle_perm: Option<CastlePermission>,
+    en_pass_sq: Option<Square>,
     half_move_cnt: u16,
-    fill_move_cnt: u16,
+    full_move_cnt: u16,
 }
 
 
+// [0] = piece positions
+// [1] = side to move
+// [2] = castle permissions
+// [3] = en passant square (or '-' if no en passant)
+// [4] = half-move clock
+// [5] = full move number
+
+const FEN_BOARD: usize = 0;
+const FEN_SIDE_TO_MOVE: usize = 1;
+const FEN_CASTLE_PERMISSIONS: usize = 2;
+const FEN_EN_PASSANT: usize = 3;
+const FEN_HALF_MOVE: usize = 4;
+const FEN_FULL_MOVE: usize = 5;
 
 
 /// parses a FEN string and populates the given board
@@ -34,18 +48,12 @@ pub fn get_position(fen: &str) -> ParsedFen {
 
     let piece_pos: Vec<&str> = fen.split(' ').collect();
 
-    let positions = extract_piece_locations(piece_pos[0]);
-    let side_to_mode = get_side_to_move(piece_pos[1]);
-    let castperm = get_castle_permissions(piece_pos[2]);
-    let enpass = get_en_passant_sq(piece_pos[3]);
-
-
-    // [0] = piece positions
-    // [1] = side to move
-    // [2] = castle permissions
-    // [3] = en passant square (or '-' if no en passant)
-    // [4] = half-move clock
-    // [5] = full move number
+    retval.piece_positions = extract_piece_locations(piece_pos[FEN_BOARD]);
+    retval.side_to_move = get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
+    retval.castle_perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
+    retval.en_pass_sq = get_en_passant_sq(piece_pos[FEN_EN_PASSANT]);
+    retval.half_move_cnt = get_half_move_clock(piece_pos[FEN_HALF_MOVE]);
+    retval.full_move_cnt = get_full_move_number(piece_pos[FEN_FULL_MOVE]);
 
     return retval;
 }
@@ -103,11 +111,21 @@ fn get_en_passant_sq(en_pass: &str) -> Option<Square> {
 }
 
 
-fn get_castle_permissions(castleperm: &str) -> u8 {
+fn get_half_move_clock(half_cnt: &str) -> u16 {
+    return half_cnt.parse::<u16>().unwrap();
+}
+
+
+fn get_full_move_number(full_move_num: &str) -> u16 {
+    return full_move_num.parse::<u16>().unwrap();
+}
+
+
+fn get_castle_permissions(castleperm: &str) -> Option<CastlePermission> {
     if castleperm.trim() == "-" {
-        return CastlePermissionBitMap::None as u8;
+        None
     } else {
-        let mut cp: u8 = 0;
+        let mut cp: CastlePermission = 0;
         if castleperm.contains("K") {
             cp = CastlePermissionBitMap::set_perm(CastlePermissionBitMap::WK, cp);
         }
@@ -120,7 +138,7 @@ fn get_castle_permissions(castleperm: &str) -> u8 {
         if castleperm.contains("q") {
             cp = CastlePermissionBitMap::set_perm(CastlePermissionBitMap::BQ, cp);
         }
-        return cp as u8;
+        Some(cp)
     }
 }
 
@@ -132,9 +150,17 @@ mod tests {
     use super::Rank;
     use super::File;
     use super::Colour;
+    use super::FEN_BOARD;
+    use super::FEN_SIDE_TO_MOVE;
+    use super::FEN_CASTLE_PERMISSIONS;
+    use super::FEN_EN_PASSANT;
+    use super::FEN_HALF_MOVE;
+    use super::FEN_FULL_MOVE;
     use fen::extract_piece_locations;
     use fen::get_side_to_move;
     use fen::get_castle_permissions;
+    use fen::get_half_move_clock;
+    use fen::get_full_move_number;
     use std::collections::HashMap;
     use position::CastlePermissionBitMap;
 
@@ -143,7 +169,7 @@ mod tests {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
 
-        let sq_pce = extract_piece_locations(piece_pos[0]);
+        let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
 
         assert_eq!(sq_pce.len(), 32);
 
@@ -192,14 +218,14 @@ mod tests {
     pub fn test_side_to_move_white() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let side_to_move = get_side_to_move(piece_pos[1]);
+        let side_to_move = get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
         assert_eq!(side_to_move, Colour::White);
     }
     #[test]
     pub fn test_side_to_move_black() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let side_to_move = get_side_to_move(piece_pos[1]);
+        let side_to_move = get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
         assert_eq!(side_to_move, Colour::Black);
     }
     #[test]
@@ -207,7 +233,7 @@ mod tests {
     pub fn test_side_to_move_invalid_panics() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n X - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let side_to_move = get_side_to_move(piece_pos[1]);
+        let side_to_move = get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
     }
 
 
@@ -215,46 +241,82 @@ mod tests {
     pub fn test_castle_permissions_white_kingside() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b K - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let perm = get_castle_permissions(piece_pos[2]);
-        assert_eq!(CastlePermissionBitMap::WK as u8, perm);
-    }
-    #[test]
-    pub fn test_castle_permissions_white_queenside() {
-        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b Q - 0 1";
-        let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let perm = get_castle_permissions(piece_pos[2]);
-        assert_eq!(CastlePermissionBitMap::WQ as u8, perm);
+        let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
+        assert_eq!(CastlePermissionBitMap::WK as u8, perm.unwrap());
     }
     #[test]
     pub fn test_castle_permissions_black_kingside() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b k - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let perm = get_castle_permissions(piece_pos[2]);
-        assert_eq!(CastlePermissionBitMap::BK as u8, perm);
+        let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
+        assert_eq!(CastlePermissionBitMap::BK as u8, perm.unwrap());
     }
     #[test]
     pub fn test_castle_permissions_black_queenside() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let perm = get_castle_permissions(piece_pos[2]);
-        assert_eq!(CastlePermissionBitMap::BQ as u8, perm);
+        let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
+        assert_eq!(CastlePermissionBitMap::BQ as u8, perm.unwrap());
     }
+
     #[test]
     pub fn test_castle_permissions_white_kingside_queenside_black_kingside() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b KQk - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let perm = get_castle_permissions(piece_pos[2]);
+        let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
 
-        let isWK = CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::WK, perm);
+        let isWK =
+            CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::WK, perm.unwrap() as u8);
         assert_eq!(isWK, true);
-        let isWQ = CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::WQ, perm);
+        let isWQ =
+            CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::WQ, perm.unwrap() as u8);
         assert_eq!(isWQ, true);
-        let isBK = CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::BK, perm);
+        let isBK =
+            CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::BK, perm.unwrap() as u8);
         assert_eq!(isBK, true);
-        let isBQ = CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::BQ, perm);
+        let isBQ =
+            CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::BQ, perm.unwrap() as u8);
         assert_eq!(isBQ, false);
+    }
 
+    #[test]
+    pub fn test_parse_half_move_clock() {
+        let mut fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 1";
+        let mut piece_pos: Vec<&str> = fen.split(' ').collect();
+        let mut half_clock = get_half_move_clock(piece_pos[FEN_HALF_MOVE]);
+        assert_eq!(half_clock, 0);
+
+        fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 22 1";
+        piece_pos = fen.split(' ').collect();
+        half_clock = get_half_move_clock(piece_pos[FEN_HALF_MOVE]);
+        assert_eq!(half_clock, 22);
+
+        fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 5 1";
+        piece_pos = fen.split(' ').collect();
+        half_clock = get_half_move_clock(piece_pos[FEN_HALF_MOVE]);
+        assert_eq!(half_clock, 5);
 
     }
+
+
+    #[test]
+    pub fn test_parse_full_move_count() {
+        let mut fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 0";
+        let mut piece_pos: Vec<&str> = fen.split(' ').collect();
+        let mut full_move_cnt = get_full_move_number(piece_pos[FEN_FULL_MOVE]);
+        assert_eq!(full_move_cnt, 0);
+
+        fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 1";
+        piece_pos = fen.split(' ').collect();
+        full_move_cnt = get_full_move_number(piece_pos[FEN_FULL_MOVE]);
+        assert_eq!(full_move_cnt, 1);
+
+        fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 55";
+        piece_pos = fen.split(' ').collect();
+        full_move_cnt = get_full_move_number(piece_pos[FEN_FULL_MOVE]);
+        assert_eq!(full_move_cnt, 55);
+    }
+
+
 
 }

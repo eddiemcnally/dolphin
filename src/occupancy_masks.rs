@@ -2,7 +2,7 @@ use piece;
 use board;
 use square::Square;
 
-/// For a given piece =on a given square, this function returns a bitboard
+/// For a given piece on a given square, this function returns a bitboard
 /// representing the squares that the piece can legally move to (assuming
 /// an empty board)
 pub fn get_occupancy_mask(pce: piece::Piece, sq: Square) -> u64 {
