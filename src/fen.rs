@@ -104,7 +104,7 @@ fn get_en_passant_sq(en_pass: &str) -> Option<Square> {
 
 
 fn get_castle_permissions(castleperm: &str) -> u8 {
-    if castleperm == "-" {
+    if castleperm.trim() == "-" {
         return CastlePermissionBitMap::None as u8;
     } else {
         let mut cp: u8 = 0;
@@ -217,6 +217,43 @@ mod tests {
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[2]);
         assert_eq!(CastlePermissionBitMap::WK as u8, perm);
+    }
+    #[test]
+    pub fn test_castle_permissions_white_queenside() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b Q - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let perm = get_castle_permissions(piece_pos[2]);
+        assert_eq!(CastlePermissionBitMap::WQ as u8, perm);
+    }
+    #[test]
+    pub fn test_castle_permissions_black_kingside() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b k - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let perm = get_castle_permissions(piece_pos[2]);
+        assert_eq!(CastlePermissionBitMap::BK as u8, perm);
+    }
+    #[test]
+    pub fn test_castle_permissions_black_queenside() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let perm = get_castle_permissions(piece_pos[2]);
+        assert_eq!(CastlePermissionBitMap::BQ as u8, perm);
+    }
+    #[test]
+    pub fn test_castle_permissions_white_kingside_queenside_black_kingside() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b KQk - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let perm = get_castle_permissions(piece_pos[2]);
+
+        let isWK = CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::WK, perm);
+        assert_eq!(isWK, true);
+        let isWQ = CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::WQ, perm);
+        assert_eq!(isWQ, true);
+        let isBK = CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::BK, perm);
+        assert_eq!(isBK, true);
+        let isBQ = CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::BQ, perm);
+        assert_eq!(isBQ, false);
+
 
     }
 

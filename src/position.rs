@@ -6,6 +6,7 @@ use square::Square;
 #[allow(non_camel_case_types)]
 #[allow(dead_code)]
 #[derive(Eq, PartialEq, Hash)]
+#[derive(Debug)]
 pub enum CastlePermissionBitMap {
     None = 0,
     WK = 0x01,
@@ -13,12 +14,12 @@ pub enum CastlePermissionBitMap {
     BK = 0x04,
     BQ = 0x08,
 }
-
+//pub type CastlePermission = u8;
 
 
 impl CastlePermissionBitMap {
     pub fn set_perm(perm: CastlePermissionBitMap, perm_map: u8) -> u8 {
-        return perm as u8 & perm_map;
+        return perm as u8 | perm_map;
     }
 
     pub fn clear_perm(perm: CastlePermissionBitMap, perm_map: u8) -> u8 {
@@ -48,3 +49,6 @@ pub struct Position {
     // castle permissions
     castle_perm: u8,
 }
+
+#[cfg(test)]
+mod tests {}
