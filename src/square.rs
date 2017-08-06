@@ -319,6 +319,20 @@ pub mod tests {
     }
 
     #[test]
+    pub fn test_convert_square_to_uint() {
+        let sq: Square = Square::b1;
+        let num: u16 = sq as u16;
+
+        assert_eq!(num, 1);
+
+        let sq1: Square = Square::d7;
+        let num1: u16 = sq1 as u16;
+
+        assert_eq!(num1, 51);
+    }
+
+
+    #[test]
     pub fn test_square_from_rank_and_file() {
         let map = utils::get_square_rank_file_map();
         for (square, (rank, file)) in map {

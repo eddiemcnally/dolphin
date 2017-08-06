@@ -6,6 +6,8 @@ mod square;
 mod bitboard;
 mod utils;
 mod board;
+mod moves;
+mod occupancy_masks;
 mod position;
 
 
