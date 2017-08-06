@@ -366,14 +366,3 @@ static ROOK_OCCUPANCY_MASKS: [u64; board::NUM_SQUARES] = [
     0xbf40404040404040,
     0x7f80808080808080,
 ];
-
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//
-//     #[test]
-//     fn test_bishop_mask() {
-//          assert_eq!(4, add_two(2));
-//     }
-// }

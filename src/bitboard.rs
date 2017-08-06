@@ -99,7 +99,34 @@ pub mod tests {
         assert_eq!(bb as u64, 0);
     }
 
+    #[test]
+    pub fn test_set_check_clear() {
+        let sq_list = utils::get_ordered_square_list_by_file();
 
+        // set all bits
+        let mut bb: BitBoard = 0;
+        for sq in &sq_list {
+            bb.set_bit(*sq);
+        }
+
+        // check all bits
+        for sq in &sq_list {
+            let is_set = bb.is_set(*sq);
+            assert_eq!(is_set, true);
+        }
+
+        // clear all bits
+        for sq in &sq_list {
+            bb.clear_bit(*sq);
+            let is_set = bb.is_set(*sq);
+            assert_eq!(is_set, false);
+        }
+
+        // all bits should be zero
+        assert_eq!(bb as u64, 0);
+    }
+
+    #[test]
     pub fn test_pop_bit_random_selection_squares() {
         let mut bb: BitBoard = 0b000100100101001u64;
 
