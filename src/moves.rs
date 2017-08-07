@@ -8,6 +8,9 @@ use std::ops::Shr;
 
 pub type Move = u16;
 
+#[derive(Eq, PartialEq, Hash)]
+#[derive(Debug)]
+#[derive(Clone, Copy)]
 pub enum Promotion {
     Knight,
     Bishop,
@@ -31,7 +34,7 @@ const BITMASK_PROM_KNIGHT: u16 = 0x1000;
 const BITMASK_PROM_BISHOP: u16 = 0x2000;
 const BITMASK_PROM_ROOK: u16 = 0x4000;
 const BITMASK_PROM_QUEEN: u16 = 0x8000;
-
+const BITMASK_PROMOTION: u16 = 0xF000;
 
 pub fn set_move(from_sq: Square, to_sq: Square, mv: &mut Move) {
     let mut m: u16 = 0;
@@ -56,21 +59,111 @@ pub fn set_move_with_promotion(
     }
 }
 
-pub fn get_from_sq(mv: Move) -> Square {
+pub fn extract_from_sq(mv: Move) -> Square {
     let fsq = mv & BITMASK_FROM_SQ;
     let sq: Square = unsafe { transmute(fsq as u8) };
     return sq;
 }
 
-pub fn get_to_sq(mv: Move) -> Square {
+pub fn extract_to_sq(mv: Move) -> Square {
     let mut tsq = mv & BITMASK_TO_SQ;
     tsq = tsq.shr(OFFSET_TO_SQ);
     let sq: Square = unsafe { transmute(tsq as u8) };
     return sq;
 }
 
+pub fn extract_promotion(mv: Move) -> Option<Promotion> {
+    let prom = mv & BITMASK_PROMOTION;
+
+    match prom {
+        0 => None,
+        BITMASK_PROM_KNIGHT => Some(Promotion::Knight),
+        BITMASK_PROM_BISHOP => Some(Promotion::Bishop),
+        BITMASK_PROM_ROOK => Some(Promotion::Rook),
+        BITMASK_PROM_QUEEN => Some(Promotion::Queen),
+        _ => panic!("Invalid promotion value {:?}", prom),
+    }
+}
 
 
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::set_move;
+    use super::extract_from_sq;
+    use super::extract_to_sq;
+    use super::set_move_with_promotion;
+    use super::extract_promotion;
+    use super::Move;
+    use square::Square;
+    use super::Promotion;
+
+    #[test]
+    pub fn test_constructor_no_promotion() {
+        let mut fsq = Square::a3;
+        let mut tsq = Square::b3;
+        let mut mv: Move = 0;
+        set_move(fsq, tsq, &mut mv);
+        let mut from_sq = extract_from_sq(mv);
+        let mut to_sq = extract_to_sq(mv);
+        assert_eq!(from_sq, fsq);
+        assert_eq!(to_sq, tsq);
+
+        fsq = Square::h6;
+        tsq = Square::b6;
+        mv = 0;
+        set_move(fsq, tsq, &mut mv);
+        from_sq = extract_from_sq(mv);
+        to_sq = extract_to_sq(mv);
+        assert_eq!(from_sq, fsq);
+        assert_eq!(to_sq, tsq);
+    }
+
+
+    #[test]
+    pub fn test_constructor_with_promotion() {
+        let fsq = Square::a3;
+        let tsq = Square::b3;
+        let mut prom = Promotion::Knight;
+        let mut mv: Move = 0;
+        set_move_with_promotion(fsq, tsq, prom, &mut mv);
+        let mut from_sq = extract_from_sq(mv);
+        let mut to_sq = extract_to_sq(mv);
+        let mut promotion = extract_promotion(mv).unwrap();
+
+        assert_eq!(from_sq, fsq);
+        assert_eq!(to_sq, tsq);
+        assert_eq!(promotion, prom);
+
+
+        prom = Promotion::Bishop;
+        mv = 0;
+        set_move_with_promotion(fsq, tsq, prom, &mut mv);
+        from_sq = extract_from_sq(mv);
+        to_sq = extract_to_sq(mv);
+        promotion = extract_promotion(mv).unwrap();
+        assert_eq!(from_sq, fsq);
+        assert_eq!(to_sq, tsq);
+        assert_eq!(promotion, prom);
+
+        prom = Promotion::Rook;
+        mv = 0;
+        set_move_with_promotion(fsq, tsq, prom, &mut mv);
+        from_sq = extract_from_sq(mv);
+        to_sq = extract_to_sq(mv);
+        promotion = extract_promotion(mv).unwrap();
+        assert_eq!(from_sq, fsq);
+        assert_eq!(to_sq, tsq);
+        assert_eq!(promotion, prom);
+
+        prom = Promotion::Queen;
+        mv = 0;
+        set_move_with_promotion(fsq, tsq, prom, &mut mv);
+        from_sq = extract_from_sq(mv);
+        to_sq = extract_to_sq(mv);
+        promotion = extract_promotion(mv).unwrap();
+        assert_eq!(from_sq, fsq);
+        assert_eq!(to_sq, tsq);
+        assert_eq!(promotion, prom);
+    }
+}

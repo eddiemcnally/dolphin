@@ -147,8 +147,6 @@ fn get_castle_permissions(castleperm: &str) -> Option<CastlePermission> {
 mod tests {
     use super::Square;
     use super::Piece;
-    use super::Rank;
-    use super::File;
     use super::Colour;
     use super::FEN_BOARD;
     use super::FEN_SIDE_TO_MOVE;
@@ -161,6 +159,7 @@ mod tests {
     use fen::get_castle_permissions;
     use fen::get_half_move_clock;
     use fen::get_full_move_number;
+    use fen::get_en_passant_sq;
     use std::collections::HashMap;
     use position::CastlePermissionBitMap;
 
@@ -317,6 +316,21 @@ mod tests {
         assert_eq!(full_move_cnt, 55);
     }
 
+    #[test]
+    pub fn test_parse_en_passant() {
+        let mut fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q c6 0 0";
+        let mut piece_pos: Vec<&str> = fen.split(' ').collect();
+        let mut enp_sq = get_en_passant_sq(piece_pos[FEN_EN_PASSANT]).unwrap();
+        assert_eq!(enp_sq, Square::c6);
 
+        fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q c3 0 0";
+        piece_pos = fen.split(' ').collect();
+        enp_sq = get_en_passant_sq(piece_pos[FEN_EN_PASSANT]).unwrap();
+        assert_eq!(enp_sq, Square::c3);
 
+        fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 0";
+        piece_pos = fen.split(' ').collect();
+        let no_enp_sq = get_en_passant_sq(piece_pos[FEN_EN_PASSANT]);
+        assert_eq!(no_enp_sq.is_some(), false);
+    }
 }
