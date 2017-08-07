@@ -3,8 +3,6 @@
 
 use bitboard::BitBoard;
 use piece;
-use square;
-// use bitboard::BitManipulation;
 
 
 // TODO: look into decomposing this into a set of sub-structs and Impl's

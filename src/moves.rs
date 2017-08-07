@@ -55,7 +55,7 @@ pub fn set_move_with_promotion(
         Promotion::Knight => *mv = *mv | BITMASK_PROM_KNIGHT,
         Promotion::Bishop => *mv = *mv | BITMASK_PROM_BISHOP,
         Promotion::Rook => *mv = *mv | BITMASK_PROM_ROOK,
-        Promotion::Queen => *mv = *mv | BITMASK_PROM_QUEEN,			
+        Promotion::Queen => *mv = *mv | BITMASK_PROM_QUEEN,		
     }
 }
 
@@ -81,7 +81,7 @@ pub fn extract_promotion(mv: Move) -> Option<Promotion> {
         BITMASK_PROM_BISHOP => Some(Promotion::Bishop),
         BITMASK_PROM_ROOK => Some(Promotion::Rook),
         BITMASK_PROM_QUEEN => Some(Promotion::Queen),
-        _ => panic!("Invalid promotion value {:?}", prom),
+        _ => panic!("INvalid promotion {:?}", prom),
     }
 }
 
@@ -121,47 +121,65 @@ mod tests {
 
 
     #[test]
-    pub fn test_constructor_with_promotion() {
+    pub fn test_constructor_with_promotion_knight() {
         let fsq = Square::a3;
         let tsq = Square::b3;
-        let mut prom = Promotion::Knight;
+        let prom = Promotion::Knight;
         let mut mv: Move = 0;
         set_move_with_promotion(fsq, tsq, prom, &mut mv);
-        let mut from_sq = extract_from_sq(mv);
-        let mut to_sq = extract_to_sq(mv);
-        let mut promotion = extract_promotion(mv).unwrap();
+        let from_sq = extract_from_sq(mv);
+        let to_sq = extract_to_sq(mv);
+        let promotion = extract_promotion(mv).unwrap();
 
         assert_eq!(from_sq, fsq);
         assert_eq!(to_sq, tsq);
         assert_eq!(promotion, prom);
+    }
 
 
-        prom = Promotion::Bishop;
-        mv = 0;
+    #[test]
+    pub fn test_constructor_with_promotion_bishop() {
+        let fsq = Square::a3;
+        let tsq = Square::b3;
+        let prom = Promotion::Bishop;
+        let mut mv: Move = 0;
         set_move_with_promotion(fsq, tsq, prom, &mut mv);
-        from_sq = extract_from_sq(mv);
-        to_sq = extract_to_sq(mv);
-        promotion = extract_promotion(mv).unwrap();
+        let from_sq = extract_from_sq(mv);
+        let to_sq = extract_to_sq(mv);
+        let promotion = extract_promotion(mv).unwrap();
+
         assert_eq!(from_sq, fsq);
         assert_eq!(to_sq, tsq);
         assert_eq!(promotion, prom);
+    }
 
-        prom = Promotion::Rook;
-        mv = 0;
+    #[test]
+    pub fn test_constructor_with_promotion_rook() {
+        let fsq = Square::a3;
+        let tsq = Square::b3;
+        let prom = Promotion::Rook;
+        let mut mv: Move = 0;
         set_move_with_promotion(fsq, tsq, prom, &mut mv);
-        from_sq = extract_from_sq(mv);
-        to_sq = extract_to_sq(mv);
-        promotion = extract_promotion(mv).unwrap();
+        let from_sq = extract_from_sq(mv);
+        let to_sq = extract_to_sq(mv);
+        let promotion = extract_promotion(mv).unwrap();
+
         assert_eq!(from_sq, fsq);
         assert_eq!(to_sq, tsq);
         assert_eq!(promotion, prom);
+    }
 
-        prom = Promotion::Queen;
-        mv = 0;
+    #[test]
+    pub fn test_constructor_with_promotion_queen() {
+        let fsq = Square::a3;
+        let tsq = Square::b3;
+        let prom = Promotion::Queen;
+        let mut mv: Move = 0;
         set_move_with_promotion(fsq, tsq, prom, &mut mv);
-        from_sq = extract_from_sq(mv);
-        to_sq = extract_to_sq(mv);
-        promotion = extract_promotion(mv).unwrap();
+        let from_sq = extract_from_sq(mv);
+        let to_sq = extract_to_sq(mv);
+        let promotion = extract_promotion(mv).unwrap();
+
         assert_eq!(from_sq, fsq);
         assert_eq!(to_sq, tsq);
         assert_eq!(promotion, prom);

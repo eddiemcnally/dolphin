@@ -54,8 +54,6 @@ pub mod tests {
     use super::BitManipulation;
     use square::Square;
     use utils;
-    use std::collections::HashMap;
-
 
 
     #[test]
@@ -91,7 +89,7 @@ pub mod tests {
 
         // pop all bits
         for sq in &sq_list {
-            let mut popped: Square = bb.pop_1st_bit();
+            let popped: Square = bb.pop_1st_bit();
             assert_eq!(popped, *sq);
         }
 

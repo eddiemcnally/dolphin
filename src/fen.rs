@@ -160,7 +160,6 @@ mod tests {
     use fen::get_half_move_clock;
     use fen::get_full_move_number;
     use fen::get_en_passant_sq;
-    use std::collections::HashMap;
     use position::CastlePermissionBitMap;
 
     #[test]
@@ -232,7 +231,7 @@ mod tests {
     pub fn test_side_to_move_invalid_panics() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n X - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let side_to_move = get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
+        get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
     }
 
 
@@ -264,18 +263,18 @@ mod tests {
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
 
-        let isWK =
+        let is_wk =
             CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::WK, perm.unwrap() as u8);
-        assert_eq!(isWK, true);
-        let isWQ =
+        assert_eq!(is_wk, true);
+        let is_wq =
             CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::WQ, perm.unwrap() as u8);
-        assert_eq!(isWQ, true);
-        let isBK =
+        assert_eq!(is_wq, true);
+        let is_bk =
             CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::BK, perm.unwrap() as u8);
-        assert_eq!(isBK, true);
-        let isBQ =
+        assert_eq!(is_bk, true);
+        let is_bq =
             CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::BQ, perm.unwrap() as u8);
-        assert_eq!(isBQ, false);
+        assert_eq!(is_bq, false);
     }
 
     #[test]
