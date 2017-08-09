@@ -7,6 +7,7 @@ mod bitboard;
 mod utils;
 mod board;
 mod moves;
+mod move_gen;
 mod occupancy_masks;
 mod position;
 

@@ -1,4 +1,6 @@
 #[allow(dead_code)]
+// white pieces are even
+#[derive(Clone, Copy)]
 #[derive(Debug)]
 #[derive(Eq, PartialEq, Hash)]
 pub enum Piece {
@@ -95,6 +97,7 @@ pub const NUM_PIECES: usize = 12;
 #[allow(dead_code)]
 #[derive(Debug)]
 #[derive(Eq, PartialEq)]
+#[derive(Clone, Copy)]
 pub enum Colour {
     White = 0,
     Black,
@@ -102,6 +105,15 @@ pub enum Colour {
 impl Default for Colour {
     fn default() -> Colour {
         Colour::White
+    }
+}
+impl Colour {
+    pub fn flip_side(&self) -> Colour {
+        if *self == Colour::White {
+            return Colour::Black;
+        } else {
+            return Colour::White;
+        }
     }
 }
 
@@ -143,7 +155,18 @@ mod tests {
         assert_eq!(pce.colour(), Colour::White);
     }
 
+    #[test]
+    pub fn test_flip_colour_white_to_black() {
+        let c = Colour::White;
+        let opp = c.flip_side();
+        assert_eq!(opp, Colour::Black);
+    }
 
-
+    #[test]
+    pub fn test_flip_colour_black_to_white() {
+        let c = Colour::Black;
+        let opp = c.flip_side();
+        assert_eq!(opp, Colour::White);
+    }
 
 }
