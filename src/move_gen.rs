@@ -2,9 +2,7 @@
 use moves::Move;
 use position::Position;
 use occupancy_masks::get_occupancy_mask;
-use piece::Colour;
 use bitboard::BitManipulation;
-use bitboard::BitBoard;
 use piece;
 use std::vec::Vec;
 

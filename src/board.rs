@@ -11,8 +11,6 @@ use std::option::Option;
 
 pub const NUM_SQUARES: usize = 64;
 
-// TODO: look into decomposing this into a set of sub-structs and Impl's
-// to improve manageability
 #[allow(dead_code)]
 pub struct Board {
     // bitboard representing occupied/vacant squares (for all pieces)
@@ -23,59 +21,91 @@ pub struct Board {
     colour_bb: [BitBoard; NUM_COLOURS],
     // the pieces on each square
     pieces: [Option<Piece>; NUM_SQUARES],
-
-    // todo - add material,
 }
 
+//let array: [Option<Box<Thing>>; SIZE] = Default::default();
 
 impl Board {
+    pub fn new() -> Board {
+        return Board {
+            board_bb: BitBoard::default(),
+            piece_bb: [BitBoard::default(); NUM_PIECES],
+            colour_bb: [BitBoard::default(); NUM_COLOURS],
+            pieces: [None; NUM_SQUARES],
+        };
+    }
+
     pub fn add_piece(&mut self, piece: Piece, sq: Square) {
-        if self.is_sq_empty(sq) == false {
-            panic!("add_piece, square not empty. {:?}", sq);
-        }
+        debug_assert!(
+            self.is_sq_empty(sq),
+            "add_piece, square not empty. {:?}",
+            sq
+        );
 
-        self.board_bb.set_bit(sq);
-        self.piece_bb[piece as usize].set_bit(sq);
-        self.pieces[sq as usize] = Some(piece);
-
-        let col = piece.colour();
-        self.colour_bb[col as usize].set_bit(sq);
+        self.set_bitboards(piece, sq);
     }
 
     pub fn remove_piece(&mut self, piece: Piece, sq: Square) {
-        if self.is_sq_empty(sq) == true {
-            panic!("remove_piece, square is empty. {:?}", sq);
-        }
+        debug_assert!(
+            self.is_sq_empty(sq),
+            "remove_piece, square is empty. {:?}",
+            sq
+        );
 
-        self.board_bb.clear_bit(sq);
-        self.piece_bb[piece as usize].clear_bit(sq);
-        self.pieces[sq as usize] = None;
-
-        let col = piece.colour();
-        self.colour_bb[col as usize].clear_bit(sq);
+        self.clear_bitboards(piece, sq);
     }
 
     pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece) {
-        self.remove_piece(piece, from_sq);
-        self.add_piece(piece, to_sq);
+        self.clear_bitboards(piece, from_sq);
+        self.set_bitboards(piece, to_sq);
     }
 
     pub fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
         return self.pieces[sq as usize];
     }
 
-    pub fn assert_board_ok(&self) {}
-
+    fn is_sq_empty(&self, sq: Square) -> bool {
+        if self.board_bb.is_set(sq) == true {
+            return false;
+        }
+        return true;
+    }
 
     pub fn get_bitboard(&self, piece: Piece) -> BitBoard {
         return self.piece_bb[piece as usize];
     }
 
 
-    fn is_sq_empty(&self, sq: Square) -> bool {
-        if self.board_bb.is_set(sq) == true {
-            return false;
+    fn set_bitboards(&mut self, piece: Piece, sq: Square) {
+        self.board_bb.set_bit(sq);
+        self.piece_bb[piece as usize].set_bit(sq);
+        self.pieces[sq as usize] = Some(piece);
+        let col = piece.colour();
+        self.colour_bb[col as usize].set_bit(sq);
+    }
+
+
+    fn clear_bitboards(&mut self, piece: Piece, sq: Square) {
+        self.board_bb.clear_bit(sq);
+        self.piece_bb[piece as usize].clear_bit(sq);
+        self.pieces[sq as usize] = None;
+        let col = piece.colour();
+        self.colour_bb[col as usize].clear_bit(sq);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use board::Board;
+    use square::Square;
+    #[test]
+    pub fn test_init_board() {
+        let mut brd: Board = Board::new();
+
+        for sq in Square::iterator() {
+            let b = Board::is_sq_empty(&mut brd, *sq);
+            assert_eq!(b, true);
         }
-        return true;
     }
 }

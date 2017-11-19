@@ -14,6 +14,7 @@ pub trait BitManipulation {
     fn pop_1st_bit(&mut self) -> Square;
 }
 
+
 impl BitManipulation for BitBoard {
     fn set_bit(&mut self, sq: Square) {
         *self = *self | (0x01 << sq as u8);
