@@ -1,9 +1,11 @@
 
-use moves::Move;
+
+use board::bitboard::BitBoard;
+use board::bitboard::BitManipulation;
+use board::occupancy_masks::get_occupancy_mask;
+use moves::mv::Move;
+use board::piece;
 use position::Position;
-use occupancy_masks::get_occupancy_mask;
-use bitboard::BitManipulation;
-use piece;
 use std::vec::Vec;
 
 pub fn generate_all_moves(pos: Position) -> Vec<Move> {
@@ -18,7 +20,7 @@ pub fn generate_all_moves(pos: Position) -> Vec<Move> {
 
 fn generate_knight_moves(pos: Position, piece: piece::Piece, move_list: &mut Vec<Move>) {
 
-    let mut bb = pos.board.get_bitboard(piece);
+    let mut bb: BitBoard = pos.board.get_bitboard(piece);
 
     while bb != 0 {
         let sq = bb.pop_1st_bit();

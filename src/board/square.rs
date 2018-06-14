@@ -1,7 +1,7 @@
+use board::square::rank::Rank;
+use board::square::file::File;
 use std::mem::transmute;
 use std::fmt;
-use square::rank::Rank;
-use square::file::File;
 use std::slice::Iter;
 
 

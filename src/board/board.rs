@@ -1,12 +1,12 @@
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
 
-use bitboard::BitBoard;
-use bitboard::BitManipulation;
-use piece::Piece;
-use piece::NUM_PIECES;
-use piece::NUM_COLOURS;
-use square::Square;
+use board::piece::Piece;
+use board::piece::NUM_PIECES;
+use board::piece::NUM_COLOURS;
+use board::bitboard::BitBoard;
+use board::bitboard::BitManipulation;
+use board::square::Square;
 use std::option::Option;
 
 pub const NUM_SQUARES: usize = 64;

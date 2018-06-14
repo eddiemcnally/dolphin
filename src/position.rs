@@ -1,6 +1,6 @@
-use board::Board;
-use piece::Colour;
-use square::Square;
+use board::board::Board;
+use board::piece::Colour;
+use board::square::Square;
 
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]

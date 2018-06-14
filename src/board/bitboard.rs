@@ -1,6 +1,6 @@
 #[allow(non_camel_case_types)]
 
-use square::Square;
+use board::square::Square;
 use std::mem::transmute;
 
 // bitboard type
@@ -53,7 +53,7 @@ impl BitManipulation for BitBoard {
 pub mod tests {
     use super::BitBoard;
     use super::BitManipulation;
-    use square::Square;
+    use super::Square;
     use utils;
 
 

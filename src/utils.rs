@@ -1,8 +1,8 @@
 
 
-use square::rank::Rank;
-use square::file::File;
-use square::Square;
+use board::square::rank::Rank;
+use board::square::file::File;
+use board::square::Square;
 use std::collections::HashMap;
 use std::vec::Vec;
 

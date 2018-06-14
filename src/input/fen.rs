@@ -1,14 +1,13 @@
 #[allow(dead_code)]
-
-use piece::Piece;
-use piece::Colour;
-use square::Square;
-use square::rank::Rank;
-use square::file::File;
+use board::piece::Piece;
+use board::piece::Colour;
+use board::square::Square;
+use board::square::rank::Rank;
+use board::square::file::File;
 use position::CastlePermissionBitMap;
 use position::CastlePermission;
 use std::mem::transmute;
-use std::collections::HashMap;
+use std::collections::HashMap; 
 
 
 #[derive(Default)]
@@ -145,15 +144,15 @@ fn get_castle_permissions(castleperm: &str) -> Option<CastlePermission> {
 
 #[cfg(test)]
 mod tests {
-    use super::Square;
-    use super::Piece;
-    use super::Colour;
     use super::FEN_BOARD;
     use super::FEN_SIDE_TO_MOVE;
     use super::FEN_CASTLE_PERMISSIONS;
     use super::FEN_EN_PASSANT;
     use super::FEN_HALF_MOVE;
     use super::FEN_FULL_MOVE;
+    use board::square::Square;
+    use board::piece::Piece;
+    use board::piece::Colour;
     use fen::extract_piece_locations;
     use fen::get_side_to_move;
     use fen::get_castle_permissions;

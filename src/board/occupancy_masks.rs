@@ -1,6 +1,6 @@
-use piece;
-use board;
-use square::Square;
+use board::piece;
+use board::board;
+use board::square::Square;
 
 /// For a given piece on a given square, this function returns a bitboard
 /// representing the squares that the piece can legally move to (assuming

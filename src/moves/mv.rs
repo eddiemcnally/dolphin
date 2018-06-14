@@ -1,11 +1,11 @@
 #[allow(dead_code)]
 
-use square::Square;
+use board::square::Square;
 use std::mem::transmute;
 use std::ops::Shl;
 use std::ops::Shr;
 
-
+ 
 pub type Move = u16;
 
 #[derive(Eq, PartialEq, Hash)]

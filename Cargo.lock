@@ -1,4 +1,4 @@
-[root]
+[[package]]
 name = "dolphin"
 version = "0.1.0"
 

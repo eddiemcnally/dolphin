@@ -1,20 +1,16 @@
 #![allow(dead_code)]
 
-mod piece;
-mod fen;
-mod square;
-mod bitboard;
-mod utils;
 mod board;
+mod utils;
 mod moves;
-mod move_gen;
-mod occupancy_masks;
 mod position;
+mod input;
 
-
+use board::piece::Piece;
+use input::fen;
 
 fn main() {
-    println!("pawn piece value {}", piece::Piece::WQueen.value());
+    println!("pawn piece value {}", Piece::WQueen.value());
 
     let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
 
