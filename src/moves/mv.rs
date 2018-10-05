@@ -1,16 +1,35 @@
 #[allow(dead_code)]
-
 use board::square::Square;
 use std::mem::transmute;
 use std::ops::Shl;
 use std::ops::Shr;
 
- 
+
+
+// bitmap for type Move
+// See http://chessprogramming.wikispaces.com/Encoding+Moves
+//
+//  ---- ---- --11 1111      To Square
+//  ---- 1111 11-- ----      From Square
+//  0000 ---- ---- ----      Quiet move
+//  0001 ---- ---- ----      Double Pawn push
+//  0010 ---- ---- ----      King Castle
+//  0011 ---- ---- ----      Queen Castle
+//  0100 ---- ---- ----      Capture
+//  0101 ---- ---- ----      En Passant Capture
+//  1000 ---- ---- ----      Promotion Knight
+//  1001 ---- ---- ----      Promotion Bishop
+//  1010 ---- ---- ----      Promotion Rook
+//  1011 ---- ---- ----      Promotion Queen
+//  1100 ---- ---- ----      Promotion Knight Capture
+//  1101 ---- ---- ----      Promotion Bishop Capture
+//  1110 ---- ---- ----      Promotion Rook Capture
+//  1111 ---- ---- ----      Promotion Queen Capture
+
+//#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 pub type Move = u16;
 
-#[derive(Eq, PartialEq, Hash)]
-#[derive(Debug)]
-#[derive(Clone, Copy)]
+//#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 pub enum Promotion {
     Knight,
     Bishop,
@@ -18,46 +37,140 @@ pub enum Promotion {
     Queen,
 }
 
-// Bit representation as follows
-// 		0000 0000 0011 1111		From square
-//		0000 1111 1100 0000		To square
-//		0001 0000 0000 0000		Promote to Knight
-//		0010 0000 0000 0000		Promote to Bishop
-//		0100 0000 0000 0000		Promote to Rook
-//		1000 0000 0000 0000		Promote to Queen
 
-const BITMASK_FROM_SQ: u16 = 0x003F;
-const OFFSET_FROM_SQ: u16 = 0;
-const BITMASK_TO_SQ: u16 = 0x0FC0;
-const OFFSET_TO_SQ: u16 = 6;
-const BITMASK_PROM_KNIGHT: u16 = 0x1000;
-const BITMASK_PROM_BISHOP: u16 = 0x2000;
-const BITMASK_PROM_ROOK: u16 = 0x4000;
-const BITMASK_PROM_QUEEN: u16 = 0x8000;
-const BITMASK_PROMOTION: u16 = 0xF000;
+const MV_FLG_QUIET: u16 = 0x0000;
+const MV_FLG_DOUBLE_PAWN: u16 = 0x1000;
+const MV_FLG_KING_CASTLE: u16 = 0x2000;
+const MV_FLG_QUEEN_CASTLE: u16 = 0x3000;
+const MV_FLG_CAPTURE: u16 = 0x4000;
+const MV_FLG_EN_PASS: u16 = 0x5000;
+const MV_FLG_PROMOTE_KNIGHT: u16 = 0x8000;
+const MV_FLG_PROMOTE_BISHOP: u16 = 0x9000;
+const MV_FLG_PROMOTE_ROOK: u16 = 0xA000;
+const MV_FLG_PROMOTE_QUEEN: u16 = 0xB000;
+const MV_FLG_PROMOTE_KNIGHT_CAPTURE: u16 = 0xC000;
+const MV_FLG_PROMOTE_BISHOP_CAPTURE: u16 = 0xD000;
+const MV_FLG_PROMOTE_ROOK_CAPTURE: u16 = 0xE000;
+const MV_FLG_PROMOTE_QUEEN_CAPTURE: u16 = 0xF000;
 
-pub fn set_move(from_sq: Square, to_sq: Square, mv: &mut Move) {
-    let mut m: u16 = 0;
-    m = m | (from_sq as u16);
-    m = m | (to_sq as u16).shl(OFFSET_TO_SQ);
-    *mv = m;
+// meta-bit flags
+const MV_FLG_BIT_PROMOTE: u16 = 0x8000;
+const MV_FLG_BIT_CAPTURE: u16 = 0x4000;
+
+const MV_SHFT_TO_SQ: u16 = 0;
+const MV_SHFT_FROM_SQ: u16 = 6;
+
+const MV_MASK_TO_SQ: u16 = 0x003F;
+const MV_MASK_FROM_SQ: u16 = 0x0FC0;
+const MV_MASK_FLAGS: u16 = 0xF000;
+
+
+
+pub fn encode_move_quiet(from_sq: Square, to_sq: Square) -> Move {
+    let from = from_sq as u16;
+    let to = to_sq as u16;
+
+    let mut mv: u16 = from.shl(MV_SHFT_FROM_SQ);
+    mv |= mv & MV_MASK_FROM_SQ;
+
+    mv |= to.shl(MV_SHFT_TO_SQ);
+    mv |= mv & MV_MASK_TO_SQ;
+
+    return mv;
 }
 
-pub fn set_move_with_promotion(
+pub fn encode_move_with_promotion(
     from_sq: Square,
     to_sq: Square,
-    promotion: Promotion,
-    mut mv: &mut Move,
-) {
-    set_move(from_sq, to_sq, &mut mv);
+    promotion: Promotion) -> Move {
+        
+    let mut mov = encode_move_quiet(from_sq, to_sq);
 
     match promotion {
-        Promotion::Knight => *mv = *mv | BITMASK_PROM_KNIGHT,
-        Promotion::Bishop => *mv = *mv | BITMASK_PROM_BISHOP,
-        Promotion::Rook => *mv = *mv | BITMASK_PROM_ROOK,
-        Promotion::Queen => *mv = *mv | BITMASK_PROM_QUEEN,		
+        Promotion::Knight => mov = mov | MV_FLG_PROMOTE_KNIGHT,
+        Promotion::Bishop => mov = mov | MV_FLG_PROMOTE_BISHOP,
+        Promotion::Rook => mov = mov | MV_FLG_PROMOTE_ROOK,
+        Promotion::Queen => mov = mov | MV_FLG_PROMOTE_QUEEN,
     }
+    return mov;
+    
 }
+
+pub fn encode_move_with_promotion_capture(
+    from_sq: Square,
+    to_sq: Square,
+    promotion: Promotion) -> Move {
+        
+    let mut mov = encode_move_with_promotion(from_sq, to_sq, promotion);
+    mov = mov | MV_FLG_BIT_CAPTURE;
+
+    return mov;    
+}
+
+pub fn encode_move_en_passant(
+    from_sq: Square,
+    to_sq: Square) -> Move {
+        
+
+    let mut mov = encode_move_quiet(from_sq, to_sq);
+    mov = mov | MV_FLG_EN_PASS;
+
+    return mov;    
+}
+
+pub fn encode_move_double_pawn_first(
+    from_sq: Square,
+    to_sq: Square) -> Move {
+        
+    let mut mov = encode_move_quiet(from_sq, to_sq);
+    mov = mov | MV_FLG_DOUBLE_PAWN;
+
+    return mov;    
+}
+
+
+pub fn encode_move_castle_kingside_white() -> Move
+{
+    let mut mov = encode_move_quiet( Square::e1, Square::g1 );
+    mov = mov | MV_FLG_KING_CASTLE;
+    return mov;
+}
+
+pub fn encode_move_castle_kingside_black() -> Move
+{
+    let mut mov = encode_move_quiet( Square::e8, Square::g8 );
+    mov = mov | MV_FLG_KING_CASTLE;
+    return mov;
+}
+
+pub fn encode_move_castle_queenside_white() -> Move
+{
+    let mut mov = encode_move_quiet( Square::e1, Square::c1 );
+    mov = mov | MV_FLG_QUEEN_CASTLE;
+    return mov;
+}
+
+pub fn encode_move_castle_queenside_black() -> Move
+{
+    let mut mov = encode_move_quiet( Square::e8, Square::c8 );
+    mov = mov | MV_FLG_QUEEN_CASTLE;
+    return mov;
+}
+
+
+// enum square move_decode_from_sq ( const uint16_t mv );
+// enum square move_decode_to_sq ( const uint16_t mv );
+// enum piece move_decode_promotion_piece ( const uint16_t mv , const enum colour side);
+// bool move_is_quiet ( const uint16_t mv );
+// bool move_is_capture ( const uint16_t mv );
+// bool move_is_promotion ( const uint16_t mv );
+// bool move_is_en_passant ( const uint16_t mv );
+
+// char *move_print ( uint16_t mv );
+
+// bool validate_move ( const uint16_t mv );
+
+
 
 pub fn extract_from_sq(mv: Move) -> Square {
     let fsq = mv & BITMASK_FROM_SQ;
@@ -83,20 +196,22 @@ pub fn extract_promotion(mv: Move) -> Option<Promotion> {
         BITMASK_PROM_QUEEN => Some(Promotion::Queen),
         _ => panic!("INvalid promotion {:?}", prom),
     }
-}
+
+
+
 
 
 
 #[cfg(test)]
 mod tests {
-    use super::set_move;
     use super::extract_from_sq;
-    use super::extract_to_sq;
-    use super::set_move_with_promotion;
     use super::extract_promotion;
+    use super::extract_to_sq;
+    use super::set_move;
+    use super::set_move_with_promotion;
     use super::Move;
-    use square::Square;
     use super::Promotion;
+    use square::Square;
 
     #[test]
     pub fn test_constructor_no_promotion() {
@@ -119,7 +234,6 @@ mod tests {
         assert_eq!(to_sq, tsq);
     }
 
-
     #[test]
     pub fn test_constructor_with_promotion_knight() {
         let fsq = Square::a3;
@@ -135,7 +249,6 @@ mod tests {
         assert_eq!(to_sq, tsq);
         assert_eq!(promotion, prom);
     }
-
 
     #[test]
     pub fn test_constructor_with_promotion_bishop() {
