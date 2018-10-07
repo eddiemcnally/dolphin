@@ -4,7 +4,6 @@ use std::mem::transmute;
 use std::fmt;
 use std::slice::Iter;
 
-
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
@@ -87,6 +86,7 @@ impl fmt::Display for Square {
     }
 }
 
+
 impl Square {
     pub fn rank(self) -> Rank {
         let rank_num = self as u8 >> 3;
@@ -119,7 +119,7 @@ impl Square {
             _ => panic!("invalid file number"),
         }
     }
-
+    
     pub fn get_square(rank: Rank, file: File) -> Square {
         let sq = rank as u8 * 8 + file as u8;
 
