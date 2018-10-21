@@ -93,19 +93,3 @@ impl Board {
         self.colour_bb[col as usize].clear_bit(sq);
     }
 }
-
-#[cfg(test)]
-mod tests {
-
-    use board::Board;
-    use square::Square;
-    #[test]
-    pub fn test_init_board() {
-        let mut brd: Board = Board::new();
-
-        for sq in Square::iterator() {
-            let b = Board::is_sq_empty(&mut brd, *sq);
-            assert_eq!(b, true);
-        }
-    }
-}

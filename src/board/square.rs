@@ -1,14 +1,11 @@
-use board::square::rank::Rank;
 use board::square::file::File;
-use std::mem::transmute;
+use board::square::rank::Rank;
 use std::fmt;
-use std::slice::Iter;
+use std::mem::transmute;
 
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy)]
-#[derive(Debug)]
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum Square {
     a1 = 0,
     b1,
@@ -86,7 +83,6 @@ impl fmt::Display for Square {
     }
 }
 
-
 impl Square {
     pub fn rank(self) -> Rank {
         let rank_num = self as u8 >> 3;
@@ -119,7 +115,7 @@ impl Square {
             _ => panic!("invalid file number"),
         }
     }
-    
+
     pub fn get_square(rank: Rank, file: File) -> Square {
         let sq = rank as u8 * 8 + file as u8;
 
@@ -138,82 +134,79 @@ impl Square {
         Square::get_square(rank, file)
     }
 
-    pub fn iterator() -> Iter<'static, Square> {
-        static SQUARES: [Square; 64] = [
-            Square::a1,
-            Square::b1,
-            Square::c1,
-            Square::d1,
-            Square::e1,
-            Square::f1,
-            Square::g1,
-            Square::h1,
-            Square::a2,
-            Square::b2,
-            Square::c2,
-            Square::d2,
-            Square::e2,
-            Square::f2,
-            Square::g2,
-            Square::h2,
-            Square::a3,
-            Square::b3,
-            Square::c3,
-            Square::d3,
-            Square::e3,
-            Square::f3,
-            Square::g3,
-            Square::h3,
-            Square::a4,
-            Square::b4,
-            Square::c4,
-            Square::d4,
-            Square::e4,
-            Square::f4,
-            Square::g4,
-            Square::h4,
-            Square::a5,
-            Square::b5,
-            Square::c5,
-            Square::d5,
-            Square::e5,
-            Square::f5,
-            Square::g5,
-            Square::h5,
-            Square::a6,
-            Square::b6,
-            Square::c6,
-            Square::d6,
-            Square::e6,
-            Square::f6,
-            Square::g6,
-            Square::h6,
-            Square::a7,
-            Square::b7,
-            Square::c7,
-            Square::d7,
-            Square::e7,
-            Square::f7,
-            Square::g7,
-            Square::h7,
-            Square::a8,
-            Square::b8,
-            Square::c8,
-            Square::d8,
-            Square::e8,
-            Square::f8,
-            Square::g8,
-            Square::h8,
-        ];
-        SQUARES.into_iter()
+    pub fn from_u8(num: u8) -> Square {
+        match num {
+            0 => Square::a1,
+            1 => Square::b1,
+            2 => Square::c1,
+            3 => Square::d1,
+            4 => Square::e1,
+            5 => Square::f1,
+            6 => Square::g1,
+            7 => Square::h1,
+            8 => Square::a2,
+            9 => Square::b2,
+            10 => Square::c2,
+            11 => Square::d2,
+            12 => Square::e2,
+            13 => Square::f2,
+            14 => Square::g2,
+            15 => Square::h2,
+            16 => Square::a3,
+            17 => Square::b3,
+            18 => Square::c3,
+            19 => Square::d3,
+            20 => Square::e3,
+            21 => Square::f3,
+            22 => Square::g3,
+            23 => Square::h3,
+            24 => Square::a4,
+            25 => Square::b4,
+            26 => Square::c4,
+            27 => Square::d4,
+            28 => Square::e4,
+            29 => Square::f4,
+            30 => Square::g4,
+            31 => Square::h4,
+            32 => Square::a5,
+            33 => Square::b5,
+            34 => Square::c5,
+            35 => Square::d5,
+            36 => Square::e5,
+            37 => Square::f5,
+            38 => Square::g5,
+            39 => Square::h5,
+            40 => Square::a6,
+            41 => Square::b6,
+            42 => Square::c6,
+            43 => Square::d6,
+            44 => Square::e6,
+            45 => Square::f6,
+            46 => Square::g6,
+            47 => Square::h6,
+            48 => Square::a7,
+            49 => Square::b7,
+            50 => Square::c7,
+            51 => Square::d7,
+            52 => Square::e7,
+            53 => Square::f7,
+            54 => Square::g7,
+            55 => Square::h7,
+            56 => Square::a8,
+            57 => Square::b8,
+            58 => Square::c8,
+            59 => Square::d8,
+            60 => Square::e8,
+            61 => Square::f8,
+            62 => Square::g8,
+            63 => Square::h8,
+            _ => panic!("Invalid square"),
+        }
     }
 }
 
-
-
 pub mod rank {
-    #[derive(Debug)]
-    #[derive(Eq, PartialEq, Hash)]
+    #[derive(Debug, Eq, PartialEq, Hash)]
     pub enum Rank {
         Rank1 = 0,
         Rank2,
@@ -238,7 +231,6 @@ pub mod rank {
                 '8' => Rank::Rank8,
                 _ => panic!("Invalid rank character {}", rank),
             }
-
         }
         pub fn to_char(rank: Rank) -> char {
             match rank {
@@ -256,8 +248,7 @@ pub mod rank {
 }
 
 pub mod file {
-    #[derive(Debug)]
-    #[derive(Eq, PartialEq, Hash)]
+    #[derive(Debug, Eq, PartialEq, Hash)]
     pub enum File {
         FileA = 0,
         FileB,
@@ -301,13 +292,11 @@ pub mod file {
 
 #[cfg(test)]
 pub mod tests {
-    use super::Square;
-    use super::Rank;
     use super::File;
-    use utils;
+    use super::Rank;
+    use super::Square;
     use std::collections::HashMap;
-
-
+    use utils;
 
     #[test]
     pub fn test_rank_from_square() {
@@ -316,7 +305,6 @@ pub mod tests {
             assert_eq!(square.rank(), rank);
         }
     }
-
 
     #[test]
     pub fn test_file_from_square() {
@@ -343,7 +331,6 @@ pub mod tests {
             assert_eq!(cc, ch);
         }
     }
-
 
     #[test]
     pub fn test_rank_from_char() {
@@ -402,7 +389,6 @@ pub mod tests {
         assert_eq!(num1, 51);
     }
 
-
     #[test]
     pub fn test_square_from_rank_and_file() {
         let map = utils::get_square_rank_file_map();
@@ -411,7 +397,6 @@ pub mod tests {
             assert_eq!(square, sq);
         }
     }
-
 
     #[test]
     pub fn test_square_from_string() {
@@ -422,6 +407,5 @@ pub mod tests {
             assert_eq!(square, sq);
         }
     }
-
 
 }
