@@ -28,16 +28,16 @@ use std::ops::Shr;
 pub struct Mov(u16);
 
 impl Mov {
-    /// Returns a Quite move
+    /// Encodes a Quite move given the "from" and "to" squares
     ///
     /// # Arguments
     ///
     /// * `from_sq` - the from square
-    /// * `to_sq`   - the tovsquare
+    /// * `to_sq`   - the to square
     ///
-    pub fn encode_quiet(from_sq: Square, to_sq: Square) -> Mov {
-        let from = Square::to_u8(from_sq) as u16;
-        let to = Square::to_u8(to_sq) as u16;
+    pub fn encode_quiet(from_sq: &Square, to_sq: &Square) -> Mov {
+        let from = Square::to_u8(*from_sq) as u16;
+        let to = Square::to_u8(*to_sq) as u16;
 
         let mut mv: u16 = from.shl(MV_SHFT_FROM_SQ);
         mv |= mv & MV_MASK_FROM_SQ;
@@ -45,107 +45,116 @@ impl Mov {
         mv |= to.shl(MV_SHFT_TO_SQ);
         mv |= mv & MV_MASK_TO_SQ;
 
-        return Mov(mv);
+        Mov(mv)
     }
 
-    /// Returns a Promotion move (no capture)
+    /// Encodes a Promotion move that doesn't involve a captured piece
     ///
     /// # Arguments
     ///
     /// * `from_sq`         - the from square
     /// * `to_sq`           - the to square
-    /// * 'promotion_piece  - the target promotion piece 
+    /// * 'promotion_piece' - the target promotion piece
+    ///
     pub fn encode_move_with_promotion(
-        from_sq: Square,
-        to_sq: Square,
-        promotion_piece: Piece,
+        from_sq: &Square,
+        to_sq: &Square,
+        promotion_piece: &Piece,
     ) -> Mov {
         let mut mov = Mov::encode_quiet(from_sq, to_sq);
 
+        let mask: u16;
         match promotion_piece {
-            Piece::WKnight => mov.0 = mov.0 | MV_FLG_PROMOTE_KNIGHT,
-            Piece::BKnight => mov.0 = mov.0 | MV_FLG_PROMOTE_KNIGHT,
-            Piece::WBishop => mov.0 = mov.0 | MV_FLG_PROMOTE_BISHOP,
-            Piece::BBishop => mov.0 = mov.0 | MV_FLG_PROMOTE_BISHOP,
-            Piece::WRook => mov.0 = mov.0 | MV_FLG_PROMOTE_ROOK,
-            Piece::BRook => mov.0 = mov.0 | MV_FLG_PROMOTE_ROOK,
-            Piece::WQueen => mov.0 = mov.0 | MV_FLG_PROMOTE_QUEEN,
-            Piece::BQueen => mov.0 = mov.0 | MV_FLG_PROMOTE_QUEEN,
+            Piece::WKnight => mask = MV_FLG_PROMOTE_KNIGHT,
+            Piece::BKnight => mask = MV_FLG_PROMOTE_KNIGHT,
+            Piece::WBishop => mask = MV_FLG_PROMOTE_BISHOP,
+            Piece::BBishop => mask = MV_FLG_PROMOTE_BISHOP,
+            Piece::WRook => mask = MV_FLG_PROMOTE_ROOK,
+            Piece::BRook => mask = MV_FLG_PROMOTE_ROOK,
+            Piece::WQueen => mask = MV_FLG_PROMOTE_QUEEN,
+            Piece::BQueen => mask = MV_FLG_PROMOTE_QUEEN,
             _ => panic!("Invalid promotion type"),
         }
-        return mov;
+        mov.0 = mov.0 | mask;
+        mov
     }
 
-    /// Returns a new promotion move with Capture
+    /// Encodes a Promotion move that involves a captured piece
     ///
     /// # Arguments
     ///
     /// * `from_sq`         - the from square
     /// * `to_sq`           - the to square
-    /// * 'promotion_piece  - the target promotion piece 
+    /// * 'promotion_piece' - the target promotion piece
+    ///
     pub fn encode_move_with_promotion_capture(
-        from_sq: Square,
-        to_sq: Square,
-        promotion_piece: Piece,
+        from_sq: &Square,
+        to_sq: &Square,
+        promotion_piece: &Piece,
     ) -> Mov {
         let mut mov = Mov::encode_move_with_promotion(from_sq, to_sq, promotion_piece);
         mov.0 = mov.0 | MV_FLG_BIT_CAPTURE;
-        return mov;
+        mov
     }
 
-    /// Returns an En Passant move
+    /// Encodes an En Passant move given the "from" and "to" squares
     ///
     /// # Arguments
     ///
     /// * `from_sq`         - the from square
     /// * `to_sq`           - the to square
-    pub fn encode_move_en_passant(from_sq: Square, to_sq: Square) -> Mov {
+    ///
+    pub fn encode_move_en_passant(from_sq: &Square, to_sq: &Square) -> Mov {
         let mut mov = Mov::encode_quiet(from_sq, to_sq);
         mov.0 = mov.0 | MV_FLG_EN_PASS;
-        return mov;
+        mov
     }
 
-    pub fn encode_move_double_pawn_first(from_sq: Square, to_sq: Square) -> Mov {
+    pub fn encode_move_double_pawn_first(from_sq: &Square, to_sq: &Square) -> Mov {
         let mut mov = Mov::encode_quiet(from_sq, to_sq);
         mov.0 = mov.0 | MV_FLG_DOUBLE_PAWN;
-        return mov;
+        mov
     }
 
     pub fn encode_move_castle_kingside_white() -> Mov {
-        let mut mov = Mov::encode_quiet(Square::e1, Square::g1);
+        let mut mov = Mov::encode_quiet(&Square::e1, &Square::g1);
         mov.0 = mov.0 | MV_FLG_KING_CASTLE;
-        return mov;
+        mov
     }
 
     pub fn encode_move_castle_kingside_black() -> Mov {
-        let mut mov = Mov::encode_quiet(Square::e8, Square::g8);
+        let mut mov = Mov::encode_quiet(&Square::e8, &Square::g8);
         mov.0 = mov.0 | MV_FLG_KING_CASTLE;
-        return mov;
+        mov
     }
 
     pub fn encode_move_castle_queenside_white() -> Mov {
-        let mut mov = Mov::encode_quiet(Square::e1, Square::c1);
+        let mut mov = Mov::encode_quiet(&Square::e1, &Square::c1);
         mov.0 = mov.0 | MV_FLG_QUEEN_CASTLE;
-        return mov;
+        mov
     }
 
     pub fn encode_move_castle_queenside_black() -> Mov {
-        let mut mov = Mov::encode_quiet(Square::e8, Square::c8);
+        let mut mov = Mov::encode_quiet(&Square::e8, &Square::c8);
         mov.0 = mov.0 | MV_FLG_QUEEN_CASTLE;
-        return mov;
+        mov
     }
 
-    pub fn decode_from_square(mv: Mov) -> Square {
+    pub fn is_equal(mv1: &Mov, mv2: &Mov) -> bool {
+        mv1.0 == mv2.0
+    }
+
+    pub fn decode_from_square(mv: &Mov) -> Square {
         let sq = (mv.0 & MV_MASK_FROM_SQ).shr(MV_SHFT_FROM_SQ);
-        return Square::from_u8(sq as u8);
+        Square::from_u8(sq as u8)
     }
 
-    pub fn decode_to_square(mv: Mov) -> Square {
+    pub fn decode_to_square(mv: &Mov) -> Square {
         let sq = (mv.0 & MV_MASK_TO_SQ).shr(MV_SHFT_TO_SQ);
-        return Square::from_u8(sq as u8);
+        Square::from_u8(sq as u8)
     }
 
-    pub fn decode_promotion_piece(mv: Mov, side: Colour) -> Piece {
+    pub fn decode_promotion_piece(mv: &Mov, side: &Colour) -> Piece {
         let masked = mv.0 & MV_MASK_FLAGS;
 
         match side {
@@ -166,21 +175,37 @@ impl Mov {
         }
     }
 
-    pub fn move_is_quiet(mv: Mov) -> bool {
+    pub fn is_quiet(mv: &Mov) -> bool {
         let m = mv.0 & MV_MASK_FLAGS;
-        return m == MV_FLG_QUIET;
+        m == MV_FLG_QUIET
     }
 
-    pub fn move_is_capture(mv: Mov) -> bool {
-        return (mv.0 & MV_FLG_BIT_CAPTURE) != 0;
+    pub fn is_capture(mv: &Mov) -> bool {
+        (mv.0 & MV_FLG_BIT_CAPTURE) != 0
     }
 
-    pub fn move_is_promote(mv: Mov) -> bool {
-        return (mv.0 & MV_FLG_BIT_PROMOTE) != 0;
+    pub fn is_promote(mv: &Mov) -> bool {
+        (mv.0 & MV_FLG_BIT_PROMOTE) != 0
     }
 
-    pub fn move_is_en_passant(mv: Mov) -> bool {
-        return (mv.0 & MV_FLG_EN_PASS) != 0;
+    pub fn is_en_passant(mv: &Mov) -> bool {
+        (mv.0 & MV_FLG_EN_PASS) != 0
+    }
+
+    pub fn is_castle(mv: &Mov) -> bool {
+        Mov::is_king_castle(mv) || Mov::is_queen_castle(mv)
+    }
+
+    pub fn is_queen_castle(mv: &Mov) -> bool {
+        (mv.0 & MV_FLG_QUEEN_CASTLE) != 0
+    }
+
+    pub fn is_king_castle(mv: &Mov) -> bool {
+        (mv.0 & MV_FLG_KING_CASTLE) != 0
+    }
+
+    pub fn is_double_pawn(mv: &Mov) -> bool {
+        (mv.0 & MV_FLG_DOUBLE_PAWN) != 0
     }
 }
 
