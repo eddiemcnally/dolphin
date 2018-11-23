@@ -28,9 +28,9 @@ pub struct Board {
 impl Board {
     pub fn new() -> Board {
         return Board {
-            board_bb: BitBoard::default(),
-            piece_bb: [BitBoard::default(); NUM_PIECES],
-            colour_bb: [BitBoard::default(); NUM_COLOURS],
+            board_bb: BitBoard::empty(),
+            piece_bb: [BitBoard::empty(); NUM_PIECES],
+            colour_bb: [BitBoard::empty(); NUM_COLOURS],
             pieces: [None; NUM_SQUARES],
         };
     }

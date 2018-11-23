@@ -4,7 +4,7 @@ use board::square::Square;
 use std::ops::Shl;
 use std::ops::Shr;
 
-//#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 pub struct Mov(u16);
 
 impl Mov {
