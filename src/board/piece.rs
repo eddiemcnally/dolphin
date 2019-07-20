@@ -82,7 +82,6 @@ fn pce_to_offset(pce_role: PieceRole, col: Colour) -> u8 {
         PieceRole::Rook => 3,
         PieceRole::Queen => 4,
         PieceRole::King => 5,
-        _ => panic!("invalid pawn role"),
     };
 
     if col == Colour::Black {
@@ -90,6 +89,7 @@ fn pce_to_offset(pce_role: PieceRole, col: Colour) -> u8 {
     }
     return role_val as u8;
 }
+
 
 #[allow(dead_code)]
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]

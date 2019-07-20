@@ -142,6 +142,7 @@ mod tests {
     use super::FEN_SIDE_TO_MOVE;
     use board::piece::Colour;
     use board::piece::Piece;
+    use board::piece::PieceRole;
     use board::square::Square;
     use fen::extract_piece_locations;
     use fen::get_castle_permissions;
@@ -160,45 +161,141 @@ mod tests {
 
         assert_eq!(sq_pce.len(), 32);
 
-        assert_eq!(sq_pce[&Square::a1], Piece::WPawn);
-        assert_eq!(sq_pce[&Square::d1], Piece::BQueen);
-        assert_eq!(sq_pce[&Square::h1], Piece::BKnight);
+        assert_eq!(
+            sq_pce[&Square::a1],
+            Piece::new(PieceRole::Pawn, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::d1],
+            Piece::new(PieceRole::Queen, Colour::Black)
+        );
+        assert_eq!(
+            sq_pce[&Square::h1],
+            Piece::new(PieceRole::Knight, Colour::Black)
+        );
 
-        assert_eq!(sq_pce[&Square::a2], Piece::WPawn);
-        assert_eq!(sq_pce[&Square::c2], Piece::BRook);
-        assert_eq!(sq_pce[&Square::e2], Piece::BRook);
-        assert_eq!(sq_pce[&Square::f2], Piece::WPawn);
-        assert_eq!(sq_pce[&Square::h2], Piece::WPawn);
+        assert_eq!(
+            sq_pce[&Square::a2],
+            Piece::new(PieceRole::Pawn, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::c2],
+            Piece::new(PieceRole::Rook, Colour::Black)
+        );
+        assert_eq!(
+            sq_pce[&Square::e2],
+            Piece::new(PieceRole::Rook, Colour::Black)
+        );
+        assert_eq!(
+            sq_pce[&Square::f2],
+            Piece::new(PieceRole::Pawn, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::h2],
+            Piece::new(PieceRole::Pawn, Colour::White)
+        );
 
-        assert_eq!(sq_pce[&Square::a3], Piece::BPawn);
-        assert_eq!(sq_pce[&Square::b3], Piece::WPawn);
-        assert_eq!(sq_pce[&Square::c3], Piece::WRook);
-        assert_eq!(sq_pce[&Square::e3], Piece::WKnight);
-        assert_eq!(sq_pce[&Square::f3], Piece::BPawn);
+        assert_eq!(
+            sq_pce[&Square::a3],
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        );
+        assert_eq!(
+            sq_pce[&Square::b3],
+            Piece::new(PieceRole::Pawn, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::c3],
+            Piece::new(PieceRole::Rook, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::e3],
+            Piece::new(PieceRole::Knight, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::f3],
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        );
 
-        assert_eq!(sq_pce[&Square::b4], Piece::WRook);
-        assert_eq!(sq_pce[&Square::c4], Piece::WBishop);
-        assert_eq!(sq_pce[&Square::f4], Piece::WPawn);
+        assert_eq!(
+            sq_pce[&Square::b4],
+            Piece::new(PieceRole::Rook, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::c4],
+            Piece::new(PieceRole::Bishop, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::f4],
+            Piece::new(PieceRole::Pawn, Colour::White)
+        );
 
-        assert_eq!(sq_pce[&Square::b5], Piece::WBishop);
-        assert_eq!(sq_pce[&Square::e5], Piece::WPawn);
-        assert_eq!(sq_pce[&Square::g5], Piece::WKing);
+        assert_eq!(
+            sq_pce[&Square::b5],
+            Piece::new(PieceRole::Bishop, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::e5],
+            Piece::new(PieceRole::Pawn, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::g5],
+            Piece::new(PieceRole::King, Colour::White)
+        );
 
-        assert_eq!(sq_pce[&Square::a6], Piece::WKnight);
-        assert_eq!(sq_pce[&Square::c6], Piece::BPawn);
-        assert_eq!(sq_pce[&Square::h6], Piece::BPawn);
+        assert_eq!(
+            sq_pce[&Square::a6],
+            Piece::new(PieceRole::Knight, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::c6],
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        );
+        assert_eq!(
+            sq_pce[&Square::h6],
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        );
 
-        assert_eq!(sq_pce[&Square::b7], Piece::WPawn);
-        assert_eq!(sq_pce[&Square::c7], Piece::BPawn);
-        assert_eq!(sq_pce[&Square::d7], Piece::BPawn);
-        assert_eq!(sq_pce[&Square::e7], Piece::WQueen);
-        assert_eq!(sq_pce[&Square::f7], Piece::BPawn);
-        assert_eq!(sq_pce[&Square::g7], Piece::BBishop);
+        assert_eq!(
+            sq_pce[&Square::b7],
+            Piece::new(PieceRole::Pawn, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::c7],
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        );
+        assert_eq!(
+            sq_pce[&Square::d7],
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        );
+        assert_eq!(
+            sq_pce[&Square::e7],
+            Piece::new(PieceRole::Queen, Colour::White)
+        );
+        assert_eq!(
+            sq_pce[&Square::f7],
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        );
+        assert_eq!(
+            sq_pce[&Square::g7],
+            Piece::new(PieceRole::Bishop, Colour::Black)
+        );
 
-        assert_eq!(sq_pce[&Square::b8], Piece::BKnight);
-        assert_eq!(sq_pce[&Square::d8], Piece::BKing);
-        assert_eq!(sq_pce[&Square::g8], Piece::BBishop);
-        assert_eq!(sq_pce[&Square::h8], Piece::BPawn);
+        assert_eq!(
+            sq_pce[&Square::b8],
+            Piece::new(PieceRole::Knight, Colour::Black)
+        );
+        assert_eq!(
+            sq_pce[&Square::d8],
+            Piece::new(PieceRole::King, Colour::Black)
+        );
+        assert_eq!(
+            sq_pce[&Square::g8],
+            Piece::new(PieceRole::Bishop, Colour::Black)
+        );
+        assert_eq!(
+            sq_pce[&Square::h8],
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        );
     }
 
     #[test]

@@ -1,5 +1,6 @@
 use board::piece::Colour;
 use board::piece::Piece;
+use board::piece::PieceRole;
 use board::square::Square;
 use std::ops::Shl;
 use std::ops::Shr;
@@ -159,25 +160,18 @@ impl Mov {
     /// * `mv`         - the move to decode
     /// * `side`       - the side/colour
     ///
-    pub fn decode_promotion_piece(mv: &Mov, side: &Colour) -> Piece {
+    pub fn decode_promotion_piece(mv: &Mov, side: Colour) -> Piece {
         let masked = mv.0 & MV_MASK_FLAGS;
 
-        match side {
-            Colour::White => match masked {
-                MV_FLG_PROMOTE_KNIGHT_CAPTURE | MV_FLG_PROMOTE_KNIGHT => return Piece::WKnight,
-                MV_FLG_PROMOTE_BISHOP_CAPTURE | MV_FLG_PROMOTE_BISHOP => return Piece::WBishop,
-                MV_FLG_PROMOTE_QUEEN_CAPTURE | MV_FLG_PROMOTE_QUEEN => return Piece::WQueen,
-                MV_FLG_PROMOTE_ROOK_CAPTURE | MV_FLG_PROMOTE_ROOK => return Piece::WRook,
-                _ => panic!("Invalid WHITE promotion piece"),
-            },
-            Colour::Black => match masked {
-                MV_FLG_PROMOTE_KNIGHT_CAPTURE | MV_FLG_PROMOTE_KNIGHT => return Piece::BKnight,
-                MV_FLG_PROMOTE_BISHOP_CAPTURE | MV_FLG_PROMOTE_BISHOP => return Piece::BBishop,
-                MV_FLG_PROMOTE_QUEEN_CAPTURE | MV_FLG_PROMOTE_QUEEN => return Piece::BQueen,
-                MV_FLG_PROMOTE_ROOK_CAPTURE | MV_FLG_PROMOTE_ROOK => return Piece::BRook,
-                _ => panic!("Invalid BLACK promotion piece"),
-            },
-        }
+        let role = match masked {
+            MV_FLG_PROMOTE_KNIGHT_CAPTURE | MV_FLG_PROMOTE_KNIGHT => PieceRole::Knight,
+            MV_FLG_PROMOTE_BISHOP_CAPTURE | MV_FLG_PROMOTE_BISHOP => PieceRole::Bishop,
+            MV_FLG_PROMOTE_QUEEN_CAPTURE | MV_FLG_PROMOTE_QUEEN => PieceRole::Queen,
+            MV_FLG_PROMOTE_ROOK_CAPTURE | MV_FLG_PROMOTE_ROOK => PieceRole::Rook,
+            _ => panic!("Invalid promotion piece"),
+        };
+
+        Piece::new(role, side)
     }
 
     /// Tests the given move to see if it is a Quiet move
