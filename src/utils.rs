@@ -1,11 +1,8 @@
-
-
-use board::square::rank::Rank;
 use board::square::file::File;
+use board::square::rank::Rank;
 use board::square::Square;
 use std::collections::HashMap;
 use std::vec::Vec;
-
 
 pub fn get_ordered_square_list_by_file() -> Vec<Square> {
     let mut list: Vec<Square> = Vec::new();
@@ -85,11 +82,7 @@ pub fn get_ordered_square_list_by_file() -> Vec<Square> {
     return list;
 }
 
-
-
-
 pub fn get_square_rank_file_map() -> HashMap<Square, (Rank, File)> {
-
     let mut map: HashMap<Square, (Rank, File)> = HashMap::new();
 
     map.insert(Square::a1, (Rank::Rank1, File::FileA));

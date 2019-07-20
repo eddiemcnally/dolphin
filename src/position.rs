@@ -4,8 +4,7 @@ use board::square::Square;
 
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
-#[derive(Eq, PartialEq, Hash)]
-#[derive(Debug)]
+#[derive(Eq, PartialEq, Hash, Debug)]
 pub enum CastlePermissionBitMap {
     WK = 0x01,
     WQ = 0x02,
@@ -13,7 +12,6 @@ pub enum CastlePermissionBitMap {
     BQ = 0x08,
 }
 pub type CastlePermission = u8;
-
 
 impl CastlePermissionBitMap {
     pub fn set_perm(perm: CastlePermissionBitMap, perm_map: CastlePermission) -> CastlePermission {
@@ -32,13 +30,10 @@ impl CastlePermissionBitMap {
     }
 }
 
-
-
 struct MoveCounter {
     half_move: u16,
     full_move: u16,
 }
-
 
 pub struct Position {
     // pieces and squares
@@ -61,9 +56,6 @@ impl Position {
         self.side_to_move
     }
 }
-
-
-
 
 #[cfg(test)]
 mod tests {}

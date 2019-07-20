@@ -1,105 +1,100 @@
 #[allow(dead_code)]
-// white pieces are even
-#[derive(Clone, Copy)]
-#[derive(Debug)]
-#[derive(Eq, PartialEq, Hash)]
-pub enum Piece {
-    WPawn = 0,
-    BPawn,
-    WBishop,
-    BBishop,
-    WKnight,
-    BKnight,
-    WRook,
-    BRook,
-    WQueen,
-    BQueen,
-    WKing,
-    BKing,
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
+pub enum PieceRole {
+    Pawn = 0,
+    Bishop,
+    Knight,
+    Rook,
+    Queen,
+    King,
+}
+
+#[allow(dead_code)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
+pub struct Piece {
+    piece_role: PieceRole,
+    colour: Colour,
+    offset: u8,
 }
 
 impl Piece {
+    pub fn new(role: PieceRole, colour: Colour) -> Piece {
+        let off = pce_to_offset(role, colour);
+        Piece {
+            piece_role: role,
+            colour: colour,
+            offset: off,
+        }
+    }
+
     pub fn value(self) -> u32 {
-        match self {
-            Piece::WPawn => 300,
-            Piece::BPawn => 300,
-            Piece::WBishop => 550,
-            Piece::BBishop => 550,
-            Piece::WKnight => 550,
-            Piece::BKnight => 550,
-            Piece::WRook => 800,
-            Piece::BRook => 800,
-            Piece::WQueen => 1000,
-            Piece::BQueen => 1000,
-            Piece::WKing => 50000,
-            Piece::BKing => 50000,
+        match self.piece_role {
+            PieceRole::Pawn => 300,
+            PieceRole::Bishop => 550,
+            PieceRole::Knight => 550,
+            PieceRole::Rook => 800,
+            PieceRole::Queen => 1000,
+            PieceRole::King => 50000,
         }
     }
 
     pub fn from_char(piece_char: char) -> Option<Piece> {
         let pce = match piece_char {
-            'P' => Piece::WPawn,
-            'B' => Piece::WBishop,
-            'N' => Piece::WKnight,
-            'R' => Piece::WRook,
-            'Q' => Piece::WQueen,
-            'K' => Piece::WKing,
-            'p' => Piece::BPawn,
-            'b' => Piece::BBishop,
-            'n' => Piece::BKnight,
-            'r' => Piece::BRook,
-            'q' => Piece::BQueen,
-            'k' => Piece::BKing,
+            'P' => Piece::new(PieceRole::Pawn, Colour::White),
+            'B' => Piece::new(PieceRole::Bishop, Colour::White),
+            'N' => Piece::new(PieceRole::Knight, Colour::White),
+            'R' => Piece::new(PieceRole::Rook, Colour::White),
+            'Q' => Piece::new(PieceRole::Queen, Colour::White),
+            'K' => Piece::new(PieceRole::King, Colour::White),
+            'p' => Piece::new(PieceRole::Pawn, Colour::Black),
+            'b' => Piece::new(PieceRole::Bishop, Colour::Black),
+            'n' => Piece::new(PieceRole::Knight, Colour::Black),
+            'r' => Piece::new(PieceRole::Rook, Colour::Black),
+            'q' => Piece::new(PieceRole::Queen, Colour::Black),
+            'k' => Piece::new(PieceRole::King, Colour::Black),
             _ => return None,
         };
         Some(pce)
     }
 
-    pub fn label(self) -> &'static str {
-        match self {
-            Piece::WPawn => "P",
-            Piece::BPawn => "p",
-            Piece::WBishop => "B",
-            Piece::BBishop => "b",
-            Piece::WKnight => "N",
-            Piece::BKnight => "n",
-            Piece::WRook => "R",
-            Piece::BRook => "r",
-            Piece::WQueen => "Q",
-            Piece::BQueen => "q",
-            Piece::WKing => "K",
-            Piece::BKing => "k",
-        }
+    pub fn colour(self) -> Colour {
+        self.colour
+    }
+    pub fn role(self) -> PieceRole {
+        self.piece_role
     }
 
-    pub fn colour(self) -> Colour {
-        match self {
-            Piece::WPawn => Colour::White,
-            Piece::BPawn => Colour::Black,
-            Piece::WBishop => Colour::White,
-            Piece::BBishop => Colour::Black,
-            Piece::WKnight => Colour::White,
-            Piece::BKnight => Colour::Black,
-            Piece::WRook => Colour::White,
-            Piece::BRook => Colour::Black,
-            Piece::WQueen => Colour::White,
-            Piece::BQueen => Colour::Black,
-            Piece::WKing => Colour::White,
-            Piece::BKing => Colour::Black,
-        }
+    pub fn offset(self) -> usize {
+        self.offset as usize
     }
 }
 
-
 #[allow(dead_code)]
 pub const NUM_PIECES: usize = 12;
+pub const NUM_PIECE_ROLES: usize = 6;
+pub const NUM_COLOURS: usize = 2;
+
+fn pce_to_offset(pce_role: PieceRole, col: Colour) -> u8 {
+    let mut role_val = match pce_role {
+        PieceRole::Pawn => 0,
+        PieceRole::Bishop => 1,
+        PieceRole::Knight => 2,
+        PieceRole::Rook => 3,
+        PieceRole::Queen => 4,
+        PieceRole::King => 5,
+        _ => panic!("invalid pawn role"),
+    };
+
+    if col == Colour::Black {
+        role_val += NUM_PIECE_ROLES;
+    }
+    return role_val as u8;
+}
 
 #[allow(dead_code)]
-#[derive(Debug)]
-#[derive(Eq, PartialEq)]
-#[derive(Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum Colour {
-    White = 0,
+    White,
     Black,
 }
 impl Default for Colour {
@@ -115,58 +110,4 @@ impl Colour {
             return Colour::White;
         }
     }
-}
-
-
-
-#[allow(dead_code)]
-pub const NUM_COLOURS: usize = 2;
-
-
-#[cfg(test)]
-mod tests {
-    use super::Piece;
-    use super::Colour;
-
-    #[test]
-    pub fn test_piece_value() {
-        let mut pce = Piece::BBishop;
-        assert_eq!(pce.value(), 550);
-
-        pce = Piece::WRook;
-        assert_eq!(pce.value(), 800);
-    }
-
-    #[test]
-    pub fn test_piece_label() {
-        let mut pce = Piece::BBishop;
-        assert_eq!(pce.label(), "b");
-
-        pce = Piece::WRook;
-        assert_eq!(pce.label(), "R");
-    }
-
-    #[test]
-    pub fn test_piece_colour() {
-        let mut pce = Piece::BBishop;
-        assert_eq!(pce.colour(), Colour::Black);
-
-        pce = Piece::WRook;
-        assert_eq!(pce.colour(), Colour::White);
-    }
-
-    #[test]
-    pub fn test_flip_colour_white_to_black() {
-        let c = Colour::White;
-        let opp = c.flip_side();
-        assert_eq!(opp, Colour::Black);
-    }
-
-    #[test]
-    pub fn test_flip_colour_black_to_white() {
-        let c = Colour::Black;
-        let opp = c.flip_side();
-        assert_eq!(opp, Colour::White);
-    }
-
 }

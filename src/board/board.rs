@@ -1,11 +1,9 @@
+use board::bitboard::BitBoard;
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
-
 use board::piece::Piece;
-use board::piece::NUM_PIECES;
 use board::piece::NUM_COLOURS;
-use board::bitboard::BitBoard;
-use board::bitboard::BitManipulation;
+use board::piece::NUM_PIECES;
 use board::square::Square;
 use std::option::Option;
 
@@ -72,22 +70,23 @@ impl Board {
     }
 
     pub fn get_bitboard(&self, piece: Piece) -> BitBoard {
-        return self.piece_bb[piece as usize];
+        let offset = piece.offset();
+        return self.piece_bb[offset];
     }
-
 
     fn set_bitboards(&mut self, piece: Piece, sq: Square) {
         self.board_bb.set_bit(sq);
-        self.piece_bb[piece as usize].set_bit(sq);
+        let offset = piece.offset();
+        self.piece_bb[offset].set_bit(sq);
         self.pieces[sq as usize] = Some(piece);
         let col = piece.colour();
         self.colour_bb[col as usize].set_bit(sq);
     }
 
-
     fn clear_bitboards(&mut self, piece: Piece, sq: Square) {
         self.board_bb.clear_bit(sq);
-        self.piece_bb[piece as usize].clear_bit(sq);
+        let offset = piece.offset();
+        self.piece_bb[offset].clear_bit(sq);
         self.pieces[sq as usize] = None;
         let col = piece.colour();
         self.colour_bb[col as usize].clear_bit(sq);

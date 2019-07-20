@@ -3,38 +3,48 @@ use board::square::Square;
 
 // bitboard type
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
-pub struct BitBoard(u64);
+pub struct BitBoard {
+    bits: u64,
+}
 
 impl BitBoard {
+    pub fn new(val: u64) -> BitBoard {
+        BitBoard { bits: val }
+    }
     pub fn empty() -> BitBoard {
-        BitBoard(0)
+        BitBoard { bits: 0 }
     }
 
-    pub fn set_bit(bb: &BitBoard, sq: &Square) -> BitBoard {
-        let new_bb = bb.0 | (0x01 << *sq as u8);
-        BitBoard(new_bb)
+    pub fn set_bit(&self, sq: Square) -> BitBoard {
+        let mask: u64 = to_mask(sq);
+        BitBoard::new(self.bits | mask)
     }
 
-    pub fn clear_bit(bb: &BitBoard, sq: &Square) -> BitBoard {
-        let new_bb = bb.0 & (!(0x01 << *sq as u8));
-        BitBoard(new_bb)
+    pub fn clear_bit(&self, sq: Square) -> BitBoard {
+        let mask: u64 = to_mask(sq);
+        BitBoard::new(self.bits & !mask)
     }
 
-    pub fn is_set(bb: &BitBoard, sq: &Square) -> bool {
-        let ret = bb.0 & (0x01 << *sq as u8);
+    pub fn is_set(&self, sq: Square) -> bool {
+        let mask: u64 = to_mask(sq);
+        let ret = self.bits & mask;
         ret != 0
     }
 
-    pub fn count_set_bits(bb: &BitBoard) -> u8 {
-        bb.0.count_ones() as u8
+    pub fn count_set_bits(&self) -> u8 {
+        self.bits.count_ones() as u8
     }
 
-    pub fn pop_1st_bit(bb: &BitBoard) -> (BitBoard, Square) {
-        let bit_being_cleared = bb.0.trailing_zeros();
+    pub fn pop_1st_bit(&self) -> (BitBoard, Square) {
+        let bit_being_cleared = self.bits.trailing_zeros();
         let sq_clear = Square::from_u8(bit_being_cleared as u8);
 
-        let cl_new_bb = BitBoard::clear_bit(&BitBoard(bb.0), &sq_clear);
+        let cl_new_bb = BitBoard::clear_bit(self, sq_clear);
 
         return (cl_new_bb, sq_clear);
     }
+}
+
+fn to_mask(sq: Square) -> u64 {
+    0x01 << sq as u8
 }

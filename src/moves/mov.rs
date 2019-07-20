@@ -44,15 +44,11 @@ impl Mov {
         let mut mov = Mov::encode_quiet(from_sq, to_sq);
 
         let mask: u16;
-        match promotion_piece {
-            Piece::WKnight => mask = MV_FLG_PROMOTE_KNIGHT,
-            Piece::BKnight => mask = MV_FLG_PROMOTE_KNIGHT,
-            Piece::WBishop => mask = MV_FLG_PROMOTE_BISHOP,
-            Piece::BBishop => mask = MV_FLG_PROMOTE_BISHOP,
-            Piece::WRook => mask = MV_FLG_PROMOTE_ROOK,
-            Piece::BRook => mask = MV_FLG_PROMOTE_ROOK,
-            Piece::WQueen => mask = MV_FLG_PROMOTE_QUEEN,
-            Piece::BQueen => mask = MV_FLG_PROMOTE_QUEEN,
+        match promotion_piece.role() {
+            PieceRole::Knight => mask = MV_FLG_PROMOTE_KNIGHT,
+            PieceRole::Bishop => mask = MV_FLG_PROMOTE_BISHOP,
+            PieceRole::Rook => mask = MV_FLG_PROMOTE_ROOK,
+            PieceRole::Queen => mask = MV_FLG_PROMOTE_QUEEN,
             _ => panic!("Invalid promotion type"),
         }
         mov.0 = mov.0 | mask;

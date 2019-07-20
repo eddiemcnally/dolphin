@@ -83,8 +83,7 @@ impl fmt::Display for Square {
     }
 }
 
-
-pub fn get_square_array() -> &'static [Square]{
+pub fn get_square_array() -> &'static [Square] {
     SQUARES
 }
 

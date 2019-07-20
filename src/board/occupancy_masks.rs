@@ -1,5 +1,5 @@
-use board::piece;
 use board::board;
+use board::piece;
 use board::square::Square;
 
 /// For a given piece on a given square, this function returns a bitboard
@@ -9,26 +9,18 @@ pub fn get_occupancy_mask(pce: piece::Piece, sq: Square) -> u64 {
     let offset = sq as usize;
     let retval;
 
-    match pce {
-        // no occupancy masks (yet) for pawns
-        piece::Piece::WPawn => panic!("Not valid for WPawn"),
-        piece::Piece::BPawn => panic!("Not valid for BPawn"),
-        piece::Piece::WBishop => retval = BISHOP_OCCUPANCY_MASKS[offset],
-        piece::Piece::BBishop => retval = BISHOP_OCCUPANCY_MASKS[offset],
-        piece::Piece::WKnight => retval = KNIGHT_OCCUPANCY_MASKS[offset],
-        piece::Piece::BKnight => retval = KNIGHT_OCCUPANCY_MASKS[offset],
-        piece::Piece::WRook => retval = ROOK_OCCUPANCY_MASKS[offset],
-        piece::Piece::BRook => retval = ROOK_OCCUPANCY_MASKS[offset],
-        piece::Piece::WQueen => retval = QUEEN_OCCUPANCY_MASKS[offset],
-        piece::Piece::BQueen => retval = QUEEN_OCCUPANCY_MASKS[offset],
-        piece::Piece::WKing => retval = KING_OCCUPANCY_MASKS[offset],
-        piece::Piece::BKing => retval = KING_OCCUPANCY_MASKS[offset],
+    match pce.role() {
+        // no occupancy masks for pawns
+        piece::PieceRole::Pawn => panic!("Not valid for WPawn"),
+        piece::PieceRole::Bishop => retval = BISHOP_OCCUPANCY_MASKS[offset],
+        piece::PieceRole::Knight => retval = KNIGHT_OCCUPANCY_MASKS[offset],
+        piece::PieceRole::Rook => retval = ROOK_OCCUPANCY_MASKS[offset],
+        piece::PieceRole::Queen => retval = QUEEN_OCCUPANCY_MASKS[offset],
+        piece::PieceRole::King => retval = KING_OCCUPANCY_MASKS[offset],
+        
     }
     retval
 }
-
-
-
 
 // elem [0] is a1, [63] is h8
 static KNIGHT_OCCUPANCY_MASKS: [u64; board::NUM_SQUARES] = [

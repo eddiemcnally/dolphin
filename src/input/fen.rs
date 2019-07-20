@@ -1,14 +1,13 @@
+use board::piece::Colour;
 #[allow(dead_code)]
 use board::piece::Piece;
-use board::piece::Colour;
-use board::square::Square;
-use board::square::rank::Rank;
 use board::square::file::File;
-use position::CastlePermissionBitMap;
+use board::square::rank::Rank;
+use board::square::Square;
 use position::CastlePermission;
+use position::CastlePermissionBitMap;
+use std::collections::HashMap;
 use std::mem::transmute;
-use std::collections::HashMap; 
-
 
 #[derive(Default)]
 pub struct ParsedFen {
@@ -19,7 +18,6 @@ pub struct ParsedFen {
     half_move_cnt: u16,
     full_move_cnt: u16,
 }
-
 
 // [0] = piece positions
 // [1] = side to move
@@ -35,14 +33,12 @@ const FEN_EN_PASSANT: usize = 3;
 const FEN_HALF_MOVE: usize = 4;
 const FEN_FULL_MOVE: usize = 5;
 
-
 /// parses a FEN string and populates the given board
 ///
 /// Sample FEN:
 ///      rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2
 ///
 pub fn get_position(fen: &str) -> ParsedFen {
-
     let mut retval: ParsedFen = Default::default();
 
     let piece_pos: Vec<&str> = fen.split(' ').collect();
@@ -91,7 +87,6 @@ pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, Piece> {
     return retval;
 }
 
-
 fn get_side_to_move(side: &str) -> Colour {
     match side.trim() {
         "w" => Colour::White,
@@ -99,7 +94,6 @@ fn get_side_to_move(side: &str) -> Colour {
         _ => panic!("Unexpected side-to-move. Parsed character '{}'", side),
     }
 }
-
 
 fn get_en_passant_sq(en_pass: &str) -> Option<Square> {
     if en_pass == "-" {
@@ -109,16 +103,13 @@ fn get_en_passant_sq(en_pass: &str) -> Option<Square> {
     }
 }
 
-
 fn get_half_move_clock(half_cnt: &str) -> u16 {
     return half_cnt.parse::<u16>().unwrap();
 }
 
-
 fn get_full_move_number(full_move_num: &str) -> u16 {
     return full_move_num.parse::<u16>().unwrap();
 }
-
 
 fn get_castle_permissions(castleperm: &str) -> Option<CastlePermission> {
     if castleperm.trim() == "-" {
@@ -141,24 +132,23 @@ fn get_castle_permissions(castleperm: &str) -> Option<CastlePermission> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::FEN_BOARD;
-    use super::FEN_SIDE_TO_MOVE;
     use super::FEN_CASTLE_PERMISSIONS;
     use super::FEN_EN_PASSANT;
-    use super::FEN_HALF_MOVE;
     use super::FEN_FULL_MOVE;
-    use board::square::Square;
-    use board::piece::Piece;
+    use super::FEN_HALF_MOVE;
+    use super::FEN_SIDE_TO_MOVE;
     use board::piece::Colour;
+    use board::piece::Piece;
+    use board::square::Square;
     use fen::extract_piece_locations;
-    use fen::get_side_to_move;
     use fen::get_castle_permissions;
-    use fen::get_half_move_clock;
-    use fen::get_full_move_number;
     use fen::get_en_passant_sq;
+    use fen::get_full_move_number;
+    use fen::get_half_move_clock;
+    use fen::get_side_to_move;
     use position::CastlePermissionBitMap;
 
     #[test]
@@ -233,7 +223,6 @@ mod tests {
         get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
     }
 
-
     #[test]
     pub fn test_castle_permissions_white_kingside() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b K - 0 1";
@@ -292,9 +281,7 @@ mod tests {
         piece_pos = fen.split(' ').collect();
         half_clock = get_half_move_clock(piece_pos[FEN_HALF_MOVE]);
         assert_eq!(half_clock, 5);
-
     }
-
 
     #[test]
     pub fn test_parse_full_move_count() {
