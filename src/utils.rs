@@ -4,6 +4,7 @@ use board::square::Square;
 use std::collections::HashMap;
 use std::vec::Vec;
 
+// TODO : move into square.rs
 pub fn get_ordered_square_list_by_file() -> Vec<Square> {
     let mut list: Vec<Square> = Vec::new();
 
