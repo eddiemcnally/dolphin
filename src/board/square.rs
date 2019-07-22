@@ -6,6 +6,7 @@ use std::mem::transmute;
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[repr(u8)]
 pub enum Square {
     a1 = 0,
     b1,
@@ -347,6 +348,7 @@ impl Square {
 
 pub mod rank {
     #[derive(Debug, Eq, PartialEq, Hash)]
+    #[repr(u8)]
     pub enum Rank {
         Rank1 = 0,
         Rank2,
@@ -389,6 +391,7 @@ pub mod rank {
 
 pub mod file {
     #[derive(Debug, Eq, PartialEq, Hash)]
+    #[repr(u8)]
     pub enum File {
         FileA = 0,
         FileB,

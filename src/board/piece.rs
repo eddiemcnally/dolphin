@@ -1,5 +1,6 @@
 #[allow(dead_code)]
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
+#[repr(u8)]
 pub enum PieceRole {
     Pawn = 0,
     Bishop,
@@ -90,9 +91,9 @@ fn pce_to_offset(pce_role: PieceRole, col: Colour) -> u8 {
     return role_val as u8;
 }
 
-
 #[allow(dead_code)]
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[repr(u8)]
 pub enum Colour {
     White,
     Black,
@@ -110,4 +111,22 @@ impl Colour {
             return Colour::White;
         }
     }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use board::piece::Colour;
+
+    #[test]
+    pub fn test_flip_side_as_expected() {
+        let c = Colour::default();
+        assert!(c == Colour::White);
+
+        let f = c.flip_side();
+        assert!(f == Colour::Black);
+
+        let o = f.flip_side();
+        assert!(o == Colour::White);
+    }
+
 }

@@ -105,6 +105,12 @@ pub mod tests {
         sq = bb.pop_1st_bit();
         assert!(bb.count_set_bits() == 9);
         assert!(sq == Square::b1);
+
+        bb = BitBoard::new(0xFF0000);
+        assert!(bb.count_set_bits() == 8);
+        sq = bb.pop_1st_bit();
+        assert!(bb.count_set_bits() == 7);
+        assert!(sq == Square::a3);
     }
 
 }
