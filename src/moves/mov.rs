@@ -136,8 +136,8 @@ impl Mov {
 
     /// Encodes a White Queen-side castle move
     ///
-    pub fn decode_from_square(mv: &Mov) -> Square {
-        mv.from_sq
+    pub fn decode_from_square(&self) -> Square {
+        self.from_sq
     }
 
     ///
@@ -147,8 +147,8 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn decode_to_square(mv: &Mov) -> Square {
-        mv.to_sq
+    pub fn decode_to_square(&self) -> Square {
+        self.to_sq
     }
 
     ///
@@ -159,8 +159,8 @@ impl Mov {
     /// * `mv`         - the move to decode
     /// * `side`       - the side/colour
     ///
-    pub fn decode_promotion_piece(mv: &Mov, side: Colour) -> Piece {
-        let role = match mv.flags {
+    pub fn decode_promotion_piece(&self, side: Colour) -> Piece {
+        let role = match self.flags {
             MV_FLG_PROMOTE_KNIGHT_CAPTURE | MV_FLG_PROMOTE_KNIGHT => PieceRole::Knight,
             MV_FLG_PROMOTE_BISHOP_CAPTURE | MV_FLG_PROMOTE_BISHOP => PieceRole::Bishop,
             MV_FLG_PROMOTE_QUEEN_CAPTURE | MV_FLG_PROMOTE_QUEEN => PieceRole::Queen,
@@ -177,8 +177,8 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_quiet(mv: &Mov) -> bool {
-        mv.flags == MV_FLG_QUIET
+    pub fn is_quiet(&self) -> bool {
+        self.flags == MV_FLG_QUIET
     }
 
     /// Tests the given move to see if it is a Capture move
@@ -187,8 +187,8 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_capture(mv: &Mov) -> bool {
-        (mv.flags & MV_FLG_BIT_CAPTURE) != 0
+    pub fn is_capture(&self) -> bool {
+        (self.flags & MV_FLG_BIT_CAPTURE) != 0
     }
 
     /// Tests the given move to see if it is a Promotion move
@@ -197,8 +197,8 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_promote(mv: &Mov) -> bool {
-        (mv.flags & MV_FLG_BIT_PROMOTE) != 0
+    pub fn is_promote(&self) -> bool {
+        (self.flags & MV_FLG_BIT_PROMOTE) != 0
     }
 
     /// Tests the given move to see if it is an En Passant move
@@ -207,8 +207,8 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_en_passant(mv: &Mov) -> bool {
-        (mv.flags & MV_FLG_EN_PASS) != 0
+    pub fn is_en_passant(&self) -> bool {
+        (self.flags & MV_FLG_EN_PASS) != 0
     }
 
     /// Tests the given move to see if it is a Castle move
@@ -217,8 +217,8 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_castle(mv: &Mov) -> bool {
-        Mov::is_king_castle(mv) || Mov::is_queen_castle(mv)
+    pub fn is_castle(&self) -> bool {
+        self.is_king_castle() || self.is_queen_castle()
     }
 
     /// Tests the given move to see if it is an Queen-side castle move
@@ -227,8 +227,8 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_queen_castle(mv: &Mov) -> bool {
-        (mv.flags & MV_FLG_QUEEN_CASTLE) != 0
+    pub fn is_queen_castle(&self) -> bool {
+        (self.flags & MV_FLG_QUEEN_CASTLE) != 0
     }
 
     /// Tests the given move to see if it is an King-side castle move
@@ -237,8 +237,8 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_king_castle(mv: &Mov) -> bool {
-        (mv.flags & MV_FLG_KING_CASTLE) != 0
+    pub fn is_king_castle(&self) -> bool {
+        (self.flags & MV_FLG_KING_CASTLE) != 0
     }
 
     /// Tests the given move to see if it is a Double pawn first move
@@ -247,8 +247,8 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_double_pawn(mv: &Mov) -> bool {
-        (mv.flags & MV_FLG_DOUBLE_PAWN) != 0
+    pub fn is_double_pawn(&self) -> bool {
+        (self.flags & MV_FLG_DOUBLE_PAWN) != 0
     }
 }
 
@@ -289,4 +289,99 @@ const MV_FLG_BIT_PROMOTE: u8 = 0x08;
 const MV_FLG_BIT_CAPTURE: u8 = 0x04;
 
 #[cfg(test)]
-pub mod tests {}
+pub mod tests {
+    use board::piece::Colour;
+    use board::piece::Piece;
+    use board::piece::PieceRole;
+    use moves::mov::Mov;
+    use utils;
+
+    #[test]
+    pub fn test_encode_decode_quiet_move() {
+        for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
+            for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
+                // encode
+                let mv = Mov::encode_quiet(from_sq, to_sq);
+
+                assert_eq!(mv.is_quiet(), true);
+
+                let decoded_from_sq = mv.decode_from_square();
+                let decoded_to_sq = mv.decode_to_square();
+
+                assert_eq!(decoded_from_sq, from_sq);
+                assert_eq!(decoded_to_sq, to_sq);
+            }
+        }
+    }
+
+    #[test]
+    pub fn test_encode_decode_promotion_move_non_capture() {
+        let target_roles = vec![
+            PieceRole::Knight,
+            PieceRole::Bishop,
+            PieceRole::Rook,
+            PieceRole::Queen,
+        ];
+
+        let target_colours = vec![Colour::White, Colour::Black];
+
+        for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
+            for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
+                for role in &target_roles {
+                    for col in &target_colours {
+                        let prom_pce = Piece::new(*role, *col);
+                        let mv = Mov::encode_move_with_promotion(from_sq, to_sq, prom_pce);
+
+                        assert_eq!(mv.is_promote(), true);
+                        assert_eq!(mv.is_capture(), false);
+
+                        let decoded_piece = mv.decode_promotion_piece(*col);
+                        assert_eq!(decoded_piece, prom_pce);
+
+                        let decoded_from_sq = mv.decode_from_square();
+                        let decoded_to_sq = mv.decode_to_square();
+
+                        assert_eq!(decoded_from_sq, from_sq);
+                        assert_eq!(decoded_to_sq, to_sq);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    pub fn test_encode_decode_promotion_move_capture() {
+        let target_roles = vec![
+            PieceRole::Knight,
+            PieceRole::Bishop,
+            PieceRole::Rook,
+            PieceRole::Queen,
+        ];
+
+        let target_colours = vec![Colour::White, Colour::Black];
+
+        for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
+            for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
+                for role in &target_roles {
+                    for col in &target_colours {
+                        let prom_pce = Piece::new(*role, *col);
+                        let mv = Mov::encode_move_with_promotion_capture(from_sq, to_sq, prom_pce);
+
+                        assert_eq!(mv.is_promote(), true);
+                        assert_eq!(mv.is_capture(), true);
+
+                        let decoded_piece = mv.decode_promotion_piece(*col);
+                        assert_eq!(decoded_piece, prom_pce);
+
+                        let decoded_from_sq = mv.decode_from_square();
+                        let decoded_to_sq = mv.decode_to_square();
+
+                        assert_eq!(decoded_from_sq, from_sq);
+                        assert_eq!(decoded_to_sq, to_sq);
+                    }
+                }
+            }
+        }
+    }
+
+}

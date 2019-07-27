@@ -1,5 +1,5 @@
 #[allow(dead_code)]
-#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum PieceRole {
     Pawn = 0,
