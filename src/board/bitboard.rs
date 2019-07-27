@@ -54,7 +54,6 @@ fn to_mask(sq: Square) -> u64 {
 #[cfg(test)]
 pub mod tests {
     use board::bitboard::BitBoard;
-    use board::square::Square;
     use utils;
 
     #[test]
@@ -83,34 +82,28 @@ pub mod tests {
 
     #[test]
     pub fn test_count_set_bits() {
-        let mut bb = BitBoard::new(0x2);
-        assert!(bb.count_set_bits() == 1);
+        let map = utils::get_square_rank_file_map();
+        let mut i: u8 = 0;
+        let mut bb = BitBoard::empty();
+        for (square, (_, _)) in map {
+            bb.set_bit(square);
+            i = i + 1;
 
-        bb = BitBoard::new(0x3);
-        assert!(bb.count_set_bits() == 2);
-
-        bb = BitBoard::new(0xc027deab4563bd21);
-        assert!(bb.count_set_bits() == 32);
+            assert_eq!(i, bb.count_set_bits());
+        }
     }
 
     #[test]
-    pub fn test_pop_bit() {
-        let mut bb = BitBoard::new(0x1);
-        let mut sq = bb.pop_1st_bit();
-        assert!(bb.count_set_bits() == 0);
-        assert!(sq == Square::a1);
+    pub fn test_pop_bit_all_bits() {
+        let map = utils::get_square_rank_file_map();
+        for (square, (_, _)) in map {
+            let mut bb = BitBoard::empty();
+            bb.set_bit(square);
 
-        bb = BitBoard::new(0xFF0102);
-        assert!(bb.count_set_bits() == 10);
-        sq = bb.pop_1st_bit();
-        assert!(bb.count_set_bits() == 9);
-        assert!(sq == Square::b1);
+            let s = bb.pop_1st_bit();
 
-        bb = BitBoard::new(0xFF0000);
-        assert!(bb.count_set_bits() == 8);
-        sq = bb.pop_1st_bit();
-        assert!(bb.count_set_bits() == 7);
-        assert!(sq == Square::a3);
+            assert_eq!(s, square);
+            assert_eq!(bb.count_set_bits(), 0);
+        }
     }
-
 }

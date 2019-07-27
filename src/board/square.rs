@@ -386,6 +386,31 @@ pub mod rank {
                 Rank::Rank8 => '8',
             }
         }
+        pub fn from_int(rank: u8) -> Rank {
+            match rank {
+                0 => Rank::Rank1,
+                1 => Rank::Rank2,
+                2 => Rank::Rank3,
+                3 => Rank::Rank4,
+                4 => Rank::Rank5,
+                5 => Rank::Rank6,
+                6 => Rank::Rank7,
+                7 => Rank::Rank8,
+                _ => panic!("Invalid rank character {}", rank),
+            }
+        }
+        pub fn to_int(rank: Rank) -> u8 {
+            match rank {
+                Rank::Rank1 => 0,
+                Rank::Rank2 => 1,
+                Rank::Rank3 => 2,
+                Rank::Rank4 => 3,
+                Rank::Rank5 => 4,
+                Rank::Rank6 => 5,
+                Rank::Rank7 => 6,
+                Rank::Rank8 => 7,
+            }
+        }
     }
 }
 
@@ -404,6 +429,32 @@ pub mod file {
     }
 
     impl File {
+        pub fn from_int(fint: u8) -> File {
+            match fint {
+                0 => File::FileA,
+                1 => File::FileB,
+                2 => File::FileC,
+                3 => File::FileD,
+                4 => File::FileE,
+                5 => File::FileF,
+                6 => File::FileG,
+                7 => File::FileH,
+                _ => panic!("Invalid file number {}", fint),
+            }
+        }
+        pub fn to_int(file: File) -> u8 {
+            match file {
+                File::FileA => 0,
+                File::FileB => 1,
+                File::FileC => 2,
+                File::FileD => 3,
+                File::FileE => 4,
+                File::FileF => 5,
+                File::FileG => 6,
+                File::FileH => 7,
+            }
+        }
+
         pub fn from_char(file: char) -> File {
             match file {
                 'a' => File::FileA,
