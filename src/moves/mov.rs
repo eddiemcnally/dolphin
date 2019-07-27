@@ -208,7 +208,7 @@ impl Mov {
     /// * `mv`         - the move to decode
     ///
     pub fn is_en_passant(&self) -> bool {
-        (self.flags & MV_FLG_EN_PASS) != 0
+        self.flags == MV_FLG_EN_PASS
     }
 
     /// Tests the given move to see if it is a Castle move
@@ -228,7 +228,7 @@ impl Mov {
     /// * `mv`         - the move to decode
     ///
     pub fn is_queen_castle(&self) -> bool {
-        (self.flags & MV_FLG_QUEEN_CASTLE) != 0
+        self.flags == MV_FLG_QUEEN_CASTLE
     }
 
     /// Tests the given move to see if it is an King-side castle move
@@ -238,7 +238,7 @@ impl Mov {
     /// * `mv`         - the move to decode
     ///
     pub fn is_king_castle(&self) -> bool {
-        (self.flags & MV_FLG_KING_CASTLE) != 0
+        self.flags == MV_FLG_KING_CASTLE
     }
 
     /// Tests the given move to see if it is a Double pawn first move
@@ -248,7 +248,7 @@ impl Mov {
     /// * `mv`         - the move to decode
     ///
     pub fn is_double_pawn(&self) -> bool {
-        (self.flags & MV_FLG_DOUBLE_PAWN) != 0
+        self.flags == MV_FLG_DOUBLE_PAWN
     }
 }
 
@@ -293,8 +293,89 @@ pub mod tests {
     use board::piece::Colour;
     use board::piece::Piece;
     use board::piece::PieceRole;
+    use board::square::Square;
     use moves::mov::Mov;
     use utils;
+
+    #[test]
+    pub fn test_encode_decode_king_white_castle() {
+        let mv = Mov::encode_move_castle_kingside_white();
+
+        let decoded_from_sq = mv.decode_from_square();
+        let decoded_to_sq = mv.decode_to_square();
+
+        assert_eq!(decoded_from_sq, Square::e1);
+        assert_eq!(decoded_to_sq, Square::g1);
+
+        assert_eq!(mv.is_king_castle(), true);
+        assert_eq!(mv.is_castle(), true);
+        assert_eq!(mv.is_queen_castle(), false);
+
+        assert_eq!(mv.is_quiet(), false);
+        assert_eq!(mv.is_capture(), false);
+        assert_eq!(mv.is_double_pawn(), false);
+        assert_eq!(mv.is_promote(), false);
+    }
+
+    #[test]
+    pub fn test_encode_decode_queen_white_castle() {
+        let mv = Mov::encode_move_castle_queenside_white();
+
+        let decoded_from_sq = mv.decode_from_square();
+        let decoded_to_sq = mv.decode_to_square();
+
+        assert_eq!(decoded_from_sq, Square::e1);
+        assert_eq!(decoded_to_sq, Square::c1);
+
+        assert_eq!(mv.is_king_castle(), false);
+        assert_eq!(mv.is_castle(), true);
+        assert_eq!(mv.is_queen_castle(), true);
+
+        assert_eq!(mv.is_quiet(), false);
+        assert_eq!(mv.is_capture(), false);
+        assert_eq!(mv.is_double_pawn(), false);
+        assert_eq!(mv.is_promote(), false);
+    }
+
+    #[test]
+    pub fn test_encode_decode_king_black_castle() {
+        let mv = Mov::encode_move_castle_kingside_black();
+
+        let decoded_from_sq = mv.decode_from_square();
+        let decoded_to_sq = mv.decode_to_square();
+
+        assert_eq!(decoded_from_sq, Square::e8);
+        assert_eq!(decoded_to_sq, Square::g8);
+
+        assert_eq!(mv.is_king_castle(), true);
+        assert_eq!(mv.is_castle(), true);
+        assert_eq!(mv.is_queen_castle(), false);
+
+        assert_eq!(mv.is_quiet(), false);
+        assert_eq!(mv.is_capture(), false);
+        assert_eq!(mv.is_double_pawn(), false);
+        assert_eq!(mv.is_promote(), false);
+    }
+
+    #[test]
+    pub fn test_encode_decode_queen_black_castle() {
+        let mv = Mov::encode_move_castle_queenside_black();
+
+        let decoded_from_sq = mv.decode_from_square();
+        let decoded_to_sq = mv.decode_to_square();
+
+        assert_eq!(decoded_from_sq, Square::e8);
+        assert_eq!(decoded_to_sq, Square::c8);
+
+        assert_eq!(mv.is_king_castle(), false);
+        assert_eq!(mv.is_castle(), true);
+        assert_eq!(mv.is_queen_castle(), true);
+
+        assert_eq!(mv.is_quiet(), false);
+        assert_eq!(mv.is_capture(), false);
+        assert_eq!(mv.is_double_pawn(), false);
+        assert_eq!(mv.is_promote(), false);
+    }
 
     #[test]
     pub fn test_encode_decode_quiet_move() {
@@ -304,6 +385,53 @@ pub mod tests {
                 let mv = Mov::encode_quiet(from_sq, to_sq);
 
                 assert_eq!(mv.is_quiet(), true);
+                assert_eq!(mv.is_capture(), false);
+                assert_eq!(mv.is_castle(), false);
+                assert_eq!(mv.is_double_pawn(), false);
+                assert_eq!(mv.is_promote(), false);
+
+                let decoded_from_sq = mv.decode_from_square();
+                let decoded_to_sq = mv.decode_to_square();
+
+                assert_eq!(decoded_from_sq, from_sq);
+                assert_eq!(decoded_to_sq, to_sq);
+            }
+        }
+    }
+
+    #[test]
+    pub fn test_encode_decode_double_pawn_first_ove() {
+        for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
+            for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
+                // encode
+                let mv = Mov::encode_move_double_pawn_first(from_sq, to_sq);
+                assert_eq!(mv.is_double_pawn(), true);
+
+                assert_eq!(mv.is_quiet(), false);
+                assert_eq!(mv.is_capture(), false);
+                assert_eq!(mv.is_castle(), false);
+                assert_eq!(mv.is_promote(), false);
+
+                let decoded_from_sq = mv.decode_from_square();
+                let decoded_to_sq = mv.decode_to_square();
+
+                assert_eq!(decoded_from_sq, from_sq);
+                assert_eq!(decoded_to_sq, to_sq);
+            }
+        }
+    }
+
+    #[test]
+    pub fn test_encode_decode_en_passant() {
+        for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
+            for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
+                let mv = Mov::encode_move_en_passant(from_sq, to_sq);
+
+                assert_eq!(mv.is_en_passant(), true);
+                assert_eq!(mv.is_capture(), true);
+                assert_eq!(mv.is_castle(), false);
+                assert_eq!(mv.is_double_pawn(), false);
+                assert_eq!(mv.is_promote(), false);
 
                 let decoded_from_sq = mv.decode_from_square();
                 let decoded_to_sq = mv.decode_to_square();
@@ -316,6 +444,41 @@ pub mod tests {
 
     #[test]
     pub fn test_encode_decode_promotion_move_non_capture() {
+        let target_roles = vec![
+            PieceRole::Knight,
+            PieceRole::Bishop,
+            PieceRole::Rook,
+            PieceRole::Queen,
+        ];
+
+        let target_colours = vec![Colour::White, Colour::Black];
+
+        for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
+            for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
+                for role in &target_roles {
+                    for col in &target_colours {
+                        let prom_pce = Piece::new(*role, *col);
+                        let mv = Mov::encode_move_with_promotion(from_sq, to_sq, prom_pce);
+
+                        assert_eq!(mv.is_promote(), true);
+                        assert_eq!(mv.is_capture(), false);
+
+                        let decoded_piece = mv.decode_promotion_piece(*col);
+                        assert_eq!(decoded_piece, prom_pce);
+
+                        let decoded_from_sq = mv.decode_from_square();
+                        let decoded_to_sq = mv.decode_to_square();
+
+                        assert_eq!(decoded_from_sq, from_sq);
+                        assert_eq!(decoded_to_sq, to_sq);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    pub fn test_decode_promotion_piece() {
         let target_roles = vec![
             PieceRole::Knight,
             PieceRole::Bishop,
