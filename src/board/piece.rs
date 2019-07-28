@@ -116,6 +116,12 @@ impl Colour {
             return Colour::White;
         }
     }
+    pub fn offset(&self) -> usize{
+        match self{
+            Colour::White => 0,
+            Colour::Black => 1,
+        }
+    }
 }
 
 #[cfg(test)]

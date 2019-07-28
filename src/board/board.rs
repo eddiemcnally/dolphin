@@ -1,4 +1,5 @@
 use board::bitboard::BitBoard;
+use board::piece::Colour;
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
 use board::piece::Piece;
@@ -19,9 +20,10 @@ pub struct Board {
     colour_bb: [BitBoard; NUM_COLOURS],
     // the pieces on each square
     pieces: [Option<Piece>; NUM_SQUARES],
-}
 
-//let array: [Option<Box<Thing>>; SIZE] = Default::default();
+    fifty_move_counter: u8,
+    side_to_move: Colour,
+}
 
 impl Board {
     pub fn new() -> Board {
@@ -30,6 +32,8 @@ impl Board {
             piece_bb: [BitBoard::empty(); NUM_PIECES],
             colour_bb: [BitBoard::empty(); NUM_COLOURS],
             pieces: [None; NUM_SQUARES],
+            fifty_move_counter: 0,
+            side_to_move: Colour::default(),
         };
     }
 

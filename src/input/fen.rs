@@ -4,8 +4,7 @@ use board::piece::Piece;
 use board::square::file::File;
 use board::square::rank::Rank;
 use board::square::Square;
-use position::CastlePermission;
-use position::CastlePermissionBitMap;
+use position::castle_permissions::CastlePermission;
 use std::collections::HashMap;
 
 #[derive(Default)]
@@ -111,18 +110,18 @@ fn get_castle_permissions(castleperm: &str) -> Option<CastlePermission> {
     if castleperm.trim() == "-" {
         None
     } else {
-        let mut cp: CastlePermission = 0;
+        let mut cp = CastlePermission::new();
         if castleperm.contains("K") {
-            cp = CastlePermissionBitMap::set_perm(CastlePermissionBitMap::WK, cp);
+            cp.set_king(Colour::White, true);
         }
         if castleperm.contains("Q") {
-            cp = CastlePermissionBitMap::set_perm(CastlePermissionBitMap::WQ, cp);
+            cp.set_queen(Colour::White, true);
         }
         if castleperm.contains("k") {
-            cp = CastlePermissionBitMap::set_perm(CastlePermissionBitMap::BK, cp);
+            cp.set_king(Colour::Black, true);
         }
         if castleperm.contains("q") {
-            cp = CastlePermissionBitMap::set_perm(CastlePermissionBitMap::BQ, cp);
+            cp.set_queen(Colour::Black, true);
         }
         Some(cp)
     }
@@ -146,7 +145,6 @@ mod tests {
     use fen::get_full_move_number;
     use fen::get_half_move_clock;
     use fen::get_side_to_move;
-    use position::CastlePermissionBitMap;
 
     #[test]
     pub fn test_piece_positions() {
@@ -321,21 +319,55 @@ mod tests {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b K - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
-        assert_eq!(CastlePermissionBitMap::WK as u8, perm.unwrap());
+        assert!(perm.unwrap().is_king_set(Colour::White) == true);
+        assert!(perm.unwrap().is_king_set(Colour::Black) == false);
+        assert!(perm.unwrap().is_queen_set(Colour::White) == false);
+        assert!(perm.unwrap().is_queen_set(Colour::Black) == false);
+        assert!(perm.unwrap().has_castle_permission() == true);
+    }
+    #[test]
+    pub fn test_castle_permissions_white_queenside() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b Q - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
+
+        assert!(perm.unwrap().is_king_set(Colour::White) == false);
+        assert!(perm.unwrap().is_king_set(Colour::Black) == false);
+        assert!(perm.unwrap().is_queen_set(Colour::White) == true);
+        assert!(perm.unwrap().is_queen_set(Colour::Black) == false);
+        assert!(perm.unwrap().has_castle_permission() == true);
     }
     #[test]
     pub fn test_castle_permissions_black_kingside() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b k - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
-        assert_eq!(CastlePermissionBitMap::BK as u8, perm.unwrap());
+
+        assert!(perm.unwrap().is_king_set(Colour::White) == false);
+        assert!(perm.unwrap().is_king_set(Colour::Black) == true);
+        assert!(perm.unwrap().is_queen_set(Colour::White) == false);
+        assert!(perm.unwrap().is_queen_set(Colour::Black) == false);
+        assert!(perm.unwrap().has_castle_permission() == true);
     }
     #[test]
     pub fn test_castle_permissions_black_queenside() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
-        assert_eq!(CastlePermissionBitMap::BQ as u8, perm.unwrap());
+
+        assert!(perm.unwrap().is_king_set(Colour::White) == false);
+        assert!(perm.unwrap().is_king_set(Colour::Black) == false);
+        assert!(perm.unwrap().is_queen_set(Colour::White) == false);
+        assert!(perm.unwrap().is_queen_set(Colour::Black) == true);
+        assert!(perm.unwrap().has_castle_permission() == true);
+    }
+
+    #[test]
+    pub fn test_castle_permissions_none() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b - - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
+        assert!(perm == None);
     }
 
     #[test]
@@ -344,18 +376,11 @@ mod tests {
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
 
-        let is_wk =
-            CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::WK, perm.unwrap() as u8);
-        assert_eq!(is_wk, true);
-        let is_wq =
-            CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::WQ, perm.unwrap() as u8);
-        assert_eq!(is_wq, true);
-        let is_bk =
-            CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::BK, perm.unwrap() as u8);
-        assert_eq!(is_bk, true);
-        let is_bq =
-            CastlePermissionBitMap::is_perm_set(CastlePermissionBitMap::BQ, perm.unwrap() as u8);
-        assert_eq!(is_bq, false);
+        assert!(perm.unwrap().is_king_set(Colour::White) == true);
+        assert!(perm.unwrap().is_king_set(Colour::Black) == true);
+        assert!(perm.unwrap().is_queen_set(Colour::White) == true);
+        assert!(perm.unwrap().is_queen_set(Colour::Black) == false);
+        assert!(perm.unwrap().has_castle_permission() == true);
     }
 
     #[test]

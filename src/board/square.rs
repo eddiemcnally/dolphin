@@ -276,8 +276,8 @@ impl Square {
         }
     }
 
-    pub fn to_u8(sq: Square) -> u8 {
-        match sq {
+    pub fn to_offset(&self) -> usize {
+        match self {
             Square::a1 => 0,
             Square::b1 => 1,
             Square::c1 => 2,
