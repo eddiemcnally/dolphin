@@ -64,18 +64,20 @@ impl PositionHash {
         let k = self.keys.castle_keys[perm_offset];
         self.hash = self.hash ^ k;
     }
+
+    pub fn get_hash(&self) -> u64 {
+        self.hash
+    }
 }
 
 fn init_piece_keys() -> [[u64; NUM_PIECES]; NUM_SQUARES] {
     let mut retval = [[0u64; NUM_PIECES]; NUM_SQUARES];
-
-    for p in 0..NUM_PIECES {
-        for c in 0..NUM_SQUARES {
+    for p in 0..NUM_SQUARES {
+        for c in 0..NUM_PIECES {
             let seed = rand::random::<u64>();
             retval[p][c] = seed;
         }
     }
-
     return retval;
 }
 
@@ -99,4 +101,36 @@ fn init_en_passant_keys() -> [u64; NUM_SQUARES] {
     }
 
     return retval;
+}
+
+#[cfg(test)]
+pub mod tests {
+    use position::hash::PositionHash;
+
+    #[test]
+    pub fn test_hash_init_as_zero() {
+        let h = PositionHash::new();
+
+        assert_eq!(h.get_hash(), 0);
+    }
+
+    #[test]
+    pub fn test_hash_flip_side_result_as_expected() {
+        let mut h = PositionHash::new();
+
+        let init_hash = h.get_hash();
+
+        h.update_side();
+        let flip_1 = h.get_hash();
+
+        assert!(init_hash != flip_1);
+
+        h.update_side();
+        let flip_2 = h.get_hash();
+
+        assert!(flip_2 != flip_1);
+
+        assert!(flip_2 == init_hash);
+    }
+
 }
