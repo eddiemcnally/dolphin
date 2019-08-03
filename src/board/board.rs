@@ -160,4 +160,21 @@ pub mod tests {
         }
     }
 
+    #[test]
+    pub fn test_get_bitboard_value_as_expected() {
+        let mut board = Board::new();
+
+        for pce in utils::get_all_pieces() {
+            for (square, _) in utils::get_square_rank_file_map() {
+                board.add_piece(pce, square);
+                let bb = board.get_bitboard(pce);
+
+                assert!(bb.is_set(square));
+
+                // clean up
+                board.remove_piece(pce, square);
+            }
+        }
+    }
+
 }

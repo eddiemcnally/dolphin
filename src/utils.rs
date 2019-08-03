@@ -1,8 +1,43 @@
 use board::square::file::File;
 use board::square::rank::Rank;
 use board::square::Square;
+use board::piece::Colour;
+use board::piece::Piece;
+use board::piece::PieceRole;
 use std::collections::HashMap;
 use std::vec::Vec;
+
+pub fn get_all_pieces() -> Vec<Piece> {
+    let mut list: Vec<Piece> = Vec::new();
+
+    let mut pce: Piece;
+
+    pce = Piece::new(PieceRole::Pawn, Colour::White);
+    list.push(pce);
+    pce = Piece::new(PieceRole::Knight, Colour::White);
+    list.push(pce);
+    pce = Piece::new(PieceRole::Bishop, Colour::White);
+    list.push(pce);
+    pce = Piece::new(PieceRole::Rook, Colour::White);
+    list.push(pce);
+    pce = Piece::new(PieceRole::Queen, Colour::White);
+    list.push(pce);
+    pce = Piece::new(PieceRole::King, Colour::White);
+    list.push(pce);
+    pce = Piece::new(PieceRole::Pawn, Colour::Black);
+    list.push(pce);
+    pce = Piece::new(PieceRole::Knight, Colour::Black);
+    list.push(pce);
+    pce = Piece::new(PieceRole::Bishop, Colour::Black);
+    list.push(pce);
+    pce = Piece::new(PieceRole::Rook, Colour::Black);
+    list.push(pce);
+    pce = Piece::new(PieceRole::Queen, Colour::Black);
+    list.push(pce);
+    pce = Piece::new(PieceRole::King, Colour::Black);
+    list.push(pce);
+    return list;
+}
 
 // TODO : move into square.rs
 pub fn get_ordered_square_list_by_file() -> Vec<Square> {
