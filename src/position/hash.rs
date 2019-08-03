@@ -47,7 +47,7 @@ impl PositionHash {
     pub fn update_piece(&mut self, piece: Piece, square: Square) {
         let pce_offset = piece.offset();
         let sq_offset = square.to_offset();
-        let k = self.keys.piece_keys[pce_offset][sq_offset];
+        let k = self.keys.piece_keys[sq_offset][pce_offset];
 
         self.hash = self.hash ^ k;
     }
@@ -106,6 +106,7 @@ fn init_en_passant_keys() -> [u64; NUM_SQUARES] {
 #[cfg(test)]
 pub mod tests {
     use position::hash::PositionHash;
+    use utils;
 
     #[test]
     pub fn test_hash_init_as_zero() {
@@ -131,6 +132,80 @@ pub mod tests {
         assert!(flip_2 != flip_1);
 
         assert!(flip_2 == init_hash);
+    }
+
+    #[test]
+    pub fn test_flip_piece_and_square_result_as_expected() {
+        let mut h = PositionHash::new();
+
+        for pce in utils::get_all_pieces() {
+            for sq in utils::get_ordered_square_list_by_file() {
+                let init_hash = h.get_hash();
+
+                h.update_piece(pce, sq);
+                let after_hash = h.get_hash();
+
+                assert!(init_hash != after_hash);
+
+                h.update_piece(pce, sq);
+                let after_second_hash = h.get_hash();
+                assert!(after_hash != after_second_hash);
+
+                // after flip, back to the same
+                assert!(init_hash == after_second_hash);
+
+                // now flip again to seed the next iteration with something different
+                h.update_piece(pce, sq);
+            }
+        }
+    }
+
+    #[test]
+    pub fn test_flip_en_passant_result_as_expected() {
+        let mut h = PositionHash::new();
+
+        for sq in utils::get_ordered_square_list_by_file() {
+            let init_hash = h.get_hash();
+
+            h.update_en_passant(sq);
+            let after_hash = h.get_hash();
+
+            assert!(init_hash != after_hash);
+
+            h.update_en_passant(sq);
+            let after_second_hash = h.get_hash();
+            assert!(after_hash != after_second_hash);
+
+            // after flip, back to the same
+            assert!(init_hash == after_second_hash);
+
+            // now flip again to seed the next iteration with something different
+            h.update_en_passant(sq);
+        }
+    }
+
+    #[test]
+    pub fn test_flip_castle_permission_as_expected() {
+        let mut h = PositionHash::new();
+
+        for cp in utils::get_all_castle_permissions() {
+            let init_hash = h.get_hash();
+
+            h.update_castle_permissions(cp);
+            let after_hash = h.get_hash();
+
+            assert!(init_hash != after_hash);
+
+            h.update_castle_permissions(cp);
+            let after_second_hash = h.get_hash();
+            assert!(after_hash != after_second_hash);
+
+            // after flip, back to the same
+            assert!(init_hash == after_second_hash);
+
+            // now flip again to seed the next iteration with something different
+            h.update_castle_permissions(cp);
+        }
     }
 
 }

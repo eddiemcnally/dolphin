@@ -1,11 +1,22 @@
-use board::square::file::File;
-use board::square::rank::Rank;
-use board::square::Square;
 use board::piece::Colour;
 use board::piece::Piece;
 use board::piece::PieceRole;
+use board::square::file::File;
+use board::square::rank::Rank;
+use board::square::Square;
+use position::castle_permissions::CastlePermissionType;
 use std::collections::HashMap;
 use std::vec::Vec;
+
+pub fn get_all_castle_permissions() -> Vec<CastlePermissionType>{
+    let mut list: Vec<CastlePermissionType> = Vec::new();
+
+    list.push(CastlePermissionType::BlackKing);
+    list.push(CastlePermissionType::BlackQueen);
+    list.push(CastlePermissionType::WhiteKing);
+    list.push(CastlePermissionType::WhiteQueen);
+    return list;
+}
 
 pub fn get_all_pieces() -> Vec<Piece> {
     let mut list: Vec<Piece> = Vec::new();
