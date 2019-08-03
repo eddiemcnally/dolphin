@@ -9,7 +9,6 @@ pub enum PieceRole {
     King,
 }
 
-#[allow(dead_code)]
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct Piece {
     piece_role: PieceRole,
@@ -63,7 +62,6 @@ impl Piece {
     }
 }
 
-#[allow(dead_code)]
 pub const NUM_PIECES: usize = 12;
 pub const NUM_PIECE_ROLES: usize = 6;
 pub const NUM_COLOURS: usize = 2;
@@ -95,7 +93,6 @@ fn pce_value(role: PieceRole) -> u32 {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 #[repr(u8)]
 pub enum Colour {
@@ -115,8 +112,8 @@ impl Colour {
             return Colour::White;
         }
     }
-    pub fn offset(&self) -> usize{
-        match self{
+    pub fn offset(&self) -> usize {
+        match self {
             Colour::White => 0,
             Colour::Black => 1,
         }

@@ -1,5 +1,4 @@
 use board::bitboard::BitBoard;
-use board::piece::Colour;
 use board::piece::Piece;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
@@ -8,7 +7,6 @@ use std::option::Option;
 
 pub const NUM_SQUARES: usize = 64;
 
-#[allow(dead_code)]
 pub struct Board {
     // bitboard representing occupied/vacant squares (for all pieces)
     board_bb: BitBoard,
@@ -18,9 +16,6 @@ pub struct Board {
     colour_bb: [BitBoard; NUM_COLOURS],
     // the pieces on each square
     pieces: [Option<Piece>; NUM_SQUARES],
-
-    fifty_move_counter: u8,
-    side_to_move: Colour,
 }
 
 impl Board {
@@ -30,8 +25,6 @@ impl Board {
             piece_bb: [BitBoard::empty(); NUM_PIECES],
             colour_bb: [BitBoard::empty(); NUM_COLOURS],
             pieces: [None; NUM_SQUARES],
-            fifty_move_counter: 0,
-            side_to_move: Colour::default(),
         };
     }
 

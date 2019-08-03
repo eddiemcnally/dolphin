@@ -3,7 +3,6 @@ use board::square::rank::Rank;
 use std::fmt;
 use std::mem::transmute;
 
-#[allow(dead_code)]
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 #[repr(u8)]

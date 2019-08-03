@@ -1,5 +1,4 @@
 use board::piece::Colour;
-#[allow(dead_code)]
 use board::piece::Piece;
 use board::square::file::File;
 use board::square::rank::Rank;

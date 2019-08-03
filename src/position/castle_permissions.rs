@@ -1,7 +1,5 @@
 use board::piece::Colour;
 
-#[allow(dead_code)]
-#[allow(non_camel_case_types)]
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct CastlePermission {
     has_white_king: bool,
