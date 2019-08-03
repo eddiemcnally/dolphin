@@ -1,7 +1,5 @@
 use board::bitboard::BitBoard;
 use board::piece::Colour;
-#[allow(dead_code)]
-#[allow(non_camel_case_types)]
 use board::piece::Piece;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
@@ -49,7 +47,7 @@ impl Board {
 
     pub fn remove_piece(&mut self, piece: Piece, sq: Square) {
         debug_assert!(
-            self.is_sq_empty(sq),
+            self.is_sq_empty(sq) == false,
             "remove_piece, square is empty. {:?}",
             sq
         );
@@ -63,36 +61,103 @@ impl Board {
     }
 
     pub fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
-        return self.pieces[sq as usize];
+        return self.pieces[sq.to_offset()];
     }
 
-    fn is_sq_empty(&self, sq: Square) -> bool {
-        if self.board_bb.is_set(sq) == true {
-            return false;
-        }
-        return true;
+    pub fn is_sq_empty(&self, sq: Square) -> bool {
+        self.board_bb.is_set(sq) == false
     }
 
     pub fn get_bitboard(&self, piece: Piece) -> BitBoard {
-        let offset = piece.offset();
-        return self.piece_bb[offset];
+        return self.piece_bb[piece.offset()];
     }
 
     fn set_bitboards(&mut self, piece: Piece, sq: Square) {
         self.board_bb.set_bit(sq);
-        let offset = piece.offset();
-        self.piece_bb[offset].set_bit(sq);
-        self.pieces[sq as usize] = Some(piece);
-        let col = piece.colour();
-        self.colour_bb[col as usize].set_bit(sq);
+        self.piece_bb[piece.offset()].set_bit(sq);
+        self.pieces[sq.to_offset()] = Some(piece);
+        self.colour_bb[piece.colour().offset()].set_bit(sq);
     }
 
     fn clear_bitboards(&mut self, piece: Piece, sq: Square) {
         self.board_bb.clear_bit(sq);
-        let offset = piece.offset();
-        self.piece_bb[offset].clear_bit(sq);
-        self.pieces[sq as usize] = None;
-        let col = piece.colour();
-        self.colour_bb[col as usize].clear_bit(sq);
+        self.piece_bb[piece.offset()].clear_bit(sq);
+        self.pieces[sq.to_offset()] = None;
+        self.colour_bb[piece.colour().offset()].clear_bit(sq);
     }
+}
+#[cfg(test)]
+pub mod tests {
+    use board::board::Board;
+    use board::piece::Colour;
+    use board::piece::Piece;
+    use board::piece::PieceRole;
+    use utils;
+
+    #[test]
+    pub fn test_add_remove_piece_square_state_as_expected() {
+        let pce = Piece::new(PieceRole::Knight, Colour::White);
+        let mut board = Board::new();
+
+        let map = utils::get_square_rank_file_map();
+        for (square, _) in map {
+            assert!(board.is_sq_empty(square) == true);
+
+            board.add_piece(pce, square);
+            assert!(board.is_sq_empty(square) == false);
+
+            board.remove_piece(pce, square);
+            assert!(board.is_sq_empty(square) == true);
+        }
+    }
+
+    #[test]
+    pub fn test_move_piece_square_state_as_expected() {
+        let pce = Piece::new(PieceRole::Knight, Colour::White);
+        let mut board = Board::new();
+
+        for (from_sq, _) in utils::get_square_rank_file_map() {
+            for (to_sq, _) in utils::get_square_rank_file_map() {
+                if from_sq == to_sq {
+                    continue;
+                }
+
+                assert!(board.is_sq_empty(from_sq) == true);
+                assert!(board.is_sq_empty(to_sq) == true);
+
+                board.add_piece(pce, from_sq);
+                assert!(board.is_sq_empty(from_sq) == false);
+                assert!(board.is_sq_empty(to_sq) == true);
+
+                board.move_piece(from_sq, to_sq, pce);
+                assert!(board.is_sq_empty(from_sq) == true);
+                assert!(board.is_sq_empty(to_sq) == false);
+
+                // clean up
+                board.remove_piece(pce, to_sq);
+            }
+        }
+    }
+
+    #[test]
+    pub fn test_get_piece_on_square_as_expected() {
+        let pce = Piece::new(PieceRole::Knight, Colour::White);
+        let mut board = Board::new();
+
+        let map = utils::get_square_rank_file_map();
+        for (square, _) in map {
+            assert!(board.is_sq_empty(square) == true);
+
+            board.add_piece(pce, square);
+            assert!(board.is_sq_empty(square) == false);
+
+            let retr_pce: Option<Piece> = board.get_piece_on_square(square);
+            assert_eq!(retr_pce.is_some(), true);
+            assert_eq!(retr_pce.unwrap(), pce);
+
+            // clean up
+            board.remove_piece(pce, square);
+        }
+    }
+
 }

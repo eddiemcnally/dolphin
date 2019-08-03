@@ -7,19 +7,17 @@ use board::square::Square;
 /// an empty board)
 pub fn get_occupancy_mask(pce: piece::Piece, sq: Square) -> u64 {
     let offset = sq as usize;
-    let retval;
 
     match pce.role() {
         // no occupancy masks for pawns
-        piece::PieceRole::Pawn => panic!("Not valid for WPawn"),
-        piece::PieceRole::Bishop => retval = BISHOP_OCCUPANCY_MASKS[offset],
-        piece::PieceRole::Knight => retval = KNIGHT_OCCUPANCY_MASKS[offset],
-        piece::PieceRole::Rook => retval = ROOK_OCCUPANCY_MASKS[offset],
-        piece::PieceRole::Queen => retval = QUEEN_OCCUPANCY_MASKS[offset],
-        piece::PieceRole::King => retval = KING_OCCUPANCY_MASKS[offset],
+        piece::PieceRole::Pawn => panic!("Not valid for Pawn"),
+        piece::PieceRole::Bishop => BISHOP_OCCUPANCY_MASKS[offset],
+        piece::PieceRole::Knight => KNIGHT_OCCUPANCY_MASKS[offset],
+        piece::PieceRole::Rook => ROOK_OCCUPANCY_MASKS[offset],
+        piece::PieceRole::Queen => QUEEN_OCCUPANCY_MASKS[offset],
+        piece::PieceRole::King => KING_OCCUPANCY_MASKS[offset],
         
     }
-    retval
 }
 
 // elem [0] is a1, [63] is h8

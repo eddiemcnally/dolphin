@@ -252,6 +252,7 @@ impl Mov {
     }
 }
 
+
 // bitmap for type Move
 // See http://chessprogramming.wikispaces.com/Encoding+Moves
 //
