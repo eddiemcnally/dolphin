@@ -30,6 +30,13 @@ impl Mov {
         }
     }
 
+    pub fn encode_move_capture(from_sq: Square, to_sq: Square) -> Mov {
+        let mut mov = Mov::encode_quiet(from_sq, to_sq);
+
+        mov.flags = mov.flags | MV_FLG_BIT_CAPTURE;
+        mov
+    }
+
     /// Encodes a Promotion move that doesn't involve a captured piece
     ///
     /// # Arguments
@@ -251,7 +258,6 @@ impl Mov {
         self.flags == MV_FLG_DOUBLE_PAWN
     }
 }
-
 
 // bitmap for type Move
 // See http://chessprogramming.wikispaces.com/Encoding+Moves

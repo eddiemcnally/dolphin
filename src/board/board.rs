@@ -1,4 +1,5 @@
-use board::bitboard::BitBoard;
+use board::bitboard;
+use board::piece::Colour;
 use board::piece::Piece;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
@@ -9,11 +10,11 @@ pub const NUM_SQUARES: usize = 64;
 
 pub struct Board {
     // bitboard representing occupied/vacant squares (for all pieces)
-    board_bb: BitBoard,
+    board_bb: u64,
     // piece bitboard, an entry for each piece type (enum Piece)
-    piece_bb: [BitBoard; NUM_PIECES],
+    piece_bb: [u64; NUM_PIECES],
     // bitboard for each Colour
-    colour_bb: [BitBoard; NUM_COLOURS],
+    colour_bb: [u64; NUM_COLOURS],
     // the pieces on each square
     pieces: [Option<Piece>; NUM_SQUARES],
 }
@@ -21,9 +22,9 @@ pub struct Board {
 impl Board {
     pub fn new() -> Board {
         return Board {
-            board_bb: BitBoard::empty(),
-            piece_bb: [BitBoard::empty(); NUM_PIECES],
-            colour_bb: [BitBoard::empty(); NUM_COLOURS],
+            board_bb: 0,
+            piece_bb: [0; NUM_PIECES],
+            colour_bb: [0; NUM_COLOURS],
             pieces: [None; NUM_SQUARES],
         };
     }
@@ -48,6 +49,10 @@ impl Board {
         self.clear_bitboards(piece, sq);
     }
 
+    pub fn get_colour_bb(&self, colour: Colour) -> u64 {
+        self.colour_bb[colour.offset()]
+    }
+
     pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece) {
         self.clear_bitboards(piece, from_sq);
         self.set_bitboards(piece, to_sq);
@@ -58,29 +63,34 @@ impl Board {
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
-        self.board_bb.is_set(sq) == false
+        bitboard::is_set(self.board_bb, sq) == false
     }
 
-    pub fn get_bitboard(&self, piece: Piece) -> BitBoard {
+    pub fn get_piece_bitboard(&self, piece: Piece) -> u64 {
         return self.piece_bb[piece.offset()];
     }
 
+    pub fn get_bitboard(&self) -> u64 {
+        return self.board_bb;
+    }
+
     fn set_bitboards(&mut self, piece: Piece, sq: Square) {
-        self.board_bb.set_bit(sq);
-        self.piece_bb[piece.offset()].set_bit(sq);
+        bitboard::set_bit(&mut self.board_bb, sq);
+        bitboard::set_bit(&mut self.piece_bb[piece.offset()], sq);
+        bitboard::set_bit(&mut self.colour_bb[piece.colour().offset()], sq);
         self.pieces[sq.to_offset()] = Some(piece);
-        self.colour_bb[piece.colour().offset()].set_bit(sq);
     }
 
     fn clear_bitboards(&mut self, piece: Piece, sq: Square) {
-        self.board_bb.clear_bit(sq);
-        self.piece_bb[piece.offset()].clear_bit(sq);
+        bitboard::clear_bit(&mut self.board_bb, sq);
+        bitboard::clear_bit(&mut self.piece_bb[piece.offset()], sq);
+        bitboard::clear_bit(&mut self.colour_bb[piece.colour().offset()], sq);
         self.pieces[sq.to_offset()] = None;
-        self.colour_bb[piece.colour().offset()].clear_bit(sq);
     }
 }
 #[cfg(test)]
 pub mod tests {
+    use board::bitboard;
     use board::board::Board;
     use board::piece::Colour;
     use board::piece::Piece;
@@ -160,9 +170,9 @@ pub mod tests {
         for pce in utils::get_all_pieces() {
             for (square, _) in utils::get_square_rank_file_map() {
                 board.add_piece(pce, square);
-                let bb = board.get_bitboard(pce);
+                let bb = board.get_piece_bitboard(pce);
 
-                assert!(bb.is_set(square));
+                assert!(bitboard::is_set(bb, square));
 
                 // clean up
                 board.remove_piece(pce, square);

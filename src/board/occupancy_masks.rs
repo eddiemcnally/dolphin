@@ -1,23 +1,24 @@
 use board::board;
-use board::piece;
 use board::square::Square;
 
-/// For a given piece on a given square, this function returns a bitboard
-/// representing the squares that the piece can legally move to (assuming
-/// an empty board)
-pub fn get_occupancy_mask(pce: piece::Piece, sq: Square) -> u64 {
-    let offset = sq as usize;
+pub fn get_occupancy_mask_bishop(sq: Square) -> u64{
+    BISHOP_OCCUPANCY_MASKS[sq.to_offset()]
+}
 
-    match pce.role() {
-        // no occupancy masks for pawns
-        piece::PieceRole::Pawn => panic!("Not valid for Pawn"),
-        piece::PieceRole::Bishop => BISHOP_OCCUPANCY_MASKS[offset],
-        piece::PieceRole::Knight => KNIGHT_OCCUPANCY_MASKS[offset],
-        piece::PieceRole::Rook => ROOK_OCCUPANCY_MASKS[offset],
-        piece::PieceRole::Queen => QUEEN_OCCUPANCY_MASKS[offset],
-        piece::PieceRole::King => KING_OCCUPANCY_MASKS[offset],
-        
-    }
+pub fn get_occupancy_mask_knight(sq: Square) -> u64{
+    KNIGHT_OCCUPANCY_MASKS[sq.to_offset()]
+}
+
+pub fn get_occupancy_mask_rook(sq: Square) -> u64{
+    ROOK_OCCUPANCY_MASKS[sq.to_offset()]
+}
+
+pub fn get_occupancy_mask_queen(sq: Square) -> u64{
+    QUEEN_OCCUPANCY_MASKS[sq.to_offset()]
+}
+
+pub fn get_occupancy_mask_king(sq: Square) -> u64{
+    KING_OCCUPANCY_MASKS[sq.to_offset()]
 }
 
 // elem [0] is a1, [63] is h8
