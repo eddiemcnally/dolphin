@@ -8,13 +8,15 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct ParsedFen {
-    piece_positions: HashMap<Square, Piece>,
-    side_to_move: Colour,
-    castle_perm: Option<CastlePermission>,
-    en_pass_sq: Option<Square>,
-    half_move_cnt: u16,
-    full_move_cnt: u16,
+    pub piece_positions: HashMap<Square, Piece>,
+    pub side_to_move: Colour,
+    pub castle_perm: Option<CastlePermission>,
+    pub en_pass_sq: Option<Square>,
+    pub half_move_cnt: u16,
+    pub full_move_cnt: u16,
 }
+
+
 
 // [0] = piece positions
 // [1] = side to move

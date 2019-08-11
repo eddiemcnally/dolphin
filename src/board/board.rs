@@ -4,7 +4,9 @@ use board::piece::Piece;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
 use board::square::Square;
+use input::fen::ParsedFen;
 use std::option::Option;
+
 
 pub const NUM_SQUARES: usize = 64;
 
@@ -19,6 +21,7 @@ pub struct Board {
     pieces: [Option<Piece>; NUM_SQUARES],
 }
 
+
 impl Board {
     pub fn new() -> Board {
         return Board {
@@ -27,6 +30,16 @@ impl Board {
             colour_bb: [0; NUM_COLOURS],
             pieces: [None; NUM_SQUARES],
         };
+    }
+
+    pub fn from_fen(parsed_fen:&ParsedFen) -> Board{
+        let mut brd = Board::new();
+
+        let positions = parsed_fen.piece_positions.iter();
+        for (sq, pce) in positions{
+            brd.add_piece(*pce, *sq);
+        }
+        return brd;
     }
 
     pub fn add_piece(&mut self, piece: Piece, sq: Square) {
@@ -95,6 +108,9 @@ pub mod tests {
     use board::piece::Colour;
     use board::piece::Piece;
     use board::piece::PieceRole;
+    use std::collections::HashMap;
+    use board::square::Square;
+    use input::fen::ParsedFen;
     use utils;
 
     #[test]
@@ -178,6 +194,38 @@ pub mod tests {
                 board.remove_piece(pce, square);
             }
         }
+    }
+
+    #[test]
+    pub fn test_build_board_from_parsed_fen(){
+        let mut map = HashMap::new();
+
+        map.insert(Square::a1, Piece::new(PieceRole::Knight, Colour::Black));
+        map.insert(Square::h8, Piece::new(PieceRole::King, Colour::White));
+        map.insert(Square::d5, Piece::new(PieceRole::Queen, Colour::Black));
+        map.insert(Square::c3, Piece::new(PieceRole::Pawn, Colour::White));
+        map.insert(Square::a7, Piece::new(PieceRole::Rook, Colour::White));
+
+        let mut parsed_fen: ParsedFen = Default::default();
+        parsed_fen.piece_positions = map;
+
+        let brd = Board::from_fen(&parsed_fen);
+
+
+        for sq in utils::get_ordered_square_list_by_file(){            
+            if parsed_fen.piece_positions.contains_key(&sq){
+                // should contain piece
+                let brd_pce = brd.get_piece_on_square(sq).unwrap();
+                let map_pce = parsed_fen.piece_positions.get(&sq).unwrap();
+
+                assert_eq!(brd_pce, *map_pce);   
+            } else {
+                // shouldn't contain a piece
+                let retr_pce: Option<Piece> = brd.get_piece_on_square(sq);
+                assert_eq!(retr_pce.is_some(), false);
+            }
+        }
+
     }
 
 }

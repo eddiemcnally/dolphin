@@ -2,13 +2,37 @@ use board::bitboard;
 use board::board::Board;
 use board::occupancy_masks;
 use board::piece::Piece;
+use board::piece::Colour;
 use board::piece::PieceRole;
 use board::square::Square;
 use moves::mov::Mov;
 
-fn generate_non_sliding_piece_moves(board: Board, pce: Piece, move_list: &mut Vec<Mov>) {
-    let mut pce_bb = board.get_piece_bitboard(pce);
 
+
+pub fn generate_moves(board: &Board, side_to_move: Colour, move_list: &mut Vec<Mov>){
+
+    match side_to_move{
+        Colour::White => generate_colour_moves(board, Colour::White, move_list),
+        Colour::Black => generate_colour_moves(board, Colour::Black, move_list),
+    }
+}
+
+
+fn generate_colour_moves(board: &Board, side_to_move:Colour, move_list: &mut Vec<Mov>){
+
+    let mut pce = Piece::new(PieceRole::Pawn, side_to_move);
+    generate_non_sliding_piece_moves(board, pce, move_list);
+ 
+    pce = Piece::new(PieceRole::Bishop, side_to_move);
+    generate_non_sliding_piece_moves(board, pce, move_list);
+}
+
+
+
+
+fn generate_non_sliding_piece_moves(board: &Board, pce: Piece, move_list: &mut Vec<Mov>) {
+    let mut pce_bb = board.get_piece_bitboard(pce);
+    
     while pce_bb != 0 {
         let sq = bitboard::pop_1st_bit(&mut pce_bb);
 
