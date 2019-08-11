@@ -10,6 +10,8 @@ pub struct Mov {
     flags: u8,
 }
 
+
+
 impl Mov {
     /// Encodes a Quiet move given the "from" and "to" squares
     ///
@@ -18,7 +20,7 @@ impl Mov {
     /// * `from_sq` - the from square
     /// * `to_sq`   - the to square
     ///
-    pub fn encode_quiet(from_sq: Square, to_sq: Square) -> Mov {
+    pub fn encode_move_quiet(from_sq: Square, to_sq: Square) -> Mov {
         Mov::new(from_sq, to_sq)
     }
 
@@ -31,7 +33,7 @@ impl Mov {
     }
 
     pub fn encode_move_capture(from_sq: Square, to_sq: Square) -> Mov {
-        let mut mov = Mov::encode_quiet(from_sq, to_sq);
+        let mut mov = Mov::encode_move_quiet(from_sq, to_sq);
 
         mov.flags = mov.flags | MV_FLG_BIT_CAPTURE;
         mov
@@ -50,7 +52,7 @@ impl Mov {
         to_sq: Square,
         promotion_piece: Piece,
     ) -> Mov {
-        let mut mov = Mov::encode_quiet(from_sq, to_sq);
+        let mut mov = Mov::encode_move_quiet(from_sq, to_sq);
 
         let mask: u8;
         match promotion_piece.role() {
@@ -90,7 +92,7 @@ impl Mov {
     /// * `to_sq`           - the to square
     ///
     pub fn encode_move_en_passant(from_sq: Square, to_sq: Square) -> Mov {
-        let mut mov = Mov::encode_quiet(from_sq, to_sq);
+        let mut mov = Mov::encode_move_quiet(from_sq, to_sq);
         mov.flags = mov.flags | MV_FLG_EN_PASS;
         mov
     }
@@ -103,7 +105,7 @@ impl Mov {
     /// * `to_sq`           - the to square
     ///
     pub fn encode_move_double_pawn_first(from_sq: Square, to_sq: Square) -> Mov {
-        let mut mov = Mov::encode_quiet(from_sq, to_sq);
+        let mut mov = Mov::encode_move_quiet(from_sq, to_sq);
         mov.flags = mov.flags | MV_FLG_DOUBLE_PAWN;
         mov
     }
@@ -112,7 +114,7 @@ impl Mov {
     ///
     pub fn encode_move_castle_kingside_white() -> Mov {
         // todo: this can be determined at compile time, so fix this
-        let mut mov = Mov::encode_quiet(Square::e1, Square::g1);
+        let mut mov = Mov::encode_move_quiet(Square::e1, Square::g1);
         mov.flags = mov.flags | MV_FLG_KING_CASTLE;
         mov
     }
@@ -120,7 +122,7 @@ impl Mov {
     /// Encodes a Black King-side castle move
     ///
     pub fn encode_move_castle_kingside_black() -> Mov {
-        let mut mov = Mov::encode_quiet(Square::e8, Square::g8);
+        let mut mov = Mov::encode_move_quiet(Square::e8, Square::g8);
         mov.flags = mov.flags | MV_FLG_KING_CASTLE;
         mov
     }
@@ -128,7 +130,7 @@ impl Mov {
     /// Encodes a White Queen-side castle move
     ///
     pub fn encode_move_castle_queenside_white() -> Mov {
-        let mut mov = Mov::encode_quiet(Square::e1, Square::c1);
+        let mut mov = Mov::encode_move_quiet(Square::e1, Square::c1);
         mov.flags = mov.flags | MV_FLG_QUEEN_CASTLE;
         mov
     }
@@ -136,7 +138,7 @@ impl Mov {
     /// Encodes a Black Queen-side castle move
     ///
     pub fn encode_move_castle_queenside_black() -> Mov {
-        let mut mov = Mov::encode_quiet(Square::e8, Square::c8);
+        let mut mov = Mov::encode_move_quiet(Square::e8, Square::c8);
         mov.flags = mov.flags | MV_FLG_QUEEN_CASTLE;
         mov
     }
@@ -257,7 +259,25 @@ impl Mov {
     pub fn is_double_pawn(&self) -> bool {
         self.flags == MV_FLG_DOUBLE_PAWN
     }
+
+    pub fn print_move(&self){
+        let from_sq = self.decode_from_square();
+        let to_sq = self.decode_to_square();
+
+        println!("From {:?}, To {:?}", from_sq, to_sq);
+    }
+
+
 }
+
+pub fn print_move_list(move_list: &Vec<Mov>){
+
+    for mov in move_list.iter(){
+        mov.print_move();
+    }
+}
+
+
 
 // bitmap for type Move
 // See http://chessprogramming.wikispaces.com/Encoding+Moves
@@ -389,7 +409,7 @@ pub mod tests {
         for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
             for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
                 // encode
-                let mv = Mov::encode_quiet(from_sq, to_sq);
+                let mv = Mov::encode_move_quiet(from_sq, to_sq);
 
                 assert_eq!(mv.is_quiet(), true);
                 assert_eq!(mv.is_capture(), false);
