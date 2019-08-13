@@ -11,25 +11,69 @@ use moves::mov::Mov;
 
 pub fn generate_moves(board: &Board, side_to_move: Colour, move_list: &mut Vec<Mov>){
 
-    match side_to_move{
-        Colour::White => generate_colour_moves(board, Colour::White, move_list),
-        Colour::Black => generate_colour_moves(board, Colour::Black, move_list),
-    }
-}
-
-
-fn generate_colour_moves(board: &Board, side_to_move:Colour, move_list: &mut Vec<Mov>){
-
-    let mut pce = Piece::new(PieceRole::Knight, side_to_move);
-    generate_non_sliding_piece_moves(board, pce, move_list);
+    let knight = Piece::new(PieceRole::Knight, side_to_move);
+    generate_non_sliding_piece_moves(board, knight, move_list);
  
-    pce = Piece::new(PieceRole::King, side_to_move);
-    generate_non_sliding_piece_moves(board, pce, move_list);
+    let king = Piece::new(PieceRole::King, side_to_move);
+    generate_non_sliding_piece_moves(board, king, move_list);
+}
+
+
+// generates diagonal and anti-diagonal moves for queen and bishop
+// see Hyperbola Quintessence
+fn generate_sliding_diagonal_antidiagonal_moves(board:&Board, pce: Piece, move_list:&mut Vec<Mov>){
+    let mut pce_bb = board.get_piece_bitboard(pce);
+    let occ_sq_bb = board.get_bitboard();
+    let occ_col_bb = board.get_colour_bb(pce.colour());
+
+    while pce_bb != 0{
+
+        let from_sq = bitboard::pop_1st_bit(&mut pce_bb);
+        let diag_move_mask = occupancy_masks::get_diagonal_move_mask(from_sq);
+        let anti_diag_move_mask = occupancy_masks::get_anti_diagonal_move_mask(from_sq);
+        
+        let mut slider_bb: u64 = 0;
+        bitboard::set_bit(&mut slider_bb, from_sq);
+
+        // diagonal moves
+        let diag1 = (occ_sq_bb & diag_move_mask) - (2 * slider_bb);
+        let diag2 = ((occ_sq_bb & diag_move_mask).reverse_bits() - 2 * slider_bb.reverse_bits()).reverse_bits();
+        let diag = diag1 ^ diag2;
+
+        // anti-diagonal moves
+        let antidiag1 = (occ_sq_bb & anti_diag_move_mask) - (2 * slider_bb);
+        let antidiag2 = ((occ_sq_bb & anti_diag_move_mask).reverse_bits() - 2 * slider_bb.reverse_bits()).reverse_bits();
+        let antidiag = antidiag1 ^ antidiag2;
+
+        let all_moves = (diag & diag_move_mask) | (antidiag & anti_diag_move_mask);
+    
+        let mut excl_same_colour = all_moves & !occ_col_bb;
+
+        while excl_same_colour != 0{
+            let to_sq = bitboard::pop_1st_bit(&mut excl_same_colour);
+
+            if board.is_sq_empty(to_sq){
+                let mv = Mov::encode_move_quiet(from_sq, to_sq);
+                move_list.push(mv);
+            } else{
+                let mv = Mov::encode_move_capture(from_sq, to_sq);
+                move_list.push(mv);
+            }
+        }   
+    }
+
+
+
+
+
 }
 
 
 
 
+
+
+// generates moves for King and Knight
 fn generate_non_sliding_piece_moves(board: &Board, pce: Piece, move_list: &mut Vec<Mov>) {
     let mut pce_bb = board.get_piece_bitboard(pce);
     

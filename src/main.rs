@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+#![feature(reverse_bits)]
+
 
 mod board;
 mod input;
