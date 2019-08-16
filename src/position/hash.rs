@@ -109,14 +109,14 @@ pub mod tests {
     use utils;
 
     #[test]
-    pub fn test_hash_init_as_zero() {
+    pub fn hash_init_as_zero() {
         let h = PositionHash::new();
 
         assert_eq!(h.get_hash(), 0);
     }
 
     #[test]
-    pub fn test_hash_flip_side_result_as_expected() {
+    pub fn hash_flip_side_result_as_expected() {
         let mut h = PositionHash::new();
 
         let init_hash = h.get_hash();
@@ -135,7 +135,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_flip_piece_and_square_result_as_expected() {
+    pub fn flip_piece_and_square_result_as_expected() {
         let mut h = PositionHash::new();
 
         for pce in utils::get_all_pieces() {
@@ -161,7 +161,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_flip_en_passant_result_as_expected() {
+    pub fn flip_en_passant_result_as_expected() {
         let mut h = PositionHash::new();
 
         for sq in utils::get_ordered_square_list_by_file() {
@@ -185,7 +185,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_flip_castle_permission_as_expected() {
+    pub fn flip_castle_permission_as_expected() {
         let mut h = PositionHash::new();
 
         for cp in utils::get_all_castle_permissions() {

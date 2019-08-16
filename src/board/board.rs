@@ -114,7 +114,7 @@ pub mod tests {
     use utils;
 
     #[test]
-    pub fn test_add_remove_piece_square_state_as_expected() {
+    pub fn add_remove_piece_square_state_as_expected() {
         let pce = Piece::new(PieceRole::Knight, Colour::White);
         let mut board = Board::new();
 
@@ -131,7 +131,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_move_piece_square_state_as_expected() {
+    pub fn move_piece_square_state_as_expected() {
         let pce = Piece::new(PieceRole::Knight, Colour::White);
         let mut board = Board::new();
 
@@ -159,7 +159,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_get_piece_on_square_as_expected() {
+    pub fn get_piece_on_square_as_expected() {
         let pce = Piece::new(PieceRole::Knight, Colour::White);
         let mut board = Board::new();
 
@@ -180,7 +180,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_get_bitboard_value_as_expected() {
+    pub fn get_bitboard_value_as_expected() {
         let mut board = Board::new();
 
         for pce in utils::get_all_pieces() {
@@ -197,7 +197,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_build_board_from_parsed_fen(){
+    pub fn build_board_from_parsed_fen(){
         let mut map = HashMap::new();
 
         map.insert(Square::a1, Piece::new(PieceRole::Knight, Colour::Black));

@@ -42,7 +42,7 @@ pub mod tests {
     use board::bitboard;
 
     #[test]
-    pub fn test_set_bit_test_bit_clear_bit() {
+    pub fn set_bit_test_bit_clear_bit() {
         let mut bb:u64  = 0;
 
         let map = utils::get_square_rank_file_map();
@@ -56,7 +56,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_count_set_bits() {
+    pub fn count_set_bits() {
         let map = utils::get_square_rank_file_map();
         let mut i: u8 = 0;
         let mut bb:u64 = 0;
@@ -69,7 +69,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_pop_bit_all_bits() {
+    pub fn pop_bit_all_bits() {
         let map = utils::get_square_rank_file_map();
         for (square, (_, _)) in map {
             let mut bb:u64 = 0;

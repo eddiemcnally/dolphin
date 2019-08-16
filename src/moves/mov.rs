@@ -11,7 +11,6 @@ pub struct Mov {
 }
 
 
-
 impl Mov {
     /// Encodes a Quiet move given the "from" and "to" squares
     ///
@@ -325,7 +324,7 @@ pub mod tests {
     use utils;
 
     #[test]
-    pub fn test_encode_decode_king_white_castle() {
+    pub fn encode_decode_king_white_castle() {
         let mv = Mov::encode_move_castle_kingside_white();
 
         let decoded_from_sq = mv.decode_from_square();
@@ -345,7 +344,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_encode_decode_queen_white_castle() {
+    pub fn encode_decode_queen_white_castle() {
         let mv = Mov::encode_move_castle_queenside_white();
 
         let decoded_from_sq = mv.decode_from_square();
@@ -365,7 +364,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_encode_decode_king_black_castle() {
+    pub fn encode_decode_king_black_castle() {
         let mv = Mov::encode_move_castle_kingside_black();
 
         let decoded_from_sq = mv.decode_from_square();
@@ -385,7 +384,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_encode_decode_queen_black_castle() {
+    pub fn encode_decode_queen_black_castle() {
         let mv = Mov::encode_move_castle_queenside_black();
 
         let decoded_from_sq = mv.decode_from_square();
@@ -405,7 +404,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_encode_decode_quiet_move() {
+    pub fn encode_decode_quiet_move() {
         for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
             for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
                 // encode
@@ -427,7 +426,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_encode_decode_double_pawn_first_ove() {
+    pub fn encode_decode_double_pawn_first_ove() {
         for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
             for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
                 // encode
@@ -449,7 +448,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_encode_decode_en_passant() {
+    pub fn encode_decode_en_passant() {
         for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
             for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
                 let mv = Mov::encode_move_en_passant(from_sq, to_sq);
@@ -470,7 +469,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_encode_decode_promotion_move_non_capture() {
+    pub fn encode_decode_promotion_move_non_capture() {
         let target_roles = vec![
             PieceRole::Knight,
             PieceRole::Bishop,
@@ -505,7 +504,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_decode_promotion_piece() {
+    pub fn decode_promotion_piece() {
         let target_roles = vec![
             PieceRole::Knight,
             PieceRole::Bishop,
@@ -540,7 +539,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_encode_decode_promotion_move_capture() {
+    pub fn encode_decode_promotion_move_capture() {
         let target_roles = vec![
             PieceRole::Knight,
             PieceRole::Bishop,

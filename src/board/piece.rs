@@ -127,7 +127,7 @@ pub mod tests {
     use board::piece::PieceRole;
 
     #[test]
-    pub fn test_flip_side_as_expected() {
+    pub fn flip_side_as_expected() {
         let c = Colour::default();
         assert!(c == Colour::White);
 
@@ -139,13 +139,13 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_default_colour() {
+    pub fn default_colour() {
         let c = Colour::default();
         assert!(c == Colour::White);
     }
 
     #[test]
-    pub fn test_pce_offset_as_expected() {
+    pub fn pce_offset_as_expected() {
         let mut pce = Piece::new(PieceRole::Pawn, Colour::White);
         assert_eq!(pce.offset, 0);
 
@@ -184,7 +184,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_piece_role_value() {
+    pub fn piece_role_value() {
         let mut pce = Piece::new(PieceRole::Pawn, Colour::White);
         assert_eq!(pce.value, 300);
 
@@ -223,7 +223,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_piece_label_is_valid() {
+    pub fn piece_label_is_valid() {
         let mut pce = Piece::from_char('P');
         assert_eq!(Piece::new(PieceRole::Pawn, Colour::White), pce);
 

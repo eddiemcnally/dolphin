@@ -148,7 +148,7 @@ mod tests {
     use fen::get_side_to_move;
 
     #[test]
-    pub fn test_piece_positions() {
+    pub fn piece_positions() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
 
@@ -294,14 +294,14 @@ mod tests {
     }
 
     #[test]
-    pub fn test_side_to_move_white() {
+    pub fn side_to_move_white() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let side_to_move = get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
         assert_eq!(side_to_move, Colour::White);
     }
     #[test]
-    pub fn test_side_to_move_black() {
+    pub fn side_to_move_black() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let side_to_move = get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
@@ -309,14 +309,14 @@ mod tests {
     }
     #[test]
     #[should_panic]
-    pub fn test_side_to_move_invalid_panics() {
+    pub fn side_to_move_invalid_panics() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n X - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
     }
 
     #[test]
-    pub fn test_castle_permissions_white_kingside() {
+    pub fn castle_permissions_white_kingside() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b K - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
@@ -327,7 +327,7 @@ mod tests {
         assert!(perm.unwrap().has_castle_permission() == true);
     }
     #[test]
-    pub fn test_castle_permissions_white_queenside() {
+    pub fn castle_permissions_white_queenside() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b Q - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
@@ -339,7 +339,7 @@ mod tests {
         assert!(perm.unwrap().has_castle_permission() == true);
     }
     #[test]
-    pub fn test_castle_permissions_black_kingside() {
+    pub fn castle_permissions_black_kingside() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b k - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
@@ -351,7 +351,7 @@ mod tests {
         assert!(perm.unwrap().has_castle_permission() == true);
     }
     #[test]
-    pub fn test_castle_permissions_black_queenside() {
+    pub fn castle_permissions_black_queenside() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
@@ -364,7 +364,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_castle_permissions_none() {
+    pub fn castle_permissions_none() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
@@ -372,7 +372,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_castle_permissions_white_kingside_queenside_black_kingside() {
+    pub fn castle_permissions_white_kingside_queenside_black_kingside() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b KQk - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
@@ -385,7 +385,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_parse_half_move_clock() {
+    pub fn parse_half_move_clock() {
         let mut fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 1";
         let mut piece_pos: Vec<&str> = fen.split(' ').collect();
         let mut half_clock = get_half_move_clock(piece_pos[FEN_HALF_MOVE]);
@@ -403,7 +403,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_parse_full_move_count() {
+    pub fn parse_full_move_count() {
         let mut fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 0";
         let mut piece_pos: Vec<&str> = fen.split(' ').collect();
         let mut full_move_cnt = get_full_move_number(piece_pos[FEN_FULL_MOVE]);
@@ -421,7 +421,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_parse_en_passant() {
+    pub fn parse_en_passant() {
         let mut fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q c6 0 0";
         let mut piece_pos: Vec<&str> = fen.split(' ').collect();
         let mut enp_sq = get_en_passant_sq(piece_pos[FEN_EN_PASSANT]).unwrap();

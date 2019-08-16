@@ -11,6 +11,15 @@ use moves::mov::Mov;
 
 pub fn generate_moves(board: &Board, side_to_move: Colour, move_list: &mut Vec<Mov>){
 
+    // TODO
+    // knight - done
+    // king - dome
+    // bishop - done
+    // queen
+    // rook
+    // pawn
+
+
     let knight = Piece::new(PieceRole::Knight, side_to_move);
     generate_non_sliding_piece_moves(board, knight, move_list);
  
@@ -40,21 +49,25 @@ fn generate_sliding_diagonal_antidiagonal_moves(board:&Board, pce: Piece, move_l
         bitboard::set_bit(&mut slider_bb, from_sq);
 
         // diagonal moves
-        let diag1 = (occ_sq_bb & diag_move_mask).overflowing_sub(2 * slider_bb).0;
+        let diag1 = (occ_sq_bb & diag_move_mask)
+                        .overflowing_sub(2 * slider_bb)
+                        .0;
         let diag2 = ((occ_sq_bb & diag_move_mask)
-                                .reverse_bits()
-                                .overflowing_sub(2 * slider_bb.reverse_bits()))
-                                .0
-                                .reverse_bits();
+                        .reverse_bits()
+                        .overflowing_sub(2 * slider_bb.reverse_bits()))
+                        .0
+                        .reverse_bits();
         
         let diag = diag1 ^ diag2;
 
         // anti-diagonal moves
-        let antidiag1 = (occ_sq_bb & anti_diag_move_mask).overflowing_sub(2 * slider_bb).0;
+        let antidiag1 = (occ_sq_bb & anti_diag_move_mask)
+                        .overflowing_sub(2 * slider_bb)
+                        .0;
         let antidiag2 = ((occ_sq_bb & anti_diag_move_mask)
-                            .reverse_bits().overflowing_sub(2 * slider_bb.reverse_bits()))
-                            .0
-                            .reverse_bits();
+                        .reverse_bits().overflowing_sub(2 * slider_bb.reverse_bits()))
+                        .0
+                        .reverse_bits();
 
         let antidiag = antidiag1 ^ antidiag2;
 
@@ -71,7 +84,7 @@ fn generate_sliding_diagonal_antidiagonal_moves(board:&Board, pce: Piece, move_l
             } else{
                 let mv = Mov::encode_move_capture(from_sq, to_sq);
                 move_list.push(mv);
-            }
+            }            
         }   
     }
 
@@ -137,11 +150,8 @@ fn encode_multiple_quiet_moves(quiet_move_bb: &mut u64, from_sq: Square, move_li
 
 #[cfg(test)]
 pub mod tests {
-    //use board::piece::Piece;
     use board::piece::Colour;
-    //use board::piece::PieceRole;
     use board::square::Square;
-    //use input::fen::ParsedFen;
     use input::fen;
     use board::board::Board;
     use moves::move_gen;
@@ -150,7 +160,7 @@ pub mod tests {
 
 
     #[test]
-    pub fn test_move_gen_white_king_knight_move_list_as_expected(){
+    pub fn move_gen_white_king_knight_move_list_as_expected(){
 
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let mut move_list:Vec<Mov> = Vec::new();
@@ -217,7 +227,7 @@ pub mod tests {
 
 
     #[test]
-    pub fn test_move_gen_black_king_knight_move_list_as_expected(){
+    pub fn move_gen_black_king_knight_move_list_as_expected(){
 
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let mut move_list:Vec<Mov> = Vec::new();
@@ -250,7 +260,7 @@ pub mod tests {
 
 
     #[test]
-    pub fn test_move_gen_white_bishop_move_list_as_expected(){
+    pub fn move_gen_white_bishop_move_list_as_expected(){
 
         let fen = "1n1k2bp/1PppQpb1/N1p4p/4P1K1/1RB1BP2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let mut move_list:Vec<Mov> = Vec::new();
@@ -290,49 +300,63 @@ pub mod tests {
         assert!(move_list.contains(&mv) == true);
 
 
-
-
-        // check the quiet moves
-        mv = Mov::encode_move_quiet(Square::e4, Square::d3);
+        // check the capture moves
+        mv = Mov::encode_move_capture(Square::e4, Square::c2);
         assert!(move_list.contains(&mv) == true);
 
-        mv = Mov::encode_move_quiet(Square::e3, Square::f1);
+        mv = Mov::encode_move_capture(Square::e4, Square::f3);
         assert!(move_list.contains(&mv) == true);
 
-        mv = Mov::encode_move_quiet(Square::e3, Square::g2);
+        mv = Mov::encode_move_capture(Square::e4, Square::c6);
         assert!(move_list.contains(&mv) == true);
 
-        mv = Mov::encode_move_quiet(Square::e3, Square::g4);
+        mv = Mov::encode_move_capture(Square::c4, Square::e2);
         assert!(move_list.contains(&mv) == true);
 
-        mv = Mov::encode_move_quiet(Square::e3, Square::f5);
+        mv = Mov::encode_move_capture(Square::c4, Square::f7);
         assert!(move_list.contains(&mv) == true);
-
-        mv = Mov::encode_move_quiet(Square::e3, Square::d5);
-        assert!(move_list.contains(&mv) == true);
-
-        mv = Mov::encode_move_quiet(Square::g5, Square::g6);
-        assert!(move_list.contains(&mv) == true);
-
-        mv = Mov::encode_move_quiet(Square::g5, Square::f6);
-        assert!(move_list.contains(&mv) == true);
-
-        mv = Mov::encode_move_quiet(Square::g5, Square::f5);
-        assert!(move_list.contains(&mv) == true);
-
-        mv = Mov::encode_move_quiet(Square::g5, Square::g4);
-        assert!(move_list.contains(&mv) == true);
-
-        mv = Mov::encode_move_quiet(Square::g5, Square::h4);
-        assert!(move_list.contains(&mv) == true);
-
-        mv = Mov::encode_move_quiet(Square::g5, Square::h5);
-        assert!(move_list.contains(&mv) == true);
-
     }
 
 
+    #[test]
+    pub fn move_gen_black_bishop_move_list_as_expected(){
 
+        let fen = "1nbk3p/NP1pQpP1/2p4p/p5K1/1RBbBP2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let mut move_list:Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let brd = Board::from_fen(&parsed_fen);
+
+        move_gen::generate_moves(&brd, Colour::Black, &mut move_list);
+
+        mov::print_move_list(&move_list);
+       
+        // check the quiet moves
+        let mut mv = Mov::encode_move_quiet(Square::d4, Square::c5);
+        assert!(move_list.contains(&mv) == true);
+
+        mv = Mov::encode_move_quiet(Square::d4, Square::b6);
+        assert!(move_list.contains(&mv) == true);
+
+        mv = Mov::encode_move_quiet(Square::d4, Square::e5);
+        assert!(move_list.contains(&mv) == true);
+
+        mv = Mov::encode_move_quiet(Square::d4, Square::f6);
+        assert!(move_list.contains(&mv) == true);
+
+
+        // check the capture moves
+        mv = Mov::encode_move_capture(Square::c8, Square::b7);
+        assert!(move_list.contains(&mv) == true);
+
+        mv = Mov::encode_move_capture(Square::d4, Square::c3);
+        assert!(move_list.contains(&mv) == true);
+
+        mv = Mov::encode_move_capture(Square::d4, Square::e3);
+        assert!(move_list.contains(&mv) == true);
+
+        mv = Mov::encode_move_capture(Square::d4, Square::g7);
+        assert!(move_list.contains(&mv) == true);
+    }
 }
 
 

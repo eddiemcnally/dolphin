@@ -78,7 +78,7 @@ pub mod tests {
     use position::castle_permissions::CastlePermissionType;
 
     #[test]
-    pub fn test_default_castle_permisisons_none_set() {
+    pub fn default_castle_permisisons_none_set() {
         let cp = CastlePermission::new();
 
         assert!(cp.is_king_set(Colour::White) == false);
@@ -89,7 +89,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_castle_permisison_offsets() {
+    pub fn castle_permisison_offsets() {
         assert!(CastlePermission::offset(CastlePermissionType::WhiteQueen) == 1);
         assert!(CastlePermission::offset(CastlePermissionType::WhiteKing) == 0);
         assert!(CastlePermission::offset(CastlePermissionType::BlackQueen) == 3);
@@ -97,7 +97,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_castle_permission_white_king_set_get_as_expected() {
+    pub fn castle_permission_white_king_set_get_as_expected() {
         let mut cp = CastlePermission::new();
 
         // init condition
@@ -112,7 +112,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_castle_permission_black_king_set_get_as_expected() {
+    pub fn castle_permission_black_king_set_get_as_expected() {
         let mut cp = CastlePermission::new();
 
         // init condition
@@ -127,7 +127,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_castle_permission_white_queen_set_get_as_expected() {
+    pub fn castle_permission_white_queen_set_get_as_expected() {
         let mut cp = CastlePermission::new();
 
         // init condition
@@ -142,7 +142,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_castle_permission_black_queen_set_get_as_expected() {
+    pub fn castle_permission_black_queen_set_get_as_expected() {
         let mut cp = CastlePermission::new();
 
         // init condition

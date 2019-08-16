@@ -492,7 +492,7 @@ pub mod tests {
     use utils;
 
     #[test]
-    pub fn test_rank_from_square() {
+    pub fn rank_from_square() {
         let map = utils::get_square_rank_file_map();
         for (square, (rank, _)) in map {
             assert_eq!(square.rank(), rank);
@@ -500,7 +500,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_file_from_square() {
+    pub fn file_from_square() {
         let map = utils::get_square_rank_file_map();
         for (square, (_, file)) in map {
             assert_eq!(square.file(), file);
@@ -508,7 +508,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_file_from_char() {
+    pub fn file_from_char() {
         let map = get_file_map();
         for (file, ch) in map {
             let f = File::from_char(ch);
@@ -517,7 +517,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_file_to_char() {
+    pub fn file_to_char() {
         let map = get_file_map();
         for (file, ch) in map {
             let cc = File::to_char(file);
@@ -526,7 +526,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_rank_from_char() {
+    pub fn rank_from_char() {
         let map = get_rank_map();
         for (rank, ch) in map {
             let r = Rank::from_char(ch);
@@ -535,7 +535,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_rank_to_char() {
+    pub fn rank_to_char() {
         let map = get_rank_map();
         for (rank, ch) in map {
             let cc = Rank::to_char(rank);
@@ -570,7 +570,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_convert_square_to_uint() {
+    pub fn convert_square_to_uint() {
         let sq: Square = Square::b1;
         let num: u16 = sq as u16;
 
@@ -583,7 +583,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_square_from_rank_and_file() {
+    pub fn square_from_rank_and_file() {
         let map = utils::get_square_rank_file_map();
         for (square, (rank, file)) in map {
             let sq = Square::get_square(rank, file);
@@ -592,7 +592,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn test_square_from_string() {
+    pub fn square_from_string() {
         let map = utils::get_square_rank_file_map();
         for (square, _) in map {
             let str = square.to_string();
