@@ -1,108 +1,134 @@
 use board::bitboard;
 use board::board::Board;
 use board::occupancy_masks;
-use board::piece::Piece;
 use board::piece::Colour;
+use board::piece::Piece;
 use board::piece::PieceRole;
 use board::square::Square;
 use moves::mov::Mov;
 
-
-
-pub fn generate_moves(board: &Board, side_to_move: Colour, move_list: &mut Vec<Mov>){
-
+pub fn generate_moves(board: &Board, side_to_move: Colour, move_list: &mut Vec<Mov>) {
     // TODO
     // knight - done
     // king - dome
     // bishop - done
     // queen
-    // rook
+    // rook - done
     // pawn
-
 
     let knight = Piece::new(PieceRole::Knight, side_to_move);
     generate_non_sliding_piece_moves(board, knight, move_list);
- 
     let king = Piece::new(PieceRole::King, side_to_move);
     generate_non_sliding_piece_moves(board, king, move_list);
 
     let bishop = Piece::new(PieceRole::Bishop, side_to_move);
     generate_sliding_diagonal_antidiagonal_moves(board, bishop, move_list);
 
-}
+    let rook = Piece::new(PieceRole::Rook, side_to_move);
+    generate_sliding_rank_file_moves(board, rook, move_list);
 
+    let queen = Piece::new(PieceRole::Queen, side_to_move);
+    generate_sliding_rank_file_moves(board, queen, move_list);
+    generate_sliding_diagonal_antidiagonal_moves(board, queen, move_list);
+}
 
 // generates diagonal and anti-diagonal moves for queen and bishop
 // see Hyperbola Quintessence
-fn generate_sliding_diagonal_antidiagonal_moves(board:&Board, pce: Piece, move_list:&mut Vec<Mov>){
+fn generate_sliding_diagonal_antidiagonal_moves(
+    board: &Board,
+    pce: Piece,
+    move_list: &mut Vec<Mov>,
+) {
     let mut pce_bb = board.get_piece_bitboard(pce);
     let occ_sq_bb = board.get_bitboard();
     let occ_col_bb = board.get_colour_bb(pce.colour());
 
-    while pce_bb != 0{
-
+    while pce_bb != 0 {
         let from_sq = bitboard::pop_1st_bit(&mut pce_bb);
         let diag_move_mask = occupancy_masks::get_diagonal_move_mask(from_sq);
         let anti_diag_move_mask = occupancy_masks::get_anti_diagonal_move_mask(from_sq);
-        
         let mut slider_bb: u64 = 0;
         bitboard::set_bit(&mut slider_bb, from_sq);
 
         // diagonal moves
         let diag1 = (occ_sq_bb & diag_move_mask)
-                        .overflowing_sub(2 * slider_bb)
-                        .0;
+            .overflowing_sub(2 * slider_bb)
+            .0;
         let diag2 = ((occ_sq_bb & diag_move_mask)
-                        .reverse_bits()
-                        .overflowing_sub(2 * slider_bb.reverse_bits()))
-                        .0
-                        .reverse_bits();
-        
+            .reverse_bits()
+            .overflowing_sub(2 * slider_bb.reverse_bits()))
+        .0
+        .reverse_bits();
         let diag = diag1 ^ diag2;
 
         // anti-diagonal moves
         let antidiag1 = (occ_sq_bb & anti_diag_move_mask)
-                        .overflowing_sub(2 * slider_bb)
-                        .0;
+            .overflowing_sub(2 * slider_bb)
+            .0;
         let antidiag2 = ((occ_sq_bb & anti_diag_move_mask)
-                        .reverse_bits().overflowing_sub(2 * slider_bb.reverse_bits()))
-                        .0
-                        .reverse_bits();
+            .reverse_bits()
+            .overflowing_sub(2 * slider_bb.reverse_bits()))
+        .0
+        .reverse_bits();
 
         let antidiag = antidiag1 ^ antidiag2;
 
         let all_moves = (diag & diag_move_mask) | (antidiag & anti_diag_move_mask);
-    
         let mut excl_same_colour = all_moves & !occ_col_bb;
 
-        while excl_same_colour != 0{
+        while excl_same_colour != 0 {
             let to_sq = bitboard::pop_1st_bit(&mut excl_same_colour);
-
-            if board.is_sq_empty(to_sq){
-                let mv = Mov::encode_move_quiet(from_sq, to_sq);
-                move_list.push(mv);
-            } else{
-                let mv = Mov::encode_move_capture(from_sq, to_sq);
-                move_list.push(mv);
-            }            
-        }   
+            encode_quite_or_capture(board, from_sq, to_sq, move_list);
+        }
     }
-
-
-
-
-
 }
 
+fn generate_sliding_rank_file_moves(board: &Board, pce: Piece, move_list: &mut Vec<Mov>) {
+    let mut pce_bb = board.get_piece_bitboard(pce);
+    let occ_sq_bb = board.get_bitboard();
+    let occ_col_bb = board.get_colour_bb(pce.colour());
 
+    while pce_bb != 0 {
+        let from_sq = bitboard::pop_1st_bit(&mut pce_bb);
+        let horizontal_mask = occupancy_masks::get_horizontal_move_mask(from_sq);
+        let vertical_mask = occupancy_masks::get_vertical_move_mask(from_sq);
 
+        let mut slider_bb: u64 = 0;
+        bitboard::set_bit(&mut slider_bb, from_sq);
+        let slider_bb_reverse = slider_bb.reverse_bits();
 
+        // horizontal moves
+        let horiz1 = occ_sq_bb.overflowing_sub(2 * slider_bb).0;
+        let horiz2 = (occ_sq_bb
+            .reverse_bits()
+            .overflowing_sub(2 * slider_bb_reverse)
+            .0)
+            .reverse_bits();
+        let horiz = horiz1 ^ horiz2;
 
+        // vertical moves
+        let vert1 = (occ_sq_bb & vertical_mask).overflowing_sub(slider_bb * 2).0;
+        let vert2 = ((occ_sq_bb & vertical_mask)
+            .reverse_bits()
+            .overflowing_sub(2 * slider_bb_reverse))
+        .0
+        .reverse_bits();
+        let vert = vert1 ^ vert2;
+
+        let all_moves_mask = (horiz & horizontal_mask) | (vert & vertical_mask);
+
+        let mut all_excl_same_col = all_moves_mask & !occ_col_bb;
+
+        while all_excl_same_col != 0 {
+            let to_sq = bitboard::pop_1st_bit(&mut all_excl_same_col);
+            encode_quite_or_capture(board, from_sq, to_sq, move_list);
+        }
+    }
+}
 
 // generates moves for King and Knight
 fn generate_non_sliding_piece_moves(board: &Board, pce: Piece, move_list: &mut Vec<Mov>) {
     let mut pce_bb = board.get_piece_bitboard(pce);
-    
     while pce_bb != 0 {
         let sq = bitboard::pop_1st_bit(&mut pce_bb);
 
@@ -128,6 +154,21 @@ fn generate_non_sliding_piece_moves(board: &Board, pce: Piece, move_list: &mut V
     }
 }
 
+fn encode_quite_or_capture(
+    board: &Board,
+    from_sq: Square,
+    to_sq: Square,
+    move_list: &mut Vec<Mov>,
+) {
+    if board.is_sq_empty(to_sq) {
+        let mv = Mov::encode_move_quiet(from_sq, to_sq);
+        move_list.push(mv);
+    } else {
+        let mv = Mov::encode_move_capture(from_sq, to_sq);
+        move_list.push(mv);
+    }
+}
+
 fn encode_multiple_capture_moves(capt_bb: &mut u64, from_sq: Square, move_list: &mut Vec<Mov>) {
     while *capt_bb != 0 {
         let to_sq = bitboard::pop_1st_bit(capt_bb);
@@ -144,93 +185,67 @@ fn encode_multiple_quiet_moves(quiet_move_bb: &mut u64, from_sq: Square, move_li
     }
 }
 
-
-
-
-
 #[cfg(test)]
 pub mod tests {
+    use board::board::Board;
     use board::piece::Colour;
     use board::square::Square;
     use input::fen;
-    use board::board::Board;
-    use moves::move_gen;
-    use moves::mov::Mov;
     use moves::mov;
-
+    use moves::mov::Mov;
+    use moves::move_gen;
 
     #[test]
-    pub fn move_gen_white_king_knight_move_list_as_expected(){
-
+    pub fn move_gen_white_king_knight_move_list_as_expected() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let mut move_list:Vec<Mov> = Vec::new();
+        let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
         let brd = Board::from_fen(&parsed_fen);
 
         move_gen::generate_moves(&brd, Colour::White, &mut move_list);
-       
         // check the capture moves
         let mut mv = Mov::encode_move_capture(Square::e3, Square::d1);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_capture(Square::e3, Square::c2);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_capture(Square::a6, Square::b8);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_capture(Square::a6, Square::c7);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_capture(Square::g5, Square::h6);
         assert!(move_list.contains(&mv) == true);
 
         // check the quiet moves
         mv = Mov::encode_move_quiet(Square::a6, Square::c5);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::e3, Square::f1);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::e3, Square::g2);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::e3, Square::g4);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::e3, Square::f5);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::e3, Square::d5);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::g5, Square::g6);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::g5, Square::f6);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::g5, Square::f5);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::g5, Square::g4);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::g5, Square::h4);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::g5, Square::h5);
         assert!(move_list.contains(&mv) == true);
-
     }
 
-
-
     #[test]
-    pub fn move_gen_black_king_knight_move_list_as_expected(){
-
+    pub fn move_gen_black_king_knight_move_list_as_expected() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let mut move_list:Vec<Mov> = Vec::new();
+        let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
         let brd = Board::from_fen(&parsed_fen);
 
@@ -239,31 +254,24 @@ pub mod tests {
         // check the capture moves
         let mut mv = Mov::encode_move_capture(Square::h1, Square::f2);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_capture(Square::d8, Square::e7);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_capture(Square::b8, Square::a6);
         assert!(move_list.contains(&mv) == true);
 
         // check the quiet moves
         mv = Mov::encode_move_quiet(Square::d8, Square::c8);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::d8, Square::e8);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::h1, Square::g3);
         assert!(move_list.contains(&mv) == true);
     }
 
-
-
     #[test]
-    pub fn move_gen_white_bishop_move_list_as_expected(){
-
+    pub fn move_gen_white_bishop_move_list_as_expected() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/4P1K1/1RB1BP2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let mut move_list:Vec<Mov> = Vec::new();
+        let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
         let brd = Board::from_fen(&parsed_fen);
 
@@ -274,90 +282,233 @@ pub mod tests {
         // check the quiet moves
         let mut mv = Mov::encode_move_quiet(Square::c4, Square::b5);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::c4, Square::d5);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::c4, Square::e6);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::c4, Square::d3);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::e4, Square::d5);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::e4, Square::d3);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::e4, Square::f5);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::e4, Square::g6);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::e4, Square::h7);
         assert!(move_list.contains(&mv) == true);
-
 
         // check the capture moves
         mv = Mov::encode_move_capture(Square::e4, Square::c2);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_capture(Square::e4, Square::f3);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_capture(Square::e4, Square::c6);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_capture(Square::c4, Square::e2);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_capture(Square::c4, Square::f7);
         assert!(move_list.contains(&mv) == true);
     }
 
-
     #[test]
-    pub fn move_gen_black_bishop_move_list_as_expected(){
-
+    pub fn move_gen_black_bishop_move_list_as_expected() {
         let fen = "1nbk3p/NP1pQpP1/2p4p/p5K1/1RBbBP2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let mut move_list:Vec<Mov> = Vec::new();
+        let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
         let brd = Board::from_fen(&parsed_fen);
 
         move_gen::generate_moves(&brd, Colour::Black, &mut move_list);
 
         mov::print_move_list(&move_list);
-       
         // check the quiet moves
         let mut mv = Mov::encode_move_quiet(Square::d4, Square::c5);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::d4, Square::b6);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::d4, Square::e5);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_quiet(Square::d4, Square::f6);
         assert!(move_list.contains(&mv) == true);
-
 
         // check the capture moves
         mv = Mov::encode_move_capture(Square::c8, Square::b7);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_capture(Square::d4, Square::c3);
         assert!(move_list.contains(&mv) == true);
-
         mv = Mov::encode_move_capture(Square::d4, Square::e3);
         assert!(move_list.contains(&mv) == true);
+    }
 
-        mv = Mov::encode_move_capture(Square::d4, Square::g7);
+    #[test]
+    pub fn move_gen_black_rook_move_list_as_expected() {
+        let fen = "1nbk3p/NP1pQpP1/2p4p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn w - - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let brd = Board::from_fen(&parsed_fen);
+
+        move_gen::generate_moves(&brd, Colour::Black, &mut move_list);
+
+        mov::print_move_list(&move_list);
+        // quiet moves
+        // b1->c1,d1,e1,f1,b2
+        // e2->e1,e3,e4,d2,c2,b2
+        // capture moves
+        // b1->a1
+        // e2->f2,a2
+
+        // check the quiet moves
+        let mut mv = Mov::encode_move_quiet(Square::b1, Square::c1);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::b1, Square::d1);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::b1, Square::e1);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::b1, Square::f1);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::b1, Square::b2);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::e2, Square::e1);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::e2, Square::e3);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::e2, Square::e4);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::e2, Square::d2);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::e2, Square::c2);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::e2, Square::b2);
+        assert!(move_list.contains(&mv) == true);
+
+        // check the capture moves
+        mv = Mov::encode_move_capture(Square::b1, Square::a1);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_capture(Square::e2, Square::f2);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_capture(Square::e2, Square::a2);
         assert!(move_list.contains(&mv) == true);
     }
+
+    #[test]
+    pub fn move_gen_white_rook_move_list_as_expected() {
+        let fen = "1nbk3p/NP1pQpP1/2p4p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn w - - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let brd = Board::from_fen(&parsed_fen);
+
+        move_gen::generate_moves(&brd, Colour::White, &mut move_list);
+
+        mov::print_move_list(&move_list);
+        // quiet moves
+        // b4->a4,b5,b6
+        // c3->d3,e3,c2,c1
+        // capture moves
+        // c3->f3
+
+        // check the quiet moves
+        let mut mv = Mov::encode_move_quiet(Square::b4, Square::a4);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::b4, Square::b5);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::b4, Square::b6);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::c3, Square::d3);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::c3, Square::e3);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::c3, Square::c2);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::c3, Square::c1);
+        assert!(move_list.contains(&mv) == true);
+
+        // check the capture moves
+        mv = Mov::encode_move_capture(Square::c3, Square::f3);
+        assert!(move_list.contains(&mv) == true);
+    }
+
+    #[test]
+    pub fn move_gen_white_queen_move_list_as_expected() {
+        let fen = "1nbk3p/NP1p1pP1/2p1Q2p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn w - - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let brd = Board::from_fen(&parsed_fen);
+
+        move_gen::generate_moves(&brd, Colour::White, &mut move_list);
+
+        mov::print_move_list(&move_list);
+        // quiet moves
+        // e6->e7,e8,d6,f6,g6,f5,g4
+        // capture moves
+        // e6->c6,h6,d7,f7,e5
+
+        // check the quiet moves
+        let mut mv = Mov::encode_move_quiet(Square::e6, Square::e7);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::e6, Square::e8);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::e6, Square::d6);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::e6, Square::f6);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::e6, Square::g6);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::e6, Square::f5);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::e6, Square::g4);
+        assert!(move_list.contains(&mv) == true);
+
+        // check the capture moves
+        mv = Mov::encode_move_capture(Square::e6, Square::c6);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_capture(Square::e6, Square::h6);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_capture(Square::e6, Square::d7);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_capture(Square::e6, Square::f7);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_capture(Square::e6, Square::e5);
+        assert!(move_list.contains(&mv) == true);
+    }
+
+    #[test]
+    pub fn move_gen_black_queen_move_list_as_expected() {
+        let fen = "1nbk3p/NP1p1pP1/2p1Q2p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn w - - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let brd = Board::from_fen(&parsed_fen);
+
+        move_gen::generate_moves(&brd, Colour::Black, &mut move_list);
+
+        mov::print_move_list(&move_list);
+        // quiet moves
+        // g1->f1,e1,d1,c1,g2,g3,g4
+        // capture moves
+        // g1->f2,h2
+
+        // check the quiet moves
+        let mut mv = Mov::encode_move_quiet(Square::g1, Square::f1);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::g1, Square::e1);
+        assert!(move_list.contains(&mv) == true);
+
+        mv = Mov::encode_move_quiet(Square::g1, Square::d1);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::g1, Square::c1);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::g1, Square::g2);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::g1, Square::g3);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_quiet(Square::g1, Square::g4);
+        assert!(move_list.contains(&mv) == true);
+
+        // check the capture moves
+        mv = Mov::encode_move_capture(Square::g1, Square::f2);
+        assert!(move_list.contains(&mv) == true);
+        mv = Mov::encode_move_capture(Square::g1, Square::h2);
+        assert!(move_list.contains(&mv) == true);
+    }
+
 }
-
-
-
