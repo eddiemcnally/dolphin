@@ -6,15 +6,18 @@ use board::piece::Piece;
 use board::piece::PieceRole;
 use board::square::Square;
 use moves::mov::Mov;
+use position::position::Position;
 
-pub fn generate_moves(board: &Board, side_to_move: Colour, move_list: &mut Vec<Mov>) {
+pub fn generate_moves(position: Position, side_to_move: Colour, move_list: &mut Vec<Mov>) {
     // TODO
     // knight - done
     // king - dome
     // bishop - done
-    // queen
+    // queen - done
     // rook - done
     // pawn
+
+    let board = &position.board;
 
     let knight = Piece::new(PieceRole::Knight, side_to_move);
     generate_non_sliding_piece_moves(board, knight, move_list);
@@ -187,22 +190,21 @@ fn encode_multiple_quiet_moves(quiet_move_bb: &mut u64, from_sq: Square, move_li
 
 #[cfg(test)]
 pub mod tests {
-    use board::board::Board;
     use board::piece::Colour;
     use board::square::Square;
     use input::fen;
     use moves::mov;
     use moves::mov::Mov;
     use moves::move_gen;
+    use position::position::Position;
 
     #[test]
     pub fn move_gen_white_king_knight_move_list_as_expected() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
-        let brd = Board::from_fen(&parsed_fen);
-
-        move_gen::generate_moves(&brd, Colour::White, &mut move_list);
+        let pos = Position::new(parsed_fen);
+        move_gen::generate_moves(pos, Colour::White, &mut move_list);
         // check the capture moves
         let mut mv = Mov::encode_move_capture(Square::e3, Square::d1);
         assert!(move_list.contains(&mv) == true);
@@ -247,9 +249,9 @@ pub mod tests {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
-        let brd = Board::from_fen(&parsed_fen);
+        let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(&brd, Colour::Black, &mut move_list);
+        move_gen::generate_moves(pos, Colour::Black, &mut move_list);
 
         // check the capture moves
         let mut mv = Mov::encode_move_capture(Square::h1, Square::f2);
@@ -273,9 +275,9 @@ pub mod tests {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/4P1K1/1RB1BP2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
-        let brd = Board::from_fen(&parsed_fen);
+        let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(&brd, Colour::White, &mut move_list);
+        move_gen::generate_moves(pos, Colour::White, &mut move_list);
 
         mov::print_move_list(&move_list);
 
@@ -317,9 +319,9 @@ pub mod tests {
         let fen = "1nbk3p/NP1pQpP1/2p4p/p5K1/1RBbBP2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
-        let brd = Board::from_fen(&parsed_fen);
+        let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(&brd, Colour::Black, &mut move_list);
+        move_gen::generate_moves(pos, Colour::Black, &mut move_list);
 
         mov::print_move_list(&move_list);
         // check the quiet moves
@@ -346,9 +348,9 @@ pub mod tests {
         let fen = "1nbk3p/NP1pQpP1/2p4p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn w - - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
-        let brd = Board::from_fen(&parsed_fen);
+        let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(&brd, Colour::Black, &mut move_list);
+        move_gen::generate_moves(pos, Colour::Black, &mut move_list);
 
         mov::print_move_list(&move_list);
         // quiet moves
@@ -396,9 +398,9 @@ pub mod tests {
         let fen = "1nbk3p/NP1pQpP1/2p4p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn w - - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
-        let brd = Board::from_fen(&parsed_fen);
+        let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(&brd, Colour::White, &mut move_list);
+        move_gen::generate_moves(pos, Colour::White, &mut move_list);
 
         mov::print_move_list(&move_list);
         // quiet moves
@@ -433,9 +435,9 @@ pub mod tests {
         let fen = "1nbk3p/NP1p1pP1/2p1Q2p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn w - - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
-        let brd = Board::from_fen(&parsed_fen);
+        let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(&brd, Colour::White, &mut move_list);
+        move_gen::generate_moves(pos, Colour::White, &mut move_list);
 
         mov::print_move_list(&move_list);
         // quiet moves
@@ -477,9 +479,9 @@ pub mod tests {
         let fen = "1nbk3p/NP1p1pP1/2p1Q2p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn w - - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
-        let brd = Board::from_fen(&parsed_fen);
+        let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(&brd, Colour::Black, &mut move_list);
+        move_gen::generate_moves(pos, Colour::Black, &mut move_list);
 
         mov::print_move_list(&move_list);
         // quiet moves
