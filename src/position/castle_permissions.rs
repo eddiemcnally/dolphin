@@ -1,6 +1,6 @@
 use board::piece::Colour;
 
-#[derive(Eq, PartialEq, Debug, Clone, Copy)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy, Default)]
 pub struct CastlePermission {
     has_white_king: bool,
     has_white_queen: bool,

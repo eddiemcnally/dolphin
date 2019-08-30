@@ -36,6 +36,17 @@ pub fn get_anti_diagonal_move_mask(sq: Square) -> u64{
     ANTI_DIAGONAL_MOVE_MASK[sq.to_offset()]
 }
 
+// Bitboards representing commonly used ranks
+pub const RANK_2_BB:u64 = 0x000000000000FF00;
+pub const RANK_7_BB:u64 = 0x00FF000000000000;
+
+// bitboards for squares between castle squares
+pub const CASTLE_MASK_WK:u64 = 0x0000000000000060;
+pub const CASTLE_MASK_WQ:u64 = 0x000000000000000E;
+pub const CASTLE_MASK_BK:u64 = 0x6000000000000000;
+pub const CASTLE_MASK_BQ:u64 = 0x0E00000000000000;
+
+
 // elem [0] is a1, [63] is h8
 static KNIGHT_OCCUPANCY_MASKS: [u64; board::NUM_SQUARES] = [
     0x0000000000020400,

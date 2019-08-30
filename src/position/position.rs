@@ -4,20 +4,20 @@ use board::square::Square;
 use input::fen::ParsedFen;
 use position::castle_permissions::CastlePermission;
 
-struct MoveCounter {
+pub struct MoveCounter {
     half_move: u16,
     full_move: u16,
 }
 
 pub struct Position {
     // pieces and squares
-    pub board: Board,
+    board: Board,
     // side to move
     side_to_move: Colour,
     // the en passant square
     en_pass_sq: Option<Square>,
     // castle permissions
-    castle_perm: Option<CastlePermission>,
+    castle_perm: CastlePermission,
 
     move_cntr: MoveCounter,
 }
@@ -38,12 +38,26 @@ impl Position {
         }
     }
 
-    pub fn set_board(&mut self, brd: Board) {
-        self.board = brd;
-    }
-    pub fn get_side_to_move(&self) -> Colour {
+    pub fn side_to_move(&self) -> Colour {
         self.side_to_move
     }
+
+    pub fn board(&self) -> &Board{
+        &self.board
+    }
+
+    pub fn en_passant_square(&self) -> Option<Square>{
+        self.en_pass_sq
+    }
+
+    pub fn castle_permissions(&self) -> CastlePermission{
+        self.castle_perm
+    }
+
+    pub fn move_counter(&self) -> &MoveCounter{
+        &self.move_cntr
+    }
+
 }
 
 #[cfg(test)]

@@ -8,31 +8,39 @@ use board::square::Square;
 use moves::mov::Mov;
 use position::position::Position;
 
+
+
 pub fn generate_moves(position: Position, side_to_move: Colour, move_list: &mut Vec<Mov>) {
     // TODO
+    // ====
     // knight - done
-    // king - dome
+    // king - done
+    // castling
     // bishop - done
     // queen - done
     // rook - done
     // pawn
+    //      - first move
+    //      - first double move
+    //      - en passant
+    //      - promotion
 
-    let board = &position.board;
+    let board = position.board();
 
     let knight = Piece::new(PieceRole::Knight, side_to_move);
-    generate_non_sliding_piece_moves(board, knight, move_list);
+    generate_non_sliding_piece_moves(&board, knight, move_list);
     let king = Piece::new(PieceRole::King, side_to_move);
-    generate_non_sliding_piece_moves(board, king, move_list);
+    generate_non_sliding_piece_moves(&board, king, move_list);
 
     let bishop = Piece::new(PieceRole::Bishop, side_to_move);
-    generate_sliding_diagonal_antidiagonal_moves(board, bishop, move_list);
+    generate_sliding_diagonal_antidiagonal_moves(&board, bishop, move_list);
 
     let rook = Piece::new(PieceRole::Rook, side_to_move);
-    generate_sliding_rank_file_moves(board, rook, move_list);
+    generate_sliding_rank_file_moves(&board, rook, move_list);
 
     let queen = Piece::new(PieceRole::Queen, side_to_move);
-    generate_sliding_rank_file_moves(board, queen, move_list);
-    generate_sliding_diagonal_antidiagonal_moves(board, queen, move_list);
+    generate_sliding_rank_file_moves(&board, queen, move_list);
+    generate_sliding_diagonal_antidiagonal_moves(&board, queen, move_list);
 }
 
 // generates diagonal and anti-diagonal moves for queen and bishop
@@ -143,7 +151,7 @@ fn generate_non_sliding_piece_moves(board: &Board, pce: Piece, move_list: &mut V
 
         // generate capture moves
         // ----------------------
-        // AND'ing with opposite colour pieces with the occupancy mask, will
+        // AND'ing with opposite colour pieces with the occupancy mask, willbetter toml
         // give all pieces that can be captured by the piece on this square
         let opposite_side = pce.colour().flip_side();
         let opp_occ_sq_bb = board.get_colour_bb(opposite_side);
@@ -156,6 +164,9 @@ fn generate_non_sliding_piece_moves(board: &Board, pce: Piece, move_list: &mut V
         encode_multiple_quiet_moves(&mut quiet_move_bb, sq, move_list);
     }
 }
+
+
+
 
 fn encode_quite_or_capture(
     board: &Board,
