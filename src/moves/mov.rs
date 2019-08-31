@@ -100,7 +100,7 @@ impl Mov {
     ///
     /// # Arguments
     ///
-    /// * `from_sq`         - the from square
+    /// * `from_sq`         - the from squareClone, 
     /// * `to_sq`           - the to square
     ///
     pub fn encode_move_double_pawn_first(from_sq: Square, to_sq: Square) -> Mov {
@@ -262,8 +262,14 @@ impl Mov {
     pub fn print_move(&self){
         let from_sq = self.decode_from_square();
         let to_sq = self.decode_to_square();
+        
 
-        println!("From {:?}, To {:?}", from_sq, to_sq);
+        println!("From {:?}, To {:?}, IsQuiet {:?}, IsDoublePush {:?}, IsKingCastle {:?}", 
+        from_sq, 
+        to_sq, 
+        self.is_quiet(),
+        self.is_double_pawn(),
+        self.is_king_castle());
     }
 
 

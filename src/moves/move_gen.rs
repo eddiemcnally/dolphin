@@ -10,7 +10,7 @@ use position::position::Position;
 
 
 
-pub fn generate_moves(position: Position, side_to_move: Colour, move_list: &mut Vec<Mov>) {
+pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
     // TODO
     // ====
     // knight - done
@@ -26,6 +26,7 @@ pub fn generate_moves(position: Position, side_to_move: Colour, move_list: &mut 
     //      - promotion
 
     let board = position.board();
+    let side_to_move = position.side_to_move();
 
     let knight = Piece::new(PieceRole::Knight, side_to_move);
     generate_non_sliding_piece_moves(&board, knight, move_list);
@@ -41,6 +42,8 @@ pub fn generate_moves(position: Position, side_to_move: Colour, move_list: &mut 
     let queen = Piece::new(PieceRole::Queen, side_to_move);
     generate_sliding_rank_file_moves(&board, queen, move_list);
     generate_sliding_diagonal_antidiagonal_moves(&board, queen, move_list);
+
+    generate_castling_moves(&position, move_list);
 }
 
 // generates diagonal and anti-diagonal moves for queen and bishop
@@ -63,22 +66,22 @@ fn generate_sliding_diagonal_antidiagonal_moves(
 
         // diagonal moves
         let diag1 = (occ_sq_bb & diag_move_mask)
-            .overflowing_sub(2 * slider_bb)
+            .overflowing_sub(slider_bb.overflowing_mul(2).0)
             .0;
         let diag2 = ((occ_sq_bb & diag_move_mask)
             .reverse_bits()
-            .overflowing_sub(2 * slider_bb.reverse_bits()))
+            .overflowing_sub(slider_bb.reverse_bits().overflowing_mul(2).0))
         .0
         .reverse_bits();
         let diag = diag1 ^ diag2;
 
         // anti-diagonal moves
         let antidiag1 = (occ_sq_bb & anti_diag_move_mask)
-            .overflowing_sub(2 * slider_bb)
+            .overflowing_sub(slider_bb.overflowing_mul(2).0)
             .0;
         let antidiag2 = ((occ_sq_bb & anti_diag_move_mask)
             .reverse_bits()
-            .overflowing_sub(2 * slider_bb.reverse_bits()))
+            .overflowing_sub(slider_bb.reverse_bits().overflowing_mul(2).0))
         .0
         .reverse_bits();
 
@@ -109,19 +112,21 @@ fn generate_sliding_rank_file_moves(board: &Board, pce: Piece, move_list: &mut V
         let slider_bb_reverse = slider_bb.reverse_bits();
 
         // horizontal moves
-        let horiz1 = occ_sq_bb.overflowing_sub(2 * slider_bb).0;
+        let horiz1 = occ_sq_bb.overflowing_sub(slider_bb.overflowing_mul(2).0).0;
         let horiz2 = (occ_sq_bb
             .reverse_bits()
-            .overflowing_sub(2 * slider_bb_reverse)
+            .overflowing_sub(slider_bb_reverse.overflowing_mul(2).0)
             .0)
             .reverse_bits();
         let horiz = horiz1 ^ horiz2;
 
         // vertical moves
-        let vert1 = (occ_sq_bb & vertical_mask).overflowing_sub(slider_bb * 2).0;
+        let vert1 = (occ_sq_bb & vertical_mask)
+                    .overflowing_sub(slider_bb.overflowing_mul(2).0)
+                    .0;
         let vert2 = ((occ_sq_bb & vertical_mask)
             .reverse_bits()
-            .overflowing_sub(2 * slider_bb_reverse))
+            .overflowing_sub(slider_bb_reverse.overflowing_mul(2).0))
         .0
         .reverse_bits();
         let vert = vert1 ^ vert2;
@@ -166,6 +171,41 @@ fn generate_non_sliding_piece_moves(board: &Board, pce: Piece, move_list: &mut V
 }
 
 
+fn generate_castling_moves(pos:&Position, move_list: &mut Vec<Mov>){
+
+    let cp = pos.castle_permissions();
+
+    if cp.has_castle_permission() == false {
+        return;
+    }
+
+    let bb = pos.board().get_bitboard();
+    let side = pos.side_to_move();
+
+    match side {
+        Colour::White => {
+            if cp.is_king_set(side) && (bb & occupancy_masks::CASTLE_MASK_WK == 0) {
+                let mv = Mov::encode_move_castle_kingside_white();
+                move_list.push(mv);
+            }
+            if cp.is_queen_set(side) && (bb & occupancy_masks::CASTLE_MASK_WQ == 0) {
+                let mv = Mov::encode_move_castle_queenside_white();
+                move_list.push(mv);
+            }
+        },
+        Colour::Black => {
+            if cp.is_king_set(side) && (bb & occupancy_masks::CASTLE_MASK_BK == 0) {
+                let mv = Mov::encode_move_castle_kingside_black();
+                move_list.push(mv);
+            }
+            if cp.is_queen_set(side) && (bb & occupancy_masks::CASTLE_MASK_BQ == 0) {
+                let mv = Mov::encode_move_castle_queenside_black();
+                move_list.push(mv);
+            }
+        }
+    }
+}
+
 
 
 fn encode_quite_or_capture(
@@ -201,13 +241,12 @@ fn encode_multiple_quiet_moves(quiet_move_bb: &mut u64, from_sq: Square, move_li
 
 #[cfg(test)]
 pub mod tests {
-    use board::piece::Colour;
     use board::square::Square;
     use input::fen;
-    use moves::mov;
     use moves::mov::Mov;
     use moves::move_gen;
     use position::position::Position;
+    use board::piece::Colour;
 
     #[test]
     pub fn move_gen_white_king_knight_move_list_as_expected() {
@@ -215,7 +254,7 @@ pub mod tests {
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
-        move_gen::generate_moves(pos, Colour::White, &mut move_list);
+        move_gen::generate_moves(&pos, &mut move_list);
         // check the capture moves
         let mut mv = Mov::encode_move_capture(Square::e3, Square::d1);
         assert!(move_list.contains(&mv) == true);
@@ -257,12 +296,12 @@ pub mod tests {
 
     #[test]
     pub fn move_gen_black_king_knight_move_list_as_expected() {
-        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b - - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(pos, Colour::Black, &mut move_list);
+        move_gen::generate_moves(&pos, &mut move_list);
 
         // check the capture moves
         let mut mv = Mov::encode_move_capture(Square::h1, Square::f2);
@@ -288,9 +327,9 @@ pub mod tests {
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(pos, Colour::White, &mut move_list);
+        move_gen::generate_moves(&pos, &mut move_list);
 
-        mov::print_move_list(&move_list);
+        //mov::print_move_list(&move_list);
 
         // check the quiet moves
         let mut mv = Mov::encode_move_quiet(Square::c4, Square::b5);
@@ -327,14 +366,14 @@ pub mod tests {
 
     #[test]
     pub fn move_gen_black_bishop_move_list_as_expected() {
-        let fen = "1nbk3p/NP1pQpP1/2p4p/p5K1/1RBbBP2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let fen = "1nbk3p/NP1pQpP1/2p4p/p5K1/1RBbBP2/pPR1Np2/P1r1rP1P/P2q3n b - - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(pos, Colour::Black, &mut move_list);
+        move_gen::generate_moves(&pos, &mut move_list);
 
-        mov::print_move_list(&move_list);
+        //mov::print_move_list(&move_list);
         // check the quiet moves
         let mut mv = Mov::encode_move_quiet(Square::d4, Square::c5);
         assert!(move_list.contains(&mv) == true);
@@ -356,14 +395,14 @@ pub mod tests {
 
     #[test]
     pub fn move_gen_black_rook_move_list_as_expected() {
-        let fen = "1nbk3p/NP1pQpP1/2p4p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn w - - 0 1";
+        let fen = "1nbk3p/NP1pQpP1/2p4p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn b - - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(pos, Colour::Black, &mut move_list);
+        move_gen::generate_moves(&pos, &mut move_list);
 
-        mov::print_move_list(&move_list);
+        //mov::print_move_list(&move_list);
         // quiet moves
         // b1->c1,d1,e1,f1,b2
         // e2->e1,e3,e4,d2,c2,b2
@@ -411,9 +450,9 @@ pub mod tests {
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(pos, Colour::White, &mut move_list);
+        move_gen::generate_moves(&pos, &mut move_list);
 
-        mov::print_move_list(&move_list);
+        //mov::print_move_list(&move_list);
         // quiet moves
         // b4->a4,b5,b6
         // c3->d3,e3,c2,c1
@@ -448,9 +487,9 @@ pub mod tests {
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(pos, Colour::White, &mut move_list);
+        move_gen::generate_moves(&pos, &mut move_list);
 
-        mov::print_move_list(&move_list);
+        ////mov::print_move_list(&move_list);
         // quiet moves
         // e6->e7,e8,d6,f6,g6,f5,g4
         // capture moves
@@ -487,14 +526,14 @@ pub mod tests {
 
     #[test]
     pub fn move_gen_black_queen_move_list_as_expected() {
-        let fen = "1nbk3p/NP1p1pP1/2p1Q2p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn w - - 0 1";
+        let fen = "1nbk3p/NP1p1pP1/2p1Q2p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn b - - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
-        move_gen::generate_moves(pos, Colour::Black, &mut move_list);
+        move_gen::generate_moves(&pos, &mut move_list);
 
-        mov::print_move_list(&move_list);
+        //mov::print_move_list(&move_list);
         // quiet moves
         // g1->f1,e1,d1,c1,g2,g3,g4
         // capture moves
@@ -524,4 +563,89 @@ pub mod tests {
         assert!(move_list.contains(&mv) == true);
     }
 
+    #[test]
+    pub fn move_gen_white_king_castle_move_move_list_as_expected() {
+        let fen = "r2qk2r/pb1npp1p/1ppp1npb/8/4P3/1PNP1PP1/PBP1N1BP/R2QK2R w K - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+ 
+        move_gen::generate_moves(&pos, &mut move_list);
+
+        let mv = Mov::encode_move_castle_kingside_white();
+        assert!(move_list.contains(&mv) == true);
+    }
+
+    #[test]
+    pub fn move_gen_white_queen_castle_move_move_list_as_expected() {
+        let fen = "r3k2r/pbqnpp1p/1ppp1npb/8/4P3/1PNP1PP1/PBPQN1BP/R3K2R w Q - 0 1";
+
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+ 
+        move_gen::generate_moves(&pos, &mut move_list);
+
+        let mv = Mov::encode_move_castle_queenside_white();
+        assert!(move_list.contains(&mv) == true);
+    }
+
+
+    #[test]
+    pub fn move_gen_black_king_castle_move_move_list_as_expected() {
+        let fen = "r2qk2r/pb1npp1p/1ppp1npb/8/4P3/1PNP1PP1/PBP1N1BP/R2QK2R b k - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+ 
+        move_gen::generate_moves(&pos, &mut move_list);
+
+        let mv = Mov::encode_move_castle_kingside_black();
+        assert!(move_list.contains(&mv) == true);
+    }
+
+    #[test]
+    pub fn move_gen_black_queen_castle_move_move_list_as_expected() {
+        let fen = "r3k2r/pbqnpp1p/1ppp1npb/8/4P3/1PNP1PP1/PBPQN1BP/R3K2R b q - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+ 
+        let cp = pos.castle_permissions();
+        assert!(cp.is_queen_set(Colour::Black));
+
+        move_gen::generate_moves(&pos, &mut move_list);
+
+        let mv = Mov::encode_move_castle_queenside_black();
+        assert!(move_list.contains(&mv) == true);
+    }
+
+
+    #[test]
+    pub fn move_gen_all_castle_options_available_list_as_expected() {
+
+        // --- WHITE 
+        let fen = "r3k2r/pbqnpp1p/1ppp1npb/8/4P3/1PNP1PP1/PBPQN1BP/R3K2R w KQkq - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        move_gen::generate_moves(&pos, &mut move_list);
+
+        let mut mv = Mov::encode_move_castle_queenside_white();
+        assert!(move_list.contains(&mv) == true);
+
+        mv = Mov::encode_move_castle_kingside_white();
+        assert!(move_list.contains(&mv) == true);
+
+        // --- BLACK
+        pos.flip_side_to_move();
+        move_gen::generate_moves(&pos, &mut move_list);
+
+        mv = Mov::encode_move_castle_queenside_black();
+        assert!(move_list.contains(&mv) == true);
+
+        mv = Mov::encode_move_castle_kingside_black();
+        assert!(move_list.contains(&mv) == true);
+    }
 }

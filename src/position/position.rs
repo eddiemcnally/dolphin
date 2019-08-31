@@ -58,6 +58,12 @@ impl Position {
         &self.move_cntr
     }
 
+    pub fn flip_side_to_move(&mut self) {
+        match self.side_to_move {
+            Colour::White => self.side_to_move = Colour::Black,
+            Colour::Black => self.side_to_move = Colour::White,            
+        }
+    }
 }
 
 #[cfg(test)]
