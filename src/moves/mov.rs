@@ -261,12 +261,9 @@ impl Mov {
         let to_sq = self.decode_to_square();
         
 
-        println!("From {:?}, To {:?}, IsQuiet {:?}, IsDoublePush {:?}, IsKingCastle {:?}", 
+        println!("From {:?}, To {:?}", 
         from_sq, 
-        to_sq, 
-        self.is_quiet(),
-        self.is_double_pawn(),
-        self.is_king_castle());
+        to_sq);
     }
 
 

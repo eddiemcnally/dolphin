@@ -31,10 +31,25 @@ pub fn pop_1st_bit(bb:&mut u64) -> Square {
     return sq_clear;
 }
 
+pub fn display_squares(bb: u64){
+    let mut slider = bb;
+    while slider != 0 {
+        let sq = pop_1st_bit(& mut slider);
+        print!("{:?},", sq);
+    }
+    println!(" ");
+}
+
+
+
 fn to_mask(sq: Square) -> u64 {
     let bit: u64 = 1;
     bit.shl(sq.to_offset())
 }
+
+
+
+
 
 #[cfg(test)]
 pub mod tests {

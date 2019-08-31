@@ -224,31 +224,29 @@ fn generate_promotion_moves_white(pos: &Position, move_list: &mut Vec<Mov>){
     let all_black_bb = pos.board().get_colour_bb(Colour::Black);
 
     let mut promo_bb = wp_bb & occupancy_masks::RANK_7_BB;
-
     while promo_bb != 0 {
         let from_sq = bitboard::pop_1st_bit(&mut promo_bb);
 
         // quiet promotion
-        let to_sq = from_sq.square_plus_1_rank();
-        if bitboard::is_set(all_bb, to_sq) == false {
+        let quiet_to_sq = from_sq.square_plus_1_rank();
+        if bitboard::is_set(all_bb, quiet_to_sq) == false {
             // free square ahead
-            encode_promotion_moves(from_sq, to_sq, false, move_list);
-        } else{
-            // check for capture promotions
-            let capt_mask = occupancy_masks::get_white_pawn_capture_mask(from_sq);
-            let mut capt_bb = capt_mask & all_black_bb;
+            encode_promotion_moves(from_sq, quiet_to_sq, false, move_list);
+        } 
 
-            while capt_bb != 0{
-                let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
-                encode_promotion_moves(from_sq, to_sq, true, move_list);
-            }
+        // check for capture promotions
+        let capt_mask = occupancy_masks::get_white_pawn_capture_mask(from_sq);
+        let mut capt_bb = capt_mask & all_black_bb;
+
+        while capt_bb != 0{
+            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            encode_promotion_moves(from_sq, to_sq, true, move_list);
         }
     }
 }
 
 
 fn encode_promotion_moves(from_sq:Square, to_sq:Square, is_capture:bool, move_list: &mut Vec<Mov>){
-
     if is_capture{
         move_list.push(Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Bishop));
         move_list.push(Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Knight));
@@ -299,13 +297,15 @@ fn encode_multiple_quiet_moves(quiet_move_bb: &mut u64, from_sq: Square, move_li
 
 #[cfg(test)]
 pub mod tests {
+    use board::piece::PieceRole;
     use board::square::Square;
     use input::fen;
     use moves::mov::Mov;
+    use moves::mov;
     use moves::move_gen;
     use position::position::Position;
     use board::piece::Colour;
-
+    
     #[test]
     pub fn move_gen_white_king_knight_move_list_as_expected() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
@@ -709,7 +709,75 @@ pub mod tests {
 
     #[test]
     pub fn move_gen_white_promotion_moves_as_expected(){
+        let fen = "2b1rkr1/PPpP1pbP/n1p4p/2NpP1p1/1RBqBP2/pPR1NpQ1/P4P1P/P4K1n w - - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+
+        move_gen::generate_moves(&pos, &mut move_list);
+
+        mov::print_move_list(&move_list);
+
+        let mut from_sq:Square;
+        let mut to_sq:Square;
+
+        // QUITE promotion
+        from_sq = Square::a7;
+        to_sq = Square::a8;
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Bishop)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Knight)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Queen)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Rook)));        
+
+        from_sq = Square::b7;
+        to_sq = Square::b8;
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Bishop)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Knight)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Queen)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Rook)));        
+
+        from_sq = Square::d7;
+        to_sq = Square::d8;
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Bishop)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Knight)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Queen)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Rook)));        
+
+        from_sq = Square::h7;
+        to_sq = Square::h8;
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Bishop)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Knight)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Queen)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Rook)));        
+
+        // CAPTURE promotion
+        from_sq = Square::b7;
+        to_sq = Square::c8;
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Bishop)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Knight)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Queen)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Rook)));        
+
+        from_sq = Square::d7;
+        to_sq = Square::c8;
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Bishop)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Knight)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Queen)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Rook)));        
+
+        from_sq = Square::d7;
+        to_sq = Square::e8;
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Bishop)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Knight)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Queen)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Rook)));        
+
+        from_sq = Square::h7;
+        to_sq = Square::g8;
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Bishop)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Knight)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Queen)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Rook)));        
 
     }
-
 }
