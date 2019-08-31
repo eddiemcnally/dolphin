@@ -8,17 +8,15 @@ use board::square::Square;
 use moves::mov::Mov;
 use position::position::Position;
 
-
-
 pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
     // TODO
     // ====
-    // knight - done
-    // king - done
-    // castling
-    // bishop - done
-    // queen - done
-    // rook - done
+    // knight   - done
+    // king     - done
+    // castling - done
+    // bishop   - done
+    // queen    - done
+    // rook     - done
     // pawn
     //      - first move
     //      - first double move
@@ -44,6 +42,10 @@ pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
     generate_sliding_diagonal_antidiagonal_moves(&board, queen, move_list);
 
     generate_castling_moves(&position, move_list);
+
+    if position.side_to_move() == Colour::White{
+        generate_promotion_moves_white(&position, move_list);
+    }
 }
 
 // generates diagonal and anti-diagonal moves for queen and bishop
@@ -97,6 +99,8 @@ fn generate_sliding_diagonal_antidiagonal_moves(
     }
 }
 
+// generates sliding rank and file moves for queen and rook
+// see Hyperbola Quintessence
 fn generate_sliding_rank_file_moves(board: &Board, pce: Piece, move_list: &mut Vec<Mov>) {
     let mut pce_bb = board.get_piece_bitboard(pce);
     let occ_sq_bb = board.get_bitboard();
@@ -205,6 +209,60 @@ fn generate_castling_moves(pos:&Position, move_list: &mut Vec<Mov>){
         }
     }
 }
+
+
+
+fn generate_promotion_moves_white(pos: &Position, move_list: &mut Vec<Mov>){
+
+    assert!(pos.side_to_move() == Colour::White);
+
+    let wp = Piece::new(PieceRole::Pawn, Colour::White);
+    
+    // bitboard of all white pieces
+    let wp_bb = pos.board().get_piece_bitboard(wp);
+    let all_bb = pos.board().get_bitboard();
+    let all_black_bb = pos.board().get_colour_bb(Colour::Black);
+
+    let mut promo_bb = wp_bb & occupancy_masks::RANK_7_BB;
+
+    while promo_bb != 0 {
+        let from_sq = bitboard::pop_1st_bit(&mut promo_bb);
+
+        // quiet promotion
+        let to_sq = from_sq.square_plus_1_rank();
+        if bitboard::is_set(all_bb, to_sq) == false {
+            // free square ahead
+            encode_promotion_moves(from_sq, to_sq, false, move_list);
+        } else{
+            // check for capture promotions
+            let capt_mask = occupancy_masks::get_white_pawn_capture_mask(from_sq);
+            let mut capt_bb = capt_mask & all_black_bb;
+
+            while capt_bb != 0{
+                let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+                encode_promotion_moves(from_sq, to_sq, true, move_list);
+            }
+        }
+    }
+}
+
+
+fn encode_promotion_moves(from_sq:Square, to_sq:Square, is_capture:bool, move_list: &mut Vec<Mov>){
+
+    if is_capture{
+        move_list.push(Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Bishop));
+        move_list.push(Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Knight));
+        move_list.push(Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Queen));
+        move_list.push(Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Rook));        
+    } else {
+        move_list.push(Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Bishop));
+        move_list.push(Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Knight));
+        move_list.push(Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Queen));
+        move_list.push(Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Rook));        
+    }
+}
+
+
 
 
 
@@ -648,4 +706,10 @@ pub mod tests {
         mv = Mov::encode_move_castle_kingside_black();
         assert!(move_list.contains(&mv) == true);
     }
+
+    #[test]
+    pub fn move_gen_white_promotion_moves_as_expected(){
+
+    }
+
 }

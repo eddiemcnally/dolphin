@@ -83,6 +83,7 @@ impl fmt::Display for Square {
     }
 }
 
+
 pub fn get_square_array() -> &'static [Square] {
     SQUARES
 }
@@ -155,6 +156,12 @@ static SQUARES: &'static [Square] = &[
 ];
 
 impl Square {
+
+    pub fn square_plus_1_rank(&self) -> Square{
+        let s = *self as u8 + 8;
+        return Square::from_u8(s);
+    }
+
     pub fn rank(self) -> Rank {
         let rank_num = self as u8 >> 3;
 
