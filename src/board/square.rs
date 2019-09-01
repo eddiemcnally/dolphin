@@ -162,6 +162,21 @@ impl Square {
         return Square::from_u8(s);
     }
 
+    pub fn square_minus_1_rank(&self) -> Square{
+        let s = *self as u8 - 8;
+        return Square::from_u8(s);
+    }
+
+    pub fn square_plus_2_ranks(&self) -> Square{
+        let s = *self as u8 + 16;
+        return Square::from_u8(s);
+    }
+
+    pub fn square_minus_2_ranks(&self) -> Square{
+        let s = *self as u8 - 16;
+        return Square::from_u8(s);
+    }
+
     pub fn rank(self) -> Rank {
         let rank_num = self as u8 >> 3;
 
@@ -399,7 +414,8 @@ pub mod rank {
                 2 => Rank::Rank3,
                 3 => Rank::Rank4,
                 4 => Rank::Rank5,
-                5 => Rank::Rank6,
+                5 => Rank::Rank6,    // en passant
+
                 6 => Rank::Rank7,
                 7 => Rank::Rank8,
                 _ => panic!("Invalid rank character {}", rank),

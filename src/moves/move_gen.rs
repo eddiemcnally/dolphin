@@ -9,6 +9,7 @@ use moves::mov::Mov;
 use position::position::Position;
 
 pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
+
     // TODO
     // ====
     // knight   - done
@@ -18,10 +19,12 @@ pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
     // queen    - done
     // rook     - done
     // pawn
-    //      - first move
-    //      - first double move
+    //      - first move        - done
+    //      - first double move - done
     //      - en passant
-    //      - promotion
+    //      - promotion         - done
+    //      - regular moves
+
 
     let board = position.board();
     let side_to_move = position.side_to_move();
@@ -43,9 +46,8 @@ pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
 
     generate_castling_moves(&position, move_list);
 
-    if position.side_to_move() == Colour::White{
-        generate_promotion_moves_white(&position, move_list);
-    }
+    generate_pawn_moves(&position, move_list);
+    
 }
 
 // generates diagonal and anti-diagonal moves for queen and bishop
@@ -212,31 +214,128 @@ fn generate_castling_moves(pos:&Position, move_list: &mut Vec<Mov>){
 
 
 
-fn generate_promotion_moves_white(pos: &Position, move_list: &mut Vec<Mov>){
+fn generate_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>){
 
-    assert!(pos.side_to_move() == Colour::White);
+    generate_promotion_moves(&pos, move_list);
+    generate_first_pawn_moves(&pos, move_list);
 
-    let wp = Piece::new(PieceRole::Pawn, Colour::White);
+}
+
+
+fn generate_first_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>){
+    let side_to_move = pos.side_to_move();
+
+    let pawn = match side_to_move {
+        Colour::White => Piece::new(PieceRole::Pawn, Colour::White),
+        Colour::Black => Piece::new(PieceRole::Pawn, Colour::Black),
+    };
     
-    // bitboard of all white pieces
-    let wp_bb = pos.board().get_piece_bitboard(wp);
+    // bitboard of all pawns
+    let pawn_bb = pos.board().get_piece_bitboard(pawn);
+    // bitboard of entire board
     let all_bb = pos.board().get_bitboard();
-    let all_black_bb = pos.board().get_colour_bb(Colour::Black);
+    // opposite colour bitboard 
+    let opposite_side = side_to_move.flip_side();
+    let all_opposing_bb = pos.board().get_colour_bb(opposite_side);
 
-    let mut promo_bb = wp_bb & occupancy_masks::RANK_7_BB;
+    let mut starting_pawn_bb = match side_to_move {
+        Colour::White => pawn_bb & occupancy_masks::RANK_2_BB,
+        Colour::Black => pawn_bb & occupancy_masks::RANK_7_BB,        
+    };
+
+    while starting_pawn_bb != 0 {
+    
+        let from_sq = bitboard::pop_1st_bit(&mut starting_pawn_bb);
+
+        // ================================================================
+        // single square moves from initial pawn rank (2 or 7) - no capture
+        // ================================================================
+        let single_mv_to_sq = match side_to_move {
+            Colour::White => from_sq.square_plus_1_rank(),
+            Colour::Black => from_sq.square_minus_1_rank(),
+        };
+
+        if bitboard::is_set(all_bb, single_mv_to_sq) == false {
+            // free square 
+            let mv = Mov::encode_move_quiet(from_sq, single_mv_to_sq);
+            move_list.push(mv);
+        }
+
+        // ===================
+        // double square moves
+        // ===================
+        let double_mv_to_sq = match side_to_move {
+            Colour::White => from_sq.square_plus_2_ranks(),
+            Colour::Black => from_sq.square_minus_2_ranks(),
+        };
+        if bitboard::is_set(all_bb, single_mv_to_sq) == false 
+            && bitboard::is_set(all_bb, double_mv_to_sq) == false {
+            
+            // both squares free 
+            let mv = Mov::encode_move_double_pawn_first(from_sq, double_mv_to_sq);
+            move_list.push(mv);
+        }
+
+        // =====================
+        // capture on first move
+        // =====================
+        let capt_mask = match side_to_move {
+            Colour::White => occupancy_masks::get_white_pawn_capture_mask(from_sq),
+            Colour::Black => occupancy_masks::get_black_pawn_capture_mask(from_sq),
+        };
+        let mut capt_bb = capt_mask & all_opposing_bb;
+        while capt_bb != 0 {
+            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            let mv = Mov::encode_move_capture(from_sq, to_sq);
+            move_list.push(mv);
+        };
+    };
+}
+
+
+fn generate_promotion_moves(pos: &Position, move_list: &mut Vec<Mov>){
+
+    let side_to_move = pos.side_to_move();
+
+    let pawn = match side_to_move {
+        Colour::White => Piece::new(PieceRole::Pawn, Colour::White),
+        Colour::Black => Piece::new(PieceRole::Pawn, Colour::Black),
+    };
+    
+    // bitboard of all pawns
+    let pawn_bb = pos.board().get_piece_bitboard(pawn);
+    // bitboard of entire board
+    let all_bb = pos.board().get_bitboard();
+    // opposite colour bitboard 
+    let opposite_side = side_to_move.flip_side();
+    let all_opposing_bb = pos.board().get_colour_bb(opposite_side);
+
+    let mut promo_bb = match side_to_move {
+        Colour::White => pawn_bb & occupancy_masks::RANK_7_BB,
+        Colour::Black => pawn_bb & occupancy_masks::RANK_2_BB,
+    };
+
     while promo_bb != 0 {
         let from_sq = bitboard::pop_1st_bit(&mut promo_bb);
 
         // quiet promotion
-        let quiet_to_sq = from_sq.square_plus_1_rank();
+        let quiet_to_sq = match side_to_move {
+            Colour::White => from_sq.square_plus_1_rank(),
+            Colour::Black => from_sq.square_minus_1_rank(),
+        };
+        
         if bitboard::is_set(all_bb, quiet_to_sq) == false {
             // free square ahead
             encode_promotion_moves(from_sq, quiet_to_sq, false, move_list);
         } 
 
         // check for capture promotions
-        let capt_mask = occupancy_masks::get_white_pawn_capture_mask(from_sq);
-        let mut capt_bb = capt_mask & all_black_bb;
+        let capt_mask = match side_to_move {
+            Colour::White => occupancy_masks::get_white_pawn_capture_mask(from_sq),
+            Colour::Black => occupancy_masks::get_black_pawn_capture_mask(from_sq),
+        };
+
+        let mut capt_bb = capt_mask & all_opposing_bb;
 
         while capt_bb != 0{
             let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
@@ -244,6 +343,7 @@ fn generate_promotion_moves_white(pos: &Position, move_list: &mut Vec<Mov>){
         }
     }
 }
+
 
 
 fn encode_promotion_moves(from_sq:Square, to_sq:Square, is_capture:bool, move_list: &mut Vec<Mov>){
@@ -780,4 +880,101 @@ pub mod tests {
         assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Rook)));        
 
     }
+
+    #[test]
+    pub fn move_gen_black_promotion_moves_as_expected(){
+        let fen = "2b1rkr1/PPpP1pbP/n6p/2NpPn2/1RBqBP2/4N1Q1/ppPpRp1P/P4K2 b - - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+
+        move_gen::generate_moves(&pos, &mut move_list);
+
+        mov::print_move_list(&move_list);
+
+        let mut from_sq:Square;
+        let mut to_sq:Square;
+
+        // QUITE promotion
+        from_sq = Square::b2;
+        to_sq = Square::b1;
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Bishop)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Knight)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Queen)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Rook)));        
+
+        from_sq = Square::d2;
+        to_sq = Square::d1;
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Bishop)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Knight)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Queen)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion(from_sq, to_sq, PieceRole::Rook)));        
+
+        // CAPTURE promotion
+        from_sq = Square::b2;
+        to_sq = Square::a1;
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Bishop)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Knight)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Queen)));
+        assert!(move_list.contains(&Mov::encode_move_with_promotion_capture(from_sq, to_sq, PieceRole::Rook)));        
+    }
+
+
+
+    #[test]
+    pub fn move_gen_white_first_moves_as_expected(){
+        let fen = "4k2n/rbppBn1q/pP1pp3/1BQ5/P2N3p/pr2b3/P1NPPPPP/2R2R1K w - - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+
+        move_gen::generate_moves(&pos, &mut move_list);
+
+        mov::print_move_list(&move_list);
+
+         // double first moves
+        assert!(move_list.contains(&Mov::encode_move_double_pawn_first(Square::f2, Square::f4)));
+        assert!(move_list.contains(&Mov::encode_move_double_pawn_first(Square::g2, Square::g4)));
+        let num_double_pawn_moves=  move_list.iter().filter(|&n| (*n).is_double_pawn()).count();
+        assert!(num_double_pawn_moves == 2);
+
+        // single first move
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::d2, Square::d3)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f2, Square::f3)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::g2, Square::g3)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h2, Square::h3)));
+
+        // capture on first move
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::a2, Square::b3)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::d2, Square::e3)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::f2, Square::e3)));
+   }
+
+
+    #[test]
+    pub fn move_gen_black_first_moves_as_expected(){
+        let fen = "4k2n/rbpp1ppq/pPNBp3/6n1/P7/prQBb3/P1NPPPPP/2R2R1K b - - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+
+        move_gen::generate_moves(&pos, &mut move_list);
+
+        mov::print_move_list(&move_list);
+
+         // double first moves
+        assert!(move_list.contains(&Mov::encode_move_double_pawn_first(Square::f7, Square::f5)));
+        let num_double_pawn_moves=  move_list.iter().filter(|&n| (*n).is_double_pawn()).count();
+        assert!(num_double_pawn_moves == 1);
+
+        // single first move
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f7, Square::f6)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::g7, Square::g6)));
+
+        // capture on first move
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::c7, Square::b6)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::c7, Square::d6)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::d7, Square::c6)));
+   }
+
 }

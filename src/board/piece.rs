@@ -9,6 +9,7 @@ pub enum PieceRole {
     King,
 }
 
+// todo look at mapping this to a u64 (or u32 if we remove the value)
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct Piece {
     piece_role: PieceRole,
