@@ -10,22 +10,6 @@ use position::position::Position;
 
 pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
 
-    // TODO
-    // ====
-    // knight   - done
-    // king     - done
-    // castling - done
-    // bishop   - done
-    // queen    - done
-    // rook     - done
-    // pawn
-    //      - first move        - done
-    //      - first double move - done
-    //      - en passant
-    //      - promotion         - done
-    //      - regular moves
-
-
     let board = position.board();
     let side_to_move = position.side_to_move();
 
@@ -218,6 +202,73 @@ fn generate_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>){
 
     generate_promotion_moves(&pos, move_list);
     generate_first_pawn_moves(&pos, move_list);
+    generate_misc_pawn_moves(&pos, move_list);    
+}
+
+fn generate_misc_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>){
+    let side_to_move = pos.side_to_move();
+
+    let pawn = match side_to_move {
+        Colour::White => Piece::new(PieceRole::Pawn, Colour::White),
+        Colour::Black => Piece::new(PieceRole::Pawn, Colour::Black),
+    };
+    
+    // bitboard of all pawns
+    let mut pawn_bb = pos.board().get_piece_bitboard(pawn);
+    // bitboard of entire board
+    let all_bb = pos.board().get_bitboard();
+    // opposite colour bitboard 
+    let opposite_side = side_to_move.flip_side();
+    let all_opposing_bb = pos.board().get_colour_bb(opposite_side);
+
+    // exclude all first moves, and possible promotions
+    pawn_bb = pawn_bb 
+                & !occupancy_masks::RANK_2_BB 
+                & !occupancy_masks::RANK_7_BB; 
+  
+    while pawn_bb != 0 {
+        let from_sq = bitboard::pop_1st_bit(&mut pawn_bb);
+
+        // ===========
+        // quiet moves
+        // ===========
+        let quiet_to_sq = match side_to_move {
+            Colour::White => from_sq.square_plus_1_rank(),
+            Colour::Black => from_sq.square_minus_1_rank(),            
+        };
+        if bitboard::is_set(all_bb, quiet_to_sq) == false {
+            let mv = Mov::encode_move_quiet(from_sq, quiet_to_sq);
+            move_list.push(mv);
+        }
+
+        // =============
+        // capture moves
+        // =============
+        let capt_mask = match side_to_move {
+            Colour::White => occupancy_masks::get_white_pawn_capture_mask(from_sq),
+            Colour::Black => occupancy_masks::get_black_pawn_capture_mask(from_sq),
+        };
+        let mut capt_bb = capt_mask & all_opposing_bb;
+        while capt_bb != 0 {
+            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            let mv = Mov::encode_move_capture(from_sq, to_sq);
+            move_list.push(mv);
+        };
+
+        // ===============
+        // en passant move
+        // ===============
+        match pos.en_passant_square(){
+            Some(en_sq) => {
+                if bitboard::is_set(capt_mask, en_sq) {
+                    // en passant sq can be "capured"
+                    let en_pass_mv = Mov::encode_move_en_passant(from_sq, en_sq);
+                    move_list.push(en_pass_mv);
+                }
+            },
+            None => (),
+        }
+    }
 
 }
 
@@ -816,7 +867,7 @@ pub mod tests {
 
         move_gen::generate_moves(&pos, &mut move_list);
 
-        mov::print_move_list(&move_list);
+        //mov::print_move_list(&move_list);
 
         let mut from_sq:Square;
         let mut to_sq:Square;
@@ -890,7 +941,7 @@ pub mod tests {
 
         move_gen::generate_moves(&pos, &mut move_list);
 
-        mov::print_move_list(&move_list);
+        //mov::print_move_list(&move_list);
 
         let mut from_sq:Square;
         let mut to_sq:Square;
@@ -930,7 +981,7 @@ pub mod tests {
 
         move_gen::generate_moves(&pos, &mut move_list);
 
-        mov::print_move_list(&move_list);
+        //mov::print_move_list(&move_list);
 
          // double first moves
         assert!(move_list.contains(&Mov::encode_move_double_pawn_first(Square::f2, Square::f4)));
@@ -960,7 +1011,7 @@ pub mod tests {
 
         move_gen::generate_moves(&pos, &mut move_list);
 
-        mov::print_move_list(&move_list);
+        //mov::print_move_list(&move_list);
 
          // double first moves
         assert!(move_list.contains(&Mov::encode_move_double_pawn_first(Square::f7, Square::f5)));
@@ -976,5 +1027,124 @@ pub mod tests {
         assert!(move_list.contains(&Mov::encode_move_capture(Square::c7, Square::d6)));
         assert!(move_list.contains(&Mov::encode_move_capture(Square::d7, Square::c6)));
    }
+
+
+
+    #[test]
+    pub fn move_gen_white_misc_pawn_moves_as_expected(){
+        let fen = "2b1rkr1/P1p2pb1/n1p3pp/2NpPPP1/pPBq2BP/2R1NpQ1/P1PP1P1P/R4K1n w - d6 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+
+        move_gen::generate_moves(&pos, &mut move_list);
+
+         // quiet moves
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::b4, Square::b5)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f5, Square::f6)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h4, Square::h5)));
+
+        // capture moves
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::f5, Square::g6)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::g5, Square::h6)));
+
+        // en passant move
+        assert!(move_list.contains(&Mov::encode_move_en_passant(Square::e5, Square::d6)));
+   }
+
+
+    #[test]
+    pub fn move_gen_black_misc_pawn_moves_as_expected(){
+        let fen = "2b1rkr1/P1p1qpb1/n5pN/2p3P1/pPBRpPBp/5pQ1/P1PPP1P1/R4K1N b - b3 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+
+        move_gen::generate_moves(&pos, &mut move_list);
+
+         // quiet moves
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::a4, Square::a3)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e4, Square::e3)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f3, Square::f2)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h4, Square::h3)));
+
+        // capture moves
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::c5, Square::b4)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::c5, Square::d4)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::f3, Square::e2)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::f3, Square::g2)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::h4, Square::g3)));
+
+        // en passant move
+        assert!(move_list.contains(&Mov::encode_move_en_passant(Square::a4, Square::b3)));
+   }
+
+
+    #[test]
+    pub fn move_gen_all_moves_white_position_1_as_expected(){
+        let fen = "3rr1k1/pp3pp1/1qn2np1/8/3p4/PP3P2/2P1NQPP/R1B1K2R w K - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+
+        move_gen::generate_moves(&pos, &mut move_list);
+
+        mov::print_move_list(&move_list);
+
+        assert!(move_list.len() == 34);
+
+        // quiet moves
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::a1, Square::a2)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::a1, Square::b1)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::c1, Square::b2)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::c1, Square::d2)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::c1, Square::e3)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::c1, Square::f4)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::c1, Square::g5)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::c1, Square::h6)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e1, Square::d1)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e1, Square::d2)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e1, Square::f1)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h1, Square::g1)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h1, Square::f1)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::a3, Square::a4)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::b3, Square::b4)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::c2, Square::c3)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e2, Square::c3)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e2, Square::g1)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e2, Square::g3)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e2, Square::f4)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f2, Square::e3)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f2, Square::g1)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f2, Square::g3)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f2, Square::h4)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f3, Square::f4)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::g2, Square::g3)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h2, Square::h3)));
+
+        // castle move
+        assert!(move_list.contains(&Mov::encode_move_castle_kingside_white()));
+
+        // capture moves
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::e2, Square::d4)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::f2, Square::d4)));
+
+        // double pawn first move
+        assert!(move_list.contains(&Mov::encode_move_double_pawn_first(Square::c2, Square::c4)));
+        assert!(move_list.contains(&Mov::encode_move_double_pawn_first(Square::g2, Square::g4)));
+        assert!(move_list.contains(&Mov::encode_move_double_pawn_first(Square::h2, Square::h4)));
+
+
+
+    }
 
 }
