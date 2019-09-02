@@ -1081,7 +1081,7 @@ pub mod tests {
 
 
     #[test]
-    pub fn move_gen_all_moves_white_position_1_as_expected(){
+    pub fn move_gen_all_moves_white_position_as_expected(){
         let fen = "3rr1k1/pp3pp1/1qn2np1/8/3p4/PP3P2/2P1NQPP/R1B1K2R w K - 0 1";
         let mut move_list: Vec<Mov> = Vec::new();
         let parsed_fen = fen::get_position(&fen);
@@ -1142,9 +1142,84 @@ pub mod tests {
         assert!(move_list.contains(&Mov::encode_move_double_pawn_first(Square::c2, Square::c4)));
         assert!(move_list.contains(&Mov::encode_move_double_pawn_first(Square::g2, Square::g4)));
         assert!(move_list.contains(&Mov::encode_move_double_pawn_first(Square::h2, Square::h4)));
-
-
-
     }
+
+
+    #[test]
+    pub fn move_gen_all_moves_black_position_as_expected(){
+        let fen = "3rr1k1/p4pp1/1pn2np1/2P4q/1P1p4/P4P2/4NQPP/R1B1K2R b - - 0 1";
+        let mut move_list: Vec<Mov> = Vec::new();
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+
+        move_gen::generate_moves(&pos, &mut move_list);
+
+        mov::print_move_list(&move_list);
+
+        assert!(move_list.len() == 45);
+
+        // quiet moves
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::a7, Square::a6)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::b6, Square::b5)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::d4, Square::d3)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::c6, Square::b8)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::c6, Square::e7)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::c6, Square::e5)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::c6, Square::a5)));
+
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::d8, Square::d7)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::d8, Square::d6)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::d8, Square::d5)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::d8, Square::c8)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::d8, Square::b8)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::d8, Square::a8)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e8, Square::f8)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e8, Square::e7)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e8, Square::e6)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e8, Square::e5)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e8, Square::e4)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::e8, Square::e3)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f6, Square::d7)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f6, Square::d5)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f6, Square::e4)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f6, Square::g4)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::f6, Square::h7)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::g6, Square::g5)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h5, Square::h6)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h5, Square::h7)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h5, Square::h8)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h5, Square::h4)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h5, Square::h3)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h5, Square::g4)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h5, Square::g5)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h5, Square::f5)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h5, Square::e5)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::h5, Square::d5)));
+
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::g8, Square::f8)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::g8, Square::h8)));
+        assert!(move_list.contains(&Mov::encode_move_quiet(Square::g8, Square::h7)));
+
+
+        // capture moves
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::b6, Square::c5)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::c6, Square::b4)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::e8, Square::e2)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::h5, Square::h2)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::h5, Square::f3)));
+        assert!(move_list.contains(&Mov::encode_move_capture(Square::h5, Square::c5)));
+
+        // double pawn first move
+        assert!(move_list.contains(&Mov::encode_move_double_pawn_first(Square::a7, Square::a5)));
+    }
+
+
 
 }
