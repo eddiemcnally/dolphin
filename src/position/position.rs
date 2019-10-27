@@ -22,6 +22,7 @@ pub struct Position {
     move_cntr: MoveCounter,
 }
 
+
 impl Position {
     pub fn new(parsed_fen: ParsedFen) -> Position {
         let mv_cntr = MoveCounter {
