@@ -1,9 +1,11 @@
 extern crate rand;
 
 use board::board::NUM_SQUARES;
+use board::piece::Colour;
 use board::piece::Piece;
 use board::piece::NUM_PIECES;
 use board::square::Square;
+use input::fen::ParsedFen;
 use position::castle_permissions::CastlePermission;
 use position::castle_permissions::CastlePermissionType;
 use position::castle_permissions::NUM_CASTLE_PERMS;
@@ -21,7 +23,7 @@ struct Keys {
 }
 
 impl PositionHash {
-    pub fn new() -> PositionHash {
+    pub fn default() -> PositionHash {
         let pkeys = init_piece_keys();
         let ckeys = init_castle_keys();
         let ekeys = init_en_passant_keys();
@@ -38,6 +40,38 @@ impl PositionHash {
             hash: 0,
             keys: key_struct,
         }
+    }
+
+    pub fn new(parsed_fen: &ParsedFen) -> PositionHash {
+        let mut hash = PositionHash::default();
+
+        let positions = parsed_fen.piece_positions.iter();
+        for (sq, pce) in positions {
+            hash.update_piece(*pce, *sq);
+        }
+
+        hash.update_side();
+
+        if parsed_fen.castle_perm.is_king_set(Colour::Black) {
+            hash.update_castle_permissions(CastlePermissionType::BlackKing);
+        }
+        if parsed_fen.castle_perm.is_king_set(Colour::White) {
+            hash.update_castle_permissions(CastlePermissionType::WhiteKing);
+        }
+        if parsed_fen.castle_perm.is_queen_set(Colour::Black) {
+            hash.update_castle_permissions(CastlePermissionType::BlackQueen);
+        }
+        if parsed_fen.castle_perm.is_queen_set(Colour::White) {
+            hash.update_castle_permissions(CastlePermissionType::WhiteQueen);
+        }
+
+        let enp = parsed_fen.en_pass_sq;
+        match enp {
+            Some(enp) => hash.update_en_passant(enp),
+            None => {}
+        };
+
+        return hash;
     }
 
     pub fn update_side(&mut self) {
@@ -67,6 +101,10 @@ impl PositionHash {
 
     pub fn get_hash(&self) -> u64 {
         self.hash
+    }
+
+    pub fn set_hash(&mut self, new_value: u64){
+        self.hash = new_value;
     }
 }
 
@@ -110,14 +148,14 @@ pub mod tests {
 
     #[test]
     pub fn hash_init_as_zero() {
-        let h = PositionHash::new();
+        let h = PositionHash::default();
 
         assert_eq!(h.get_hash(), 0);
     }
 
     #[test]
     pub fn hash_flip_side_result_as_expected() {
-        let mut h = PositionHash::new();
+        let mut h = PositionHash::default();
 
         let init_hash = h.get_hash();
 
@@ -136,7 +174,7 @@ pub mod tests {
 
     #[test]
     pub fn flip_piece_and_square_result_as_expected() {
-        let mut h = PositionHash::new();
+        let mut h = PositionHash::default();
 
         for pce in utils::get_all_pieces() {
             for sq in utils::get_ordered_square_list_by_file() {
@@ -162,7 +200,7 @@ pub mod tests {
 
     #[test]
     pub fn flip_en_passant_result_as_expected() {
-        let mut h = PositionHash::new();
+        let mut h = PositionHash::default();
 
         for sq in utils::get_ordered_square_list_by_file() {
             let init_hash = h.get_hash();
@@ -186,7 +224,7 @@ pub mod tests {
 
     #[test]
     pub fn flip_castle_permission_as_expected() {
-        let mut h = PositionHash::new();
+        let mut h = PositionHash::default();
 
         for cp in utils::get_all_castle_permissions() {
             let init_hash = h.get_hash();
@@ -207,5 +245,4 @@ pub mod tests {
             h.update_castle_permissions(cp);
         }
     }
-
 }

@@ -1,10 +1,9 @@
 use board::square::Square;
 use moves::mov::Mov;
 use position::castle_permissions::CastlePermission;
-use position::hash::PositionHash;
 
 struct History {
-    position_key: PositionHash,
+    position_hash: u64,
     mov: Mov,
     fifty_move_cntr: u8,
     en_pass_sq: Option<Square>,
@@ -31,7 +30,7 @@ impl PositionHistory {
     // push
     pub fn push(
         &mut self,
-        pos_key: PositionHash,
+        position_hash: u64,
         mov: Mov,
         fifty_move_cntr: u8,
         en_pass_sq: Option<Square>,
@@ -44,7 +43,7 @@ impl PositionHistory {
         );
 
         let hist = History {
-            position_key: pos_key,
+            position_hash: position_hash,
             mov: mov,
             fifty_move_cntr: fifty_move_cntr,
             en_pass_sq: en_pass_sq,
@@ -54,14 +53,14 @@ impl PositionHistory {
         self.history.push(hist);
     }
 
-    pub fn pop(&mut self) -> (PositionHash, Mov, u8, Option<Square>, CastlePermission) {
+    pub fn pop(&mut self) -> (u64, Mov, u8, Option<Square>, CastlePermission) {
         debug_assert!(self.history.len() > 0, "attempt to pop, len = 0");
 
         let popped = self.history.pop();
         match popped {
-            None => panic!(""),
+            None => panic!("Nothing to pop from history"),
             Some(popped) => {
-                let pos_key = popped.position_key;
+                let pos_key = popped.position_hash;
                 let mov = popped.mov;
                 let fifty_move_cntr = popped.fifty_move_cntr;
                 let en_pass_sq = popped.en_pass_sq;
@@ -85,7 +84,6 @@ impl PositionHistory {
 mod tests {
     use moves::mov::Mov;
     use position::castle_permissions::CastlePermission;
-    use position::hash::PositionHash;
     use position::position_history::PositionHistory;
 
     #[test]
@@ -104,7 +102,7 @@ mod tests {
 
         // push multiple positions
         for i in 0..num_to_test {
-            let pk = PositionHash::new();
+            let pk = 1234;
             let mv = Mov::encode_move_castle_queenside_white();
             let enp = None;
             let fifty_move_cntr = i as u8;
@@ -130,7 +128,7 @@ mod tests {
 
         // push multiple positions
         for i in 0..num_to_test {
-            let pk = PositionHash::new();
+            let pk = 1234;
             let mv = Mov::encode_move_castle_queenside_white();
             let enp = None;
             let fifty_move_cntr = i as u8;
