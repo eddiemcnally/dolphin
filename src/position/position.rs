@@ -120,8 +120,29 @@ impl Position {
             do_castle_move_king(self, side_to_move);
         } else if mv.is_queen_castle() {
             do_castle_move_queen(self, side_to_move);
+        } else if mv.is_en_passant() {
+            do_en_passant(self, from_sq, to_sq);
+        } else if mv.is_promote() {
+            if mv.is_capture() {
+                let capt_pce = self.board.get_piece_on_square(to_sq).unwrap();
+                remove_piece_from_board(self, capt_pce, to_sq);
+            }
+
+            let source_pce = self.board.get_piece_on_square(from_sq).unwrap();
+            let target_pce_role = mv.decode_promotion_piece_role();
+            let target_pce = Piece::new(target_pce_role, side_to_move);
+
+            remove_piece_from_board(self, source_pce, from_sq);
+            add_piece_to_board(self, target_pce, to_sq);
+        } else if mv.is_capture() {
+            let capt_pce = self.board.get_piece_on_square(to_sq).unwrap();
+            remove_piece_from_board(self, capt_pce, to_sq);
+            self.position_key.update_piece(piece, from_sq);
+            self.position_key.update_piece(piece, to_sq);
+            self.board.move_piece(from_sq, to_sq, piece);
         }
 
+        // to do - validate legality pf move
         return true;
     }
 }
@@ -131,6 +152,16 @@ fn find_en_passant_sq(from_sq: Square, col: Colour) -> Square {
         Colour::White => from_sq.square_plus_1_rank(),
         Colour::Black => from_sq.square_minus_1_rank(),
     }
+}
+
+fn remove_piece_from_board(position: &mut Position, pce: Piece, sq: Square) {
+    position.board.remove_piece(pce, sq);
+    position.position_key.update_piece(pce, sq);
+}
+
+fn add_piece_to_board(position: &mut Position, pce: Piece, sq: Square) {
+    position.board.add_piece(pce, sq);
+    position.position_key.update_piece(pce, sq);
 }
 
 fn do_castle_move_king(position: &mut Position, col: Colour) {
@@ -175,6 +206,23 @@ fn do_castle_move_queen(position: &mut Position, col: Colour) {
     position.board.move_piece(rook_from_sq, rook_to_sq, rook);
 
     position.castle_perm.set_queen(col, false);
+}
+
+fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
+    let enp_sq = match position.side_to_move {
+        Colour::White => to_sq.square_minus_1_rank(),
+        Colour::Black => to_sq.square_plus_1_rank(),
+    };
+
+    let pawn = Piece::new(PieceRole::Pawn, position.side_to_move);
+    let capt_pawn = Piece::new(PieceRole::Pawn, position.side_to_move.flip_side());
+
+    position.board.remove_piece(capt_pawn, enp_sq);
+    position.position_key.update_piece(capt_pawn, enp_sq);
+    position.board.move_piece(from_sq, to_sq, pawn);
+
+    position.position_key.update_piece(pawn, from_sq);
+    position.position_key.update_piece(pawn, to_sq);
 }
 
 #[cfg(test)]
