@@ -98,6 +98,7 @@ impl Position {
             self.castle_perm,
         );
 
+        self.flip_side_to_move();
         self.position_key.update_side();
 
         let from_sq = mv.decode_from_square();
@@ -263,7 +264,7 @@ mod tests {
         assert_ne!(before_hash, pos.position_key.get_hash());
     }
     #[test]
-    pub fn make_move_quiet_history_updated() {
+    pub fn make_move_history_updated() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
@@ -275,5 +276,19 @@ mod tests {
 
         // history updated
         assert_eq!(pos.position_history.len(), 1);
+    }
+
+    #[test]
+    pub fn make_move_side_flipped() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        // initially correct side
+        assert_eq!(pos.side_to_move, Colour::White);
+        let mv = Mov::encode_move_quiet(Square::e5, Square::e6);
+        pos.make_move(mv);
+
+        assert_eq!(pos.side_to_move, Colour::Black);
     }
 }
