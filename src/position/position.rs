@@ -101,10 +101,16 @@ impl Position {
         self.flip_side_to_move();
         self.position_key.update_side();
 
+        self.move_cntr.half_move += 1;
+        self.move_cntr.full_move += 1;
+
+        // set up some general variables
         let from_sq = mv.decode_from_square();
         let to_sq = mv.decode_to_square();
         let piece = self.board().get_piece_on_square(from_sq).unwrap();
         let side_to_move = self.side_to_move;
+
+        handle_50_move_rule(self, mv, piece);
 
         if mv.is_quiet() {
             update_hash_on_piece_move(self, piece, from_sq, to_sq);
@@ -165,6 +171,14 @@ fn add_piece_to_board(position: &mut Position, pce: Piece, sq: Square) {
 fn update_hash_on_piece_move(position: &mut Position, pce: Piece, from_sq: Square, to_sq: Square) {
     position.position_key.update_piece(pce, from_sq);
     position.position_key.update_piece(pce, to_sq);
+}
+
+fn handle_50_move_rule(position: &mut Position, mv: Mov, pce_to_move: Piece) {
+    if mv.is_capture() || pce_to_move.role() == PieceRole::Pawn {
+        position.fifty_move_cntr = 0;
+    } else {
+        position.fifty_move_cntr += 1;
+    }
 }
 
 fn do_castle_move_king(position: &mut Position, col: Colour) {
@@ -290,5 +304,57 @@ mod tests {
         pos.make_move(mv);
 
         assert_eq!(pos.side_to_move, Colour::Black);
+    }
+
+    #[test]
+    pub fn make_move_fifty_move_cntr_reset_on_capture_move() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        // set to some value
+        pos.fifty_move_cntr = 21;
+
+        let mv = Mov::encode_move_capture(Square::b5, Square::c6);
+        pos.make_move(mv);
+
+        assert_eq!(0, pos.fifty_move_cntr);
+    }
+
+    #[test]
+    pub fn make_move_fifty_move_cntr_reset_on_pawn_move() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        let pce_to_move = pos.board.get_piece_on_square(Square::e5).unwrap();
+        assert_eq!(pce_to_move.role(), PieceRole::Pawn);
+
+        // set to some value
+        pos.fifty_move_cntr = 21;
+
+        let mv = Mov::encode_move_quiet(Square::e5, Square::e6);
+        pos.make_move(mv);
+
+        assert_eq!(0, pos.fifty_move_cntr);
+    }
+
+    #[test]
+    pub fn make_move_fifty_move_cntr_incremented_on_non_pawn_and_non_capture_move() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        let pce_to_move = pos.board.get_piece_on_square(Square::c4).unwrap();
+        assert_eq!(pce_to_move.role(), PieceRole::Bishop);
+
+        // set to some value
+        pos.fifty_move_cntr = 21;
+        let expected_cntr_val = pos.fifty_move_cntr + 1;
+
+        let mv = Mov::encode_move_quiet(Square::c4, Square::d5);
+        pos.make_move(mv);
+
+        assert_eq!(expected_cntr_val, pos.fifty_move_cntr);
     }
 }
