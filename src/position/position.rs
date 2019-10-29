@@ -106,12 +106,10 @@ impl Position {
         let side_to_move = self.side_to_move;
 
         if mv.is_quiet() {
-            self.position_key.update_piece(piece, from_sq);
-            self.position_key.update_piece(piece, to_sq);
+            update_hash_on_piece_move(self, piece, from_sq, to_sq);
             self.board.move_piece(from_sq, to_sq, piece);
         } else if mv.is_double_pawn() {
-            self.position_key.update_piece(piece, from_sq);
-            self.position_key.update_piece(piece, to_sq);
+            update_hash_on_piece_move(self, piece, from_sq, to_sq);
             self.board.move_piece(from_sq, to_sq, piece);
 
             let s = find_en_passant_sq(from_sq, side_to_move);
@@ -137,8 +135,7 @@ impl Position {
         } else if mv.is_capture() {
             let capt_pce = self.board.get_piece_on_square(to_sq).unwrap();
             remove_piece_from_board(self, capt_pce, to_sq);
-            self.position_key.update_piece(piece, from_sq);
-            self.position_key.update_piece(piece, to_sq);
+            update_hash_on_piece_move(self, piece, from_sq, to_sq);
             self.board.move_piece(from_sq, to_sq, piece);
         }
 
@@ -164,6 +161,11 @@ fn add_piece_to_board(position: &mut Position, pce: Piece, sq: Square) {
     position.position_key.update_piece(pce, sq);
 }
 
+fn update_hash_on_piece_move(position: &mut Position, pce: Piece, from_sq: Square, to_sq: Square) {
+    position.position_key.update_piece(pce, from_sq);
+    position.position_key.update_piece(pce, to_sq);
+}
+
 fn do_castle_move_king(position: &mut Position, col: Colour) {
     let (king_from_sq, king_to_sq) = match col {
         Colour::Black => (Square::e8, Square::g8),
@@ -175,12 +177,11 @@ fn do_castle_move_king(position: &mut Position, col: Colour) {
     };
 
     let king = Piece::new(PieceRole::King, col);
-    position.position_key.update_piece(king, king_from_sq);
-    position.position_key.update_piece(king, king_to_sq);
+    update_hash_on_piece_move(position, king, king_from_sq, king_to_sq);
     position.board.move_piece(king_from_sq, king_to_sq, king);
+
     let rook = Piece::new(PieceRole::Rook, col);
-    position.position_key.update_piece(rook, rook_from_sq);
-    position.position_key.update_piece(rook, rook_to_sq);
+    update_hash_on_piece_move(position, rook, rook_from_sq, rook_to_sq);
     position.board.move_piece(rook_from_sq, rook_to_sq, rook);
 
     position.castle_perm.set_king(col, false);
@@ -197,12 +198,11 @@ fn do_castle_move_queen(position: &mut Position, col: Colour) {
     };
 
     let queen = Piece::new(PieceRole::Queen, col);
-    position.position_key.update_piece(queen, queen_from_sq);
-    position.position_key.update_piece(queen, queen_to_sq);
+    update_hash_on_piece_move(position, queen, queen_from_sq, queen_to_sq);
     position.board.move_piece(queen_from_sq, queen_to_sq, queen);
+
     let rook = Piece::new(PieceRole::Rook, col);
-    position.position_key.update_piece(rook, rook_from_sq);
-    position.position_key.update_piece(rook, rook_to_sq);
+    update_hash_on_piece_move(position, rook, rook_from_sq, rook_to_sq);
     position.board.move_piece(rook_from_sq, rook_to_sq, rook);
 
     position.castle_perm.set_queen(col, false);
@@ -221,9 +221,59 @@ fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
     position.position_key.update_piece(capt_pawn, enp_sq);
     position.board.move_piece(from_sq, to_sq, pawn);
 
-    position.position_key.update_piece(pawn, from_sq);
-    position.position_key.update_piece(pawn, to_sq);
+    update_hash_on_piece_move(position, pawn, from_sq, to_sq);
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use board::piece::Colour;
+    use board::piece::Piece;
+    use board::piece::PieceRole;
+    use board::square::Square;
+    use input::fen;
+    use moves::mov::Mov;
+    use position::position::Position;
+
+    #[test]
+    pub fn make_move_quiet_piece_moved_hash_changed() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        let before_hash = pos.position_key.get_hash();
+
+        let mv = Mov::encode_move_quiet(Square::e5, Square::e6);
+
+        // check before move
+        assert_eq!(
+            pos.board.get_piece_on_square(Square::e5).unwrap(),
+            Piece::new(PieceRole::Pawn, Colour::White)
+        );
+
+        pos.make_move(mv);
+
+        // piece has has moved
+        assert_eq!(pos.board.is_sq_empty(Square::e5), true);
+        assert_eq!(
+            pos.board.get_piece_on_square(Square::e6).unwrap(),
+            Piece::new(PieceRole::Pawn, Colour::White)
+        );
+
+        // check hashes are different
+        assert_ne!(before_hash, pos.position_key.get_hash());
+    }
+    #[test]
+    pub fn make_move_quiet_history_updated() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        // initially no history
+        assert_eq!(pos.position_history.len(), 0);
+        let mv = Mov::encode_move_quiet(Square::e5, Square::e6);
+        pos.make_move(mv);
+
+        // history updated
+        assert_eq!(pos.position_history.len(), 1);
+    }
+}
