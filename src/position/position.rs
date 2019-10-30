@@ -203,7 +203,7 @@ fn do_castle_move_king(position: &mut Position, col: Colour) {
 }
 
 fn do_castle_move_queen(position: &mut Position, col: Colour) {
-    let (queen_from_sq, queen_to_sq) = match col {
+    let (king_from_sq, king_to_sq) = match col {
         Colour::Black => (Square::e8, Square::c8),
         Colour::White => (Square::e1, Square::c1),
     };
@@ -212,9 +212,9 @@ fn do_castle_move_queen(position: &mut Position, col: Colour) {
         Colour::White => (Square::a1, Square::d1),
     };
 
-    let queen = Piece::new(PieceRole::Queen, col);
-    update_hash_on_piece_move(position, queen, queen_from_sq, queen_to_sq);
-    position.board.move_piece(queen_from_sq, queen_to_sq, queen);
+    let king = Piece::new(PieceRole::King, col);
+    update_hash_on_piece_move(position, king, king_from_sq, king_to_sq);
+    position.board.move_piece(king_from_sq, king_to_sq, king);
 
     let rook = Piece::new(PieceRole::Rook, col);
     update_hash_on_piece_move(position, rook, rook_from_sq, rook_to_sq);
@@ -260,21 +260,20 @@ mod tests {
         let mv = Mov::encode_move_quiet(Square::e5, Square::e6);
 
         // check before move
-        assert_eq!(
-            pos.board.get_piece_on_square(Square::e5).unwrap(),
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::e5,
             Piece::new(PieceRole::Pawn, Colour::White)
-        );
+        ));
 
         pos.make_move(mv);
 
-        // piece has has moved
-        assert_eq!(pos.board.is_sq_empty(Square::e5), true);
-        assert_eq!(
-            pos.board.get_piece_on_square(Square::e6).unwrap(),
+        assert_eq!(pos.board().is_sq_empty(Square::e5), true);
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::e6,
             Piece::new(PieceRole::Pawn, Colour::White)
-        );
-
-        // check hashes are different
+        ));
         assert_ne!(before_hash, pos.position_key.get_hash());
     }
     #[test]
@@ -356,5 +355,249 @@ mod tests {
         pos.make_move(mv);
 
         assert_eq!(expected_cntr_val, pos.fifty_move_cntr);
+    }
+
+    #[test]
+    pub fn make_move_half_move_cntr_incremented() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        let pce_to_move = pos.board.get_piece_on_square(Square::c4).unwrap();
+        assert_eq!(pce_to_move.role(), PieceRole::Bishop);
+
+        // set to some value
+        pos.move_cntr.half_move = 21;
+        pos.move_cntr.full_move = 32;
+
+        let expected_half_move = pos.move_cntr.half_move + 1;
+        let expected_full_move = pos.move_cntr.full_move + 1;
+
+        let mv = Mov::encode_move_quiet(Square::c4, Square::d5);
+        pos.make_move(mv);
+
+        assert_eq!(expected_half_move, pos.move_cntr.half_move);
+        assert_eq!(expected_full_move, pos.move_cntr.full_move);
+    }
+
+    #[test]
+    pub fn make_move_double_pawn_move_en_passant_square_set_white_moves() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2PPK1/1RB5/pPR1N2p/P1r1rP1P/P2q3n b - - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::f2,
+            Piece::new(PieceRole::Pawn, Colour::White)
+        ));
+
+        // set to some value
+        let mv = Mov::encode_move_double_pawn_first(Square::f2, Square::f4);
+        pos.make_move(mv);
+
+        assert_eq!(pos.en_pass_sq, Some(Square::f3));
+
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::f4,
+            Piece::new(PieceRole::Pawn, Colour::White)
+        ));
+
+        assert!(is_sq_empty(&pos, Square::f2));
+    }
+
+    #[test]
+    pub fn make_move_double_pawn_move_en_passant_square_set_black_moves() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2PPK1/1RB5/pPR1N2p/P1r1rP1P/P2q3n w - - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::d7,
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        ));
+
+        // set to some value
+        let mv = Mov::encode_move_double_pawn_first(Square::d7, Square::d5);
+        pos.make_move(mv);
+
+        assert_eq!(pos.en_pass_sq, Some(Square::d6));
+
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::d5,
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        ));
+
+        assert!(is_sq_empty(&pos, Square::d7));
+    }
+
+    #[test]
+    pub fn make_move_king_side_castle_white() {
+        let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R b KQkq - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert!(pos.castle_permissions().is_king_set(Colour::White));
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::e1,
+            Piece::new(PieceRole::King, Colour::White)
+        ));
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::h1,
+            Piece::new(PieceRole::Rook, Colour::White)
+        ));
+        let mv = Mov::encode_move_castle_kingside_white();
+        pos.make_move(mv);
+
+        // check old squares are no long occupied
+        assert!(is_sq_empty(&pos, Square::e1));
+        assert!(is_sq_empty(&pos, Square::h1));
+        // check new squares are occupied
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::g1,
+            Piece::new(PieceRole::King, Colour::White)
+        ));
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::f1,
+            Piece::new(PieceRole::Rook, Colour::White)
+        ));
+
+        assert!(pos.castle_permissions().is_king_set(Colour::White) == false);
+    }
+
+    #[test]
+    pub fn make_move_king_side_castle_black() {
+        let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R w KQkq - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert!(pos.castle_permissions().is_king_set(Colour::Black));
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::e8,
+            Piece::new(PieceRole::King, Colour::Black)
+        ));
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::h8,
+            Piece::new(PieceRole::Rook, Colour::Black)
+        ));
+        let mv = Mov::encode_move_castle_kingside_black();
+        pos.make_move(mv);
+
+        // check old squares are no long occupied
+        assert!(is_sq_empty(&pos, Square::e8));
+        assert!(is_sq_empty(&pos, Square::h8));
+        // check new squares are occupied
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::g8,
+            Piece::new(PieceRole::King, Colour::Black)
+        ));
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::f8,
+            Piece::new(PieceRole::Rook, Colour::Black)
+        ));
+
+        assert!(pos.castle_permissions().is_king_set(Colour::Black) == false);
+    }
+
+    #[test]
+    pub fn make_move_queen_side_castle_white() {
+        let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R b KQkq - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert!(pos.castle_permissions().is_queen_set(Colour::White));
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::e1,
+            Piece::new(PieceRole::King, Colour::White)
+        ));
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::a1,
+            Piece::new(PieceRole::Rook, Colour::White)
+        ));
+        let mv = Mov::encode_move_castle_queenside_white();
+        pos.make_move(mv);
+
+        // check old squares are no long occupied
+        assert!(is_sq_empty(&pos, Square::e1));
+        assert!(is_sq_empty(&pos, Square::a1));
+        // check new squares are occupied
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::c1,
+            Piece::new(PieceRole::King, Colour::White)
+        ));
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::d1,
+            Piece::new(PieceRole::Rook, Colour::White)
+        ));
+
+        assert!(pos.castle_permissions().is_queen_set(Colour::White) == false);
+    }
+
+    #[test]
+    pub fn make_move_queen_side_castle_black() {
+        let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R w KQkq - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert!(pos.castle_permissions().is_queen_set(Colour::Black));
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::e8,
+            Piece::new(PieceRole::King, Colour::Black)
+        ));
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::a8,
+            Piece::new(PieceRole::Rook, Colour::Black)
+        ));
+        let mv = Mov::encode_move_castle_queenside_black();
+        pos.make_move(mv);
+
+        // check old squares are no long occupied
+        assert!(is_sq_empty(&pos, Square::e8));
+        assert!(is_sq_empty(&pos, Square::a8));
+        // check new squares are occupied
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::c8,
+            Piece::new(PieceRole::King, Colour::Black)
+        ));
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::d8,
+            Piece::new(PieceRole::Rook, Colour::Black)
+        ));
+
+        assert!(pos.castle_permissions().is_queen_set(Colour::Black) == false);
+    }
+
+    fn is_piece_on_square_as_expected(pos: &Position, sq: Square, pce: Piece) -> bool {
+        let pce_on_board = pos.board.get_piece_on_square(sq);
+
+        if pce_on_board == None {
+            return false;
+        }
+
+        return pce_on_board.unwrap() == pce;
+    }
+
+    fn is_sq_empty(pos: &Position, sq: Square) -> bool {
+        let empty_sq = pos.board.get_piece_on_square(sq);
+        return empty_sq == None;
     }
 }
