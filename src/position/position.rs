@@ -112,6 +112,7 @@ impl Position {
 
         handle_50_move_rule(self, mv, piece);
 
+        // make the move
         if mv.is_quiet() {
             update_hash_on_piece_move(self, piece, from_sq, to_sq);
             self.board.move_piece(from_sq, to_sq, piece);
@@ -678,6 +679,135 @@ mod tests {
 
         assert_eq!(pos.en_passant_square(), None);
     }
+
+    #[test]
+    pub fn make_move_promotion_capture_white_to_move() {
+        let target_prom_pce = vec![
+            PieceRole::Bishop,
+            PieceRole::Knight,
+            PieceRole::Queen,
+            PieceRole::Rook,
+        ];
+
+        for target in target_prom_pce {
+            let fen = "kn3b1p/2p1Pp2/1p5p/1B1pb1K1/pPBP1P2/N1R1NpPQ/P1r1r2P/R2q3n b - - 0 1";
+            let parsed_fen = fen::get_position(&fen);
+            let mut pos = Position::new(parsed_fen);
+
+            // check pre-conditions
+            assert!(is_piece_on_square_as_expected(
+                &pos,
+                Square::f8,
+                Piece::new(PieceRole::Bishop, Colour::Black)
+            ));
+
+            let mv = Mov::encode_move_with_promotion_capture(Square::e7, Square::f8, target);
+            pos.make_move(mv);
+
+            assert!(is_sq_empty(&pos, Square::e7));
+            assert!(is_piece_on_square_as_expected(
+                &pos,
+                Square::f8,
+                Piece::new(target, Colour::White)
+            ));
+        }
+    }
+
+    #[test]
+    pub fn make_move_promotion_capture_black_to_move() {
+        let target_prom_pce = vec![
+            PieceRole::Bishop,
+            PieceRole::Knight,
+            PieceRole::Queen,
+            PieceRole::Rook,
+        ];
+
+        for target in target_prom_pce {
+            let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/2R5 w - - 0 1";
+            let parsed_fen = fen::get_position(&fen);
+            let mut pos = Position::new(parsed_fen);
+
+            // check pre-conditions
+            assert!(is_piece_on_square_as_expected(
+                &pos,
+                Square::c1,
+                Piece::new(PieceRole::Rook, Colour::White)
+            ));
+
+            let mv = Mov::encode_move_with_promotion_capture(Square::d2, Square::c1, target);
+            pos.make_move(mv);
+
+            assert!(is_sq_empty(&pos, Square::d2));
+            assert!(is_piece_on_square_as_expected(
+                &pos,
+                Square::c1,
+                Piece::new(target, Colour::Black)
+            ));
+        }
+    }
+
+
+
+    #[test]
+    pub fn make_move_promotion_black_to_move() {
+        let target_prom_pce = vec![
+            PieceRole::Bishop,
+            PieceRole::Knight,
+            PieceRole::Queen,
+            PieceRole::Rook,
+        ];
+
+        for target in target_prom_pce {
+            let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/R7 w - - 0 1";
+            let parsed_fen = fen::get_position(&fen);
+            let mut pos = Position::new(parsed_fen);
+
+            // check pre-conditions
+            assert!(is_sq_empty(&pos, Square::d1));
+
+            let mv = Mov::encode_move_with_promotion(Square::d2, Square::d1, target);
+            pos.make_move(mv);
+
+            assert!(is_sq_empty(&pos, Square::d2));
+            assert!(is_piece_on_square_as_expected(
+                &pos,
+                Square::d1,
+                Piece::new(target, Colour::Black)
+            ));
+        }
+    }
+
+
+    #[test]
+    pub fn make_move_promotion_white_to_move() {
+        let target_prom_pce = vec![
+            PieceRole::Bishop,
+            PieceRole::Knight,
+            PieceRole::Queen,
+            PieceRole::Rook,
+        ];
+
+        for target in target_prom_pce {
+            let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/R7 b - - 0 1";
+            let parsed_fen = fen::get_position(&fen);
+            let mut pos = Position::new(parsed_fen);
+
+            // check pre-conditions
+            assert!(is_sq_empty(&pos, Square::b8));
+
+            let mv = Mov::encode_move_with_promotion(Square::b7, Square::b8, target);
+            pos.make_move(mv);
+
+            assert!(is_sq_empty(&pos, Square::b7));
+            assert!(is_piece_on_square_as_expected(
+                &pos,
+                Square::b8,
+                Piece::new(target, Colour::White)
+            ));
+        }
+    }
+
+
 
     fn is_piece_on_square_as_expected(pos: &Position, sq: Square, pce: Piece) -> bool {
         let pce_on_board = pos.board.get_piece_on_square(sq);
