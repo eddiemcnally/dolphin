@@ -116,11 +116,7 @@ impl Position {
             update_hash_on_piece_move(self, piece, from_sq, to_sq);
             self.board.move_piece(from_sq, to_sq, piece);
         } else if mv.is_double_pawn() {
-            update_hash_on_piece_move(self, piece, from_sq, to_sq);
-            self.board.move_piece(from_sq, to_sq, piece);
-
-            let s = find_en_passant_sq(from_sq, side_to_move);
-            self.en_pass_sq = Some(s);
+            do_double_pawn_move(self, side_to_move, piece, from_sq, to_sq);
         } else if mv.is_king_castle() {
             do_castle_move_king(self, side_to_move);
         } else if mv.is_queen_castle() {
@@ -128,23 +124,12 @@ impl Position {
         } else if mv.is_en_passant() {
             do_en_passant(self, from_sq, to_sq);
         } else if mv.is_promote() {
-            if mv.is_capture() {
-                let capt_pce = self.board.get_piece_on_square(to_sq).unwrap();
-                remove_piece_from_board(self, capt_pce, to_sq);
-            }
-
-            let source_pce = self.board.get_piece_on_square(from_sq).unwrap();
-            let target_pce_role = mv.decode_promotion_piece_role();
-            let target_pce = Piece::new(target_pce_role, side_to_move);
-
-            remove_piece_from_board(self, source_pce, from_sq);
-            add_piece_to_board(self, target_pce, to_sq);
+            do_promotion(self, mv, from_sq, to_sq, side_to_move);
         } else if mv.is_capture() {
-            let capt_pce = self.board.get_piece_on_square(to_sq).unwrap();
-            remove_piece_from_board(self, capt_pce, to_sq);
-            update_hash_on_piece_move(self, piece, from_sq, to_sq);
-            self.board.move_piece(from_sq, to_sq, piece);
+            do_capture_move(self, piece, from_sq, to_sq);
         }
+
+        update_en_passant_sq(self, mv);
 
         // to do - validate legality pf move
         return true;
@@ -152,6 +137,7 @@ impl Position {
 }
 
 fn find_en_passant_sq(from_sq: Square, col: Colour) -> Square {
+    // use the *from_sq* to find the en passant sq
     match col {
         Colour::White => from_sq.square_plus_1_rank(),
         Colour::Black => from_sq.square_minus_1_rank(),
@@ -181,6 +167,13 @@ fn handle_50_move_rule(position: &mut Position, mv: Mov, pce_to_move: Piece) {
     }
 }
 
+fn update_en_passant_sq(position: &mut Position, mv: Mov) {
+    // clear en passant
+    if mv.is_double_pawn() == false {
+        position.en_pass_sq = None;
+    }
+}
+
 fn do_castle_move_king(position: &mut Position, col: Colour) {
     let (king_from_sq, king_to_sq) = match col {
         Colour::Black => (Square::e8, Square::g8),
@@ -200,6 +193,19 @@ fn do_castle_move_king(position: &mut Position, col: Colour) {
     position.board.move_piece(rook_from_sq, rook_to_sq, rook);
 
     position.castle_perm.set_king(col, false);
+}
+
+fn do_double_pawn_move(
+    position: &mut Position,
+    col: Colour,
+    piece: Piece,
+    from_sq: Square,
+    to_sq: Square,
+) {
+    update_hash_on_piece_move(position, piece, from_sq, to_sq);
+    position.board.move_piece(from_sq, to_sq, piece);
+    let s = find_en_passant_sq(from_sq, col);
+    position.en_pass_sq = Some(s);
 }
 
 fn do_castle_move_queen(position: &mut Position, col: Colour) {
@@ -224,7 +230,7 @@ fn do_castle_move_queen(position: &mut Position, col: Colour) {
 }
 
 fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
-    let enp_sq = match position.side_to_move {
+    let capt_sq = match position.side_to_move {
         Colour::White => to_sq.square_minus_1_rank(),
         Colour::Black => to_sq.square_plus_1_rank(),
     };
@@ -232,11 +238,36 @@ fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
     let pawn = Piece::new(PieceRole::Pawn, position.side_to_move);
     let capt_pawn = Piece::new(PieceRole::Pawn, position.side_to_move.flip_side());
 
-    position.board.remove_piece(capt_pawn, enp_sq);
-    position.position_key.update_piece(capt_pawn, enp_sq);
+    remove_piece_from_board(position, capt_pawn, capt_sq);
     position.board.move_piece(from_sq, to_sq, pawn);
-
     update_hash_on_piece_move(position, pawn, from_sq, to_sq);
+}
+
+fn do_promotion(
+    position: &mut Position,
+    mv: Mov,
+    from_sq: Square,
+    to_sq: Square,
+    side_to_move: Colour,
+) {
+    if mv.is_capture() {
+        let capt_pce = position.board.get_piece_on_square(to_sq).unwrap();
+        remove_piece_from_board(position, capt_pce, to_sq);
+    }
+
+    let source_pce = position.board.get_piece_on_square(from_sq).unwrap();
+    let target_pce_role = mv.decode_promotion_piece_role();
+    let target_pce = Piece::new(target_pce_role, side_to_move);
+
+    remove_piece_from_board(position, source_pce, from_sq);
+    add_piece_to_board(position, target_pce, to_sq);
+}
+
+fn do_capture_move(position: &mut Position, piece_to_move: Piece, from_sq: Square, to_sq: Square) {
+    let capt_pce = position.board.get_piece_on_square(to_sq).unwrap();
+    remove_piece_from_board(position, capt_pce, to_sq);
+    update_hash_on_piece_move(position, piece_to_move, from_sq, to_sq);
+    position.board.move_piece(from_sq, to_sq, piece_to_move);
 }
 
 #[cfg(test)]
@@ -396,7 +427,7 @@ mod tests {
         let mv = Mov::encode_move_double_pawn_first(Square::f2, Square::f4);
         pos.make_move(mv);
 
-        assert_eq!(pos.en_pass_sq, Some(Square::f3));
+        assert_eq!(pos.en_pass_sq.unwrap(), Square::f3);
 
         assert!(is_piece_on_square_as_expected(
             &pos,
@@ -584,6 +615,68 @@ mod tests {
         ));
 
         assert!(pos.castle_permissions().is_queen_set(Colour::Black) == false);
+    }
+
+    #[test]
+    pub fn make_move_en_passant_black() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/pPBP1P2/2R1NpP1/2r1r2P/R2q3n w - b3 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert_eq!(pos.en_passant_square(), Some(Square::b3));
+        let mv = Mov::encode_move_en_passant(Square::a4, Square::b3);
+        pos.make_move(mv);
+
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::b3,
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        ));
+
+        assert!(!is_piece_on_square_as_expected(
+            &pos,
+            Square::b4,
+            Piece::new(PieceRole::Pawn, Colour::White)
+        ));
+
+        assert!(!is_piece_on_square_as_expected(
+            &pos,
+            Square::a4,
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        ));
+
+        assert_eq!(pos.en_passant_square(), None);
+    }
+
+    #[test]
+    pub fn make_move_en_passant_white() {
+        let fen = "1n1k2bp/2p2pb1/1p5p/1B1pP1K1/pPBP1P2/N1R1NpPQ/P1r1r2P/R2q3n b - d6 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert_eq!(pos.en_passant_square(), Some(Square::d6));
+        let mv = Mov::encode_move_en_passant(Square::e5, Square::d6);
+        pos.make_move(mv);
+
+        assert!(is_piece_on_square_as_expected(
+            &pos,
+            Square::d6,
+            Piece::new(PieceRole::Pawn, Colour::White)
+        ));
+
+        assert!(!is_piece_on_square_as_expected(
+            &pos,
+            Square::d5,
+            Piece::new(PieceRole::Pawn, Colour::Black)
+        ));
+
+        assert!(!is_piece_on_square_as_expected(
+            &pos,
+            Square::d5,
+            Piece::new(PieceRole::Pawn, Colour::White)
+        ));
+
+        assert_eq!(pos.en_passant_square(), None);
     }
 
     fn is_piece_on_square_as_expected(pos: &Position, sq: Square, pce: Piece) -> bool {
