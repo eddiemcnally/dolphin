@@ -257,13 +257,11 @@ impl Mov {
     }
 
     pub fn print_move(&self){
-        let from_sq = self.decode_from_square();
-        let to_sq = self.decode_to_square();
-        
-
-        println!("From {:?}, To {:?}", 
-        from_sq, 
-        to_sq);
+        //let from_sq = self.decode_from_square();
+        //let to_sq = self.decode_to_square();
+        //println!("From {:?}, To {:?}", 
+        //from_sq, 
+        //to_sq);
     }
 
 

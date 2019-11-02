@@ -293,7 +293,7 @@ impl Square {
             61 => Square::f8,
             62 => Square::g8,
             63 => Square::h8,
-            _ => panic!("Invalid square"),
+            _ => panic!("Invalid square {}", num),
         }
     }
 

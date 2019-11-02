@@ -1,12 +1,12 @@
 use board::bitboard;
 use board::piece::Colour;
 use board::piece::Piece;
+use board::piece::PieceRole;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
 use board::square::Square;
 use input::fen::ParsedFen;
 use std::option::Option;
-
 
 pub const NUM_SQUARES: usize = 64;
 
@@ -19,8 +19,9 @@ pub struct Board {
     colour_bb: [u64; NUM_COLOURS],
     // the pieces on each square
     pieces: [Option<Piece>; NUM_SQUARES],
+    // square containing the king
+    king_sq: [Square; NUM_COLOURS],
 }
-
 
 impl Board {
     pub fn new() -> Board {
@@ -29,14 +30,15 @@ impl Board {
             piece_bb: [0; NUM_PIECES],
             colour_bb: [0; NUM_COLOURS],
             pieces: [None; NUM_SQUARES],
+            king_sq: [Square::a1; NUM_COLOURS],
         };
     }
 
-    pub fn from_fen(parsed_fen:&ParsedFen) -> Board{
+    pub fn from_fen(parsed_fen: &ParsedFen) -> Board {
         let mut brd = Board::new();
 
         let positions = parsed_fen.piece_positions.iter();
-        for (sq, pce) in positions{
+        for (sq, pce) in positions {
             brd.add_piece(*pce, *sq);
         }
         return brd;
@@ -87,11 +89,19 @@ impl Board {
         return self.board_bb;
     }
 
+    pub fn get_king_sq(&self, colour: Colour) -> Square {
+        return self.king_sq[colour.offset()];
+    }
+
     fn set_bitboards(&mut self, piece: Piece, sq: Square) {
         bitboard::set_bit(&mut self.board_bb, sq);
         bitboard::set_bit(&mut self.piece_bb[piece.offset()], sq);
         bitboard::set_bit(&mut self.colour_bb[piece.colour().offset()], sq);
         self.pieces[sq.to_offset()] = Some(piece);
+
+        if piece.role() == PieceRole::King {
+            self.king_sq[piece.colour().offset()] = sq;
+        }
     }
 
     fn clear_bitboards(&mut self, piece: Piece, sq: Square) {
@@ -108,10 +118,27 @@ pub mod tests {
     use board::piece::Colour;
     use board::piece::Piece;
     use board::piece::PieceRole;
-    use std::collections::HashMap;
     use board::square::Square;
+    use input::fen::get_position;
     use input::fen::ParsedFen;
+    use std::collections::HashMap;
     use utils;
+
+    #[test]
+    pub fn add_piece_king_square_as_expected() {
+        let cols = vec![Colour::White, Colour::Black];
+
+        for col in cols {
+            let mut board = Board::new();
+
+            let king = Piece::new(PieceRole::King, col);
+            for sq in utils::get_ordered_square_list_by_file() {
+                board.add_piece(king, sq);
+
+                assert_eq!(board.get_king_sq(col), sq);
+            }
+        }
+    }
 
     #[test]
     pub fn add_remove_piece_square_state_as_expected() {
@@ -197,7 +224,51 @@ pub mod tests {
     }
 
     #[test]
-    pub fn build_board_from_parsed_fen(){
+    pub fn parsed_fen_edge_squares_as_expected_a1() {
+        let fen = "8/8/8/8/8/8/3N4/k7 w - - 0 1";
+        let parsed_fen = get_position(fen);
+
+        let brd = Board::from_fen(&parsed_fen);
+
+        let pce = brd.get_piece_on_square(Square::a1).unwrap();
+        assert!(pce == Piece::new(PieceRole::King, Colour::Black))
+    }
+
+    #[test]
+    pub fn parsed_fen_edge_squares_as_expected_a8() {
+        let fen = "k7/8/8/8/8/8/3N4/8 w - - 0 1";
+        let parsed_fen = get_position(fen);
+
+        let brd = Board::from_fen(&parsed_fen);
+
+        let pce = brd.get_piece_on_square(Square::a8).unwrap();
+        assert!(pce == Piece::new(PieceRole::King, Colour::Black))
+    }
+
+    #[test]
+    pub fn parsed_fen_edge_squares_as_expected_h1() {
+        let fen = "8/8/8/8/8/8/3N4/7k w - - 0 1";
+        let parsed_fen = get_position(fen);
+
+        let brd = Board::from_fen(&parsed_fen);
+
+        let pce = brd.get_piece_on_square(Square::h1).unwrap();
+        assert!(pce == Piece::new(PieceRole::King, Colour::Black))
+    }
+
+    #[test]
+    pub fn parsed_fen_edge_squares_as_expected_h8() {
+        let fen = "7k/8/8/8/8/8/3N4/8 w - - 0 1";
+        let parsed_fen = get_position(fen);
+
+        let brd = Board::from_fen(&parsed_fen);
+
+        let pce = brd.get_piece_on_square(Square::h8).unwrap();
+        assert!(pce == Piece::new(PieceRole::King, Colour::Black))
+    }
+
+    #[test]
+    pub fn build_board_from_parsed_fen() {
         let mut map = HashMap::new();
 
         map.insert(Square::a1, Piece::new(PieceRole::Knight, Colour::Black));
@@ -211,21 +282,18 @@ pub mod tests {
 
         let brd = Board::from_fen(&parsed_fen);
 
-
-        for sq in utils::get_ordered_square_list_by_file(){            
-            if parsed_fen.piece_positions.contains_key(&sq){
+        for sq in utils::get_ordered_square_list_by_file() {
+            if parsed_fen.piece_positions.contains_key(&sq) {
                 // should contain piece
                 let brd_pce = brd.get_piece_on_square(sq).unwrap();
                 let map_pce = parsed_fen.piece_positions.get(&sq).unwrap();
 
-                assert_eq!(brd_pce, *map_pce);   
+                assert_eq!(brd_pce, *map_pce);
             } else {
                 // shouldn't contain a piece
                 let retr_pce: Option<Piece> = brd.get_piece_on_square(sq);
                 assert_eq!(retr_pce.is_some(), false);
             }
         }
-
     }
-
 }

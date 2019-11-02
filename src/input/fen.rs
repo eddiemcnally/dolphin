@@ -16,8 +16,6 @@ pub struct ParsedFen {
     pub full_move_cnt: u16,
 }
 
-
-
 // [0] = piece positions
 // [1] = side to move
 // [2] = castle permissions
@@ -289,6 +287,46 @@ mod tests {
             sq_pce[&Square::h8],
             Piece::new(PieceRole::Pawn, Colour::Black)
         );
+    }
+
+    #[test]
+    pub fn pieces_edge_squares_h1() {
+        let fen = "8/8/8/8/8/8/6N1/5N1k w - - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
+
+        let pce = sq_pce[&Square::h1];
+        assert_eq!(pce, Piece::new(PieceRole::King, Colour::Black));
+    }
+
+    #[test]
+    pub fn pieces_edge_squares_h8() {
+        let fen = "7k/8/8/8/8/8/6N1/5N2 w - - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
+
+        let pce = sq_pce[&Square::h8];
+        assert_eq!(pce, Piece::new(PieceRole::King, Colour::Black));
+    }
+
+    #[test]
+    pub fn pieces_edge_squares_a1() {
+        let fen = "8/8/8/8/8/8/6N1/k4N2 w - - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
+
+        let pce = sq_pce[&Square::a1];
+        assert_eq!(pce, Piece::new(PieceRole::King, Colour::Black));
+    }
+
+    #[test]
+    pub fn pieces_edge_squares_a8() {
+        let fen = "k7/8/8/8/8/8/6N1/5N2 w - - 0 1";
+        let piece_pos: Vec<&str> = fen.split(' ').collect();
+        let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
+
+        let pce = sq_pce[&Square::a8];
+        assert_eq!(pce, Piece::new(PieceRole::King, Colour::Black));
     }
 
     #[test]
