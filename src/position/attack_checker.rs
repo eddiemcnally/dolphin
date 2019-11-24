@@ -273,7 +273,7 @@ mod tests {
             "8/8/2N5/1N6/8/8/8/k7 w - - 0 1",
             "8/8/2N5/1Nk5/8/8/8/8 w - - 0 1",
             "8/8/1kN5/1N6/8/8/8/8 w - - 0 1",
-            "88/8/8/1N6/8/8/8/5N1k w - - 0 1",
+            "8/8/8/1N6/8/8/8/5N1k w - - 0 1",
             "8/8/8/8/8/8/6N1/5N1k w - - 0 1",
             "8/8/8/8/8/8/5kN1/5N2 w - - 0 1",
         ];
@@ -286,6 +286,31 @@ mod tests {
             let king_sq = board.get_king_sq(Colour::Black);
 
             assert!(checker.is_sq_attacked(&board, king_sq, Colour::White) == false);
+        }
+    }
+
+    #[test]
+    pub fn black_knight_attacking_false() {
+        // set up a list of FENs with WK and BN such that WK *isn't* under attack
+        let fens = vec![
+            "K7/1n6/n7/8/8/8/8/8 w - - 0 1",
+            "K7/8/n1n5/8/8/8/8/8 w - - 0 1",
+            "8/8/8/8/8/8/7n/5n1K w - - 0 1",
+            "8/8/8/8/8/8/6Kn/5n2 w - - 0 1",
+            "8/8/8/2Kn4/2n5/8/8/8 w - - 0 1",
+            "8/8/8/3n4/2n5/8/8/K7 w - - 0 1",
+            "8/8/8/3n4/2n5/8/8/K7 w - - 0 1",
+            "7n/5n2/8/8/8/8/8/7K w - - 0 1",
+        ];
+
+        for fen in fens {
+            let parsed_fen = fen::get_position(&fen);
+            let board = Board::from_fen(&parsed_fen);
+
+            let checker = AttackChecker::new();
+            let king_sq = board.get_king_sq(Colour::White);
+
+            assert!(checker.is_sq_attacked(&board, king_sq, Colour::Black) == false);
         }
     }
 
@@ -315,6 +340,34 @@ mod tests {
     }
 
     #[test]
+    pub fn black_knight_attacking_true() {
+        // set up a list of FENs with WK and BN such that WK *is* under attack
+        let fens = vec![
+            "7K/5n2/6n1/8/8/8/8/8 w - - 0 1",
+            "7K/5n2/8/4n3/8/8/8/8 w - - 0 1",
+            "8/5n2/7K/5n2/8/8/8/8 w - - 0 1",
+            "8/8/8/8/8/6n1/5n2/7K w - - 0 1",
+            "8/8/8/8/8/6n1/8/5n1K w - - 0 1",
+            "8/8/8/8/8/8/2n5/K1n5 w - - 0 1",
+            "8/8/8/8/8/1n6/2n5/K7 w - - 0 1",
+            "8/8/8/8/8/nn6/8/K7 w - - 0 1",
+            "8/8/1n6/3n4/2K5/8/8/8 w - - 0 1",
+            "8/8/1n6/3n4/8/2K5/8/8 w - - 0 1",
+            "8/8/1n6/3n4/1K6/8/8/8 w - - 0 1",
+        ];
+
+        for fen in fens {
+            let parsed_fen = fen::get_position(&fen);
+            let board = Board::from_fen(&parsed_fen);
+
+            let checker = AttackChecker::new();
+            let king_sq = board.get_king_sq(Colour::White);
+
+            assert!(checker.is_sq_attacked(&board, king_sq, Colour::Black) == true);
+        }
+    }
+
+    #[test]
     pub fn white_horizontal_vertical_attacking_false() {
         // set up a list of FENs with BK R and Q such that BK *isn't* under attack
         let fens = vec![
@@ -326,6 +379,12 @@ mod tests {
             "8/8/8/8/8/1R1Q4/3R4/7k w - - 0 1",
             "8/8/8/8/7k/1R1Q4/3R4/8 w - - 0 1",
             "8/8/8/1R6/7k/3R4/4Q3/8 w - - 0 1",
+            "8/8/8/1R6/4Q1pk/3R4/8/8 w - - 0 1",
+            "8/7k/6p1/1R6/4Q3/3R4/8/8 w - - 0 1",
+            "8/4k3/4p3/1R6/4Q3/3R4/8/8 w - - 0 1",
+            "1k6/1p6/8/1R6/4Q3/3R4/8/8 w - - 0 1",
+            "1k6/1P6/8/1R6/4Q3/3R4/8/8 w - - 0 1",
+            "8/7k/8/1R3P2/4Q3/3R4/8/8 w - - 0 1",
         ];
 
         for fen in fens {
@@ -340,8 +399,44 @@ mod tests {
     }
 
     #[test]
+    pub fn black_horizontal_vertical_attacking_false() {
+        // set up a list of FENs with BK, BR and BQ such that WK *isn't* under attack
+        let fens = vec![
+            "K7/2qr4/8/1r6/8/8/8/8 w - - 0 1",
+            "K7/1r6/1q6/1r6/8/8/8/8 w - - 0 1",
+            "1r6/K7/2q5/1r6/8/8/8/8 w - - 0 1",
+            "1r6/7K/2q5/1r6/8/8/8/8 w - - 0 1",
+            "1r6/7K/1r6/6q1/8/8/8/8 w - - 0 1",
+            "6r1/7K/6r1/6q1/8/8/8/8 w - - 0 1",
+            "8/8/8/8/8/4r1q1/5r2/7K w - - 0 1",
+            "8/8/8/8/6r1/4r3/5q2/7K w - - 0 1",
+            "8/8/8/8/8/1r6/2q3r1/K7 w - - 0 1",
+            "8/8/8/8/1qr5/2r5/8/K7 w - - 0 1",
+            "8/8/8/4K3/1qr5/2r5/8/8 w - - 0 1",
+            "8/3K4/8/8/1qr5/2r5/8/8 w - - 0 1",
+            "8/8/8/8/1qr5/2r5/5K2/8 w - - 0 1",
+            "8/8/8/8/1qr5/2r1PK2/8/8 w - - 0 1",
+            "8/4K3/3P4/8/1qr5/2r5/8/8 w - - 0 1",
+            "8/1K6/1P6/8/1qr5/2r5/8/8 w - - 0 1",
+            "8/1K6/1p6/8/1qr5/2r5/8/8 w - - 0 1",
+            "8/2K5/2p5/8/1qr5/2r5/8/8 w - - 0 1",
+            "8/8/8/8/1qr2pK1/2r5/8/8 w - - 0 1",
+        ];
+
+        for fen in fens {
+            let parsed_fen = fen::get_position(&fen);
+            let board = Board::from_fen(&parsed_fen);
+
+            let checker = AttackChecker::new();
+            let king_sq = board.get_king_sq(Colour::White);
+
+            assert!(checker.is_sq_attacked(&board, king_sq, Colour::Black) == false);
+        }
+    }
+
+    #[test]
     pub fn white_horizontal_vertical_attacking_true() {
-        // set up a list of FENs with BK R and Q such that BK *is* under attack
+        // set up a list of FENs with WK, WR and WQ such that BK *is* under attack
         let fens = vec![
             "8/8/8/1R6/8/8/4Q3/3R3k w - - 0 1",
             "8/8/8/1R6/8/8/3R4/4Q2k w - - 0 1",
@@ -363,6 +458,31 @@ mod tests {
             let king_sq = board.get_king_sq(Colour::Black);
 
             assert!(checker.is_sq_attacked(&board, king_sq, Colour::White) == true);
+        }
+    }
+
+    #[test]
+    pub fn black_horizontal_vertical_attacking_true() {
+        // set up a list of FENs with BK, BR and BQ such that WK *is* under attack
+        let fens = vec![
+            "8/8/8/8/8/8/2qr4/3r3K w - - 0 1",
+            "8/8/8/8/8/8/2qr3K/3r4 w - - 0 1",
+            "3K4/8/8/8/8/8/2qr4/3r4 w - - 0 1",
+            "8/8/8/8/8/8/K1qr4/3r4 w - - 0 1",
+            "8/3r2q1/8/8/8/8/3K4/3r4 w - - 0 1",
+            "8/K2r2q1/8/8/8/8/8/3r4 w - - 0 1",
+            "8/K2r4/8/8/8/8/q7/3r4 w - - 0 1",
+            "8/K2r4/8/8/r7/8/q7/8 w - - 0 1",
+        ];
+
+        for fen in fens {
+            let parsed_fen = fen::get_position(&fen);
+            let board = Board::from_fen(&parsed_fen);
+
+            let checker = AttackChecker::new();
+            let king_sq = board.get_king_sq(Colour::White);
+
+            assert!(checker.is_sq_attacked(&board, king_sq, Colour::Black) == true);
         }
     }
 
