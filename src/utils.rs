@@ -19,14 +19,6 @@ pub fn get_all_castle_permissions() -> Vec<CastlePermissionType>{
 }
 
 
-pub fn display_bb_for_sq(sq::Square, bitboard::BitBoard){
-
-    print!("BB for sq={:?}", sq);
-    bitboard
-
-
-}
-
 
 pub fn get_all_pieces() -> Vec<Piece> {
     let mut list: Vec<Piece> = Vec::new();

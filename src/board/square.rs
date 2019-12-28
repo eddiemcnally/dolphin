@@ -83,7 +83,6 @@ impl fmt::Display for Square {
     }
 }
 
-
 pub fn get_square_array() -> &'static [Square] {
     SQUARES
 }
@@ -156,23 +155,22 @@ static SQUARES: &'static [Square] = &[
 ];
 
 impl Square {
-
-    pub fn square_plus_1_rank(&self) -> Square{
+    pub fn square_plus_1_rank(&self) -> Square {
         let s = *self as u8 + 8;
         return Square::from_u8(s);
     }
 
-    pub fn square_minus_1_rank(&self) -> Square{
+    pub fn square_minus_1_rank(&self) -> Square {
         let s = *self as u8 - 8;
         return Square::from_u8(s);
     }
 
-    pub fn square_plus_2_ranks(&self) -> Square{
+    pub fn square_plus_2_ranks(&self) -> Square {
         let s = *self as u8 + 16;
         return Square::from_u8(s);
     }
 
-    pub fn square_minus_2_ranks(&self) -> Square{
+    pub fn square_minus_2_ranks(&self) -> Square {
         let s = *self as u8 - 16;
         return Square::from_u8(s);
     }
@@ -368,7 +366,7 @@ impl Square {
 }
 
 pub mod rank {
-    #[derive(Debug, Eq, PartialEq, Hash)]
+    #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
     #[repr(u8)]
     pub enum Rank {
         Rank1 = 0,
@@ -414,7 +412,7 @@ pub mod rank {
                 2 => Rank::Rank3,
                 3 => Rank::Rank4,
                 4 => Rank::Rank5,
-                5 => Rank::Rank6,    // en passant
+                5 => Rank::Rank6, // en passant
 
                 6 => Rank::Rank7,
                 7 => Rank::Rank8,
@@ -437,7 +435,7 @@ pub mod rank {
 }
 
 pub mod file {
-    #[derive(Debug, Eq, PartialEq, Hash)]
+    #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
     #[repr(u8)]
     pub enum File {
         FileA = 0,
@@ -503,7 +501,6 @@ pub mod file {
             }
         }
     }
-
 }
 
 #[cfg(test)]
@@ -623,5 +620,4 @@ pub mod tests {
             assert_eq!(square, sq);
         }
     }
-
 }
