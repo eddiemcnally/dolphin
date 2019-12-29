@@ -17,7 +17,7 @@ pub fn gen_knight_masks() -> Vec<u64> {
 
     let map = utils::get_square_rank_file_map();
 
-    for (_square, (rank, file)) in map {
+    for (square, (rank, file)) in map {
         // rank + 2, file +/- 1
         let mut dest_r: i8 = rank as i8 + 2;
         let mut dest_f: i8 = file as i8 + 1;
@@ -46,7 +46,7 @@ pub fn gen_knight_masks() -> Vec<u64> {
         dest_f = file as i8 - 1;
         add_possible_dest(&mut dest_sq, dest_r, dest_f);
 
-        let bb = gen_bitboard(&dest_sq);
+        let bb = gen_bitboard(square, &dest_sq);
         retval.push(bb);
     }
     return retval;
@@ -59,7 +59,7 @@ pub fn gen_white_pawn_capture_masks() -> Vec<u64> {
 
     let map = utils::get_square_rank_file_map();
 
-    for (_square, (rank, file)) in map {
+    for (square, (rank, file)) in map {
         if rank == Rank::Rank1 || rank == Rank::Rank8 {
             continue;
         }
@@ -71,7 +71,7 @@ pub fn gen_white_pawn_capture_masks() -> Vec<u64> {
         dest_f = rank as i8 - 1;
         add_possible_dest(&mut dest_sq, dest_r, dest_f);
 
-        let bb = gen_bitboard(&dest_sq);
+        let bb = gen_bitboard(square, &dest_sq);
         retval.push(bb);
     }
     return retval;
@@ -84,7 +84,7 @@ pub fn gen_black_pawn_capture_masks() -> Vec<u64> {
 
     let map = utils::get_square_rank_file_map();
 
-    for (_square, (rank, file)) in map {
+    for (square, (rank, file)) in map {
         if rank == Rank::Rank1 || rank == Rank::Rank8 {
             continue;
         }
@@ -96,7 +96,7 @@ pub fn gen_black_pawn_capture_masks() -> Vec<u64> {
         dest_f = rank as i8 - 1;
         add_possible_dest(&mut dest_sq, dest_r, dest_f);
 
-        let bb = gen_bitboard(&dest_sq);
+        let bb = gen_bitboard(square, &dest_sq);
         retval.push(bb);
     }
     return retval;
@@ -109,7 +109,7 @@ pub fn gen_king_masks() -> Vec<u64> {
 
     let map = utils::get_square_rank_file_map();
 
-    for (_square, (rank, file)) in map {
+    for (square, (rank, file)) in map {
         // rank + 1
         add_possible_dest(&mut dest_sq, rank as i8 + 1, file as i8 - 1);
         add_possible_dest(&mut dest_sq, rank as i8 + 1, file as i8);
@@ -124,7 +124,88 @@ pub fn gen_king_masks() -> Vec<u64> {
         add_possible_dest(&mut dest_sq, rank as i8 - 1, file as i8);
         add_possible_dest(&mut dest_sq, rank as i8 - 1, file as i8 + 1);
 
-        let bb = gen_bitboard(&dest_sq);
+        let bb = gen_bitboard(square, &dest_sq);
+        retval.push(bb);
+    }
+    return retval;
+}
+
+pub fn gen_horizontal_vertical_masks() -> Vec<u64> {
+    let mut retval = Vec::new();
+
+    let mut dest_sq = Vec::new();
+
+    let map = utils::get_square_rank_file_map();
+
+    for (square, (rank, file)) in map {
+        for r in Rank::Rank1 as i8..Rank::Rank8 as i8 {
+            for f in File::FileA as i8..File::FileH as i8 {
+                if r == rank as i8 && f == file as i8 {
+                    continue;
+                }
+                add_possible_dest(&mut dest_sq, r as i8, f as i8);
+            }
+        }
+
+        for f in File::FileA as i8..File::FileH as i8 {
+            for r in Rank::Rank1 as i8..Rank::Rank8 as i8 {
+                if r == rank as i8 && f == file as i8 {
+                    continue;
+                }
+                add_possible_dest(&mut dest_sq, r as i8, f as i8);
+            }
+        }
+        let bb = gen_bitboard(square, &dest_sq);
+        retval.push(bb);
+    }
+    return retval;
+}
+
+pub fn gen_both_diagonal_masks() -> Vec<u64> {
+    let mut retval = Vec::new();
+
+    let mut dest_sq = Vec::new();
+
+    let map = utils::get_square_rank_file_map();
+
+    for (square, (rank, file)) in map {
+        // move left and down
+        let mut dest_rank = rank as i8;
+        let mut dest_file = file as i8;
+        while is_valid_file(dest_file) && is_valid_rank(dest_rank) {
+            add_possible_dest(&mut dest_sq, dest_rank as i8, dest_file as i8);
+            dest_rank -= 1;
+            dest_file -= 1;
+        }
+
+        // move left and up
+        dest_rank = rank as i8;
+        dest_file = file as i8;
+        while is_valid_file(dest_file) && is_valid_rank(dest_rank) {
+            add_possible_dest(&mut dest_sq, dest_rank as i8, dest_file as i8);
+            dest_rank += 1;
+            dest_file -= 1;
+        }
+
+        // move right and down
+        dest_rank = rank as i8;
+        dest_file = file as i8;
+        while is_valid_file(dest_file) && is_valid_rank(dest_rank) {
+            add_possible_dest(&mut dest_sq, dest_rank as i8, dest_file as i8);
+            dest_rank -= 1;
+            dest_file += 1;
+        }
+
+        // move right and up
+        dest_rank = rank as i8;
+        dest_file = file as i8;
+        while is_valid_file(dest_file) && is_valid_rank(dest_rank) {
+            add_possible_dest(&mut dest_sq, dest_rank as i8, dest_file as i8);
+            dest_rank += 1;
+            dest_file += 1;
+        }
+
+        let bb = gen_bitboard(square, &dest_sq);
         retval.push(bb);
     }
     return retval;
@@ -142,7 +223,7 @@ fn is_dest_valid(dest: &Dest) -> bool {
     is_valid_rank(dest.rank) && is_valid_file(dest.file)
 }
 
-fn gen_bitboard(target_sq_list: &Vec<Dest>) -> u64 {
+fn gen_bitboard(start_sq: Square, target_sq_list: &Vec<Dest>) -> u64 {
     let mut bb: u64 = 0;
 
     for dest in target_sq_list {
@@ -155,6 +236,9 @@ fn gen_bitboard(target_sq_list: &Vec<Dest>) -> u64 {
             bitboard::set_bit(&mut bb, sq);
         }
     }
+
+    // clear the start square
+    bitboard::clear_bit(&mut bb, start_sq);
 
     return bb;
 }
