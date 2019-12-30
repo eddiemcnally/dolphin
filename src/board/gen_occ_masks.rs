@@ -130,7 +130,7 @@ pub fn gen_king_masks() -> Vec<u64> {
     return retval;
 }
 
-pub fn gen_horizontal_vertical_masks() -> Vec<u64> {
+pub fn gen_rank_masks() -> Vec<u64> {
     let mut retval = Vec::new();
 
     let mut dest_sq = Vec::new();
@@ -147,6 +147,20 @@ pub fn gen_horizontal_vertical_masks() -> Vec<u64> {
             }
         }
 
+        let bb = gen_bitboard(square, &dest_sq);
+        retval.push(bb);
+    }
+    return retval;
+}
+
+pub fn gen_file_masks() -> Vec<u64> {
+    let mut retval = Vec::new();
+
+    let mut dest_sq = Vec::new();
+
+    let map = utils::get_square_rank_file_map();
+
+    for (square, (rank, file)) in map {
         for f in File::FileA as i8..File::FileH as i8 {
             for r in Rank::Rank1 as i8..Rank::Rank8 as i8 {
                 if r == rank as i8 && f == file as i8 {
@@ -161,7 +175,24 @@ pub fn gen_horizontal_vertical_masks() -> Vec<u64> {
     return retval;
 }
 
-pub fn gen_both_diagonal_masks() -> Vec<u64> {
+pub fn gen_queen_masks() -> Vec<u64> {
+    let bishop_masks = gen_bishop_masks();
+    let rook_masks = gen_rank_masks();
+
+    if bishop_masks.len() != 64 || bishop_masks.len() != rook_masks.len() {
+        panic!("Problem");
+    }
+    let mut retval = Vec::new();
+
+    for i in 0..63 {
+        let queen_mask = bishop_masks[i] | rook_masks[i];
+        retval.push(queen_mask);
+    }
+
+    return retval;
+}
+
+pub fn gen_bishop_masks() -> Vec<u64> {
     let mut retval = Vec::new();
 
     let mut dest_sq = Vec::new();
@@ -203,6 +234,33 @@ pub fn gen_both_diagonal_masks() -> Vec<u64> {
             add_possible_dest(&mut dest_sq, dest_rank as i8, dest_file as i8);
             dest_rank += 1;
             dest_file += 1;
+        }
+
+        let bb = gen_bitboard(square, &dest_sq);
+        retval.push(bb);
+    }
+    return retval;
+}
+
+pub fn gen_rook_masks() -> Vec<u64> {
+    let mut retval = Vec::new();
+
+    let mut dest_sq = Vec::new();
+
+    let map = utils::get_square_rank_file_map();
+
+    for (square, (rank, file)) in map {
+        // move left and down
+        let dest_rank = rank as i8;
+        let dest_file = file as i8;
+
+        // move up the ranks of this file
+        for r in Rank::Rank1 as i8..Rank::Rank8 as i8 {
+            add_possible_dest(&mut dest_sq, r as i8, dest_file);
+        }
+
+        for f in File::FileA as i8..File::FileH as i8 {
+            add_possible_dest(&mut dest_sq, dest_rank, f as i8);
         }
 
         let bb = gen_bitboard(square, &dest_sq);
