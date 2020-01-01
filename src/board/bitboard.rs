@@ -39,10 +39,19 @@ pub fn display_squares(bb: u64) {
     println!(" ");
 }
 
+pub fn print_hex(bb: u64)
+{
+    println!("{:#064X}", bb);
+}
+
+
 fn to_mask(sq: Square) -> u64 {
     let bit: u64 = 1;
     bit.shl(sq.to_offset())
 }
+
+
+
 
 #[cfg(test)]
 pub mod tests {

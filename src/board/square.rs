@@ -412,8 +412,7 @@ pub mod rank {
                 2 => Rank::Rank3,
                 3 => Rank::Rank4,
                 4 => Rank::Rank5,
-                5 => Rank::Rank6, // en passant
-
+                5 => Rank::Rank6, 
                 6 => Rank::Rank7,
                 7 => Rank::Rank8,
                 _ => panic!("Invalid rank character {}", rank),
