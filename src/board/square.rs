@@ -87,7 +87,7 @@ pub fn get_square_array() -> &'static [Square] {
     SQUARES
 }
 
-static SQUARES: &'static [Square] = &[
+pub static SQUARES: &'static [Square] = &[
     Square::a1,
     Square::b1,
     Square::c1,
@@ -379,6 +379,17 @@ pub mod rank {
         Rank8,
     }
 
+    pub static RANKS: &'static [Rank] = &[
+        Rank::Rank1,
+        Rank::Rank2,
+        Rank::Rank3,
+        Rank::Rank4,
+        Rank::Rank5,
+        Rank::Rank6,
+        Rank::Rank7,
+        Rank::Rank8
+    ];
+
     impl Rank {
         pub fn from_char(rank: char) -> Rank {
             match rank {
@@ -446,6 +457,17 @@ pub mod file {
         FileG,
         FileH,
     }
+
+    pub static FILES: &'static [File] = &[
+        File::FileA,
+        File::FileB,
+        File::FileC,
+        File::FileD,
+        File::FileE,
+        File::FileF,
+        File::FileG,
+        File::FileH        
+    ];
 
     impl File {
         pub fn from_int(fint: u8) -> File {

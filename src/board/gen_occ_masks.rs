@@ -1,4 +1,5 @@
 use board::bitboard;
+use board;
 use board::square::file::File;
 use board::square::rank::Rank;
 use board::square::Square;
@@ -8,7 +9,7 @@ use utils;
 pub fn gen_knight_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = utils::get_ordered_square_list_by_file();
+    let squares = board::square::SQUARES;
 
     for sq in squares {
         let mut bb:u64 = 0;
@@ -52,7 +53,7 @@ pub fn gen_knight_masks() -> Vec<u64> {
 pub fn gen_white_pawn_capture_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = utils::get_ordered_square_list_by_file();
+    let squares = board::square::SQUARES;
 
     for sq in squares {
         if sq.rank() == Rank::Rank1 || sq.rank() == Rank::Rank8 {
@@ -78,7 +79,7 @@ pub fn gen_white_pawn_capture_masks() -> Vec<u64> {
 pub fn gen_black_pawn_capture_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = utils::get_ordered_square_list_by_file();
+    let squares = board::square::SQUARES;
 
     for sq in squares {
         if sq.rank() == Rank::Rank1 || sq.rank() == Rank::Rank8 {
@@ -104,7 +105,7 @@ pub fn gen_black_pawn_capture_masks() -> Vec<u64> {
 pub fn gen_king_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = utils::get_ordered_square_list_by_file();
+    let squares = board::square::SQUARES;
 
     for sq in squares {
  
@@ -134,11 +135,17 @@ pub fn gen_king_masks() -> Vec<u64> {
 pub fn gen_rank_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    for rank in Rank::Rank1 as i8..Rank::Rank8 as i8 
+    let ranks = board::square::rank::RANKS;
+    let files = board::square::file::FILES;
+
+    for r in ranks 
     {
+        let rank = *r as i8;
         let mut bb:u64 = 0;
-        for file in File::FileA as i8..File::FileH as i8
+
+        for f in files
         {
+            let file = *f as i8;
             set_dest_sq_if_valid(&mut bb, rank, file);
         }
         retval.push(bb);
@@ -149,15 +156,22 @@ pub fn gen_rank_masks() -> Vec<u64> {
 pub fn gen_file_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    for file in File::FileA as i8..File::FileH as i8 
+    let ranks = board::square::rank::RANKS;
+    let files = board::square::file::FILES;
+
+    for f in files 
     {
+        let file = *f as i8;
         let mut bb:u64 = 0;
-        for rank in Rank::Rank1 as i8..Rank::Rank8 as i8
+
+        for r in ranks
         {
+            let rank = *r as i8;
             set_dest_sq_if_valid(&mut bb, rank, file);
         }
         retval.push(bb);
     }
+
     return retval;
 }
 
@@ -167,14 +181,20 @@ pub fn gen_queen_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
     let bishop_masks = gen_bishop_masks();
-    let rook_masks = gen_rank_masks();
+    let rook_masks = gen_rook_masks();
 
     if bishop_masks.len() != 64 || bishop_masks.len() != rook_masks.len() {
         panic!("Problem");
     }
 
-    for i in 0..63 {
-        let queen_mask = bishop_masks[i] | rook_masks[i];
+    let squares = utils::get_ordered_square_list_by_file();
+
+    for sq in squares {
+        let mut queen_mask = bishop_masks[sq.to_offset()] | rook_masks[sq.to_offset()];
+
+        // remove current square
+        bitboard::clear_bit(&mut queen_mask, sq);
+
         retval.push(queen_mask);
     }
 
@@ -186,7 +206,7 @@ pub fn get_diagonal_masks() -> Vec<u64>
 {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = utils::get_ordered_square_list_by_file();
+    let squares = board::square::SQUARES;
 
     for sq in squares {
         let mut bb: u64 = 0;
@@ -209,6 +229,9 @@ pub fn get_diagonal_masks() -> Vec<u64>
             dest_file += 1;
         }
 
+        // remove current square
+        bitboard::clear_bit(&mut bb, *sq);
+
         retval.push(bb);
     }
     return retval;
@@ -219,7 +242,7 @@ pub fn get_anti_diagonal_masks() -> Vec<u64>
 {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = utils::get_ordered_square_list_by_file();
+    let squares = board::square::SQUARES;
 
     for sq in squares {
         let mut bb: u64 = 0;
@@ -242,6 +265,9 @@ pub fn get_anti_diagonal_masks() -> Vec<u64>
             dest_file += 1;
         }
 
+        // remove current square
+        bitboard::clear_bit(&mut bb, *sq);
+
         retval.push(bb);
     }
     return retval;
@@ -260,9 +286,15 @@ pub fn gen_bishop_masks() -> Vec<u64>
     }
     let mut retval = Vec::new();
 
-    for i in 0..63 {
-        let queen_mask = diag_masks[i] | anti_diag_masks[i];
-        retval.push(queen_mask);
+    let squares = board::square::SQUARES;
+
+    for sq in squares {
+        let mut bishop_mask = diag_masks[sq.to_offset()] | anti_diag_masks[sq.to_offset()];
+
+        // remove current square
+        bitboard::clear_bit(&mut bishop_mask, *sq);
+
+        retval.push(bishop_mask);
     }
 
     return retval;
@@ -272,7 +304,10 @@ pub fn gen_rook_masks() -> Vec<u64>
 {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = utils::get_ordered_square_list_by_file();
+    let squares = board::square::SQUARES;
+
+    let ranks = board::square::rank::RANKS;
+    let files = board::square::file::FILES;
 
     for sq in squares {
         let mut bb: u64 = 0;
@@ -280,13 +315,16 @@ pub fn gen_rook_masks() -> Vec<u64>
         let dest_file = sq.file() as i8;
 
         // move up the ranks of this file
-        for r in Rank::Rank1 as i8..Rank::Rank8 as i8 {
-            set_dest_sq_if_valid(&mut bb, r, dest_file);
+        for r in ranks {
+            set_dest_sq_if_valid(&mut bb, *r as i8, dest_file);
         }
 
-        for f in File::FileA as i8..File::FileH as i8 {
-            set_dest_sq_if_valid(&mut bb, dest_rank, f);
+        for f in files {
+            set_dest_sq_if_valid(&mut bb, dest_rank, *f as i8);
          }
+
+         // remove current square
+        bitboard::clear_bit(&mut bb, *sq);
 
         retval.push(bb);
     }
@@ -315,27 +353,75 @@ fn set_dest_sq_if_valid(bb: &mut u64, dest_rank:i8, dest_file:i8){
 
 
 
-
-
 #[cfg(test)]
 pub mod tests {
-    use utils;
+    use board;
     use board::occupancy_masks;
 
     #[test]
     pub fn compare_knight_masks(){
-     
-        let squares = utils::get_ordered_square_list_by_file();
+        let squares = board::square::SQUARES;
 
         let masks = super::gen_knight_masks();
-
         
         for sq in squares {
-            let new_mask = masks[sq as usize];
+            let new_mask = masks[sq.to_offset()];
 
-            let ref_mask = occupancy_masks::get_occupancy_mask_knight(sq);
+            let ref_mask = occupancy_masks::get_occupancy_mask_knight(*sq);
 
             assert_eq!(new_mask, ref_mask);
         }
     }
+
+
+
+    #[test]
+    pub fn compare_bishop_masks(){
+        let squares = board::square::SQUARES;
+
+        let masks = super::gen_bishop_masks();
+        
+        for sq in squares {
+            let new_mask = masks[sq.to_offset()];
+
+            let ref_mask = occupancy_masks::get_occupancy_mask_bishop(*sq);
+
+            assert!(new_mask == ref_mask);
+        }
+    }
+
+
+
+    #[test]
+    pub fn compare_queen_masks(){
+        let squares = board::square::SQUARES;
+
+        let masks = super::gen_queen_masks();
+        
+        for sq in squares {
+            let new_mask = masks[sq.to_offset()];
+
+            let ref_mask = occupancy_masks::get_occupancy_mask_queen(*sq);
+      
+            assert!(new_mask == ref_mask);
+        }
+    }
+
+
+    #[test]
+    pub fn compare_king_masks(){
+     
+        let squares = board::square::SQUARES;
+
+        let masks = super::gen_king_masks();
+        
+        for sq in squares {
+            let new_mask = masks[sq.to_offset()];
+
+            let ref_mask = occupancy_masks::get_occupancy_mask_king(*sq);
+
+            assert!(new_mask == ref_mask);
+        }
+    }
+
 }
