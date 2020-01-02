@@ -56,22 +56,24 @@ pub fn gen_white_pawn_capture_masks() -> Vec<u64> {
     let squares = board::square::SQUARES;
 
     for sq in squares {
-        if sq.rank() == Rank::Rank1 || sq.rank() == Rank::Rank8 {
-            continue;
-        }
-
         let mut bb:u64 = 0;
-        let rank: i8 = sq.rank() as i8;
-        let file: i8 = sq.file() as i8;
 
-        // rank + 1, file +/- 1
-        let dest_rank: i8 = rank as i8 + 1;
-        let mut dest_file: i8 = file as i8 + 1;
-        set_dest_sq_if_valid(&mut bb, dest_rank, dest_file);
-        dest_file = rank as i8 - 1;
-        set_dest_sq_if_valid(&mut bb, dest_rank, dest_file);
-        
-        retval.push(bb);
+        if sq.rank() == Rank::Rank1 || sq.rank() == Rank::Rank8 {
+            retval.push(bb);
+        } else {
+
+            let rank: i8 = sq.rank() as i8;
+            let file: i8 = sq.file() as i8;
+
+            // rank + 1, file +/- 1
+            let dest_rank: i8 = rank as i8 + 1;
+            let mut dest_file: i8 = file as i8 + 1;
+            set_dest_sq_if_valid(&mut bb, dest_rank, dest_file);
+            dest_file = file as i8 - 1;
+            set_dest_sq_if_valid(&mut bb, dest_rank, dest_file);
+            
+            retval.push(bb);
+        }
     }
     return retval;
 }
@@ -82,22 +84,24 @@ pub fn gen_black_pawn_capture_masks() -> Vec<u64> {
     let squares = board::square::SQUARES;
 
     for sq in squares {
-        if sq.rank() == Rank::Rank1 || sq.rank() == Rank::Rank8 {
-            continue;
-        }
-
         let mut bb:u64 = 0;
-        let rank: i8 = sq.rank() as i8;
-        let file: i8 = sq.file() as i8;
 
-        // rank - 1, file +/- 1
-        let dest_rank: i8 = rank as i8 - 1;
-        let mut dest_file: i8 = file as i8 + 1;
-        set_dest_sq_if_valid(&mut bb, dest_rank, dest_file);
-        dest_file = rank as i8 - 1;
-        set_dest_sq_if_valid(&mut bb, dest_rank, dest_file);
+        if sq.rank() == Rank::Rank1 || sq.rank() == Rank::Rank8 {
+            retval.push(bb);
+        } else {
 
-        retval.push(bb);
+            let rank: i8 = sq.rank() as i8;
+            let file: i8 = sq.file() as i8;
+
+            // rank - 1, file +/- 1
+            let dest_rank: i8 = rank as i8 - 1;
+            let mut dest_file: i8 = file as i8 + 1;
+            set_dest_sq_if_valid(&mut bb, dest_rank, dest_file);
+            dest_file = file as i8 - 1;
+            set_dest_sq_if_valid(&mut bb, dest_rank, dest_file);
+
+            retval.push(bb);
+        }
     }
     return retval;
 }
@@ -357,6 +361,7 @@ fn set_dest_sq_if_valid(bb: &mut u64, dest_rank:i8, dest_file:i8){
 pub mod tests {
     use board;
     use board::occupancy_masks;
+    use board::bitboard;
 
     #[test]
     pub fn compare_knight_masks(){
@@ -390,6 +395,63 @@ pub mod tests {
         }
     }
 
+
+
+    #[test]
+    pub fn compare_rook_masks(){
+        let squares = board::square::SQUARES;
+
+        let masks = super::gen_rook_masks();
+        
+        for sq in squares {
+            let new_mask = masks[sq.to_offset()];
+
+            let ref_mask = occupancy_masks::get_occupancy_mask_rook(*sq);
+
+            assert!(new_mask == ref_mask);
+        }
+    }
+
+
+
+
+    #[test]
+    pub fn compare_black_pawn_masks(){
+        let squares = board::square::SQUARES;
+
+        let masks = super::gen_black_pawn_capture_masks();
+        
+        for sq in squares {
+            let new_mask = masks[sq.to_offset()];
+
+            let ref_mask = occupancy_masks::get_black_pawn_capture_mask(*sq);
+            
+            assert!(new_mask == ref_mask);
+        }
+    }
+
+
+
+    #[test]
+    pub fn compare_white_pawn_masks(){
+        let squares = board::square::SQUARES;
+
+        let masks = super::gen_white_pawn_capture_masks();
+        
+        for sq in squares {
+            let new_mask = masks[sq.to_offset()];
+
+            let ref_mask = occupancy_masks::get_white_pawn_capture_mask(*sq);
+
+            println!("****** {}", *sq);
+            println!("new.....");
+            bitboard::display_squares(new_mask);
+            println!("new.....");
+            bitboard::display_squares(ref_mask);
+            
+            assert!(new_mask == ref_mask);
+        }
+    }
 
 
     #[test]
