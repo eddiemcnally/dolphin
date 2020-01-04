@@ -361,7 +361,6 @@ fn set_dest_sq_if_valid(bb: &mut u64, dest_rank:i8, dest_file:i8){
 pub mod tests {
     use board;
     use board::occupancy_masks;
-    use board::bitboard;
 
     #[test]
     pub fn compare_knight_masks(){
@@ -443,12 +442,6 @@ pub mod tests {
 
             let ref_mask = occupancy_masks::get_white_pawn_capture_mask(*sq);
 
-            println!("****** {}", *sq);
-            println!("new.....");
-            bitboard::display_squares(new_mask);
-            println!("new.....");
-            bitboard::display_squares(ref_mask);
-            
             assert!(new_mask == ref_mask);
         }
     }

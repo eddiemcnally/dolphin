@@ -210,8 +210,6 @@ fn is_attacked_by_pawn(
     while pce_bb != 0 {
         let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
 
-        // TODO : this won't work if the Pawn is on the 1st 2 ranks, and the king is up there was well
-        // TODO : see the occupancy mask code
         let occ_mask = match attacking_side {
             Colour::White => occupancy_masks::get_white_pawn_capture_mask(pce_sq),
             Colour::Black => occupancy_masks::get_black_pawn_capture_mask(pce_sq),
@@ -651,7 +649,7 @@ mod tests {
             "8/8/8/8/8/2P1k3/4P3/8 w - - 0 1",
             "8/8/8/8/8/4k3/2P1P3/8 w - - 0 1",
             "4k3/4P3/2P5/8/8/8/8/8 w - - 0 1",
-            "7k/2P3P1/8/8/8/8/8/8 w - - 0 1",
+            "7k/2P4P/8/8/8/8/8/8 w - - 0 1",
         ];
 
         for fen in fens {
@@ -660,6 +658,7 @@ mod tests {
             let board = Board::from_fen(&parsed_fen);
             let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::Black);
+
             assert!(checker.is_sq_attacked(&board, king_sq, Colour::White) == false);
         }
     }
