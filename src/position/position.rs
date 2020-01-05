@@ -955,6 +955,75 @@ mod tests {
         }
     }
 
+    #[test]
+    pub fn make_move_king_castle_black_through_attached_squares_is_illegal() {
+        let fens = vec![
+            "4k2r/8/8/8/8/Q7/8/8 b k - 0 1",
+            "4k2r/8/8/8/Q7/8/8/8 b k - 0 1",
+            "4k2r/8/8/8/8/8/Q7/8 b k - 0 1",
+            "4k2r/8/8/8/8/8/8/4R3 b k - 0 1",
+            "4k2r/8/8/8/8/8/8/5R2 b k - 0 1",
+            "4k2r/8/8/8/8/8/8/6R1 b k - 0 1",
+            "4k2r/8/8/7B/8/8/8/8 b k - 0 1",
+            "4k2r/8/7B/8/8/8/8/8 b k - 0 1",
+            "4k2r/7B/8/8/8/8/8/8 b k - 0 1",
+            "4k2r/8/3N4/8/8/8/8/8 b k - 0 1",
+            "4k2r/8/4N3/8/8/8/8/8 b k - 0 1",
+            "4k2r/8/5N2/8/8/8/8/8 b k - 0 1",
+            "4k2r/8/6N1/8/8/8/8/8 b k - 0 1",
+            "4k2r/8/7N/8/8/8/8/8 b k - 0 1",
+            "4k2r/3P4/8/8/8/8/8/8 b k - 0 1",
+            "4k2r/4P3/8/8/8/8/8/8 b k - 0 1",
+            "4k2r/5P2/8/8/8/8/8/8 b k - 0 1",
+            "4k2r/6P1/8/8/8/8/8/8 b k - 0 1",
+            "4k2r/6P1/8/8/8/8/8/8 b k - 0 1",
+        ];
+
+        for fen in fens {
+            let parsed_fen = fen::get_position(&fen);
+            let mut pos = Position::new(parsed_fen);
+
+            let mv = Mov::encode_move_castle_kingside_black();
+
+            let is_valid_move = pos.make_move(mv);
+            assert_eq!(is_valid_move, false);
+        }
+    }
+
+    #[test]
+    pub fn make_move_queen_castle_black_through_attached_squares_is_illegal() {
+        let fens = vec![
+            "r3k3/8/8/7Q/8/8/8/8 b q - 0 1",
+            "r3k3/8/8/8/7Q/8/8/8 b q - 0 1",
+            "r3k3/8/8/8/8/7Q/8/8 b q - 0 1",
+            "r3k3/8/8/8/8/8/7Q/8 b q - 0 1",
+            "r3k3/8/8/8/4R3/8/8/8 b q - 0 1",
+            "r3k3/8/8/8/3R4/8/8/8 b q - 0 1",
+            "r3k3/8/8/8/2R5/8/8/8 b q - 0 1",
+            "r3k3/8/8/8/1R6/8/8/8 b q - 0 1",
+            "r3k3/8/8/8/B7/8/8/8 b q - 0 1",
+            "r3k3/8/8/B7/8/8/8/8 b q - 0 1",
+            "r3k3/8/B7/8/8/8/8/8 b q - 0 1",
+            "r3k3/B7/8/8/8/8/8/8 b q - 0 1",
+            "r3k3/B7/8/8/8/8/8/8 b q - 0 1",
+            "r3k3/4P3/8/8/8/8/8/8 b q - 0 1",
+            "r3k3/3P4/8/8/8/8/8/8 b q - 0 1",
+            "r3k3/2P5/8/8/8/8/8/8 b q - 0 1",
+            "r3k3/1P6/8/8/8/8/8/8 b q - 0 1",
+            "r3k3/P7/8/8/8/8/8/8 b q - 0 1",
+        ];
+
+        for fen in fens {
+            let parsed_fen = fen::get_position(&fen);
+            let mut pos = Position::new(parsed_fen);
+
+            let mv = Mov::encode_move_castle_queenside_black();
+
+            let is_valid_move = pos.make_move(mv);
+            assert_eq!(is_valid_move, false);
+        }
+    }
+
     fn is_piece_on_square_as_expected(pos: &Position, sq: Square, pce: Piece) -> bool {
         let pce_on_board = pos.board.get_piece_on_square(sq);
 
