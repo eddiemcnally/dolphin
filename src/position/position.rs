@@ -5,44 +5,23 @@ use board::piece::PieceRole;
 use board::square::Square;
 use input::fen::ParsedFen;
 use moves::mov::Mov;
+use position::attack_checker::AttackChecker;
 use position::castle_permissions::CastlePermission;
 use position::hash::PositionHash;
 use position::position_history::PositionHistory;
-use position::attack_checker::AttackChecker;
 
 pub struct MoveCounter {
     half_move: u16,
     full_move: u16,
 }
 
+static CASTLE_SQUARES_KING_WHITE: [Square; 3] = [Square::e1, Square::f1, Square::g1];
 
+static CASTLE_SQUARES_QUEEN_WHITE: [Square; 4] = [Square::b1, Square::c1, Square::d1, Square::e1];
 
-static CASTLE_SQUARES_KING_WHITE : [Square; 3] = [
-    Square::e1,
-    Square::f1,
-    Square::g1,
-];
+static CASTLE_SQUARES_KING_BLACK: [Square; 3] = [Square::e8, Square::f8, Square::g8];
 
-static CASTLE_SQUARES_QUEEN_WHITE : [Square; 4] = [
-    Square::b1,
-    Square::c1,
-    Square::d1,
-    Square::e1    
-];
-
-static CASTLE_SQUARES_KING_BLACK : [Square; 3] = [
-    Square::e8,
-    Square::f8,
-    Square::g8
-];
-
-static CASTLE_SQUARES_QUEEN_BLACK : [Square; 4] = [
-    Square::b8,
-    Square::c8,
-    Square::d8,
-    Square::e8    
-];
-
+static CASTLE_SQUARES_QUEEN_BLACK: [Square; 4] = [Square::b8, Square::c8, Square::d8, Square::e8];
 
 const MAX_MOVE_HISTORY: u16 = 2048;
 
@@ -55,7 +34,7 @@ pub struct Position {
     fifty_move_cntr: u8,
     position_key: PositionHash,
     position_history: PositionHistory,
-    attack_checker: AttackChecker
+    attack_checker: AttackChecker,
 }
 
 impl Position {
@@ -74,7 +53,7 @@ impl Position {
             fifty_move_cntr: 0,
             position_history: PositionHistory::new(MAX_MOVE_HISTORY),
             position_key: PositionHash::new(&parsed_fen),
-            attack_checker: AttackChecker::new()
+            attack_checker: AttackChecker::new(),
         }
     }
 
@@ -166,12 +145,15 @@ impl Position {
 
         // check if move results in king being in check
         let king_sq = self.board().get_king_sq(side_to_move);
-        if self.attack_checker.is_sq_attacked(self.board(), king_sq, side_to_move){
+        if self
+            .attack_checker
+            .is_sq_attacked(self.board(), king_sq, side_to_move)
+        {
             return false;
         }
 
         // check castle through attacked squares (or king was in check before the castle move)
-        if mv.is_castle(){
+        if mv.is_castle() {
             let is_valid = self.is_castle_legal(mv, side_to_move);
             if is_valid == false {
                 return false;
@@ -182,38 +164,51 @@ impl Position {
     }
 
     fn is_castle_legal(&self, mv: Mov, side_to_move: Colour) -> bool {
-        
         if mv.is_king_castle() {
             match side_to_move {
                 Colour::White => {
-                    return self.is_castle_through_attacked_squares(side_to_move, &CASTLE_SQUARES_KING_WHITE);
-                },
+                    return self.is_castle_through_attacked_squares(
+                        side_to_move,
+                        &CASTLE_SQUARES_KING_WHITE,
+                    );
+                }
                 Colour::Black => {
-                    return self.is_castle_through_attacked_squares(side_to_move, &CASTLE_SQUARES_KING_BLACK);
-                },            
+                    return self.is_castle_through_attacked_squares(
+                        side_to_move,
+                        &CASTLE_SQUARES_KING_BLACK,
+                    );
+                }
             }
-        } else if mv.is_queen_castle(){
+        } else if mv.is_queen_castle() {
             match side_to_move {
                 Colour::White => {
-                    return self.is_castle_through_attacked_squares(side_to_move, &CASTLE_SQUARES_QUEEN_WHITE);
-                },
+                    return self.is_castle_through_attacked_squares(
+                        side_to_move,
+                        &CASTLE_SQUARES_QUEEN_WHITE,
+                    );
+                }
                 Colour::Black => {
-                    return self.is_castle_through_attacked_squares(side_to_move, &CASTLE_SQUARES_QUEEN_BLACK);
-                },            
+                    return self.is_castle_through_attacked_squares(
+                        side_to_move,
+                        &CASTLE_SQUARES_QUEEN_BLACK,
+                    );
+                }
             }
         } else {
             panic!("Invalid move test");
         }
     }
 
-    fn is_castle_through_attacked_squares(&self, side_to_move: Colour, sq_list: & [Square]) -> bool {
+    fn is_castle_through_attacked_squares(&self, side_to_move: Colour, sq_list: &[Square]) -> bool {
         for sq in sq_list {
-            let is_valid = self.attack_checker.is_sq_attacked(self.board(), *sq, side_to_move);
-            if is_valid == false{
+            let is_valid = self
+                .attack_checker
+                .is_sq_attacked(self.board(), *sq, side_to_move);
+            if is_valid == false {
                 return false;
             }
         }
-                
+
         return true;
     }
 }
@@ -827,8 +822,6 @@ mod tests {
         }
     }
 
-
-
     #[test]
     pub fn make_move_promotion_black_to_move() {
         let target_prom_pce = vec![
@@ -857,7 +850,6 @@ mod tests {
             ));
         }
     }
-
 
     #[test]
     pub fn make_move_promotion_white_to_move() {
@@ -909,7 +901,7 @@ mod tests {
             "8/8/8/8/8/8/7p/4K2R w K - 0 1",
             "8/8/8/8/1q6/8/8/4K2R w K - 0 1",
             "8/8/8/8/2q5/8/8/4K2R w K - 0 1",
-            "8/8/8/8/3q4/8/8/4K2R w K - 0 1"
+            "8/8/8/8/3q4/8/8/4K2R w K - 0 1",
         ];
 
         for fen in fens {

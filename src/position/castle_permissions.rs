@@ -155,5 +155,4 @@ pub mod tests {
         assert!(cp.is_queen_set(Colour::White) == false);
         assert!(cp.is_king_set(Colour::Black) == false);
     }
-
 }

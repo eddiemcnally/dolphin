@@ -8,7 +8,6 @@ pub struct Mov {
     flags: u8,
 }
 
-
 impl Mov {
     /// Encodes a Quiet move given the "from" and "to" squares
     ///
@@ -98,7 +97,7 @@ impl Mov {
     ///
     /// # Arguments
     ///
-    /// * `from_sq`         - the from squareClone, 
+    /// * `from_sq`         - the from squareClone,
     /// * `to_sq`           - the to square
     ///
     pub fn encode_move_double_pawn_first(from_sq: Square, to_sq: Square) -> Mov {
@@ -256,25 +255,20 @@ impl Mov {
         self.flags == MV_FLG_DOUBLE_PAWN
     }
 
-    pub fn print_move(&self){
+    pub fn print_move(&self) {
         //let from_sq = self.decode_from_square();
         //let to_sq = self.decode_to_square();
-        //println!("From {:?}, To {:?}", 
-        //from_sq, 
+        //println!("From {:?}, To {:?}",
+        //from_sq,
         //to_sq);
     }
-
-
 }
 
-pub fn print_move_list(move_list: &Vec<Mov>){
-
-    for mov in move_list.iter(){
+pub fn print_move_list(move_list: &Vec<Mov>) {
+    for mov in move_list.iter() {
         mov.print_move();
     }
 }
-
-
 
 // bitmap for type Move
 // See http://chessprogramming.wikispaces.com/Encoding+Moves
@@ -506,7 +500,6 @@ pub mod tests {
         for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
             for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
                 for role in &target_roles {
-
                     let mv = Mov::encode_move_with_promotion(from_sq, to_sq, *role);
 
                     assert_eq!(mv.is_promote(), true);
@@ -554,5 +547,4 @@ pub mod tests {
             }
         }
     }
-
 }

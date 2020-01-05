@@ -103,7 +103,7 @@ impl PositionHash {
         self.hash
     }
 
-    pub fn set_hash(&mut self, new_value: u64){
+    pub fn set_hash(&mut self, new_value: u64) {
         self.hash = new_value;
     }
 }

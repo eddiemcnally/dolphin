@@ -261,5 +261,4 @@ pub mod tests {
         pce = Piece::from_char('k');
         assert_eq!(Piece::new(PieceRole::King, Colour::Black), pce);
     }
-
 }

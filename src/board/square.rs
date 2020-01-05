@@ -387,7 +387,7 @@ pub mod rank {
         Rank::Rank5,
         Rank::Rank6,
         Rank::Rank7,
-        Rank::Rank8
+        Rank::Rank8,
     ];
 
     impl Rank {
@@ -423,7 +423,7 @@ pub mod rank {
                 2 => Rank::Rank3,
                 3 => Rank::Rank4,
                 4 => Rank::Rank5,
-                5 => Rank::Rank6, 
+                5 => Rank::Rank6,
                 6 => Rank::Rank7,
                 7 => Rank::Rank8,
                 _ => panic!("Invalid rank character {}", rank),
@@ -466,7 +466,7 @@ pub mod file {
         File::FileE,
         File::FileF,
         File::FileG,
-        File::FileH        
+        File::FileH,
     ];
 
     impl File {

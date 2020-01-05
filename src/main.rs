@@ -23,9 +23,4 @@ fn main() {
     for (square, pce) in sq_pce {
         println!("{:?}, {:?}", square, pce);
     }
-
-
-    
-
-
 }
