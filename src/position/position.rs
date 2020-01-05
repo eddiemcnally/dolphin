@@ -8,11 +8,41 @@ use moves::mov::Mov;
 use position::castle_permissions::CastlePermission;
 use position::hash::PositionHash;
 use position::position_history::PositionHistory;
+use position::attack_checker::AttackChecker;
 
 pub struct MoveCounter {
     half_move: u16,
     full_move: u16,
 }
+
+
+
+static CASTLE_SQUARES_KING_WHITE : [Square; 3] = [
+    Square::e1,
+    Square::f1,
+    Square::g1,
+];
+
+static CASTLE_SQUARES_QUEEN_WHITE : [Square; 4] = [
+    Square::b1,
+    Square::c1,
+    Square::d1,
+    Square::e1    
+];
+
+static CASTLE_SQUARES_KING_BLACK : [Square; 3] = [
+    Square::e8,
+    Square::f8,
+    Square::g8
+];
+
+static CASTLE_SQUARES_QUEEN_BLACK : [Square; 4] = [
+    Square::b8,
+    Square::c8,
+    Square::d8,
+    Square::e8    
+];
+
 
 const MAX_MOVE_HISTORY: u16 = 2048;
 
@@ -25,6 +55,7 @@ pub struct Position {
     fifty_move_cntr: u8,
     position_key: PositionHash,
     position_history: PositionHistory,
+    attack_checker: AttackChecker
 }
 
 impl Position {
@@ -43,6 +74,7 @@ impl Position {
             fifty_move_cntr: 0,
             position_history: PositionHistory::new(MAX_MOVE_HISTORY),
             position_key: PositionHash::new(&parsed_fen),
+            attack_checker: AttackChecker::new()
         }
     }
 
@@ -132,7 +164,56 @@ impl Position {
 
         update_en_passant_sq(self, mv);
 
-        // to do - validate legality pf move
+        // check if move results in king being in check
+        let king_sq = self.board().get_king_sq(side_to_move);
+        if self.attack_checker.is_sq_attacked(self.board(), king_sq, side_to_move){
+            return false;
+        }
+
+        // check castle through attacked squares (or king was in check before the castle move)
+        if mv.is_castle(){
+            let is_valid = self.is_castle_legal(mv, side_to_move);
+            if is_valid == false {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    fn is_castle_legal(&self, mv: Mov, side_to_move: Colour) -> bool {
+        
+        if mv.is_king_castle() {
+            match side_to_move {
+                Colour::White => {
+                    return self.is_castle_through_attacked_squares(side_to_move, &CASTLE_SQUARES_KING_WHITE);
+                },
+                Colour::Black => {
+                    return self.is_castle_through_attacked_squares(side_to_move, &CASTLE_SQUARES_KING_BLACK);
+                },            
+            }
+        } else if mv.is_queen_castle(){
+            match side_to_move {
+                Colour::White => {
+                    return self.is_castle_through_attacked_squares(side_to_move, &CASTLE_SQUARES_QUEEN_WHITE);
+                },
+                Colour::Black => {
+                    return self.is_castle_through_attacked_squares(side_to_move, &CASTLE_SQUARES_QUEEN_BLACK);
+                },            
+            }
+        } else {
+            panic!("Invalid move test");
+        }
+    }
+
+    fn is_castle_through_attacked_squares(&self, side_to_move: Colour, sq_list: & [Square]) -> bool {
+        for sq in sq_list {
+            let is_valid = self.attack_checker.is_sq_attacked(self.board(), *sq, side_to_move);
+            if is_valid == false{
+                return false;
+            }
+        }
+                
         return true;
     }
 }
@@ -807,7 +888,80 @@ mod tests {
         }
     }
 
+    #[test]
+    pub fn make_move_king_castle_white_through_attached_squares_is_illegal() {
+        let fens = vec![
+            "8/8/8/8/3b4/8/8/4K2R w K - 0 1",
+            "8/8/8/8/8/2b5/8/4K2R w K - 0 1",
+            "8/8/8/8/8/4b3/8/4K2R w K - 0 1",
+            "8/8/8/8/8/3n4/8/4K2R w K - 0 1",
+            "8/8/8/8/8/4n3/8/4K2R w K - 0 1",
+            "8/8/8/8/8/5n2/8/4K2R w K - 0 1",
+            "8/8/8/8/8/5n2/8/4K2R w K - 0 1",
+            "8/8/8/8/8/7n/8/4K2R w K - 0 1",
+            "4r3/8/8/8/8/8/8/4K2R w K - 0 1",
+            "5r2/8/8/8/8/8/8/4K2R w K - 0 1",
+            "6r1/8/8/8/8/8/8/4K2R w K - 0 1",
+            "8/8/8/8/8/8/3p4/4K2R w K - 0 1",
+            "8/8/8/8/8/8/4p3/4K2R w K - 0 1",
+            "8/8/8/8/8/8/5p2/4K2R w K - 0 1",
+            "8/8/8/8/8/8/6p1/4K2R w K - 0 1",
+            "8/8/8/8/8/8/7p/4K2R w K - 0 1",
+            "8/8/8/8/1q6/8/8/4K2R w K - 0 1",
+            "8/8/8/8/2q5/8/8/4K2R w K - 0 1",
+            "8/8/8/8/3q4/8/8/4K2R w K - 0 1"
+        ];
 
+        for fen in fens {
+            let parsed_fen = fen::get_position(&fen);
+            let mut pos = Position::new(parsed_fen);
+
+            let mv = Mov::encode_move_castle_kingside_white();
+
+            let is_valid_move = pos.make_move(mv);
+            assert_eq!(is_valid_move, false);
+        }
+    }
+
+    #[test]
+    pub fn make_move_queen_castle_white_through_attached_squares_is_illegal() {
+        let fens = vec![
+            "8/8/8/8/4q3/8/8/R3K3 w Q - 0 1",
+            "8/8/8/8/5q2/8/8/R3K3 w Q - 0 1",
+            "8/8/8/8/6q1/8/8/R3K3 w Q - 0 1",
+            "8/8/8/8/7q/8/8/R3K3 w Q - 0 1",
+            "1r6/8/8/8/8/8/8/R3K3 w Q - 0 1",
+            "2r5/8/8/8/8/8/8/R3K3 w Q - 0 1",
+            "3r4/8/8/8/8/8/8/R3K3 w Q - 0 1",
+            "4r3/8/8/8/8/8/8/R3K3 w Q - 0 1",
+            "8/8/8/b7/8/8/8/R3K3 w Q - 0 1",
+            "8/8/8/8/b7/8/8/R3K3 w Q - 0 1",
+            "8/8/8/8/8/b7/8/R3K3 w Q - 0 1",
+            "8/8/8/8/8/8/b7/R3K3 w Q - 0 1",
+            "8/8/8/8/8/n7/8/R3K3 w Q - 0 1",
+            "8/8/8/8/8/1n6/8/R3K3 w Q - 0 1",
+            "8/8/8/8/8/2n5/8/R3K3 w Q - 0 1",
+            "8/8/8/8/8/3n4/8/R3K3 w Q - 0 1",
+            "8/8/8/8/8/4n3/8/R3K3 w Q - 0 1",
+            "8/8/8/8/8/5n2/8/R3K3 w Q - 0 1",
+            "8/8/8/8/8/8/p7/R3K3 w Q - 0 1",
+            "8/8/8/8/8/8/1p6/R3K3 w Q - 0 1",
+            "8/8/8/8/8/8/2p5/R3K3 w Q - 0 1",
+            "8/8/8/8/8/8/3p4/R3K3 w Q - 0 1",
+            "8/8/8/8/8/8/4p3/R3K3 w Q - 0 1",
+            "8/8/8/8/8/8/5p2/R3K3 w Q - 0 1",
+        ];
+
+        for fen in fens {
+            let parsed_fen = fen::get_position(&fen);
+            let mut pos = Position::new(parsed_fen);
+
+            let mv = Mov::encode_move_castle_queenside_white();
+
+            let is_valid_move = pos.make_move(mv);
+            assert_eq!(is_valid_move, false);
+        }
+    }
 
     fn is_piece_on_square_as_expected(pos: &Position, sq: Square, pce: Piece) -> bool {
         let pce_on_board = pos.board.get_piece_on_square(sq);
