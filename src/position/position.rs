@@ -5,7 +5,7 @@ use board::piece::PieceRole;
 use board::square::Square;
 use input::fen::ParsedFen;
 use moves::mov::Mov;
-use position::attack_checker::AttackChecker;
+use position::attack_checker;
 use position::castle_permissions::CastlePermission;
 use position::hash;
 use position::hash::PositionHash;
@@ -35,7 +35,6 @@ pub struct Position {
     fifty_move_cntr: u8,
     position_key: PositionHash,
     position_history: PositionHistory,
-    attack_checker: AttackChecker,
 }
 
 impl Position {
@@ -54,7 +53,6 @@ impl Position {
             fifty_move_cntr: 0,
             position_history: PositionHistory::new(MAX_MOVE_HISTORY),
             position_key: hash::generate_from_fen(&parsed_fen),
-            attack_checker: AttackChecker::new(),
         }
     }
 
@@ -146,10 +144,7 @@ impl Position {
 
         // check if move results in king being in check
         let king_sq = self.board().get_king_sq(side_to_move);
-        if self
-            .attack_checker
-            .is_sq_attacked(self.board(), king_sq, side_to_move)
-        {
+        if attack_checker::is_sq_attacked(self.board(), king_sq, side_to_move) {
             return false;
         }
 
@@ -202,9 +197,7 @@ impl Position {
 
     fn is_castle_through_attacked_squares(&self, side_to_move: Colour, sq_list: &[Square]) -> bool {
         for sq in sq_list {
-            let is_valid = self
-                .attack_checker
-                .is_sq_attacked(self.board(), *sq, side_to_move);
+            let is_valid = attack_checker::is_sq_attacked(self.board(), *sq, side_to_move);
             if is_valid == false {
                 return false;
             }

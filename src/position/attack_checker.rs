@@ -10,92 +10,61 @@ use board::square::Square;
 
 use std::ops::Shl;
 
-pub struct AttackChecker {
+lazy_static! {
+    static ref ROOK_BLACK: Piece = Piece::new(PieceRole::Rook, Colour::Black);
+    static ref ROOK_WHITE: Piece = Piece::new(PieceRole::Rook, Colour::White);
+    static ref QUEEN_BLACK: Piece = Piece::new(PieceRole::Queen, Colour::Black);
+    static ref QUEEN_WHITE: Piece = Piece::new(PieceRole::Queen, Colour::White);
+    static ref BISHOP_BLACK: Piece = Piece::new(PieceRole::Bishop, Colour::Black);
+    static ref BISHOP_WHITE: Piece = Piece::new(PieceRole::Bishop, Colour::White);
+    static ref KNIGHT_BLACK: Piece = Piece::new(PieceRole::Knight, Colour::Black);
+    static ref KNIGHT_WHITE: Piece = Piece::new(PieceRole::Knight, Colour::White);
+    static ref KING_BLACK: Piece = Piece::new(PieceRole::King, Colour::Black);
+    static ref KING_WHITE: Piece = Piece::new(PieceRole::King, Colour::White);
+    static ref PAWN_BLACK: Piece = Piece::new(PieceRole::Pawn, Colour::Black);
+    static ref PAWN_WHITE: Piece = Piece::new(PieceRole::Pawn, Colour::White);
+
+    static ref ROOK_QUEEN_BLACK_VEC: [Piece; 2] = [*ROOK_BLACK, *QUEEN_BLACK];
+    static ref ROOK_QUEEN_WHITE_VEC: [Piece; 2] = [*ROOK_WHITE, *QUEEN_WHITE];
+    static ref BISHOP_QUEEN_BLACK_VEC: [Piece; 2] = [*BISHOP_BLACK, *QUEEN_BLACK];
+    static ref BISHOP_QUEEN_WHITE_VEC: [Piece; 2] = [*BISHOP_WHITE, *QUEEN_WHITE];
     // A lookup array of bitmasks for squares between the "from" and "to"
     // squares.
     // Since there is a commutative property associated with to/from squares
     // when identifying intervening squares, it's irrelevent whether you index using
     // [from][to] or [to][from]
-    inter_sq_lookup: [[u64; board::NUM_SQUARES]; board::NUM_SQUARES],
+    static ref INTER_SQ_LOOKUP: [[u64; board::NUM_SQUARES]; board::NUM_SQUARES] = populate_intervening_sq_lookup();
 
-    // cache some things that otherwise would need to be created each time the code is run
-    pawn_black: Piece,
-    pawn_white: Piece,
-    knight_black: Piece,
-    knight_white: Piece,
-    king_black: Piece,
-    king_white: Piece,
-    rook_queen_black_vec: Vec<Piece>,
-    rook_queen_white_vec: Vec<Piece>,
-    bishop_queen_black_vec: Vec<Piece>,
-    bishop_queen_white_vec: Vec<Piece>,
 }
 
-impl AttackChecker {
-    pub fn new() -> AttackChecker {
-        let rook_black = Piece::new(PieceRole::Rook, Colour::Black);
-        let queen_black = Piece::new(PieceRole::Queen, Colour::Black);
-        let rook_white = Piece::new(PieceRole::Rook, Colour::White);
-        let queen_white = Piece::new(PieceRole::Queen, Colour::White);
-
-        let bishop_black = Piece::new(PieceRole::Bishop, Colour::Black);
-        let bishop_white = Piece::new(PieceRole::Bishop, Colour::White);
-
-        let mut checker = AttackChecker {
-            inter_sq_lookup: [[0u64; board::NUM_SQUARES]; board::NUM_SQUARES],
-
-            pawn_black: Piece::new(PieceRole::Pawn, Colour::Black),
-            pawn_white: Piece::new(PieceRole::Pawn, Colour::White),
-            knight_black: Piece::new(PieceRole::Knight, Colour::Black),
-            knight_white: Piece::new(PieceRole::Knight, Colour::White),
-            king_black: Piece::new(PieceRole::King, Colour::Black),
-            king_white: Piece::new(PieceRole::King, Colour::White),
-
-            rook_queen_black_vec: vec![rook_black, queen_black],
-            rook_queen_white_vec: vec![rook_white, queen_white],
-
-            bishop_queen_black_vec: vec![bishop_black, queen_black],
-            bishop_queen_white_vec: vec![bishop_white, queen_white],
-        };
-
-        populate_intervening_sq_lookup(&mut checker);
-        checker
+pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool {
+    if is_knight_attacking(board, sq, attacking_side) {
+        return true;
     }
 
-    pub fn is_sq_attacked(&self, board: &Board, sq: Square, attacking_side: Colour) -> bool {
-        if is_knight_attacking(&self, board, sq, attacking_side) {
-            return true;
-        }
-
-        if is_horizontal_or_vertical_attacking(&self, board, sq, attacking_side) {
-            return true;
-        }
-
-        if is_diagonally_attacked(&self, board, sq, attacking_side) {
-            return true;
-        }
-
-        if is_attacked_by_pawn(&self, board, sq, attacking_side) {
-            return true;
-        }
-
-        if is_attacked_by_king(&self, board, sq, attacking_side) {
-            return true;
-        }
-
-        return false;
+    if is_horizontal_or_vertical_attacking(board, sq, attacking_side) {
+        return true;
     }
+
+    if is_diagonally_attacked(board, sq, attacking_side) {
+        return true;
+    }
+
+    if is_attacked_by_pawn(board, sq, attacking_side) {
+        return true;
+    }
+
+    if is_attacked_by_king(board, sq, attacking_side) {
+        return true;
+    }
+
+    return false;
 }
 
-fn is_knight_attacking(
-    checker: &AttackChecker,
-    board: &Board,
-    attack_sq: Square,
-    attacking_side: Colour,
-) -> bool {
+fn is_knight_attacking(board: &Board, attack_sq: Square, attacking_side: Colour) -> bool {
     let pce = match attacking_side {
-        Colour::Black => checker.knight_black,
-        Colour::White => checker.knight_white,
+        Colour::Black => *KNIGHT_BLACK,
+        Colour::White => *KNIGHT_WHITE,
     };
 
     let mut pce_bb = board.get_piece_bitboard(pce);
@@ -112,7 +81,6 @@ fn is_knight_attacking(
 
 // checks for rook and partial queen
 fn is_horizontal_or_vertical_attacking(
-    checker: &AttackChecker,
     board: &Board,
     attack_sq: Square,
     attacking_side: Colour,
@@ -121,19 +89,19 @@ fn is_horizontal_or_vertical_attacking(
     let target_file = attack_sq.file();
 
     let pces = match attacking_side {
-        Colour::Black => &checker.rook_queen_black_vec,
-        Colour::White => &checker.rook_queen_white_vec,
+        Colour::Black => *ROOK_QUEEN_BLACK_VEC,
+        Colour::White => *ROOK_QUEEN_WHITE_VEC,
     };
 
     let all_pces_bb = board.get_bitboard();
 
-    for pce in pces {
+    for pce in &pces {
         let mut pce_bb = board.get_piece_bitboard(*pce);
         while pce_bb != 0 {
             let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
 
             if pce_sq.rank() == target_rank || pce_sq.file() == target_file {
-                let blocking_pces = checker.inter_sq_lookup[pce_sq as usize][attack_sq as usize];
+                let blocking_pces = INTER_SQ_LOOKUP[pce_sq as usize][attack_sq as usize];
                 if blocking_pces & all_pces_bb == 0 {
                     // no blocking pieces, attacked
                     return true;
@@ -144,20 +112,15 @@ fn is_horizontal_or_vertical_attacking(
     return false;
 }
 
-fn is_diagonally_attacked(
-    checker: &AttackChecker,
-    board: &Board,
-    attack_sq: Square,
-    attacking_side: Colour,
-) -> bool {
+fn is_diagonally_attacked(board: &Board, attack_sq: Square, attacking_side: Colour) -> bool {
     let pces = match attacking_side {
-        Colour::Black => &checker.bishop_queen_black_vec,
-        Colour::White => &checker.bishop_queen_white_vec,
+        Colour::Black => *BISHOP_QUEEN_BLACK_VEC,
+        Colour::White => *BISHOP_QUEEN_WHITE_VEC,
     };
 
     let all_pces_bb = board.get_bitboard();
 
-    for pce in pces {
+    for pce in &pces {
         let mut pce_bb = board.get_piece_bitboard(*pce);
         while pce_bb != 0 {
             let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
@@ -165,7 +128,7 @@ fn is_diagonally_attacked(
             let diagonal_bb = occupancy_masks::get_occupancy_mask_bishop(pce_sq);
             if bitboard::is_set(diagonal_bb, attack_sq) {
                 // potentially attacking
-                let blocking_pces = checker.inter_sq_lookup[pce_sq as usize][attack_sq as usize];
+                let blocking_pces = INTER_SQ_LOOKUP[pce_sq as usize][attack_sq as usize];
                 if blocking_pces & all_pces_bb == 0 {
                     // no blocking pieces, attacked
                     return true;
@@ -177,15 +140,10 @@ fn is_diagonally_attacked(
     return false;
 }
 
-fn is_attacked_by_king(
-    checker: &AttackChecker,
-    board: &Board,
-    attacked_sq: Square,
-    attacking_side: Colour,
-) -> bool {
+fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colour) -> bool {
     let attacked_king = match attacking_side {
-        Colour::Black => checker.king_white,
-        Colour::White => checker.king_black,
+        Colour::Black => *KING_WHITE,
+        Colour::White => *KING_BLACK,
     };
     let mut pce_bb = board.get_piece_bitboard(attacked_king);
     let attacking_king_sq = bitboard::pop_1st_bit(&mut pce_bb);
@@ -195,15 +153,10 @@ fn is_attacked_by_king(
     return bitboard::is_set(king_occ_mask, attacked_sq);
 }
 
-fn is_attacked_by_pawn(
-    checker: &AttackChecker,
-    board: &Board,
-    attacked_sq: Square,
-    attacking_side: Colour,
-) -> bool {
+fn is_attacked_by_pawn(board: &Board, attacked_sq: Square, attacking_side: Colour) -> bool {
     let attacking_pce = match attacking_side {
-        Colour::Black => checker.pawn_black,
-        Colour::White => checker.pawn_white,
+        Colour::Black => *PAWN_BLACK,
+        Colour::White => *PAWN_WHITE,
     };
 
     let mut pce_bb = board.get_piece_bitboard(attacking_pce);
@@ -223,13 +176,17 @@ fn is_attacked_by_pawn(
     return false;
 }
 
-fn populate_intervening_sq_lookup(checker: &mut AttackChecker) {
+fn populate_intervening_sq_lookup() -> [[u64; board::NUM_SQUARES]; board::NUM_SQUARES] {
+    let mut retval: [[u64; board::NUM_SQUARES]; board::NUM_SQUARES] =
+        [[0; board::NUM_SQUARES]; board::NUM_SQUARES];
+
     for from_sq in square::get_square_array() {
         for to_sq in square::get_square_array() {
             let bitmap = get_intervening_bitboard(*from_sq, *to_sq);
-            checker.inter_sq_lookup[*from_sq as usize][*to_sq as usize] = bitmap;
+            retval[*from_sq as usize][*to_sq as usize] = bitmap;
         }
     }
+    retval
 }
 
 // This code returns a bitboard with bits set representing squares between
@@ -260,7 +217,6 @@ mod tests {
     use board::board::Board;
     use board::piece::Colour;
     use input::fen;
-    use position::attack_checker::AttackChecker;
 
     #[test]
     pub fn white_knight_attacking_false() {
@@ -279,11 +235,9 @@ mod tests {
         for fen in fens {
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::Black);
 
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::White) == false);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::White) == false);
         }
     }
 
@@ -304,11 +258,9 @@ mod tests {
         for fen in fens {
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::White);
 
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::Black) == false);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::Black) == false);
         }
     }
 
@@ -329,11 +281,9 @@ mod tests {
         for fen in fens {
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::Black);
 
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::White) == true);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::White) == true);
         }
     }
 
@@ -357,11 +307,9 @@ mod tests {
         for fen in fens {
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::White);
 
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::Black) == true);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::Black) == true);
         }
     }
 
@@ -388,11 +336,9 @@ mod tests {
         for fen in fens {
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::Black);
 
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::White) == false);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::White) == false);
         }
     }
 
@@ -424,11 +370,9 @@ mod tests {
         for fen in fens {
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::White);
 
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::Black) == false);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::Black) == false);
         }
     }
 
@@ -451,11 +395,9 @@ mod tests {
         for fen in fens {
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::Black);
 
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::White) == true);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::White) == true);
         }
     }
 
@@ -476,11 +418,9 @@ mod tests {
         for fen in fens {
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::White);
 
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::Black) == true);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::Black) == true);
         }
     }
 
@@ -503,11 +443,9 @@ mod tests {
         for fen in fens {
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::Black);
 
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::White) == false);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::White) == false);
         }
     }
 
@@ -531,11 +469,9 @@ mod tests {
         for fen in fens {
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::White);
 
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::Black) == false);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::Black) == false);
         }
     }
 
@@ -557,11 +493,9 @@ mod tests {
             print!("fen={}", fen);
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::Black);
 
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::White) == true);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::White) == true);
         }
     }
 
@@ -581,9 +515,8 @@ mod tests {
             print!("fen={}", fen);
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::White);
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::Black) == true);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::Black) == true);
         }
     }
 
@@ -608,9 +541,8 @@ mod tests {
             print!("fen={}", fen);
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::Black);
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::White) == true);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::White) == true);
         }
     }
 
@@ -634,9 +566,8 @@ mod tests {
             print!("fen={}", fen);
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::White);
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::Black) == true);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::Black) == true);
         }
     }
 
@@ -656,10 +587,9 @@ mod tests {
             print!("fen={}", fen);
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::Black);
 
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::White) == false);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::White) == false);
         }
     }
 
@@ -681,9 +611,8 @@ mod tests {
             print!("fen={}", fen);
             let parsed_fen = fen::get_position(&fen);
             let board = Board::from_fen(&parsed_fen);
-            let checker = AttackChecker::new();
             let king_sq = board.get_king_sq(Colour::White);
-            assert!(checker.is_sq_attacked(&board, king_sq, Colour::Black) == false);
+            assert!(super::is_sq_attacked(&board, king_sq, Colour::Black) == false);
         }
     }
 }
