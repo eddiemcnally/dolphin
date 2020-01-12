@@ -4,4 +4,5 @@ version = "0.1.0"
 authors = ["eddie"]
 
 [dependencies]
-rand = "0.7.0"
+rand = "0.7.3"
+lazy_static = "1.4.0"

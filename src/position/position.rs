@@ -7,6 +7,7 @@ use input::fen::ParsedFen;
 use moves::mov::Mov;
 use position::attack_checker::AttackChecker;
 use position::castle_permissions::CastlePermission;
+use position::hash;
 use position::hash::PositionHash;
 use position::position_history::PositionHistory;
 
@@ -52,7 +53,7 @@ impl Position {
             move_cntr: mv_cntr,
             fifty_move_cntr: 0,
             position_history: PositionHistory::new(MAX_MOVE_HISTORY),
-            position_key: PositionHash::new(&parsed_fen),
+            position_key: hash::generate_from_fen(&parsed_fen),
             attack_checker: AttackChecker::new(),
         }
     }
@@ -102,7 +103,7 @@ impl Position {
 
     pub fn make_move(&mut self, mv: Mov) -> bool {
         self.position_history.push(
-            self.position_key.get_hash(),
+            self.position_key,
             mv,
             self.fifty_move_cntr,
             self.en_pass_sq,
@@ -110,7 +111,7 @@ impl Position {
         );
 
         self.flip_side_to_move();
-        self.position_key.update_side();
+        hash::update_side(&mut self.position_key);
 
         self.move_cntr.half_move += 1;
         self.move_cntr.full_move += 1;
@@ -223,17 +224,17 @@ fn find_en_passant_sq(from_sq: Square, col: Colour) -> Square {
 
 fn remove_piece_from_board(position: &mut Position, pce: Piece, sq: Square) {
     position.board.remove_piece(pce, sq);
-    position.position_key.update_piece(pce, sq);
+    hash::update_piece(&mut position.position_key, pce, sq);
 }
 
 fn add_piece_to_board(position: &mut Position, pce: Piece, sq: Square) {
     position.board.add_piece(pce, sq);
-    position.position_key.update_piece(pce, sq);
+    hash::update_piece(&mut position.position_key, pce, sq);
 }
 
 fn update_hash_on_piece_move(position: &mut Position, pce: Piece, from_sq: Square, to_sq: Square) {
-    position.position_key.update_piece(pce, from_sq);
-    position.position_key.update_piece(pce, to_sq);
+    hash::update_piece(&mut position.position_key, pce, from_sq);
+    hash::update_piece(&mut position.position_key, pce, to_sq);
 }
 
 fn handle_50_move_rule(position: &mut Position, mv: Mov, pce_to_move: Piece) {
@@ -363,7 +364,7 @@ mod tests {
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
-        let before_hash = pos.position_key.get_hash();
+        let before_hash = pos.position_key;
 
         let mv = Mov::encode_move_quiet(Square::e5, Square::e6);
 
@@ -382,7 +383,7 @@ mod tests {
             Square::e6,
             Piece::new(PieceRole::Pawn, Colour::White)
         ));
-        assert_ne!(before_hash, pos.position_key.get_hash());
+        assert_ne!(before_hash, pos.position_key);
     }
     #[test]
     pub fn make_move_history_updated() {
