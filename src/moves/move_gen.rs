@@ -1,6 +1,7 @@
 use board::bitboard;
 use board::board::Board;
 use board::occupancy_masks;
+use board::piece;
 use board::piece::Colour;
 use board::piece::Piece;
 use board::piece::PieceRole;
@@ -12,18 +13,34 @@ pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
     let board = position.board();
     let side_to_move = position.side_to_move();
 
-    let knight = Piece::new(PieceRole::Knight, side_to_move);
+    let knight = match side_to_move {
+        Colour::White => *piece::KNIGHT_WHITE,
+        Colour::Black => *piece::KNIGHT_BLACK,
+    };
     generate_non_sliding_piece_moves(&board, knight, move_list);
-    let king = Piece::new(PieceRole::King, side_to_move);
+
+    let king = match side_to_move {
+        Colour::White => *piece::KING_WHITE,
+        Colour::Black => *piece::KING_BLACK,
+    };
     generate_non_sliding_piece_moves(&board, king, move_list);
 
-    let bishop = Piece::new(PieceRole::Bishop, side_to_move);
+    let bishop = match side_to_move {
+        Colour::White => *piece::BISHOP_WHITE,
+        Colour::Black => *piece::BISHOP_BLACK,
+    };
     generate_sliding_diagonal_antidiagonal_moves(&board, bishop, move_list);
 
-    let rook = Piece::new(PieceRole::Rook, side_to_move);
+    let rook = match side_to_move {
+        Colour::White => *piece::ROOK_WHITE,
+        Colour::Black => *piece::ROOK_BLACK,
+    };
     generate_sliding_rank_file_moves(&board, rook, move_list);
 
-    let queen = Piece::new(PieceRole::Queen, side_to_move);
+    let queen = match side_to_move {
+        Colour::White => *piece::QUEEN_WHITE,
+        Colour::Black => *piece::QUEEN_BLACK,
+    };
     generate_sliding_rank_file_moves(&board, queen, move_list);
     generate_sliding_diagonal_antidiagonal_moves(&board, queen, move_list);
 
@@ -202,8 +219,8 @@ fn generate_misc_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>) {
     let side_to_move = pos.side_to_move();
 
     let pawn = match side_to_move {
-        Colour::White => Piece::new(PieceRole::Pawn, Colour::White),
-        Colour::Black => Piece::new(PieceRole::Pawn, Colour::Black),
+        Colour::White => *piece::PAWN_WHITE,
+        Colour::Black => *piece::PAWN_BLACK,
     };
 
     // bitboard of all pawns
@@ -266,8 +283,8 @@ fn generate_first_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>) {
     let side_to_move = pos.side_to_move();
 
     let pawn = match side_to_move {
-        Colour::White => Piece::new(PieceRole::Pawn, Colour::White),
-        Colour::Black => Piece::new(PieceRole::Pawn, Colour::Black),
+        Colour::White => *piece::PAWN_WHITE,
+        Colour::Black => *piece::PAWN_BLACK,
     };
 
     // bitboard of all pawns
@@ -335,8 +352,8 @@ fn generate_promotion_moves(pos: &Position, move_list: &mut Vec<Mov>) {
     let side_to_move = pos.side_to_move();
 
     let pawn = match side_to_move {
-        Colour::White => Piece::new(PieceRole::Pawn, Colour::White),
-        Colour::Black => Piece::new(PieceRole::Pawn, Colour::Black),
+        Colour::White => *piece::PAWN_WHITE,
+        Colour::Black => *piece::PAWN_BLACK,
     };
 
     // bitboard of all pawns

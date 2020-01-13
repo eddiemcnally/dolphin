@@ -2,32 +2,19 @@ use board::bitboard;
 use board::board;
 use board::board::Board;
 use board::occupancy_masks;
+use board::piece;
 use board::piece::Colour;
 use board::piece::Piece;
-use board::piece::PieceRole;
 use board::square;
 use board::square::Square;
 
 use std::ops::Shl;
 
 lazy_static! {
-    static ref ROOK_BLACK: Piece = Piece::new(PieceRole::Rook, Colour::Black);
-    static ref ROOK_WHITE: Piece = Piece::new(PieceRole::Rook, Colour::White);
-    static ref QUEEN_BLACK: Piece = Piece::new(PieceRole::Queen, Colour::Black);
-    static ref QUEEN_WHITE: Piece = Piece::new(PieceRole::Queen, Colour::White);
-    static ref BISHOP_BLACK: Piece = Piece::new(PieceRole::Bishop, Colour::Black);
-    static ref BISHOP_WHITE: Piece = Piece::new(PieceRole::Bishop, Colour::White);
-    static ref KNIGHT_BLACK: Piece = Piece::new(PieceRole::Knight, Colour::Black);
-    static ref KNIGHT_WHITE: Piece = Piece::new(PieceRole::Knight, Colour::White);
-    static ref KING_BLACK: Piece = Piece::new(PieceRole::King, Colour::Black);
-    static ref KING_WHITE: Piece = Piece::new(PieceRole::King, Colour::White);
-    static ref PAWN_BLACK: Piece = Piece::new(PieceRole::Pawn, Colour::Black);
-    static ref PAWN_WHITE: Piece = Piece::new(PieceRole::Pawn, Colour::White);
-
-    static ref ROOK_QUEEN_BLACK_VEC: [Piece; 2] = [*ROOK_BLACK, *QUEEN_BLACK];
-    static ref ROOK_QUEEN_WHITE_VEC: [Piece; 2] = [*ROOK_WHITE, *QUEEN_WHITE];
-    static ref BISHOP_QUEEN_BLACK_VEC: [Piece; 2] = [*BISHOP_BLACK, *QUEEN_BLACK];
-    static ref BISHOP_QUEEN_WHITE_VEC: [Piece; 2] = [*BISHOP_WHITE, *QUEEN_WHITE];
+    static ref ROOK_QUEEN_BLACK_VEC: [Piece; 2] = [*piece::ROOK_BLACK, *piece::QUEEN_BLACK];
+    static ref ROOK_QUEEN_WHITE_VEC: [Piece; 2] = [*piece::ROOK_WHITE, *piece::QUEEN_WHITE];
+    static ref BISHOP_QUEEN_BLACK_VEC: [Piece; 2] = [*piece::BISHOP_BLACK, *piece::QUEEN_BLACK];
+    static ref BISHOP_QUEEN_WHITE_VEC: [Piece; 2] = [*piece::BISHOP_WHITE, *piece::QUEEN_WHITE];
     // A lookup array of bitmasks for squares between the "from" and "to"
     // squares.
     // Since there is a commutative property associated with to/from squares
@@ -63,8 +50,8 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
 
 fn is_knight_attacking(board: &Board, attack_sq: Square, attacking_side: Colour) -> bool {
     let pce = match attacking_side {
-        Colour::Black => *KNIGHT_BLACK,
-        Colour::White => *KNIGHT_WHITE,
+        Colour::Black => *piece::KNIGHT_BLACK,
+        Colour::White => *piece::KNIGHT_WHITE,
     };
 
     let mut pce_bb = board.get_piece_bitboard(pce);
@@ -142,8 +129,8 @@ fn is_diagonally_attacked(board: &Board, attack_sq: Square, attacking_side: Colo
 
 fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colour) -> bool {
     let attacked_king = match attacking_side {
-        Colour::Black => *KING_WHITE,
-        Colour::White => *KING_BLACK,
+        Colour::Black => *piece::KING_WHITE,
+        Colour::White => *piece::KING_BLACK,
     };
     let mut pce_bb = board.get_piece_bitboard(attacked_king);
     let attacking_king_sq = bitboard::pop_1st_bit(&mut pce_bb);
@@ -155,8 +142,8 @@ fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colou
 
 fn is_attacked_by_pawn(board: &Board, attacked_sq: Square, attacking_side: Colour) -> bool {
     let attacking_pce = match attacking_side {
-        Colour::Black => *PAWN_BLACK,
-        Colour::White => *PAWN_WHITE,
+        Colour::Black => *piece::PAWN_BLACK,
+        Colour::White => *piece::PAWN_WHITE,
     };
 
     let mut pce_bb = board.get_piece_bitboard(attacking_pce);

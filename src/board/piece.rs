@@ -9,6 +9,21 @@ pub enum PieceRole {
     King,
 }
 
+lazy_static! {
+    pub static ref ROOK_BLACK: Piece = Piece::new(PieceRole::Rook, Colour::Black);
+    pub static ref ROOK_WHITE: Piece = Piece::new(PieceRole::Rook, Colour::White);
+    pub static ref QUEEN_BLACK: Piece = Piece::new(PieceRole::Queen, Colour::Black);
+    pub static ref QUEEN_WHITE: Piece = Piece::new(PieceRole::Queen, Colour::White);
+    pub static ref BISHOP_BLACK: Piece = Piece::new(PieceRole::Bishop, Colour::Black);
+    pub static ref BISHOP_WHITE: Piece = Piece::new(PieceRole::Bishop, Colour::White);
+    pub static ref KNIGHT_BLACK: Piece = Piece::new(PieceRole::Knight, Colour::Black);
+    pub static ref KNIGHT_WHITE: Piece = Piece::new(PieceRole::Knight, Colour::White);
+    pub static ref KING_BLACK: Piece = Piece::new(PieceRole::King, Colour::Black);
+    pub static ref KING_WHITE: Piece = Piece::new(PieceRole::King, Colour::White);
+    pub static ref PAWN_BLACK: Piece = Piece::new(PieceRole::Pawn, Colour::Black);
+    pub static ref PAWN_WHITE: Piece = Piece::new(PieceRole::Pawn, Colour::White);
+}
+
 // todo look at mapping this to a u64 (or u32 if we remove the value)
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct Piece {
@@ -32,18 +47,18 @@ impl Piece {
 
     pub fn from_char(piece_char: char) -> Piece {
         match piece_char {
-            'P' => return Piece::new(PieceRole::Pawn, Colour::White),
-            'B' => return Piece::new(PieceRole::Bishop, Colour::White),
-            'N' => return Piece::new(PieceRole::Knight, Colour::White),
-            'R' => return Piece::new(PieceRole::Rook, Colour::White),
-            'Q' => return Piece::new(PieceRole::Queen, Colour::White),
-            'K' => return Piece::new(PieceRole::King, Colour::White),
-            'p' => return Piece::new(PieceRole::Pawn, Colour::Black),
-            'b' => return Piece::new(PieceRole::Bishop, Colour::Black),
-            'n' => return Piece::new(PieceRole::Knight, Colour::Black),
-            'r' => return Piece::new(PieceRole::Rook, Colour::Black),
-            'q' => return Piece::new(PieceRole::Queen, Colour::Black),
-            'k' => return Piece::new(PieceRole::King, Colour::Black),
+            'P' => return *PAWN_WHITE,
+            'B' => return *BISHOP_WHITE,
+            'N' => return *KNIGHT_WHITE,
+            'R' => return *ROOK_WHITE,
+            'Q' => return *QUEEN_WHITE,
+            'K' => return *KING_WHITE,
+            'p' => return *PAWN_BLACK,
+            'b' => return *BISHOP_BLACK,
+            'n' => return *KNIGHT_BLACK,
+            'r' => return *ROOK_BLACK,
+            'q' => return *QUEEN_BLACK,
+            'k' => return *KING_BLACK,
             _ => panic!("Invalid piece character {}.", piece_char),
         };
     }

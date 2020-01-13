@@ -1,4 +1,5 @@
 use board::board::Board;
+use board::piece;
 use board::piece::Colour;
 use board::piece::Piece;
 use board::piece::PieceRole;
@@ -306,8 +307,14 @@ fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
         Colour::Black => to_sq.square_plus_1_rank(),
     };
 
-    let pawn = Piece::new(PieceRole::Pawn, position.side_to_move);
-    let capt_pawn = Piece::new(PieceRole::Pawn, position.side_to_move.flip_side());
+    let pawn = match position.side_to_move {
+        Colour::White => *piece::PAWN_WHITE,
+        Colour::Black => *piece::PAWN_BLACK,
+    };
+    let capt_pawn = match position.side_to_move.flip_side() {
+        Colour::White => *piece::PAWN_WHITE,
+        Colour::Black => *piece::PAWN_BLACK,
+    };
 
     remove_piece_from_board(position, capt_pawn, capt_sq);
     position.board.move_piece(from_sq, to_sq, pawn);
