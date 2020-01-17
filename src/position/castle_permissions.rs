@@ -1,158 +1,165 @@
 use board::piece::Colour;
 
-#[derive(Eq, PartialEq, Debug, Clone, Copy, Default)]
-pub struct CastlePermission {
-    has_white_king: bool,
-    has_white_queen: bool,
-    has_black_king: bool,
-    has_black_queen: bool,
-}
+pub type CastlePermission = u8;
 
-#[derive(Eq, PartialEq, Debug, Clone, Copy)]
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum CastlePermissionType {
-    WhiteKing,
-    WhiteQueen,
-    BlackKing,
-    BlackQueen,
+    WhiteKing = 0x01,
+    WhiteQueen = 0x02,
+    BlackKing = 0x04,
+    BlackQueen = 0x08,
 }
 
 pub const NUM_CASTLE_PERMS: usize = 4;
 
-impl CastlePermission {
-    pub fn new() -> CastlePermission {
-        CastlePermission {
-            has_white_king: false,
-            has_white_queen: false,
-            has_black_king: false,
-            has_black_queen: false,
-        }
-    }
+pub const NO_CASTLE_PERMS: u8 = 0;
 
-    pub fn has_castle_permission(&self) -> bool {
-        return self.has_black_king == true
-            || self.has_black_queen == true
-            || self.has_white_king == true
-            || self.has_white_queen == true;
-    }
+pub fn has_castle_permission(perm: CastlePermission) -> bool {
+    return perm != NO_CASTLE_PERMS;
+}
 
-    pub fn set_king(&mut self, colour: Colour, state: bool) {
-        match colour {
-            Colour::White => self.has_white_king = state,
-            Colour::Black => self.has_black_king = state,
-        }
+pub fn set_king(perm: &mut CastlePermission, colour: Colour) {
+    let mut cp = *perm;
+    match colour {
+        Colour::White => cp = cp | CastlePermissionType::WhiteKing as u8,
+        Colour::Black => cp = cp | CastlePermissionType::BlackKing as u8,
     }
-    pub fn is_king_set(&self, colour: Colour) -> bool {
-        match colour {
-            Colour::White => self.has_white_king == true,
-            Colour::Black => self.has_black_king == true,
-        }
-    }
+    *perm = cp;
+}
 
-    pub fn set_queen(&mut self, colour: Colour, state: bool) {
-        match colour {
-            Colour::White => self.has_white_queen = state,
-            Colour::Black => self.has_black_queen = state,
-        }
+pub fn clear_king(perm: &mut CastlePermission, colour: Colour) {
+    let mut cp = *perm;
+    match colour {
+        Colour::White => cp = cp & !(CastlePermissionType::WhiteKing as u8),
+        Colour::Black => cp = cp & !(CastlePermissionType::BlackKing as u8),
     }
-    pub fn is_queen_set(&self, colour: Colour) -> bool {
-        match colour {
-            Colour::White => self.has_white_queen == true,
-            Colour::Black => self.has_black_queen == true,
-        }
-    }
+    *perm = cp;
+}
 
-    pub fn offset(castle_perm_type: CastlePermissionType) -> usize {
-        match castle_perm_type {
-            CastlePermissionType::WhiteKing => 0,
-            CastlePermissionType::WhiteQueen => 1,
-            CastlePermissionType::BlackKing => 2,
-            CastlePermissionType::BlackQueen => 3,
-        }
+pub fn is_king_set(perm: CastlePermission, colour: Colour) -> bool {
+    match colour {
+        Colour::White => return perm & CastlePermissionType::WhiteKing as u8 != 0,
+        Colour::Black => return perm & CastlePermissionType::BlackKing as u8 != 0,
+    }
+}
+
+pub fn set_queen(perm: &mut CastlePermission, colour: Colour) {
+    let mut cp = *perm;
+    match colour {
+        Colour::White => cp = cp | CastlePermissionType::WhiteQueen as u8,
+        Colour::Black => cp = cp | CastlePermissionType::BlackQueen as u8,
+    }
+    *perm = cp;
+}
+
+pub fn clear_queen(perm: &mut CastlePermission, colour: Colour) {
+    let mut cp = *perm;
+    match colour {
+        Colour::White => cp = cp & !(CastlePermissionType::WhiteQueen as u8),
+        Colour::Black => cp = cp & !(CastlePermissionType::BlackQueen as u8),
+    }
+    *perm = cp;
+}
+
+pub fn is_queen_set(perm: CastlePermission, colour: Colour) -> bool {
+    match colour {
+        Colour::White => return perm & CastlePermissionType::WhiteQueen as u8 != 0,
+        Colour::Black => return perm & CastlePermissionType::BlackQueen as u8 != 0,
+    }
+}
+
+pub fn to_offset(perm_type: CastlePermissionType) -> usize {
+    match perm_type {
+        CastlePermissionType::WhiteQueen => return 0,
+        CastlePermissionType::WhiteKing => return 1,
+        CastlePermissionType::BlackQueen => return 2,
+        CastlePermissionType::BlackKing => return 3,
     }
 }
 
 #[cfg(test)]
 pub mod tests {
     use board::piece::Colour;
-    use position::castle_permissions::CastlePermission;
+    use position::castle_permissions;
     use position::castle_permissions::CastlePermissionType;
 
     #[test]
     pub fn default_castle_permisisons_none_set() {
-        let cp = CastlePermission::new();
+        let cp = castle_permissions::NO_CASTLE_PERMS;
 
-        assert!(cp.is_king_set(Colour::White) == false);
-        assert!(cp.is_king_set(Colour::Black) == false);
-        assert!(cp.is_queen_set(Colour::White) == false);
-        assert!(cp.is_queen_set(Colour::Black) == false);
-        assert!(cp.has_castle_permission() == false);
+        assert!(castle_permissions::is_king_set(cp, Colour::White) == false);
+        assert!(castle_permissions::is_king_set(cp, Colour::Black) == false);
+        assert!(castle_permissions::is_queen_set(cp, Colour::White) == false);
+        assert!(castle_permissions::is_queen_set(cp, Colour::Black) == false);
+        assert!(castle_permissions::has_castle_permission(cp) == false);
     }
 
     #[test]
     pub fn castle_permisison_offsets() {
-        assert!(CastlePermission::offset(CastlePermissionType::WhiteQueen) == 1);
-        assert!(CastlePermission::offset(CastlePermissionType::WhiteKing) == 0);
-        assert!(CastlePermission::offset(CastlePermissionType::BlackQueen) == 3);
-        assert!(CastlePermission::offset(CastlePermissionType::BlackKing) == 2);
+        assert!(castle_permissions::to_offset(CastlePermissionType::WhiteQueen) == 0);
+        assert!(castle_permissions::to_offset(CastlePermissionType::WhiteKing) == 1);
+        assert!(castle_permissions::to_offset(CastlePermissionType::BlackQueen) == 2);
+        assert!(castle_permissions::to_offset(CastlePermissionType::BlackKing) == 3);
     }
 
     #[test]
     pub fn castle_permission_white_king_set_get_as_expected() {
-        let mut cp = CastlePermission::new();
+        let mut cp = castle_permissions::NO_CASTLE_PERMS;
 
         // init condition
-        assert!(cp.has_castle_permission() == false);
+        assert!(castle_permissions::has_castle_permission(cp) == false);
 
-        cp.set_king(Colour::White, true);
-        assert!(cp.is_king_set(Colour::White) == true);
-        assert!(cp.has_castle_permission() == true);
-        assert!(cp.is_king_set(Colour::Black) == false);
-        assert!(cp.is_queen_set(Colour::White) == false);
-        assert!(cp.is_queen_set(Colour::Black) == false);
+        castle_permissions::set_king(&mut cp, Colour::White);
+        assert!(castle_permissions::is_king_set(cp, Colour::White) == true);
+        assert!(castle_permissions::has_castle_permission(cp) == true);
+        assert!(castle_permissions::is_king_set(cp, Colour::Black) == false);
+        assert!(castle_permissions::is_queen_set(cp, Colour::White) == false);
+        assert!(castle_permissions::is_queen_set(cp, Colour::Black) == false);
     }
 
     #[test]
     pub fn castle_permission_black_king_set_get_as_expected() {
-        let mut cp = CastlePermission::new();
+        let mut cp = castle_permissions::NO_CASTLE_PERMS;
 
         // init condition
-        assert!(cp.has_castle_permission() == false);
+        assert!(castle_permissions::has_castle_permission(cp) == false);
 
-        cp.set_king(Colour::Black, true);
-        assert!(cp.is_king_set(Colour::Black) == true);
-        assert!(cp.has_castle_permission() == true);
-        assert!(cp.is_king_set(Colour::White) == false);
-        assert!(cp.is_queen_set(Colour::White) == false);
-        assert!(cp.is_queen_set(Colour::Black) == false);
+        castle_permissions::set_king(&mut cp, Colour::Black);
+        assert!(castle_permissions::is_king_set(cp, Colour::Black) == true);
+        assert!(castle_permissions::has_castle_permission(cp) == true);
+        assert!(castle_permissions::is_king_set(cp, Colour::White) == false);
+        assert!(castle_permissions::is_queen_set(cp, Colour::White) == false);
+        assert!(castle_permissions::is_queen_set(cp, Colour::Black) == false);
     }
 
     #[test]
     pub fn castle_permission_white_queen_set_get_as_expected() {
-        let mut cp = CastlePermission::new();
+        let mut cp = castle_permissions::NO_CASTLE_PERMS;
 
         // init condition
-        assert!(cp.has_castle_permission() == false);
+        assert!(castle_permissions::has_castle_permission(cp) == false);
 
-        cp.set_queen(Colour::White, true);
-        assert!(cp.is_queen_set(Colour::White) == true);
-        assert!(cp.has_castle_permission() == true);
-        assert!(cp.is_king_set(Colour::Black) == false);
-        assert!(cp.is_queen_set(Colour::Black) == false);
-        assert!(cp.is_king_set(Colour::Black) == false);
+        castle_permissions::set_queen(&mut cp, Colour::White);
+        assert!(castle_permissions::is_queen_set(cp, Colour::White) == true);
+        assert!(castle_permissions::has_castle_permission(cp) == true);
+        assert!(castle_permissions::is_king_set(cp, Colour::Black) == false);
+        assert!(castle_permissions::is_queen_set(cp, Colour::Black) == false);
+        assert!(castle_permissions::is_king_set(cp, Colour::Black) == false);
     }
 
     #[test]
     pub fn castle_permission_black_queen_set_get_as_expected() {
-        let mut cp = CastlePermission::new();
+        let mut cp = castle_permissions::NO_CASTLE_PERMS;
 
         // init condition
-        assert!(cp.has_castle_permission() == false);
+        assert!(castle_permissions::has_castle_permission(cp) == false);
 
-        cp.set_queen(Colour::Black, true);
-        assert!(cp.is_queen_set(Colour::Black) == true);
-        assert!(cp.has_castle_permission() == true);
-        assert!(cp.is_king_set(Colour::Black) == false);
-        assert!(cp.is_queen_set(Colour::White) == false);
-        assert!(cp.is_king_set(Colour::Black) == false);
+        castle_permissions::set_queen(&mut cp, Colour::Black);
+        assert!(castle_permissions::is_queen_set(cp, Colour::Black) == true);
+        assert!(castle_permissions::has_castle_permission(cp) == true);
+        assert!(castle_permissions::is_king_set(cp, Colour::Black) == false);
+        assert!(castle_permissions::is_queen_set(cp, Colour::White) == false);
+        assert!(castle_permissions::is_king_set(cp, Colour::Black) == false);
     }
 }

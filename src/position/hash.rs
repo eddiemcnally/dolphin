@@ -6,7 +6,7 @@ use board::piece::Piece;
 use board::piece::NUM_PIECES;
 use board::square::Square;
 use input::fen::ParsedFen;
-use position::castle_permissions::CastlePermission;
+use position::castle_permissions;
 use position::castle_permissions::CastlePermissionType;
 use position::castle_permissions::NUM_CASTLE_PERMS;
 
@@ -38,16 +38,18 @@ pub fn generate_from_fen(parsed_fen: &ParsedFen) -> PositionHash {
 
     update_side(&mut hash);
 
-    if parsed_fen.castle_perm.is_king_set(Colour::Black) {
+    let cp = parsed_fen.castle_perm;
+
+    if castle_permissions::is_king_set(cp, Colour::Black) {
         update_castle_permissions(&mut hash, CastlePermissionType::BlackKing);
     }
-    if parsed_fen.castle_perm.is_king_set(Colour::White) {
+    if castle_permissions::is_king_set(cp, Colour::White) {
         update_castle_permissions(&mut hash, CastlePermissionType::WhiteKing);
     }
-    if parsed_fen.castle_perm.is_queen_set(Colour::Black) {
+    if castle_permissions::is_queen_set(cp, Colour::Black) {
         update_castle_permissions(&mut hash, CastlePermissionType::BlackQueen);
     }
-    if parsed_fen.castle_perm.is_queen_set(Colour::White) {
+    if castle_permissions::is_queen_set(cp, Colour::White) {
         update_castle_permissions(&mut hash, CastlePermissionType::WhiteQueen);
     }
 
@@ -80,7 +82,7 @@ pub fn update_en_passant(pos_hash: &mut PositionHash, square: Square) {
 }
 
 pub fn update_castle_permissions(pos_hash: &mut PositionHash, perm_type: CastlePermissionType) {
-    let perm_offset = CastlePermission::offset(perm_type);
+    let perm_offset = castle_permissions::to_offset(perm_type);
     let k = KEYS.castle_keys[perm_offset];
     *pos_hash = *pos_hash ^ k;
 }

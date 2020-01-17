@@ -3,6 +3,7 @@ use board::piece::Piece;
 use board::square::file::File;
 use board::square::rank::Rank;
 use board::square::Square;
+use position::castle_permissions;
 use position::castle_permissions::CastlePermission;
 use std::collections::HashMap;
 
@@ -106,19 +107,19 @@ fn get_full_move_number(full_move_num: &str) -> u16 {
 }
 
 fn get_castle_permissions(castleperm: &str) -> CastlePermission {
-    let mut cp = CastlePermission::new();
+    let mut cp = castle_permissions::NO_CASTLE_PERMS;
     if castleperm.trim() != "-" {
         if castleperm.contains("K") {
-            cp.set_king(Colour::White, true);
+            castle_permissions::set_king(&mut cp, Colour::White);
         }
         if castleperm.contains("Q") {
-            cp.set_queen(Colour::White, true);
+            castle_permissions::set_queen(&mut cp, Colour::White);
         }
         if castleperm.contains("k") {
-            cp.set_king(Colour::Black, true);
+            castle_permissions::set_king(&mut cp, Colour::Black);
         }
         if castleperm.contains("q") {
-            cp.set_queen(Colour::Black, true);
+            castle_permissions::set_queen(&mut cp, Colour::Black);
         }
     }
     return cp;
@@ -142,6 +143,7 @@ mod tests {
     use fen::get_full_move_number;
     use fen::get_half_move_clock;
     use fen::get_side_to_move;
+    use position::castle_permissions;
 
     #[test]
     pub fn piece_positions() {
@@ -356,11 +358,11 @@ mod tests {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b K - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
-        assert!(perm.is_king_set(Colour::White) == true);
-        assert!(perm.is_king_set(Colour::Black) == false);
-        assert!(perm.is_queen_set(Colour::White) == false);
-        assert!(perm.is_queen_set(Colour::Black) == false);
-        assert!(perm.has_castle_permission() == true);
+        assert!(castle_permissions::is_king_set(perm, Colour::White) == true);
+        assert!(castle_permissions::is_king_set(perm, Colour::Black) == false);
+        assert!(castle_permissions::is_queen_set(perm, Colour::White) == false);
+        assert!(castle_permissions::is_queen_set(perm, Colour::Black) == false);
+        assert!(castle_permissions::has_castle_permission(perm) == true);
     }
     #[test]
     pub fn castle_permissions_white_queenside() {
@@ -368,11 +370,11 @@ mod tests {
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
 
-        assert!(perm.is_king_set(Colour::White) == false);
-        assert!(perm.is_king_set(Colour::Black) == false);
-        assert!(perm.is_queen_set(Colour::White) == true);
-        assert!(perm.is_queen_set(Colour::Black) == false);
-        assert!(perm.has_castle_permission() == true);
+        assert!(castle_permissions::is_king_set(perm, Colour::White) == false);
+        assert!(castle_permissions::is_king_set(perm, Colour::Black) == false);
+        assert!(castle_permissions::is_queen_set(perm, Colour::White) == true);
+        assert!(castle_permissions::is_queen_set(perm, Colour::Black) == false);
+        assert!(castle_permissions::has_castle_permission(perm) == true);
     }
     #[test]
     pub fn castle_permissions_black_kingside() {
@@ -380,11 +382,11 @@ mod tests {
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
 
-        assert!(perm.is_king_set(Colour::White) == false);
-        assert!(perm.is_king_set(Colour::Black) == true);
-        assert!(perm.is_queen_set(Colour::White) == false);
-        assert!(perm.is_queen_set(Colour::Black) == false);
-        assert!(perm.has_castle_permission() == true);
+        assert!(castle_permissions::is_king_set(perm, Colour::White) == false);
+        assert!(castle_permissions::is_king_set(perm, Colour::Black) == true);
+        assert!(castle_permissions::is_queen_set(perm, Colour::White) == false);
+        assert!(castle_permissions::is_queen_set(perm, Colour::Black) == false);
+        assert!(castle_permissions::has_castle_permission(perm) == true);
     }
     #[test]
     pub fn castle_permissions_black_queenside() {
@@ -392,11 +394,11 @@ mod tests {
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
 
-        assert!(perm.is_king_set(Colour::White) == false);
-        assert!(perm.is_king_set(Colour::Black) == false);
-        assert!(perm.is_queen_set(Colour::White) == false);
-        assert!(perm.is_queen_set(Colour::Black) == true);
-        assert!(perm.has_castle_permission() == true);
+        assert!(castle_permissions::is_king_set(perm, Colour::White) == false);
+        assert!(castle_permissions::is_king_set(perm, Colour::Black) == false);
+        assert!(castle_permissions::is_queen_set(perm, Colour::White) == false);
+        assert!(castle_permissions::is_queen_set(perm, Colour::Black) == true);
+        assert!(castle_permissions::has_castle_permission(perm) == true);
     }
 
     #[test]
@@ -404,7 +406,7 @@ mod tests {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
-        assert!(perm.has_castle_permission() == false);
+        assert!(castle_permissions::has_castle_permission(perm) == false);
     }
 
     #[test]
@@ -413,11 +415,11 @@ mod tests {
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
 
-        assert!(perm.is_king_set(Colour::White) == true);
-        assert!(perm.is_king_set(Colour::Black) == true);
-        assert!(perm.is_queen_set(Colour::White) == true);
-        assert!(perm.is_queen_set(Colour::Black) == false);
-        assert!(perm.has_castle_permission() == true);
+        assert!(castle_permissions::is_king_set(perm, Colour::White) == true);
+        assert!(castle_permissions::is_king_set(perm, Colour::Black) == true);
+        assert!(castle_permissions::is_queen_set(perm, Colour::White) == true);
+        assert!(castle_permissions::is_queen_set(perm, Colour::Black) == false);
+        assert!(castle_permissions::has_castle_permission(perm) == true);
     }
 
     #[test]

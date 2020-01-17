@@ -7,6 +7,7 @@ use board::piece::Piece;
 use board::piece::PieceRole;
 use board::square::Square;
 use moves::mov::Mov;
+use position::castle_permissions;
 use position::position::Position;
 
 pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
@@ -178,7 +179,7 @@ fn generate_non_sliding_piece_moves(board: &Board, pce: Piece, move_list: &mut V
 fn generate_castling_moves(pos: &Position, move_list: &mut Vec<Mov>) {
     let cp = pos.castle_permissions();
 
-    if cp.has_castle_permission() == false {
+    if castle_permissions::has_castle_permission(cp) == false {
         return;
     }
 
@@ -187,21 +188,29 @@ fn generate_castling_moves(pos: &Position, move_list: &mut Vec<Mov>) {
 
     match side {
         Colour::White => {
-            if cp.is_king_set(side) && (bb & occupancy_masks::CASTLE_MASK_WK == 0) {
+            if castle_permissions::is_king_set(cp, side)
+                && (bb & occupancy_masks::CASTLE_MASK_WK == 0)
+            {
                 let mv = Mov::encode_move_castle_kingside_white();
                 move_list.push(mv);
             }
-            if cp.is_queen_set(side) && (bb & occupancy_masks::CASTLE_MASK_WQ == 0) {
+            if castle_permissions::is_queen_set(cp, side)
+                && (bb & occupancy_masks::CASTLE_MASK_WQ == 0)
+            {
                 let mv = Mov::encode_move_castle_queenside_white();
                 move_list.push(mv);
             }
         }
         Colour::Black => {
-            if cp.is_king_set(side) && (bb & occupancy_masks::CASTLE_MASK_BK == 0) {
+            if castle_permissions::is_king_set(cp, side)
+                && (bb & occupancy_masks::CASTLE_MASK_BK == 0)
+            {
                 let mv = Mov::encode_move_castle_kingside_black();
                 move_list.push(mv);
             }
-            if cp.is_queen_set(side) && (bb & occupancy_masks::CASTLE_MASK_BQ == 0) {
+            if castle_permissions::is_queen_set(cp, side)
+                && (bb & occupancy_masks::CASTLE_MASK_BQ == 0)
+            {
                 let mv = Mov::encode_move_castle_queenside_black();
                 move_list.push(mv);
             }
@@ -489,6 +498,7 @@ pub mod tests {
     use moves::mov;
     use moves::mov::Mov;
     use moves::move_gen;
+    use position::castle_permissions;
     use position::position::Position;
 
     #[test]
@@ -854,7 +864,7 @@ pub mod tests {
         let pos = Position::new(parsed_fen);
 
         let cp = pos.castle_permissions();
-        assert!(cp.is_queen_set(Colour::Black));
+        assert!(castle_permissions::is_queen_set(cp, Colour::Black));
 
         move_gen::generate_moves(&pos, &mut move_list);
 

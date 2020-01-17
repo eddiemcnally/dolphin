@@ -83,7 +83,7 @@ impl PositionHistory {
 #[cfg(test)]
 mod tests {
     use moves::mov::Mov;
-    use position::castle_permissions::CastlePermission;
+    use position::castle_permissions;
     use position::position_history::PositionHistory;
 
     #[test]
@@ -106,7 +106,7 @@ mod tests {
             let mv = Mov::encode_move_castle_queenside_white();
             let enp = None;
             let fifty_move_cntr = i as u8;
-            let castperm = CastlePermission::new();
+            let castperm = castle_permissions::NO_CASTLE_PERMS;
 
             pos_hist.push(pk, mv, fifty_move_cntr, enp, castperm);
         }
@@ -132,7 +132,7 @@ mod tests {
             let mv = Mov::encode_move_castle_queenside_white();
             let enp = None;
             let fifty_move_cntr = i as u8;
-            let castperm = CastlePermission::new();
+            let castperm = castle_permissions::NO_CASTLE_PERMS;
 
             pos_hist.push(pk, mv, fifty_move_cntr, enp, castperm);
 

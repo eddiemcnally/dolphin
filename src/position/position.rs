@@ -7,6 +7,7 @@ use board::square::Square;
 use input::fen::ParsedFen;
 use moves::mov::Mov;
 use position::attack_checker;
+use position::castle_permissions;
 use position::castle_permissions::CastlePermission;
 use position::hash;
 use position::hash::PositionHash;
@@ -264,7 +265,7 @@ fn do_castle_move_king(position: &mut Position, col: Colour) {
     update_hash_on_piece_move(position, rook, rook_from_sq, rook_to_sq);
     position.board.move_piece(rook_from_sq, rook_to_sq, rook);
 
-    position.castle_perm.set_king(col, false);
+    castle_permissions::clear_king(&mut position.castle_perm, col);
 }
 
 fn do_double_pawn_move(
@@ -298,7 +299,7 @@ fn do_castle_move_queen(position: &mut Position, col: Colour) {
     update_hash_on_piece_move(position, rook, rook_from_sq, rook_to_sq);
     position.board.move_piece(rook_from_sq, rook_to_sq, rook);
 
-    position.castle_perm.set_queen(col, false);
+    castle_permissions::clear_queen(&mut position.castle_perm, col);
 }
 
 fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
@@ -356,6 +357,7 @@ mod tests {
     use board::square::Square;
     use input::fen;
     use moves::mov::Mov;
+    use position::castle_permissions;
     use position::position::Position;
 
     #[test]
@@ -549,7 +551,10 @@ mod tests {
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
-        assert!(pos.castle_permissions().is_king_set(Colour::White));
+        assert!(castle_permissions::is_king_set(
+            pos.castle_permissions(),
+            Colour::White
+        ));
         assert!(is_piece_on_square_as_expected(
             &pos,
             Square::e1,
@@ -578,7 +583,7 @@ mod tests {
             Piece::new(PieceRole::Rook, Colour::White)
         ));
 
-        assert!(pos.castle_permissions().is_king_set(Colour::White) == false);
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::White) == false);
     }
 
     #[test]
@@ -587,7 +592,10 @@ mod tests {
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
-        assert!(pos.castle_permissions().is_king_set(Colour::Black));
+        assert!(castle_permissions::is_king_set(
+            pos.castle_permissions(),
+            Colour::Black
+        ));
         assert!(is_piece_on_square_as_expected(
             &pos,
             Square::e8,
@@ -616,7 +624,7 @@ mod tests {
             Piece::new(PieceRole::Rook, Colour::Black)
         ));
 
-        assert!(pos.castle_permissions().is_king_set(Colour::Black) == false);
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::Black) == false);
     }
 
     #[test]
@@ -625,7 +633,10 @@ mod tests {
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
-        assert!(pos.castle_permissions().is_queen_set(Colour::White));
+        assert!(castle_permissions::is_queen_set(
+            pos.castle_permissions(),
+            Colour::White
+        ));
         assert!(is_piece_on_square_as_expected(
             &pos,
             Square::e1,
@@ -653,8 +664,7 @@ mod tests {
             Square::d1,
             Piece::new(PieceRole::Rook, Colour::White)
         ));
-
-        assert!(pos.castle_permissions().is_queen_set(Colour::White) == false);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::White) == false);
     }
 
     #[test]
@@ -663,7 +673,10 @@ mod tests {
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
-        assert!(pos.castle_permissions().is_queen_set(Colour::Black));
+        assert!(castle_permissions::is_queen_set(
+            pos.castle_permissions(),
+            Colour::Black
+        ));
         assert!(is_piece_on_square_as_expected(
             &pos,
             Square::e8,
@@ -692,7 +705,7 @@ mod tests {
             Piece::new(PieceRole::Rook, Colour::Black)
         ));
 
-        assert!(pos.castle_permissions().is_queen_set(Colour::Black) == false);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::Black) == false);
     }
 
     #[test]
