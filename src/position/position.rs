@@ -102,25 +102,30 @@ impl Position {
     //  ---- 1111 Promotion Queen Capture
 
     pub fn make_move(&mut self, mv: Mov) -> bool {
+
+        // set up some general variables
+        let from_sq = mv.decode_from_square();
+        let to_sq = mv.decode_to_square();
+        let piece = self.board().get_piece_on_square(from_sq).unwrap();
+
+        // save current position and board
+        let mut capt_piece = None;
+        if mv.is_capture() == true && mv.is_en_passant() == false {
+            capt_piece = self.board.get_piece_on_square(to_sq);
+        }
         self.position_history.push(
             self.position_key,
             mv,
             self.fifty_move_cntr,
             self.en_pass_sq,
             self.castle_perm,
+            capt_piece
         );
 
-        self.flip_side_to_move();
-        hash::update_side(&mut self.position_key);
+        self.update_side_to_move();
 
         self.move_cntr.half_move += 1;
         self.move_cntr.full_move += 1;
-
-        // set up some general variables
-        let from_sq = mv.decode_from_square();
-        let to_sq = mv.decode_to_square();
-        let piece = self.board().get_piece_on_square(from_sq).unwrap();
-        let side_to_move = self.side_to_move;
 
         handle_50_move_rule(self, mv, piece);
 
@@ -129,36 +134,49 @@ impl Position {
             update_hash_on_piece_move(self, piece, from_sq, to_sq);
             self.board.move_piece(from_sq, to_sq, piece);
         } else if mv.is_double_pawn() {
-            do_double_pawn_move(self, side_to_move, piece, from_sq, to_sq);
+            do_double_pawn_move(self, self.side_to_move, piece, from_sq, to_sq);
         } else if mv.is_king_castle() {
-            do_castle_move_king(self, side_to_move);
+            do_castle_move_king(self, self.side_to_move);
         } else if mv.is_queen_castle() {
-            do_castle_move_queen(self, side_to_move);
+            do_castle_move_queen(self, self.side_to_move);
         } else if mv.is_en_passant() {
             do_en_passant(self, from_sq, to_sq);
         } else if mv.is_promote() {
-            do_promotion(self, mv, from_sq, to_sq, side_to_move);
+            do_promotion(self, mv, from_sq, to_sq, self.side_to_move);
         } else if mv.is_capture() {
             do_capture_move(self, piece, from_sq, to_sq);
         }
 
         update_en_passant_sq(self, mv);
 
+        return self.is_move_legal(mv);
+    }
+
+
+    fn is_move_legal(&self, mv: Mov) -> bool {
         // check if move results in king being in check
-        let king_sq = self.board().get_king_sq(side_to_move);
-        if attack_checker::is_sq_attacked(self.board(), king_sq, side_to_move) {
+        let king_sq = self.board().get_king_sq(self.side_to_move);
+        if attack_checker::is_sq_attacked(self.board(), king_sq, self.side_to_move) {
             return false;
         }
 
         // check castle through attacked squares (or king was in check before the castle move)
         if mv.is_castle() {
-            let is_valid = self.is_castle_legal(mv, side_to_move);
+            let is_valid = self.is_castle_legal(mv, self.side_to_move);
             if is_valid == false {
                 return false;
             }
         }
-
         return true;
+    }
+
+
+
+
+
+    fn update_side_to_move(&mut self){
+        self.flip_side_to_move();
+        hash::update_side(&mut self.position_key);
     }
 
     fn is_castle_legal(&self, mv: Mov, side_to_move: Colour) -> bool {

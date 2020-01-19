@@ -1,5 +1,6 @@
 use board::square::Square;
 use moves::mov::Mov;
+use board::piece::Piece;
 use position::castle_permissions::CastlePermission;
 
 struct History {
@@ -8,6 +9,7 @@ struct History {
     fifty_move_cntr: u8,
     en_pass_sq: Option<Square>,
     castle_perm: CastlePermission,
+    capt_piece: Option<Piece>
 }
 
 pub struct PositionHistory {
@@ -35,6 +37,7 @@ impl PositionHistory {
         fifty_move_cntr: u8,
         en_pass_sq: Option<Square>,
         castle_perm: CastlePermission,
+        capt_piece: Option<Piece>
     ) {
         debug_assert!(
             self.history.len() <= self.max_hist_size as usize,
@@ -48,12 +51,13 @@ impl PositionHistory {
             fifty_move_cntr: fifty_move_cntr,
             en_pass_sq: en_pass_sq,
             castle_perm: castle_perm,
+            capt_piece: capt_piece
         };
 
         self.history.push(hist);
     }
 
-    pub fn pop(&mut self) -> (u64, Mov, u8, Option<Square>, CastlePermission) {
+    pub fn pop(&mut self) -> (u64, Mov, u8, Option<Square>, CastlePermission, Option<Piece>) {
         debug_assert!(self.history.len() > 0, "attempt to pop, len = 0");
 
         let popped = self.history.pop();
@@ -65,8 +69,8 @@ impl PositionHistory {
                 let fifty_move_cntr = popped.fifty_move_cntr;
                 let en_pass_sq = popped.en_pass_sq;
                 let castle_perm = popped.castle_perm;
-
-                (pos_key, mov, fifty_move_cntr, en_pass_sq, castle_perm)
+                let capt_piece = popped.capt_piece;
+                (pos_key, mov, fifty_move_cntr, en_pass_sq, castle_perm, capt_piece)
             }
         }
     }
@@ -84,6 +88,9 @@ impl PositionHistory {
 mod tests {
     use moves::mov::Mov;
     use position::castle_permissions;
+    use board::piece::Piece;
+    use board::piece::PieceRole;
+    use board::piece::Colour;
     use position::position_history::PositionHistory;
 
     #[test]
@@ -107,13 +114,14 @@ mod tests {
             let enp = None;
             let fifty_move_cntr = i as u8;
             let castperm = castle_permissions::NO_CASTLE_PERMS;
+            let capt_pce = Some(Piece::new(PieceRole::Bishop, Colour::Black));
 
-            pos_hist.push(pk, mv, fifty_move_cntr, enp, castperm);
+            pos_hist.push(pk, mv, fifty_move_cntr, enp, castperm, capt_pce);
         }
 
         // pop and check the order
         for i in num_to_test..0 {
-            let (_, _, fifty_cntr, _, _) = pos_hist.pop();
+            let (_, _, fifty_cntr, _, _, _) = pos_hist.pop();
             assert_eq!(fifty_cntr, i as u8);
         }
     }
@@ -134,7 +142,7 @@ mod tests {
             let fifty_move_cntr = i as u8;
             let castperm = castle_permissions::NO_CASTLE_PERMS;
 
-            pos_hist.push(pk, mv, fifty_move_cntr, enp, castperm);
+            pos_hist.push(pk, mv, fifty_move_cntr, enp, castperm, None);
 
             assert_eq!(pos_hist.len(), (i + 1) as usize);
         }
