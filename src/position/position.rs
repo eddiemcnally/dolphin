@@ -153,6 +153,8 @@ impl Position {
     }
 
 
+
+
     fn is_move_legal(&self, mv: Mov) -> bool {
         // check if move results in king being in check
         let king_sq = self.board().get_king_sq(self.side_to_move);
@@ -169,9 +171,6 @@ impl Position {
         }
         return true;
     }
-
-
-
 
 
     fn update_side_to_move(&mut self){
