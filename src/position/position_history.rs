@@ -1,6 +1,6 @@
+use board::piece::Piece;
 use board::square::Square;
 use moves::mov::Mov;
-use board::piece::Piece;
 use position::castle_permissions::CastlePermission;
 
 struct History {
@@ -9,7 +9,7 @@ struct History {
     fifty_move_cntr: u8,
     en_pass_sq: Option<Square>,
     castle_perm: CastlePermission,
-    capt_piece: Option<Piece>
+    capt_piece: Option<Piece>,
 }
 
 pub struct PositionHistory {
@@ -37,7 +37,7 @@ impl PositionHistory {
         fifty_move_cntr: u8,
         en_pass_sq: Option<Square>,
         castle_perm: CastlePermission,
-        capt_piece: Option<Piece>
+        capt_piece: Option<Piece>,
     ) {
         debug_assert!(
             self.history.len() <= self.max_hist_size as usize,
@@ -51,13 +51,22 @@ impl PositionHistory {
             fifty_move_cntr: fifty_move_cntr,
             en_pass_sq: en_pass_sq,
             castle_perm: castle_perm,
-            capt_piece: capt_piece
+            capt_piece: capt_piece,
         };
 
         self.history.push(hist);
     }
 
-    pub fn pop(&mut self) -> (u64, Mov, u8, Option<Square>, CastlePermission, Option<Piece>) {
+    pub fn pop(
+        &mut self,
+    ) -> (
+        u64,
+        Mov,
+        u8,
+        Option<Square>,
+        CastlePermission,
+        Option<Piece>,
+    ) {
         debug_assert!(self.history.len() > 0, "attempt to pop, len = 0");
 
         let popped = self.history.pop();
@@ -70,7 +79,14 @@ impl PositionHistory {
                 let en_pass_sq = popped.en_pass_sq;
                 let castle_perm = popped.castle_perm;
                 let capt_piece = popped.capt_piece;
-                (pos_key, mov, fifty_move_cntr, en_pass_sq, castle_perm, capt_piece)
+                (
+                    pos_key,
+                    mov,
+                    fifty_move_cntr,
+                    en_pass_sq,
+                    castle_perm,
+                    capt_piece,
+                )
             }
         }
     }
@@ -86,11 +102,11 @@ impl PositionHistory {
 
 #[cfg(test)]
 mod tests {
-    use moves::mov::Mov;
-    use position::castle_permissions;
+    use board::piece::Colour;
     use board::piece::Piece;
     use board::piece::PieceRole;
-    use board::piece::Colour;
+    use moves::mov::Mov;
+    use position::castle_permissions;
     use position::position_history::PositionHistory;
 
     #[test]

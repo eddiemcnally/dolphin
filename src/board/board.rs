@@ -4,16 +4,13 @@ use board::piece::Piece;
 use board::piece::PieceRole;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
-use board::square::Square;
 use board::square;
+use board::square::Square;
 use input::fen::ParsedFen;
-use std::option::Option;
 use std::fmt;
-
-
+use std::option::Option;
 
 pub const NUM_SQUARES: usize = 64;
-
 
 #[derive(Copy)]
 pub struct Board {
@@ -31,12 +28,12 @@ pub struct Board {
 
 impl Default for Board {
     fn default() -> Self {
-        let brd =  Board {
+        let brd = Board {
             board_bb: 0,
             piece_bb: [0; NUM_PIECES],
             colour_bb: [0; NUM_COLOURS],
             pieces: [None; NUM_SQUARES],
-            king_sq: [Square::a1; NUM_COLOURS], 
+            king_sq: [Square::a1; NUM_COLOURS],
         };
         return brd;
     }
@@ -44,30 +41,29 @@ impl Default for Board {
 
 impl PartialEq for Board {
     fn eq(&self, other: &Self) -> bool {
-        
-        if self.board_bb != other.board_bb{
+        if self.board_bb != other.board_bb {
             return false;
         }
 
         for i in 0..NUM_PIECES - 1 {
-            if self.piece_bb[i] != other.piece_bb[i]{
+            if self.piece_bb[i] != other.piece_bb[i] {
                 return false;
-            }        
+            }
         }
 
         for i in 0..NUM_COLOURS - 1 {
-            if self.colour_bb[i] != other.colour_bb[i]{
+            if self.colour_bb[i] != other.colour_bb[i] {
                 return false;
             }
-            if self.king_sq[i] != other.king_sq[i]{
+            if self.king_sq[i] != other.king_sq[i] {
                 return false;
             }
         }
 
         for i in 0..NUM_SQUARES - 1 {
-            if self.pieces[i] != other.pieces[i]{
+            if self.pieces[i] != other.pieces[i] {
                 return false;
-            }        
+            }
         }
 
         return true;
@@ -76,11 +72,11 @@ impl PartialEq for Board {
 
 impl fmt::Debug for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut debug_str = String::new(); 
+        let mut debug_str = String::new();
 
         for sq in square::get_square_array().iter() {
             let pce = self.pieces[sq.to_offset()];
-            
+
             if pce.is_some() {
                 let piece = pce.unwrap();
                 debug_str.push_str(&piece.to_label());
@@ -94,27 +90,25 @@ impl fmt::Debug for Board {
 
 impl Clone for Board {
     fn clone(&self) -> Board {
-        let mut cp_pieces : [Option<Piece>; NUM_SQUARES] = [None; NUM_SQUARES];
+        let mut cp_pieces: [Option<Piece>; NUM_SQUARES] = [None; NUM_SQUARES];
         for sq in square::get_square_array().iter() {
             cp_pieces[sq.to_offset()] = self.pieces[sq.to_offset()];
         }
 
-        let brd =  Board {
+        let brd = Board {
             board_bb: self.board_bb,
             piece_bb: self.piece_bb,
             colour_bb: self.colour_bb,
             pieces: cp_pieces,
             king_sq: self.king_sq,
         };
-        return brd;        
+        return brd;
     }
 }
 
-
-
 impl Board {
     pub fn new() -> Board {
-        let brd =  Board {
+        let brd = Board {
             board_bb: 0,
             piece_bb: [0; NUM_PIECES],
             colour_bb: [0; NUM_COLOURS],
@@ -123,7 +117,7 @@ impl Board {
         };
         return brd;
     }
-    
+
     pub fn from_fen(parsed_fen: &ParsedFen) -> Board {
         let mut brd = Board::new();
 
@@ -163,7 +157,7 @@ impl Board {
     }
 
     pub fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
-        return self.pieces[sq.to_offset()];        
+        return self.pieces[sq.to_offset()];
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
@@ -199,7 +193,6 @@ impl Board {
         bitboard::clear_bit(&mut self.colour_bb[piece.colour().offset()], sq);
         self.pieces[sq.to_offset()] = None;
     }
-
 }
 #[cfg(test)]
 pub mod tests {
@@ -389,8 +382,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn clone_board_as_expected()
-    {
+    pub fn clone_board_as_expected() {
         let mut map = HashMap::new();
 
         map.insert(Square::a1, Piece::new(PieceRole::Knight, Colour::Black));
@@ -408,12 +400,10 @@ pub mod tests {
 
         for sq in utils::get_ordered_square_list_by_file() {
             let pce = cloned.get_piece_on_square(sq);
-                
-            if parsed_fen.piece_positions.contains_key(&sq){
+
+            if parsed_fen.piece_positions.contains_key(&sq) {
                 assert!(pce.unwrap() == *parsed_fen.piece_positions.get(&sq).unwrap());
-            }
-            else
-            {
+            } else {
                 assert!(pce.is_none());
             }
         }
@@ -422,8 +412,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn board_equality_as_expected()
-    {
+    pub fn board_equality_as_expected() {
         let mut map = HashMap::new();
 
         map.insert(Square::a1, Piece::new(PieceRole::Knight, Colour::Black));
@@ -439,7 +428,5 @@ pub mod tests {
         let brd_2 = Board::from_fen(&parsed_fen);
 
         assert_eq!(brd_1, brd_2);
-
     }
 }
-

@@ -13,10 +13,9 @@ pub enum PieceRole {
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
 #[repr(u8)]
-pub enum Colour
-{
+pub enum Colour {
     White = 0,
-    Black
+    Black,
 }
 
 impl Default for Colour {
@@ -24,7 +23,6 @@ impl Default for Colour {
         Colour::White
     }
 }
-    
 
 // todo look at mapping this to a u64 (or u32 if we remove the value)
 #[derive(Eq, PartialEq, Clone, Copy, Hash)]
@@ -34,7 +32,6 @@ pub struct Piece {
     offset: u8,
     value: u32,
 }
-
 
 impl fmt::Debug for Piece {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -60,9 +57,8 @@ lazy_static! {
     pub static ref KING_BLACK: Piece = Piece::new(PieceRole::King, Colour::Black);
     pub static ref KING_WHITE: Piece = Piece::new(PieceRole::King, Colour::White);
     pub static ref PAWN_BLACK: Piece = Piece::new(PieceRole::Pawn, Colour::Black);
-    pub static ref PAWN_WHITE: Piece = Piece::new(PieceRole::Pawn, Colour::White); 
+    pub static ref PAWN_WHITE: Piece = Piece::new(PieceRole::Pawn, Colour::White);
 }
-
 
 impl Piece {
     pub fn new(role: PieceRole, colour: Colour) -> Piece {
@@ -75,7 +71,6 @@ impl Piece {
             value: val,
         }
     }
-
 
     pub fn from_char(piece_char: char) -> Piece {
         match piece_char {
@@ -109,15 +104,15 @@ impl Piece {
         self.value
     }
 
-    pub fn to_label(self) -> String{
-        match self.colour(){
-            Colour::White => match self.role(){
+    pub fn to_label(self) -> String {
+        match self.colour() {
+            Colour::White => match self.role() {
                 PieceRole::Pawn => return String::from("WP"),
                 PieceRole::Bishop => return String::from("WB"),
                 PieceRole::Knight => return String::from("WN"),
                 PieceRole::Rook => return String::from("WR"),
                 PieceRole::Queen => return String::from("WQ"),
-                PieceRole::King => return String::from("WK"), 
+                PieceRole::King => return String::from("WK"),
             },
             Colour::Black => match self.role() {
                 PieceRole::Pawn => return String::from("BP"),
@@ -126,7 +121,6 @@ impl Piece {
                 PieceRole::Rook => return String::from("BR"),
                 PieceRole::Queen => return String::from("BQ"),
                 PieceRole::King => return String::from("BK"),
-                
             },
         }
     }
@@ -135,8 +129,6 @@ impl Piece {
 pub const NUM_PIECES: usize = 12;
 pub const NUM_PIECE_ROLES: usize = 6;
 pub const NUM_COLOURS: usize = 2;
-
-
 
 fn pce_to_offset(pce_role: PieceRole, col: Colour) -> u8 {
     let mut role_val = match pce_role {
@@ -154,8 +146,6 @@ fn pce_to_offset(pce_role: PieceRole, col: Colour) -> u8 {
     return role_val as u8;
 }
 
-
-
 fn pce_value(role: PieceRole) -> u32 {
     match role {
         PieceRole::Pawn => 300,
@@ -166,7 +156,6 @@ fn pce_value(role: PieceRole) -> u32 {
         PieceRole::King => 50000,
     }
 }
-
 
 impl Colour {
     pub fn flip_side(&self) -> Colour {

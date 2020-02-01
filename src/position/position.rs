@@ -104,7 +104,6 @@ impl Position {
     //  ---- 1111 Promotion Queen Capture
 
     pub fn make_move(&mut self, mv: Mov) -> bool {
-
         // save board before moving any pieces
         self.undo_board = self.board().clone();
 
@@ -124,7 +123,7 @@ impl Position {
             self.fifty_move_cntr,
             self.en_pass_sq,
             self.castle_perm,
-            capt_piece
+            capt_piece,
         );
 
         self.update_side_to_move();
@@ -157,14 +156,12 @@ impl Position {
         return self.is_move_legal(mv);
     }
 
-
-
-    pub fn take_move(&mut self)
-    {
+    pub fn take_move(&mut self) {
         self.move_cntr.half_move -= 1;
         self.move_cntr.full_move -= 1;
 
-        let (pos_hash, _mv, fifty_move_cntr, en_pass_sq, cast_perms, _capt_pce) = self.position_history.pop();
+        let (pos_hash, _mv, fifty_move_cntr, en_pass_sq, cast_perms, _capt_pce) =
+            self.position_history.pop();
 
         self.position_key = pos_hash;
         self.fifty_move_cntr = fifty_move_cntr;
@@ -174,8 +171,6 @@ impl Position {
         // restore the board
         self.board = self.undo_board;
     }
-
-
 
     fn is_move_legal(&self, mv: Mov) -> bool {
         // check if move results in king being in check
@@ -194,8 +189,7 @@ impl Position {
         return true;
     }
 
-
-    fn update_side_to_move(&mut self){
+    fn update_side_to_move(&mut self) {
         self.flip_side_to_move();
         hash::update_side(&mut self.position_key);
     }

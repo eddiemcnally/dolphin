@@ -296,7 +296,7 @@ impl Square {
     }
 
     pub fn to_offset(&self) -> usize {
-        return *self as usize;        
+        return *self as usize;
     }
 }
 
