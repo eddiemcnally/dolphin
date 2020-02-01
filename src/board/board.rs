@@ -8,12 +8,14 @@ use board::square::Square;
 use board::square;
 use input::fen::ParsedFen;
 use std::option::Option;
+use std::fmt;
 
 
 
 pub const NUM_SQUARES: usize = 64;
 
 
+#[derive(Copy)]
 pub struct Board {
     // bitboard representing occupied/vacant squares (for all pieces)
     board_bb: u64,
@@ -40,6 +42,56 @@ impl Default for Board {
     }
 }
 
+impl PartialEq for Board {
+    fn eq(&self, other: &Self) -> bool {
+        
+        if self.board_bb != other.board_bb{
+            return false;
+        }
+
+        for i in 0..NUM_PIECES - 1 {
+            if self.piece_bb[i] != other.piece_bb[i]{
+                return false;
+            }        
+        }
+
+        for i in 0..NUM_COLOURS - 1 {
+            if self.colour_bb[i] != other.colour_bb[i]{
+                return false;
+            }
+            if self.king_sq[i] != other.king_sq[i]{
+                return false;
+            }
+        }
+
+        for i in 0..NUM_SQUARES - 1 {
+            if self.pieces[i] != other.pieces[i]{
+                return false;
+            }        
+        }
+
+        return true;
+    }
+}
+
+impl fmt::Debug for Board {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_str = String::new(); 
+
+        for sq in square::get_square_array().iter() {
+            let pce = self.pieces[sq.to_offset()];
+            
+            if pce.is_some() {
+                let piece = pce.unwrap();
+                debug_str.push_str(&piece.to_label());
+                debug_str.push_str(" on ");
+                debug_str.push_str(&format!("{}", sq));
+            }
+        }
+        write!(f, "{}", debug_str)
+    }
+}
+
 impl Clone for Board {
     fn clone(&self) -> Board {
         let mut cp_pieces : [Option<Piece>; NUM_SQUARES] = [None; NUM_SQUARES];
@@ -57,10 +109,6 @@ impl Clone for Board {
         return brd;        
     }
 }
-
-
-impl Copy for Board {}
-
 
 
 
@@ -339,4 +387,59 @@ pub mod tests {
             }
         }
     }
+
+    #[test]
+    pub fn clone_board_as_expected()
+    {
+        let mut map = HashMap::new();
+
+        map.insert(Square::a1, Piece::new(PieceRole::Knight, Colour::Black));
+        map.insert(Square::h8, Piece::new(PieceRole::King, Colour::White));
+        map.insert(Square::d5, Piece::new(PieceRole::Queen, Colour::Black));
+        map.insert(Square::c3, Piece::new(PieceRole::Pawn, Colour::White));
+        map.insert(Square::a7, Piece::new(PieceRole::Rook, Colour::White));
+
+        let mut parsed_fen: ParsedFen = Default::default();
+        parsed_fen.piece_positions = map;
+
+        let brd = Board::from_fen(&parsed_fen);
+
+        let cloned = brd.clone();
+
+        for sq in utils::get_ordered_square_list_by_file() {
+            let pce = cloned.get_piece_on_square(sq);
+                
+            if parsed_fen.piece_positions.contains_key(&sq){
+                assert!(pce.unwrap() == *parsed_fen.piece_positions.get(&sq).unwrap());
+            }
+            else
+            {
+                assert!(pce.is_none());
+            }
+        }
+
+        assert_eq!(brd, cloned);
+    }
+
+    #[test]
+    pub fn board_equality_as_expected()
+    {
+        let mut map = HashMap::new();
+
+        map.insert(Square::a1, Piece::new(PieceRole::Knight, Colour::Black));
+        map.insert(Square::h8, Piece::new(PieceRole::King, Colour::White));
+        map.insert(Square::d5, Piece::new(PieceRole::Queen, Colour::Black));
+        map.insert(Square::c3, Piece::new(PieceRole::Pawn, Colour::White));
+        map.insert(Square::a7, Piece::new(PieceRole::Rook, Colour::White));
+
+        let mut parsed_fen: ParsedFen = Default::default();
+        parsed_fen.piece_positions = map;
+
+        let brd_1 = Board::from_fen(&parsed_fen);
+        let brd_2 = Board::from_fen(&parsed_fen);
+
+        assert_eq!(brd_1, brd_2);
+
+    }
 }
+

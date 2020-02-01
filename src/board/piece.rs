@@ -1,3 +1,4 @@
+use std::fmt;
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy, Hash)]
 #[repr(u8)]
@@ -26,7 +27,7 @@ impl Default for Colour {
     
 
 // todo look at mapping this to a u64 (or u32 if we remove the value)
-#[derive(Eq, PartialEq, Debug, Clone, Copy, Hash)]
+#[derive(Eq, PartialEq, Clone, Copy, Hash)]
 pub struct Piece {
     piece_role: PieceRole,
     colour: Colour,
@@ -34,6 +35,18 @@ pub struct Piece {
     value: u32,
 }
 
+
+impl fmt::Debug for Piece {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_label())
+    }
+}
+
+impl fmt::Display for Piece {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_label())
+    }
+}
 
 lazy_static! {
     pub static ref ROOK_BLACK: Piece = Piece::new(PieceRole::Rook, Colour::Black);
@@ -47,8 +60,7 @@ lazy_static! {
     pub static ref KING_BLACK: Piece = Piece::new(PieceRole::King, Colour::Black);
     pub static ref KING_WHITE: Piece = Piece::new(PieceRole::King, Colour::White);
     pub static ref PAWN_BLACK: Piece = Piece::new(PieceRole::Pawn, Colour::Black);
-    pub static ref PAWN_WHITE: Piece = Piece::new(PieceRole::Pawn, Colour::White);
- 
+    pub static ref PAWN_WHITE: Piece = Piece::new(PieceRole::Pawn, Colour::White); 
 }
 
 
@@ -96,6 +108,28 @@ impl Piece {
     pub fn value(self) -> u32 {
         self.value
     }
+
+    pub fn to_label(self) -> String{
+        match self.colour(){
+            Colour::White => match self.role(){
+                PieceRole::Pawn => return String::from("WP"),
+                PieceRole::Bishop => return String::from("WB"),
+                PieceRole::Knight => return String::from("WN"),
+                PieceRole::Rook => return String::from("WR"),
+                PieceRole::Queen => return String::from("WQ"),
+                PieceRole::King => return String::from("WK"), 
+            },
+            Colour::Black => match self.role() {
+                PieceRole::Pawn => return String::from("BP"),
+                PieceRole::Bishop => return String::from("BB"),
+                PieceRole::Knight => return String::from("BN"),
+                PieceRole::Rook => return String::from("BR"),
+                PieceRole::Queen => return String::from("BQ"),
+                PieceRole::King => return String::from("BK"),
+                
+            },
+        }
+    }
 }
 
 pub const NUM_PIECES: usize = 12;
@@ -121,16 +155,6 @@ fn pce_to_offset(pce_role: PieceRole, col: Colour) -> u8 {
 }
 
 
-
-
-// pub fn offset_to_piece(offset: u8) -> Piece{
-//     let p = OFFSET_TO_PIECE_MAP.get(&offset);
-//     match p
-//     {
-//         Some(p) => return *p,
-//         None => panic!("Invalid offset")
-//     }
-// }
 
 fn pce_value(role: PieceRole) -> u32 {
     match role {
