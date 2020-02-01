@@ -1,4 +1,5 @@
-#[derive(Eq, PartialEq, Debug, Clone, Copy)]
+
+#[derive(Eq, PartialEq, Debug, Clone, Copy, Hash)]
 #[repr(u8)]
 pub enum PieceRole {
     Pawn = 0,
@@ -8,6 +9,31 @@ pub enum PieceRole {
     Queen,
     King,
 }
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
+#[repr(u8)]
+pub enum Colour
+{
+    White = 0,
+    Black
+}
+
+impl Default for Colour {
+    fn default() -> Colour {
+        Colour::White
+    }
+}
+    
+
+// todo look at mapping this to a u64 (or u32 if we remove the value)
+#[derive(Eq, PartialEq, Debug, Clone, Copy, Hash)]
+pub struct Piece {
+    piece_role: PieceRole,
+    colour: Colour,
+    offset: u8,
+    value: u32,
+}
+
 
 lazy_static! {
     pub static ref ROOK_BLACK: Piece = Piece::new(PieceRole::Rook, Colour::Black);
@@ -22,16 +48,9 @@ lazy_static! {
     pub static ref KING_WHITE: Piece = Piece::new(PieceRole::King, Colour::White);
     pub static ref PAWN_BLACK: Piece = Piece::new(PieceRole::Pawn, Colour::Black);
     pub static ref PAWN_WHITE: Piece = Piece::new(PieceRole::Pawn, Colour::White);
+ 
 }
 
-// todo look at mapping this to a u64 (or u32 if we remove the value)
-#[derive(Eq, PartialEq, Debug, Clone, Copy)]
-pub struct Piece {
-    piece_role: PieceRole,
-    colour: Colour,
-    offset: u8,
-    value: u32,
-}
 
 impl Piece {
     pub fn new(role: PieceRole, colour: Colour) -> Piece {
@@ -44,6 +63,7 @@ impl Piece {
             value: val,
         }
     }
+
 
     pub fn from_char(piece_char: char) -> Piece {
         match piece_char {
@@ -82,6 +102,8 @@ pub const NUM_PIECES: usize = 12;
 pub const NUM_PIECE_ROLES: usize = 6;
 pub const NUM_COLOURS: usize = 2;
 
+
+
 fn pce_to_offset(pce_role: PieceRole, col: Colour) -> u8 {
     let mut role_val = match pce_role {
         PieceRole::Pawn => 0,
@@ -98,6 +120,18 @@ fn pce_to_offset(pce_role: PieceRole, col: Colour) -> u8 {
     return role_val as u8;
 }
 
+
+
+
+// pub fn offset_to_piece(offset: u8) -> Piece{
+//     let p = OFFSET_TO_PIECE_MAP.get(&offset);
+//     match p
+//     {
+//         Some(p) => return *p,
+//         None => panic!("Invalid offset")
+//     }
+// }
+
 fn pce_value(role: PieceRole) -> u32 {
     match role {
         PieceRole::Pawn => 300,
@@ -109,17 +143,7 @@ fn pce_value(role: PieceRole) -> u32 {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-#[repr(u8)]
-pub enum Colour {
-    White,
-    Black,
-}
-impl Default for Colour {
-    fn default() -> Colour {
-        Colour::White
-    }
-}
+
 impl Colour {
     pub fn flip_side(&self) -> Colour {
         if *self == Colour::White {

@@ -30,6 +30,7 @@ const MAX_MOVE_HISTORY: u16 = 2048;
 
 pub struct Position {
     board: Board,
+    undo_board: Board,
     side_to_move: Colour,
     en_pass_sq: Option<Square>,
     castle_perm: CastlePermission,
@@ -48,6 +49,7 @@ impl Position {
 
         Position {
             board: Board::from_fen(&parsed_fen),
+            undo_board: Board::new(),
             side_to_move: parsed_fen.side_to_move,
             en_pass_sq: parsed_fen.en_pass_sq,
             castle_perm: parsed_fen.castle_perm,
@@ -103,6 +105,9 @@ impl Position {
 
     pub fn make_move(&mut self, mv: Mov) -> bool {
 
+        // save board before moving any pieces
+        self.undo_board = self.board().clone();
+
         // set up some general variables
         let from_sq = mv.decode_from_square();
         let to_sq = mv.decode_to_square();
@@ -152,6 +157,23 @@ impl Position {
         return self.is_move_legal(mv);
     }
 
+
+
+    pub fn take_move(&mut self)
+    {
+        self.move_cntr.half_move -= 1;
+        self.move_cntr.full_move -= 1;
+
+        let (pos_hash, _mv, fifty_move_cntr, en_pass_sq, cast_perms, _capt_pce) = self.position_history.pop();
+
+        self.position_key = pos_hash;
+        self.fifty_move_cntr = fifty_move_cntr;
+        self.en_pass_sq = en_pass_sq;
+        self.castle_perm = cast_perms;
+
+        // restore the board
+        self.board = self.undo_board;
+    }
 
 
 

@@ -5,10 +5,14 @@ use board::piece::PieceRole;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
 use board::square::Square;
+use board::square;
 use input::fen::ParsedFen;
 use std::option::Option;
 
+
+
 pub const NUM_SQUARES: usize = 64;
+
 
 pub struct Board {
     // bitboard representing occupied/vacant squares (for all pieces)
@@ -23,17 +27,55 @@ pub struct Board {
     king_sq: [Square; NUM_COLOURS],
 }
 
+impl Default for Board {
+    fn default() -> Self {
+        let brd =  Board {
+            board_bb: 0,
+            piece_bb: [0; NUM_PIECES],
+            colour_bb: [0; NUM_COLOURS],
+            pieces: [None; NUM_SQUARES],
+            king_sq: [Square::a1; NUM_COLOURS], 
+        };
+        return brd;
+    }
+}
+
+impl Clone for Board {
+    fn clone(&self) -> Board {
+        let mut cp_pieces : [Option<Piece>; NUM_SQUARES] = [None; NUM_SQUARES];
+        for sq in square::get_square_array().iter() {
+            cp_pieces[sq.to_offset()] = self.pieces[sq.to_offset()];
+        }
+
+        let brd =  Board {
+            board_bb: self.board_bb,
+            piece_bb: self.piece_bb,
+            colour_bb: self.colour_bb,
+            pieces: cp_pieces,
+            king_sq: self.king_sq,
+        };
+        return brd;        
+    }
+}
+
+
+impl Copy for Board {}
+
+
+
+
 impl Board {
     pub fn new() -> Board {
-        return Board {
+        let brd =  Board {
             board_bb: 0,
             piece_bb: [0; NUM_PIECES],
             colour_bb: [0; NUM_COLOURS],
             pieces: [None; NUM_SQUARES],
             king_sq: [Square::a1; NUM_COLOURS],
         };
+        return brd;
     }
-
+    
     pub fn from_fen(parsed_fen: &ParsedFen) -> Board {
         let mut brd = Board::new();
 
@@ -50,7 +92,6 @@ impl Board {
             "add_piece, square not empty. {:?}",
             sq
         );
-
         self.set_bitboards(piece, sq);
     }
 
@@ -74,7 +115,7 @@ impl Board {
     }
 
     pub fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
-        return self.pieces[sq.to_offset()];
+        return self.pieces[sq.to_offset()];        
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
@@ -110,6 +151,7 @@ impl Board {
         bitboard::clear_bit(&mut self.colour_bb[piece.colour().offset()], sq);
         self.pieces[sq.to_offset()] = None;
     }
+
 }
 #[cfg(test)]
 pub mod tests {
@@ -130,9 +172,10 @@ pub mod tests {
 
         for col in cols {
             let mut board = Board::new();
-
             let king = Piece::new(PieceRole::King, col);
             for sq in utils::get_ordered_square_list_by_file() {
+                println!("Adding king to board");
+
                 board.add_piece(king, sq);
 
                 assert_eq!(board.get_king_sq(col), sq);

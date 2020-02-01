@@ -6,3 +6,4 @@ authors = ["eddie"]
 [dependencies]
 rand = "0.7.3"
 lazy_static = "1.4.0"
+typenum = "1.11.2"
