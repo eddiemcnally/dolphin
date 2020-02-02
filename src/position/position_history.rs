@@ -2,7 +2,9 @@ use board::piece::Piece;
 use board::square::Square;
 use moves::mov::Mov;
 use position::castle_permissions::CastlePermission;
+use std::fmt;
 
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
 struct History {
     position_hash: u64,
     mov: Mov,
@@ -12,9 +14,57 @@ struct History {
     capt_piece: Option<Piece>,
 }
 
+impl fmt::Debug for History {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_str = String::new();
+
+        debug_str.push_str(&format!("PositionHash : {}\n", self.position_hash));
+        debug_str.push_str(&format!("Mov : {}\n", self.mov));
+        debug_str.push_str(&format!("FiftyMoveCntr : {}\n", self.fifty_move_cntr));
+        if self.en_pass_sq.is_none() {
+            debug_str.push_str(&format!("En pass Sq : -\n"));
+        } else {
+            debug_str.push_str(&format!("En pass Sq : {}\n", self.en_pass_sq.unwrap()));
+        }
+
+        debug_str.push_str("\n");
+
+        write!(f, "{}", debug_str)
+    }
+}
+
+impl fmt::Display for History {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
+    }
+}
+
+#[derive(Eq, PartialEq, Hash, Clone)]
 pub struct PositionHistory {
     max_hist_size: u16,
     history: Vec<History>,
+}
+
+impl fmt::Debug for PositionHistory {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_str = String::new();
+
+        if self.history.len() == 0 {
+            debug_str.push_str(&format!("Hist : Empty\n"));
+        } else {
+            for h in &self.history {
+                debug_str.push_str(&format!("Hist : {}\n", h));
+            }
+        }
+
+        write!(f, "{}", debug_str)
+    }
+}
+
+impl fmt::Display for PositionHistory {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
+    }
 }
 
 impl PositionHistory {

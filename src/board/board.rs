@@ -42,26 +42,34 @@ impl Default for Board {
 impl PartialEq for Board {
     fn eq(&self, other: &Self) -> bool {
         if self.board_bb != other.board_bb {
+            println!(
+                "BOARD: board_bb are different. self={}, other={}",
+                self.board_bb, other.board_bb
+            );
             return false;
         }
 
         for i in 0..NUM_PIECES - 1 {
             if self.piece_bb[i] != other.piece_bb[i] {
+                println!("BOARD: piece_bb are different");
                 return false;
             }
         }
 
         for i in 0..NUM_COLOURS - 1 {
             if self.colour_bb[i] != other.colour_bb[i] {
+                println!("BOARD: colour_bb are different");
                 return false;
             }
             if self.king_sq[i] != other.king_sq[i] {
+                println!("BOARD: king_sq are different");
                 return false;
             }
         }
 
         for i in 0..NUM_SQUARES - 1 {
             if self.pieces[i] != other.pieces[i] {
+                println!("BOARD: pieces array are different");
                 return false;
             }
         }
@@ -82,9 +90,16 @@ impl fmt::Debug for Board {
                 debug_str.push_str(&piece.to_label());
                 debug_str.push_str(" on ");
                 debug_str.push_str(&format!("{}", sq));
+                debug_str.push_str("\n");
             }
         }
         write!(f, "{}", debug_str)
+    }
+}
+
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
     }
 }
 

@@ -1,11 +1,29 @@
 use board::piece::PieceRole;
 use board::square::Square;
+use std::fmt;
 
-#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
 pub struct Mov {
     from_sq: Square,
     to_sq: Square,
     flags: u8,
+}
+
+impl fmt::Debug for Mov {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_str = String::new();
+
+        debug_str.push_str(&format!("FromSq : {}, ", self.from_sq));
+        debug_str.push_str(&format!("ToSq : {}, ", self.to_sq));
+
+        write!(f, "{}", debug_str)
+    }
+}
+
+impl fmt::Display for Mov {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
+    }
 }
 
 impl Mov {

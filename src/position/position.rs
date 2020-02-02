@@ -12,10 +12,29 @@ use position::castle_permissions::CastlePermission;
 use position::hash;
 use position::hash::PositionHash;
 use position::position_history::PositionHistory;
+use std::fmt;
 
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
 pub struct MoveCounter {
     half_move: u16,
     full_move: u16,
+}
+
+impl fmt::Debug for MoveCounter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_str = String::new();
+
+        debug_str.push_str(&format!("HalfMove : {}, ", self.half_move));
+        debug_str.push_str(&format!("FullMove : {} ", self.full_move));
+
+        write!(f, "{}", debug_str)
+    }
+}
+
+impl fmt::Display for MoveCounter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
+    }
 }
 
 static CASTLE_SQUARES_KING_WHITE: [Square; 3] = [Square::e1, Square::f1, Square::g1];
@@ -30,7 +49,7 @@ const MAX_MOVE_HISTORY: u16 = 2048;
 
 pub struct Position {
     board: Board,
-    undo_board: Board,
+    undo_board: Option<Board>,
     side_to_move: Colour,
     en_pass_sq: Option<Square>,
     castle_perm: CastlePermission,
@@ -40,6 +59,93 @@ pub struct Position {
     position_history: PositionHistory,
 }
 
+impl Clone for Position {
+    fn clone(&self) -> Position {
+        let mut cloned_undo_board: Option<Board> = None;
+        if self.undo_board.is_some() {
+            cloned_undo_board = Some(self.undo_board.unwrap().clone());
+        }
+
+        Position {
+            board: self.board().clone(),
+            undo_board: cloned_undo_board,
+            side_to_move: self.side_to_move(),
+            en_pass_sq: self.en_pass_sq,
+            castle_perm: self.castle_perm,
+            move_cntr: self.move_cntr,
+            fifty_move_cntr: self.fifty_move_cntr,
+            position_history: self.position_history.clone(),
+            position_key: self.position_key,
+        }
+    }
+}
+
+impl fmt::Debug for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_str = String::new();
+
+        debug_str.push_str(&format!("Board : {}\n", self.board()));
+        debug_str.push_str(&format!("SideToMove : {}\n", self.side_to_move()));
+        if self.en_pass_sq.is_none() {
+            debug_str.push_str(&format!("En pass Sq : -\n"));
+        } else {
+            debug_str.push_str(&format!("En pass Sq : {}\n", self.en_pass_sq.unwrap()));
+        }
+
+        debug_str.push_str(&format!("Move Cntr : {}\n", self.move_cntr));
+        debug_str.push_str(&format!("50 Move Cntr : {}\n", self.fifty_move_cntr));
+
+        debug_str.push_str(&format!("Position Hist: {}\n", self.position_history));
+
+        write!(f, "{}", debug_str)
+    }
+}
+
+impl PartialEq for Position {
+    fn eq(&self, other: &Self) -> bool {
+        // NOTE: don't compare the undo board item
+
+        if self.board() != other.board() {
+            println!("POS: boards are different");
+            return false;
+        }
+
+        if self.side_to_move() != other.side_to_move() {
+            println!("POS: side to move are different");
+            return false;
+        }
+
+        if self.en_pass_sq != other.en_pass_sq {
+            println!("POS: en passant squares are different");
+            return false;
+        }
+
+        if self.castle_perm != other.castle_perm {
+            println!("POS: castle permissions are different");
+            return false;
+        }
+
+        if self.move_cntr != other.move_cntr {
+            println!("POS: move counters are different");
+            return false;
+        }
+
+        if self.fifty_move_cntr != other.fifty_move_cntr {
+            println!("POS: 50-move counters are different");
+            return false;
+        }
+        if self.position_key != other.position_key {
+            println!("POS: position keys are different");
+            return false;
+        }
+        if self.position_history != other.position_history {
+            println!("POS: position histories are different");
+            return false;
+        }
+
+        return true;
+    }
+}
 impl Position {
     pub fn new(parsed_fen: ParsedFen) -> Position {
         let mv_cntr = MoveCounter {
@@ -49,7 +155,7 @@ impl Position {
 
         Position {
             board: Board::from_fen(&parsed_fen),
-            undo_board: Board::new(),
+            undo_board: Some(Board::new()),
             side_to_move: parsed_fen.side_to_move,
             en_pass_sq: parsed_fen.en_pass_sq,
             castle_perm: parsed_fen.castle_perm,
@@ -105,7 +211,7 @@ impl Position {
 
     pub fn make_move(&mut self, mv: Mov) -> bool {
         // save board before moving any pieces
-        self.undo_board = self.board().clone();
+        self.undo_board = Some(self.board().clone());
 
         // set up some general variables
         let from_sq = mv.decode_from_square();
@@ -160,6 +266,8 @@ impl Position {
         self.move_cntr.half_move -= 1;
         self.move_cntr.full_move -= 1;
 
+        self.update_side_to_move();
+
         let (pos_hash, _mv, fifty_move_cntr, en_pass_sq, cast_perms, _capt_pce) =
             self.position_history.pop();
 
@@ -169,7 +277,11 @@ impl Position {
         self.castle_perm = cast_perms;
 
         // restore the board
-        self.board = self.undo_board;
+        if self.undo_board.is_none() {
+            panic!("Attempt to take_move without previous clone of Board");
+        } else {
+            self.board = self.undo_board.unwrap();
+        }
     }
 
     fn is_move_legal(&self, mv: Mov) -> bool {
@@ -1071,6 +1183,35 @@ mod tests {
         }
     }
 
+    #[test]
+    pub fn position_clone_as_expected() {
+        let fen = "1b1kN3/Qp1P2p1/q2P1Nn1/PP2Rr2/KP2P3/2rppbR1/Bp1nP2B/8 w - - 5 8";
+
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+        let cloned = pos.clone();
+        assert_eq!(pos, cloned);
+    }
+
+    #[test]
+    pub fn make_move_take_move_position_and_board_restored_capture_move() {
+        let fen = "1b1kN3/Qp1P2p1/q2P1Nn1/PP2Rr2/KP2P3/2rppbR1/Bp1nP2B/8 w - - 5 8";
+
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        let mv = Mov::encode_move_capture(Square::g3, Square::g6);
+
+        let pos_orig = pos.clone();
+        pos.make_move(mv);
+        let pos_after_make = pos.clone();
+        assert_ne!(pos_orig, pos_after_make);
+
+        pos.take_move();
+
+        assert!(pos_orig == pos);
+    }
+
     fn is_piece_on_square_as_expected(pos: &Position, sq: Square, pce: Piece) -> bool {
         let pce_on_board = pos.board.get_piece_on_square(sq);
 
@@ -1083,6 +1224,6 @@ mod tests {
 
     fn is_sq_empty(pos: &Position, sq: Square) -> bool {
         let empty_sq = pos.board.get_piece_on_square(sq);
-        return empty_sq == None;
+        return empty_sq.is_none();
     }
 }

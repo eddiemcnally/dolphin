@@ -11,7 +11,7 @@ pub enum PieceRole {
     King,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
+#[derive(Eq, PartialEq, Clone, Copy, Hash)]
 #[repr(u8)]
 pub enum Colour {
     White = 0,
@@ -21,6 +21,21 @@ pub enum Colour {
 impl Default for Colour {
     fn default() -> Colour {
         Colour::White
+    }
+}
+
+impl fmt::Debug for Colour {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Colour::White => write!(f, "White"),
+            Colour::Black => write!(f, "Black"),
+        }
+    }
+}
+
+impl fmt::Display for Colour {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
     }
 }
 
@@ -41,7 +56,7 @@ impl fmt::Debug for Piece {
 
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_label())
+        fmt::Debug::fmt(&self, f)
     }
 }
 
