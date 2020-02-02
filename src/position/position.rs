@@ -216,6 +216,9 @@ impl Position {
         // set up some general variables
         let from_sq = mv.decode_from_square();
         let to_sq = mv.decode_to_square();
+
+        println!("MOVE : {}", mv);
+        assert!(self.board().get_piece_on_square(from_sq).is_some());
         let piece = self.board().get_piece_on_square(from_sq).unwrap();
 
         // save current position and board
@@ -1194,22 +1197,55 @@ mod tests {
     }
 
     #[test]
-    pub fn make_move_take_move_position_and_board_restored_capture_move() {
-        let fen = "1b1kN3/Qp1P2p1/q2P1Nn1/PP2Rr2/KP2P3/2rppbR1/Bp1nP2B/8 w - - 5 8";
+    pub fn make_move_take_move_position_and_board_restored_white_to_move() {
+        let fen = "1b1kN3/Qp1P2p1/q2P1Nn1/PP3r2/3rPnb1/1p1pp3/B1P1P2B/R3K2R b KQ - 5 8";
+
+        let mut ml = vec![];
+        ml.push(Mov::encode_move_castle_kingside_white());
+        ml.push(Mov::encode_move_castle_queenside_white());
+        ml.push(Mov::encode_move_capture(Square::e8, Square::g7));
+        ml.push(Mov::encode_move_quiet(Square::b5, Square::b6));
+        ml.push(Mov::encode_move_double_pawn_first(Square::c2, Square::c4));
 
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
-
-        let mv = Mov::encode_move_capture(Square::g3, Square::g6);
-
         let pos_orig = pos.clone();
-        pos.make_move(mv);
-        let pos_after_make = pos.clone();
-        assert_ne!(pos_orig, pos_after_make);
 
-        pos.take_move();
+        for mv in ml {
+            pos.make_move(mv);
+            let pos_after_make = pos.clone();
+            assert_ne!(pos_orig, pos_after_make);
 
-        assert!(pos_orig == pos);
+            pos.take_move();
+
+            assert!(pos_orig == pos);
+        }
+    }
+
+    #[test]
+    pub fn make_move_take_move_position_and_board_restored_black_to_move() {
+        let fen = "r3k2r/1pb2p2/qQ1P2n1/PPPN2N1/4Pnb1/1p1pp3/B1P1P2B/R3K2R b kq - 3 11";
+
+        let mut ml = vec![];
+        ml.push(Mov::encode_move_castle_kingside_black());
+        ml.push(Mov::encode_move_castle_queenside_black());
+        ml.push(Mov::encode_move_capture(Square::c7, Square::b6));
+        ml.push(Mov::encode_move_quiet(Square::f7, Square::f6));
+        ml.push(Mov::encode_move_double_pawn_first(Square::f7, Square::f6));
+
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+        let pos_orig = pos.clone();
+
+        for mv in ml {
+            pos.make_move(mv);
+            let pos_after_make = pos.clone();
+            assert_ne!(pos_orig, pos_after_make);
+
+            pos.take_move();
+
+            assert!(pos_orig == pos);
+        }
     }
 
     fn is_piece_on_square_as_expected(pos: &Position, sq: Square, pce: Piece) -> bool {
