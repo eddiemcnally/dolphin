@@ -12,7 +12,7 @@ use board::piece::Colour;
 use board::piece::Piece;
 use board::piece::PieceRole;
 use input::fen;
- 
+
 fn main() {
     let pce = Piece::new(PieceRole::Queen, Colour::White);
     println!("pawn piece value {}", pce.value());

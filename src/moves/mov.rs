@@ -49,7 +49,7 @@ impl Mov {
     pub fn encode_move_capture(from_sq: Square, to_sq: Square) -> Mov {
         let mut mov = Mov::encode_move_quiet(from_sq, to_sq);
 
-        mov.flags = mov.flags | MV_FLG_BIT_CAPTURE;
+        mov.flags = mov.flags | MV_FLG_CAPTURE;
         mov
     }
 
@@ -94,7 +94,7 @@ impl Mov {
         promotion_piece_role: PieceRole,
     ) -> Mov {
         let mut mov = Mov::encode_move_with_promotion(from_sq, to_sq, promotion_piece_role);
-        mov.flags = mov.flags | MV_FLG_BIT_CAPTURE;
+        mov.flags = mov.flags | MV_FLG_CAPTURE;
         mov
     }
 
@@ -210,7 +210,7 @@ impl Mov {
     /// * `mv`         - the move to decode
     ///
     pub fn is_capture(&self) -> bool {
-        (self.flags & MV_FLG_BIT_CAPTURE) != 0
+        (self.flags & MV_FLG_CAPTURE) != 0
     }
 
     /// Tests the given move to see if it is a Promotion move
@@ -306,23 +306,22 @@ pub fn print_move_list(move_list: &Vec<Mov>) {
 //  ---- 1110 Promotion Rook Capture
 //  ---- 1111 Promotion Queen Capture
 
-const MV_FLG_QUIET: u8 = 0x00;
-const MV_FLG_DOUBLE_PAWN: u8 = 0x01;
-const MV_FLG_KING_CASTLE: u8 = 0x02;
-const MV_FLG_QUEEN_CASTLE: u8 = 0x03;
-const MV_FLG_CAPTURE: u8 = 0x04;
-const MV_FLG_EN_PASS: u8 = 0x05;
-const MV_FLG_PROMOTE_KNIGHT: u8 = 0x08;
-const MV_FLG_PROMOTE_BISHOP: u8 = 0x09;
-const MV_FLG_PROMOTE_ROOK: u8 = 0x0A;
-const MV_FLG_PROMOTE_QUEEN: u8 = 0x0B;
-const MV_FLG_PROMOTE_KNIGHT_CAPTURE: u8 = 0x0C;
-const MV_FLG_PROMOTE_BISHOP_CAPTURE: u8 = 0x0D;
-const MV_FLG_PROMOTE_ROOK_CAPTURE: u8 = 0x0E;
-const MV_FLG_PROMOTE_QUEEN_CAPTURE: u8 = 0x0F;
+const MV_FLG_QUIET: u8 = 0b00000000;
+const MV_FLG_DOUBLE_PAWN: u8 = 0b00000001;
+const MV_FLG_KING_CASTLE: u8 = 0b00000010;
+const MV_FLG_QUEEN_CASTLE: u8 = 0b00000011;
+const MV_FLG_CAPTURE: u8 = 0b00000100;
+const MV_FLG_EN_PASS: u8 = 0b00000101;
+const MV_FLG_PROMOTE_KNIGHT: u8 = 0b00001000;
+const MV_FLG_PROMOTE_BISHOP: u8 = 0b00001001;
+const MV_FLG_PROMOTE_ROOK: u8 = 0b00001010;
+const MV_FLG_PROMOTE_QUEEN: u8 = 0b00001011;
+const MV_FLG_PROMOTE_KNIGHT_CAPTURE: u8 = MV_FLG_PROMOTE_KNIGHT | MV_FLG_CAPTURE;
+const MV_FLG_PROMOTE_BISHOP_CAPTURE: u8 = MV_FLG_PROMOTE_BISHOP | MV_FLG_CAPTURE;
+const MV_FLG_PROMOTE_ROOK_CAPTURE: u8 = MV_FLG_PROMOTE_ROOK | MV_FLG_CAPTURE;
+const MV_FLG_PROMOTE_QUEEN_CAPTURE: u8 = MV_FLG_PROMOTE_QUEEN | MV_FLG_CAPTURE;
 
 const MV_FLG_BIT_PROMOTE: u8 = 0x08;
-const MV_FLG_BIT_CAPTURE: u8 = 0x04;
 
 #[cfg(test)]
 pub mod tests {
