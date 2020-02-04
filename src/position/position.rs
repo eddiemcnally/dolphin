@@ -235,8 +235,6 @@ impl Position {
             capt_piece,
         );
 
-        self.update_side_to_move();
-
         self.move_cntr.half_move += 1;
         self.move_cntr.full_move += 1;
 
@@ -262,7 +260,12 @@ impl Position {
 
         update_en_passant_sq(self, mv);
 
-        return self.is_move_legal(mv);
+        let is_legal = self.is_move_legal(mv);
+
+        // flip side
+        self.update_side_to_move();
+
+        return is_legal;
     }
 
     pub fn take_move(&mut self) {
@@ -641,7 +644,7 @@ mod tests {
 
     #[test]
     pub fn make_move_double_pawn_move_en_passant_square_set_white_moves() {
-        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2PPK1/1RB5/pPR1N2p/P1r1rP1P/P2q3n b - - 0 1";
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2PPK1/1RB5/pPR1N2p/P1r1rP1P/P2q3n w - - 0 1";
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
@@ -668,7 +671,7 @@ mod tests {
 
     #[test]
     pub fn make_move_double_pawn_move_en_passant_square_set_black_moves() {
-        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2PPK1/1RB5/pPR1N2p/P1r1rP1P/P2q3n w - - 0 1";
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2PPK1/1RB5/pPR1N2p/P1r1rP1P/P2q3n b - - 0 1";
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
@@ -695,7 +698,7 @@ mod tests {
 
     #[test]
     pub fn make_move_king_side_castle_white() {
-        let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R b KQkq - 0 1";
+        let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R w KQkq - 0 1";
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
@@ -736,7 +739,7 @@ mod tests {
 
     #[test]
     pub fn make_move_king_side_castle_black() {
-        let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R w KQkq - 0 1";
+        let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R b KQkq - 0 1";
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
@@ -777,7 +780,7 @@ mod tests {
 
     #[test]
     pub fn make_move_queen_side_castle_white() {
-        let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R b KQkq - 0 1";
+        let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R w KQkq - 0 1";
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
@@ -817,7 +820,7 @@ mod tests {
 
     #[test]
     pub fn make_move_queen_side_castle_black() {
-        let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R w KQkq - 0 1";
+        let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R b KQkq - 0 1";
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
@@ -858,7 +861,7 @@ mod tests {
 
     #[test]
     pub fn make_move_en_passant_black() {
-        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/pPBP1P2/2R1NpP1/2r1r2P/R2q3n w - b3 0 1";
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/pPBP1P2/2R1NpP1/2r1r2P/R2q3n b - b3 0 1";
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
@@ -889,7 +892,7 @@ mod tests {
 
     #[test]
     pub fn make_move_en_passant_white() {
-        let fen = "1n1k2bp/2p2pb1/1p5p/1B1pP1K1/pPBP1P2/N1R1NpPQ/P1r1r2P/R2q3n b - d6 0 1";
+        let fen = "1n1k2bp/2p2pb1/1p5p/1B1pP1K1/pPBP1P2/N1R1NpPQ/P1r1r2P/R2q3n w - d6 0 1";
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
@@ -928,7 +931,7 @@ mod tests {
         ];
 
         for target in target_prom_pce {
-            let fen = "kn3b1p/2p1Pp2/1p5p/1B1pb1K1/pPBP1P2/N1R1NpPQ/P1r1r2P/R2q3n b - - 0 1";
+            let fen = "kn3b1p/2p1Pp2/1p5p/1B1pb1K1/pPBP1P2/N1R1NpPQ/P1r1r2P/R2q3n w - - 0 1";
             let parsed_fen = fen::get_position(&fen);
             let mut pos = Position::new(parsed_fen);
 
@@ -961,7 +964,7 @@ mod tests {
         ];
 
         for target in target_prom_pce {
-            let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/2R5 w - - 0 1";
+            let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/2R5 b - - 0 1";
             let parsed_fen = fen::get_position(&fen);
             let mut pos = Position::new(parsed_fen);
 
@@ -994,7 +997,7 @@ mod tests {
         ];
 
         for target in target_prom_pce {
-            let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/R7 w - - 0 1";
+            let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/R7 b - - 0 1";
             let parsed_fen = fen::get_position(&fen);
             let mut pos = Position::new(parsed_fen);
 
@@ -1023,7 +1026,7 @@ mod tests {
         ];
 
         for target in target_prom_pce {
-            let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/R7 b - - 0 1";
+            let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/R7 w - - 0 1";
             let parsed_fen = fen::get_position(&fen);
             let mut pos = Position::new(parsed_fen);
 
