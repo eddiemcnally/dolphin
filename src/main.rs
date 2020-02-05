@@ -6,6 +6,7 @@ extern crate lazy_static;
 mod board;
 mod input;
 mod moves;
+mod perft;
 mod position;
 mod utils;
 use board::piece::Colour;
