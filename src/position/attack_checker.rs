@@ -128,11 +128,13 @@ fn is_diagonally_attacked(board: &Board, attack_sq: Square, attacking_side: Colo
 }
 
 fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colour) -> bool {
-    let attacked_king = match attacking_side {
+    let attacking_king = match attacking_side {
         Colour::Black => *piece::KING_WHITE,
         Colour::White => *piece::KING_BLACK,
     };
-    let mut pce_bb = board.get_piece_bitboard(attacked_king);
+    let mut pce_bb = board.get_piece_bitboard(attacking_king);
+    println!("ATTACKING: pce_bb={}", pce_bb);
+
     let attacking_king_sq = bitboard::pop_1st_bit(&mut pce_bb);
 
     let king_occ_mask = occupancy_masks::get_occupancy_mask_king(attacking_king_sq);
@@ -474,6 +476,7 @@ mod tests {
             "3k4/8/8/5B2/7B/3Q4/8/8 w - - 0 1",
             "8/8/8/2B2k2/4B3/3Q4/8/8 w - - 0 1",
             "8/8/8/2B5/4B3/3Q4/8/1k6 w - - 0 1",
+            "4k2r/8/8/8/Q7/8/8/8 w - - 0 1",
         ];
 
         for fen in fens {

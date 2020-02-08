@@ -22,7 +22,11 @@ pub fn count_set_bits(bb: u64) -> u8 {
 }
 
 pub fn pop_1st_bit(bb: &mut u64) -> Square {
+    //println!("bb : {:#066b}", bb);
     let bit_being_cleared = bb.trailing_zeros();
+
+    //println!("bit to clear {}", bit_being_cleared);
+
     let sq_clear = Square::from_u8(bit_being_cleared as u8);
 
     clear_bit(bb, sq_clear);

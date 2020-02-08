@@ -301,6 +301,8 @@ impl Square {
 }
 
 pub mod rank {
+    use std::slice::Iter;
+
     #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
     #[repr(u8)]
     pub enum Rank {
@@ -313,17 +315,6 @@ pub mod rank {
         Rank7,
         Rank8,
     }
-
-    pub static RANKS: &'static [Rank] = &[
-        Rank::Rank1,
-        Rank::Rank2,
-        Rank::Rank3,
-        Rank::Rank4,
-        Rank::Rank5,
-        Rank::Rank6,
-        Rank::Rank7,
-        Rank::Rank8,
-    ];
 
     impl Rank {
         pub fn from_char(rank: char) -> Rank {
@@ -376,10 +367,39 @@ pub mod rank {
                 Rank::Rank8 => 7,
             }
         }
+        pub fn iterator() -> Iter<'static, Rank> {
+            static RANKS: [Rank; 8] = [
+                Rank::Rank1,
+                Rank::Rank2,
+                Rank::Rank3,
+                Rank::Rank4,
+                Rank::Rank5,
+                Rank::Rank6,
+                Rank::Rank7,
+                Rank::Rank8,
+            ];
+            RANKS.iter()
+        }
+
+        pub fn reverse_iterator() -> Iter<'static, Rank> {
+            static RANKS: [Rank; 8] = [
+                Rank::Rank8,
+                Rank::Rank7,
+                Rank::Rank6,
+                Rank::Rank5,
+                Rank::Rank4,
+                Rank::Rank3,
+                Rank::Rank2,
+                Rank::Rank1,
+            ];
+            RANKS.iter()
+        }
     }
 }
 
 pub mod file {
+    use std::slice::Iter;
+
     #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
     #[repr(u8)]
     pub enum File {
@@ -392,17 +412,6 @@ pub mod file {
         FileG,
         FileH,
     }
-
-    pub static FILES: &'static [File] = &[
-        File::FileA,
-        File::FileB,
-        File::FileC,
-        File::FileD,
-        File::FileE,
-        File::FileF,
-        File::FileG,
-        File::FileH,
-    ];
 
     impl File {
         pub fn from_int(fint: u8) -> File {
@@ -455,6 +464,32 @@ pub mod file {
                 File::FileG => 'g',
                 File::FileH => 'h',
             }
+        }
+        pub fn iterator() -> Iter<'static, File> {
+            static FILES: [File; 8] = [
+                File::FileA,
+                File::FileB,
+                File::FileC,
+                File::FileD,
+                File::FileE,
+                File::FileF,
+                File::FileG,
+                File::FileH,
+            ];
+            FILES.iter()
+        }
+        pub fn reverse_iterator() -> Iter<'static, File> {
+            static FILES: [File; 8] = [
+                File::FileH,
+                File::FileG,
+                File::FileF,
+                File::FileE,
+                File::FileD,
+                File::FileC,
+                File::FileB,
+                File::FileA,
+            ];
+            FILES.iter()
         }
     }
 }

@@ -1,11 +1,13 @@
+use board::board::Board;
 use board::piece::Piece;
 use board::square::Square;
 use moves::mov::Mov;
 use position::castle_permissions::CastlePermission;
 use std::fmt;
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy)]
+#[derive(Clone, Copy)]
 struct History {
+    board: Board,
     position_hash: u64,
     mov: Mov,
     fifty_move_cntr: u8,
@@ -39,10 +41,59 @@ impl fmt::Display for History {
     }
 }
 
-#[derive(Eq, PartialEq, Hash, Clone)]
+impl PartialEq for History {
+    fn eq(&self, other: &Self) -> bool {
+        if self.board != other.board {
+            println!("POS: boards are different");
+            return false;
+        }
+
+        if self.position_hash != other.position_hash {
+            println!("POS: position hashes are different");
+            return false;
+        }
+
+        if self.mov != other.mov {
+            println!("POS: moves are different");
+            return false;
+        }
+
+        if self.castle_perm != other.castle_perm {
+            println!("POS: castle permissions are different");
+            return false;
+        }
+
+        if self.fifty_move_cntr != other.fifty_move_cntr {
+            println!("POS: 50-move counters are different");
+            return false;
+        }
+        if self.en_pass_sq != other.en_pass_sq {
+            println!("POS: en passant squares are different");
+            return false;
+        }
+
+        return true;
+    }
+}
+
 pub struct PositionHistory {
     max_hist_size: u16,
     history: Vec<History>,
+}
+
+impl PartialEq for PositionHistory {
+    fn eq(&self, other: &Self) -> bool {
+        if self.max_hist_size != other.max_hist_size {
+            println!("POS: max sizes are different");
+            return false;
+        }
+
+        if self.history != other.history {
+            return false;
+        }
+
+        return true;
+    }
 }
 
 impl fmt::Debug for PositionHistory {
@@ -82,6 +133,7 @@ impl PositionHistory {
     // push
     pub fn push(
         &mut self,
+        board: Board,
         position_hash: u64,
         mov: Mov,
         fifty_move_cntr: u8,
@@ -96,6 +148,7 @@ impl PositionHistory {
         );
 
         let hist = History {
+            board: board,
             position_hash: position_hash,
             mov: mov,
             fifty_move_cntr: fifty_move_cntr,
@@ -110,6 +163,7 @@ impl PositionHistory {
     pub fn pop(
         &mut self,
     ) -> (
+        Board,
         u64,
         Mov,
         u8,
@@ -123,6 +177,7 @@ impl PositionHistory {
         match popped {
             None => panic!("Nothing to pop from history"),
             Some(popped) => {
+                let board = popped.board;
                 let pos_key = popped.position_hash;
                 let mov = popped.mov;
                 let fifty_move_cntr = popped.fifty_move_cntr;
@@ -130,6 +185,7 @@ impl PositionHistory {
                 let castle_perm = popped.castle_perm;
                 let capt_piece = popped.capt_piece;
                 (
+                    board,
                     pos_key,
                     mov,
                     fifty_move_cntr,
@@ -152,6 +208,7 @@ impl PositionHistory {
 
 #[cfg(test)]
 mod tests {
+    use board::board::Board;
     use board::piece::Colour;
     use board::piece::Piece;
     use board::piece::PieceRole;
@@ -175,6 +232,7 @@ mod tests {
 
         // push multiple positions
         for i in 0..num_to_test {
+            let board = Board::new();
             let pk = 1234;
             let mv = Mov::encode_move_castle_queenside_white();
             let enp = None;
@@ -182,12 +240,12 @@ mod tests {
             let castperm = castle_permissions::NO_CASTLE_PERMS;
             let capt_pce = Some(Piece::new(PieceRole::Bishop, Colour::Black));
 
-            pos_hist.push(pk, mv, fifty_move_cntr, enp, castperm, capt_pce);
+            pos_hist.push(board, pk, mv, fifty_move_cntr, enp, castperm, capt_pce);
         }
 
         // pop and check the order
         for i in num_to_test..0 {
-            let (_, _, fifty_cntr, _, _, _) = pos_hist.pop();
+            let (_, _, _, fifty_cntr, _, _, _) = pos_hist.pop();
             assert_eq!(fifty_cntr, i as u8);
         }
     }
@@ -202,13 +260,14 @@ mod tests {
 
         // push multiple positions
         for i in 0..num_to_test {
+            let board = Board::new();
             let pk = 1234;
             let mv = Mov::encode_move_castle_queenside_white();
             let enp = None;
             let fifty_move_cntr = i as u8;
             let castperm = castle_permissions::NO_CASTLE_PERMS;
 
-            pos_hist.push(pk, mv, fifty_move_cntr, enp, castperm, None);
+            pos_hist.push(board, pk, mv, fifty_move_cntr, enp, castperm, None);
 
             assert_eq!(pos_hist.len(), (i + 1) as usize);
         }

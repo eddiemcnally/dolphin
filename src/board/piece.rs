@@ -14,8 +14,24 @@ pub enum PieceRole {
 #[derive(Eq, PartialEq, Clone, Copy, Hash)]
 #[repr(u8)]
 pub enum Colour {
-    White = 0,
+    White,
     Black,
+}
+
+impl Colour {
+    pub fn flip_side(&self) -> Colour {
+        match *self {
+            Colour::White => return Colour::Black,
+            Colour::Black => return Colour::White,
+        };
+    }
+
+    pub fn offset(&self) -> usize {
+        match self {
+            Colour::White => 0,
+            Colour::Black => 1,
+        }
+    }
 }
 
 impl Default for Colour {
@@ -169,22 +185,6 @@ fn pce_value(role: PieceRole) -> u32 {
         PieceRole::Rook => 800,
         PieceRole::Queen => 1000,
         PieceRole::King => 50000,
-    }
-}
-
-impl Colour {
-    pub fn flip_side(&self) -> Colour {
-        if *self == Colour::White {
-            return Colour::Black;
-        } else {
-            return Colour::White;
-        }
-    }
-    pub fn offset(&self) -> usize {
-        match self {
-            Colour::White => 0,
-            Colour::Black => 1,
-        }
     }
 }
 

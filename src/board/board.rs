@@ -5,6 +5,8 @@ use board::piece::PieceRole;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
 use board::square;
+use board::square::file::File;
+use board::square::rank::Rank;
 use board::square::Square;
 use input::fen::ParsedFen;
 use std::fmt;
@@ -81,18 +83,28 @@ impl PartialEq for Board {
 impl fmt::Debug for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
+        debug_str.push_str("\n");
 
-        for sq in square::get_square_array().iter() {
-            let pce = self.pieces[sq.to_offset()];
+        for r in Rank::reverse_iterator() {
+            debug_str.push(square::rank::Rank::to_char(*r));
+            debug_str.push(' ');
 
-            if pce.is_some() {
-                let piece = pce.unwrap();
-                debug_str.push_str(&piece.to_label());
-                debug_str.push_str(" on ");
-                debug_str.push_str(&format!("{}", sq));
-                debug_str.push_str("\n");
+            for f in File::iterator() {
+                let sq = square::Square::get_square(*r, *f);
+
+                let pce = self.get_piece_on_square(sq);
+                match pce {
+                    Some(pce) => {
+                        debug_str.push_str(&pce.to_label());
+                        debug_str.push_str(" ");
+                    }
+                    _ => debug_str.push_str(" . "),
+                }
             }
+
+            debug_str.push_str("\n");
         }
+        debug_str.push_str("   A  B  C  D  E  F  G  H");
         write!(f, "{}", debug_str)
     }
 }

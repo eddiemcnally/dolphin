@@ -134,14 +134,11 @@ pub fn gen_king_masks() -> Vec<u64> {
 pub fn gen_rank_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let ranks = board::square::rank::RANKS;
-    let files = board::square::file::FILES;
-
-    for r in ranks {
+    for r in Rank::iterator() {
         let rank = *r as i8;
         let mut bb: u64 = 0;
 
-        for f in files {
+        for f in File::iterator() {
             let file = *f as i8;
             set_dest_sq_if_valid(&mut bb, rank, file);
         }
@@ -153,14 +150,11 @@ pub fn gen_rank_masks() -> Vec<u64> {
 pub fn gen_file_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let ranks = board::square::rank::RANKS;
-    let files = board::square::file::FILES;
-
-    for f in files {
+    for f in File::iterator() {
         let file = *f as i8;
         let mut bb: u64 = 0;
 
-        for r in ranks {
+        for r in Rank::iterator() {
             let rank = *r as i8;
             set_dest_sq_if_valid(&mut bb, rank, file);
         }
@@ -290,20 +284,17 @@ pub fn gen_rook_masks() -> Vec<u64> {
 
     let squares = board::square::SQUARES;
 
-    let ranks = board::square::rank::RANKS;
-    let files = board::square::file::FILES;
-
     for sq in squares {
         let mut bb: u64 = 0;
         let dest_rank = sq.rank() as i8;
         let dest_file = sq.file() as i8;
 
         // move up the ranks of this file
-        for r in ranks {
+        for r in Rank::iterator() {
             set_dest_sq_if_valid(&mut bb, *r as i8, dest_file);
         }
 
-        for f in files {
+        for f in File::iterator() {
             set_dest_sq_if_valid(&mut bb, dest_rank, *f as i8);
         }
 
