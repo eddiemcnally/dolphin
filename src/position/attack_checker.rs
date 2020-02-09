@@ -133,10 +133,7 @@ fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colou
         Colour::White => *piece::KING_BLACK,
     };
     let mut pce_bb = board.get_piece_bitboard(attacking_king);
-    println!("ATTACKING: pce_bb={}", pce_bb);
-
     let attacking_king_sq = bitboard::pop_1st_bit(&mut pce_bb);
-
     let king_occ_mask = occupancy_masks::get_occupancy_mask_king(attacking_king_sq);
 
     return bitboard::is_set(king_occ_mask, attacked_sq);

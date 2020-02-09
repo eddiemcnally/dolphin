@@ -3,7 +3,7 @@ use position::position::MoveLegality;
 use position::position::Position;
 
 pub fn perft(depth: u8, position: &mut Position) -> u64 {
-    let mut move_cntr = 0;
+    let mut nodes = 0;
     if depth == 0 {
         return 1;
     }
@@ -15,12 +15,12 @@ pub fn perft(depth: u8, position: &mut Position) -> u64 {
     for mv in &move_list {
         let move_legality = position.make_move(*mv);
         if move_legality == MoveLegality::Legal {
-            move_cntr = move_cntr + perft(depth - 1, position);
+            nodes += perft(depth - 1, position);
         }
         position.take_move();
     }
 
-    return move_cntr;
+    return nodes;
 }
 
 #[cfg(test)]
@@ -31,12 +31,12 @@ pub mod tests {
 
     #[test]
     pub fn sample_perft() {
-        let depth = 2;
-        let expected_move_count = 36;
+        let depth = 4;
+        let expected_move_count = 197281;
 
-        // 6kq/8/8/8/8/8/8/7K w - - 0 1 ;D1 2 ;D2 36 ;D3 143 ;D4 3637 ;D5 14893 ;D6 391507
+        // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ;D1 20 ;D2 400 ;D3 8902 ;D4 197281 ;D5 4865609 ;D6 119060324
 
-        let fen = "6kq/8/8/8/8/8/8/7K w - - 0 1 ";
+        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         let parsed_fen = fen::get_position(&fen);
         let mut position = Position::new(parsed_fen);
 

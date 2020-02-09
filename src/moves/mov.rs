@@ -35,10 +35,22 @@ impl Mov {
     /// * `to_sq`   - the to square
     ///
     pub fn encode_move_quiet(from_sq: Square, to_sq: Square) -> Mov {
+        debug_assert!(
+            from_sq != to_sq,
+            "from and to square are same : {}",
+            from_sq
+        );
+
         Mov::new(from_sq, to_sq)
     }
 
     fn new(from_sq: Square, to_sq: Square) -> Mov {
+        debug_assert!(
+            from_sq != to_sq,
+            "from and to square are same : {}",
+            from_sq
+        );
+
         Mov {
             from_sq: from_sq,
             to_sq: to_sq,
@@ -47,6 +59,12 @@ impl Mov {
     }
 
     pub fn encode_move_capture(from_sq: Square, to_sq: Square) -> Mov {
+        debug_assert!(
+            from_sq != to_sq,
+            "from and to square are same : {}",
+            from_sq
+        );
+
         let mut mov = Mov::encode_move_quiet(from_sq, to_sq);
 
         mov.flags = mov.flags | MV_FLG_CAPTURE;
@@ -66,6 +84,12 @@ impl Mov {
         to_sq: Square,
         promotion_piece_role: PieceRole,
     ) -> Mov {
+        debug_assert!(
+            from_sq != to_sq,
+            "from and to square are same : {}",
+            from_sq
+        );
+
         let mut mov = Mov::encode_move_quiet(from_sq, to_sq);
 
         let mask: u8;
@@ -93,6 +117,12 @@ impl Mov {
         to_sq: Square,
         promotion_piece_role: PieceRole,
     ) -> Mov {
+        debug_assert!(
+            from_sq != to_sq,
+            "from and to square are same : {}",
+            from_sq
+        );
+
         let mut mov = Mov::encode_move_with_promotion(from_sq, to_sq, promotion_piece_role);
         mov.flags = mov.flags | MV_FLG_CAPTURE;
         mov
@@ -106,6 +136,12 @@ impl Mov {
     /// * `to_sq`           - the to square
     ///
     pub fn encode_move_en_passant(from_sq: Square, to_sq: Square) -> Mov {
+        debug_assert!(
+            from_sq != to_sq,
+            "from and to square are same : {}",
+            from_sq
+        );
+
         let mut mov = Mov::encode_move_quiet(from_sq, to_sq);
         mov.flags = mov.flags | MV_FLG_EN_PASS;
         mov
@@ -119,6 +155,12 @@ impl Mov {
     /// * `to_sq`           - the to square
     ///
     pub fn encode_move_double_pawn_first(from_sq: Square, to_sq: Square) -> Mov {
+        debug_assert!(
+            from_sq != to_sq,
+            "from and to square are same : {}",
+            from_sq
+        );
+
         let mut mov = Mov::encode_move_quiet(from_sq, to_sq);
         mov.flags = mov.flags | MV_FLG_DOUBLE_PAWN;
         mov
@@ -414,6 +456,10 @@ pub mod tests {
     pub fn encode_decode_quiet_move() {
         for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
             for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
+                if from_sq == to_sq {
+                    continue;
+                }
+
                 // encode
                 let mv = Mov::encode_move_quiet(from_sq, to_sq);
 
@@ -436,6 +482,10 @@ pub mod tests {
     pub fn encode_decode_double_pawn_first_ove() {
         for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
             for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
+                if from_sq == to_sq {
+                    continue;
+                }
+
                 // encode
                 let mv = Mov::encode_move_double_pawn_first(from_sq, to_sq);
                 assert_eq!(mv.is_double_pawn(), true);
@@ -458,6 +508,10 @@ pub mod tests {
     pub fn encode_decode_en_passant() {
         for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
             for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
+                if from_sq == to_sq {
+                    continue;
+                }
+
                 let mv = Mov::encode_move_en_passant(from_sq, to_sq);
 
                 assert_eq!(mv.is_en_passant(), true);
@@ -487,6 +541,10 @@ pub mod tests {
         for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
             for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
                 for role in &target_roles {
+                    if from_sq == to_sq {
+                        continue;
+                    }
+
                     let mv = Mov::encode_move_with_promotion(from_sq, to_sq, *role);
 
                     assert_eq!(mv.is_promote(), true);
@@ -516,6 +574,10 @@ pub mod tests {
 
         for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
             for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
+                if from_sq == to_sq {
+                    continue;
+                }
+
                 for role in &target_roles {
                     let mv = Mov::encode_move_with_promotion(from_sq, to_sq, *role);
 
@@ -546,6 +608,10 @@ pub mod tests {
 
         for (from_sq, (_, _)) in utils::get_square_rank_file_map() {
             for (to_sq, (_, _)) in utils::get_square_rank_file_map() {
+                if from_sq == to_sq {
+                    continue;
+                }
+
                 for role in &target_roles {
                     let mv = Mov::encode_move_with_promotion_capture(from_sq, to_sq, *role);
 

@@ -22,11 +22,9 @@ pub fn count_set_bits(bb: u64) -> u8 {
 }
 
 pub fn pop_1st_bit(bb: &mut u64) -> Square {
-    //println!("bb : {:#066b}", bb);
+    debug_assert!(*bb != 0, "bitboard is already zero");
+
     let bit_being_cleared = bb.trailing_zeros();
-
-    //println!("bit to clear {}", bit_being_cleared);
-
     let sq_clear = Square::from_u8(bit_being_cleared as u8);
 
     clear_bit(bb, sq_clear);
@@ -85,6 +83,7 @@ pub mod tests {
         let map = utils::get_square_rank_file_map();
         let mut i: u8 = 0;
         let mut bb: u64 = 0;
+
         for (square, (_, _)) in map {
             bitboard::set_bit(&mut bb, square);
             i = i + 1;

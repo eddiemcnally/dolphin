@@ -179,6 +179,18 @@ impl Board {
     }
 
     pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece) {
+        debug_assert!(
+            self.is_sq_empty(from_sq) == false,
+            "move piece, from square is empty. {:?}",
+            from_sq
+        );
+
+        debug_assert!(
+            self.is_sq_empty(to_sq) == true,
+            "move piece, to square not empty. {:?}",
+            from_sq
+        );
+
         self.clear_bitboards(piece, from_sq);
         self.set_bitboards(piece, to_sq);
     }
@@ -242,11 +254,12 @@ pub mod tests {
             let mut board = Board::new();
             let king = Piece::new(PieceRole::King, col);
             for sq in utils::get_ordered_square_list_by_file() {
-                println!("Adding king to board");
-
                 board.add_piece(king, sq);
 
                 assert_eq!(board.get_king_sq(col), sq);
+
+                // remove so state is restored.
+                board.remove_piece(king, sq);
             }
         }
     }

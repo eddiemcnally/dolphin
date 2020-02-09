@@ -156,21 +156,41 @@ pub static SQUARES: &'static [Square] = &[
 
 impl Square {
     pub fn square_plus_1_rank(&self) -> Square {
+        debug_assert!(
+            self.rank() != Rank::Rank8,
+            "rank is Rank8, can't add 1 rank"
+        );
+
         let s = *self as u8 + 8;
         return Square::from_u8(s);
     }
 
     pub fn square_minus_1_rank(&self) -> Square {
+        debug_assert!(
+            self.rank() != Rank::Rank1,
+            "rank is Rank1, can't subtract 1 rank"
+        );
+
         let s = *self as u8 - 8;
         return Square::from_u8(s);
     }
 
     pub fn square_plus_2_ranks(&self) -> Square {
+        debug_assert!(
+            self.rank() != Rank::Rank7 || self.rank() != Rank::Rank8,
+            "rank is Rank7 or 8, can't add 2 ranks"
+        );
+
         let s = *self as u8 + 16;
         return Square::from_u8(s);
     }
 
     pub fn square_minus_2_ranks(&self) -> Square {
+        debug_assert!(
+            self.rank() != Rank::Rank2 || self.rank() != Rank::Rank1,
+            "rank is Rank1 or 2, can't subtract 2 ranks"
+        );
+
         let s = *self as u8 - 16;
         return Square::from_u8(s);
     }

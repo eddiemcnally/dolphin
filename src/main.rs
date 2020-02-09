@@ -9,22 +9,24 @@ mod moves;
 mod perft;
 mod position;
 mod utils;
-use board::piece::Colour;
-use board::piece::Piece;
-use board::piece::PieceRole;
 use input::fen;
+use perft::perft_runner;
+use position::position::Position;
 
 fn main() {
-    let pce = Piece::new(PieceRole::Queen, Colour::White);
-    println!("pawn piece value {}", pce.value());
+    let depth = 1;
+    let expected_move_count = 2;
 
-    let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+    // 6kq/8/8/8/8/8/8/7K w - - 0 1 ;D1 2 ;D2 36 ;D3 143 ;D4 3637 ;D5 14893 ;D6 391507
 
-    let piece_pos: Vec<&str> = fen.split(' ').collect();
+    let fen = "6kq/8/8/8/8/8/8/7K w - - 0 1 ";
+    let parsed_fen = fen::get_position(&fen);
+    let mut position = Position::new(parsed_fen);
 
-    let sq_pce = fen::extract_piece_locations(piece_pos[0]);
+    let num_moves = perft_runner::perft(depth, &mut position);
 
-    for (square, pce) in sq_pce {
-        println!("{:?}, {:?}", square, pce);
-    }
+    println!(
+        "#ExpectedMoves={}, #ActualMoves={}",
+        expected_move_count, num_moves
+    );
 }

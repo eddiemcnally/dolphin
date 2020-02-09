@@ -214,12 +214,6 @@ impl Position {
         let from_sq = mv.decode_from_square();
         let to_sq = mv.decode_to_square();
 
-        println!("{{ VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV ");
-        println!("{{ BEFORE MAKEMOVE ");
-        println!("MakeMove: BOARD : {}", self.board());
-        println!("MakeMove: MOVE : {}", mv);
-        println!("}}");
-
         assert!(self.board().get_piece_on_square(from_sq).is_some());
         let piece = self.board().get_piece_on_square(from_sq).unwrap();
 
@@ -268,17 +262,17 @@ impl Position {
         // flip side
         self.update_side_to_move();
 
-        println!("{{ AFTER MAKEMOVE ");
-        println!("MakeMove: BOARD : {}", self.board());
-        println!("MakeMove: MOVE : {}", mv);
-        println!("MakeMove: castle_move_legality : {}", castle_move_legality);
-        println!("MakeMove: move_legality : {}", move_legality);
-        println!("}}");
-
-        if castle_move_legality == MoveLegality::Illegal || move_legality == MoveLegality::Illegal {
-            return MoveLegality::Illegal;
+        // test move legality
+        if mv.is_castle() {
+            if castle_move_legality == MoveLegality::Illegal
+                || move_legality == MoveLegality::Illegal
+            {
+                return MoveLegality::Illegal;
+            }
+            return MoveLegality::Legal;
         }
-        return MoveLegality::Legal;
+
+        return move_legality;
     }
 
     pub fn take_move(&mut self) {
@@ -295,10 +289,6 @@ impl Position {
         self.fifty_move_cntr = fifty_move_cntr;
         self.en_pass_sq = en_pass_sq;
         self.castle_perm = cast_perms;
-
-        println!("{{ AFTER TAKE MOVE ");
-        println!("MakeMove: BOARD : {}", self.board());
-        println!("}}");
     }
 
     fn get_move_legality(&self, mv: Mov) -> MoveLegality {
@@ -423,11 +413,8 @@ fn do_castle_move(position: &mut Position, mv: Mov) -> MoveLegality {
     };
 
     // can't castle if already in check
-    let is_king_in_check =
-        attack_checker::is_sq_attacked(&position.board, king_sq, position.side_to_move.flip_side());
-    println!("King Sq = {}", king_sq);
-    println!("Side-to-move: {}", position.side_to_move);
-    println!("Castle move - king-in-check = {}", is_king_in_check);
+    let attacking_side = position.side_to_move.flip_side();
+    let is_king_in_check = attack_checker::is_sq_attacked(&position.board, king_sq, attacking_side);
 
     if mv.is_king_castle() {
         do_castle_move_king(position, position.side_to_move, king_sq);
@@ -1218,7 +1205,7 @@ mod tests {
 
     #[test]
     pub fn make_move_take_move_position_and_board_restored_white_to_move() {
-        let fen = "1b1kN3/Qp1P2p1/q2P1Nn1/PP3r2/3rPnb1/1p1pp3/B1P1P2B/R3K2R b KQ - 5 8";
+        let fen = "1b1kN3/Qp1P2p1/q2P1Nn1/PP3r2/3rPnb1/1p1pp3/B1P1P2B/R3K2R w KQ - 5 8";
 
         let mut ml = vec![];
         ml.push(Mov::encode_move_castle_kingside_white());
@@ -1234,6 +1221,7 @@ mod tests {
         let pos_orig = Position::new(parsed_fen_orig);
 
         for mv in ml {
+            println!("move: {}", mv);
             pos.make_move(mv);
             assert_ne!(pos_orig, pos);
 
