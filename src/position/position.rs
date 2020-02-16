@@ -154,7 +154,7 @@ impl Position {
             full_move: parsed_fen.full_move_cnt,
         };
 
-        Position {
+        let pos = Position {
             board: Board::from_fen(&parsed_fen),
             side_to_move: parsed_fen.side_to_move,
             en_pass_sq: parsed_fen.en_pass_sq,
@@ -163,7 +163,15 @@ impl Position {
             fifty_move_cntr: 0,
             position_history: PositionHistory::new(MAX_MOVE_HISTORY),
             position_key: hash::generate_from_fen(&parsed_fen),
-        }
+        };
+
+        // validate position
+        let bk_bb = pos.board().get_piece_bitboard(*piece::KING_BLACK);
+        assert_ne!(bk_bb, 0);
+        let wk_bb = pos.board().get_piece_bitboard(*piece::KING_WHITE);
+        assert_ne!(wk_bb, 0);
+
+        return pos;
     }
 
     pub fn side_to_move(&self) -> Colour {
@@ -260,12 +268,11 @@ impl Position {
         // flip side
         self.update_side_to_move();
 
-
-        if move_legality == MoveLegality::Illegal{
-            println!("*****Illegal");
-            println!("Board:: {}",self.board());
-            println!("move: {}", mv);
-        }
+        // if move_legality == MoveLegality::Illegal{
+        //     println!("*****Illegal");
+        //     println!("Board:: {}",self.board());
+        //     println!("move: {}", mv);
+        // }
 
         return move_legality;
     }
@@ -1057,25 +1064,15 @@ mod tests {
     #[test]
     pub fn make_move_king_castle_white_through_attacked_squares_is_illegal() {
         let fens = vec![
-            //"8/8/8/8/3b4/8/8/4K2R w K - 0 1",
-            //"8/8/8/8/8/2b5/8/4K2R w K - 0 1",
-            //"8/8/8/8/8/4b3/8/4K2R w K - 0 1",
-            //"8/8/8/8/8/3n4/8/4K2R w K - 0 1",
-            //"8/8/8/8/8/4n3/8/4K2R w K - 0 1",
-            //"8/8/8/8/8/5n2/8/4K2R w K - 0 1",
-            //"8/8/8/8/8/5n2/8/4K2R w K - 0 1",
-            //"8/8/8/8/8/7n/8/4K2R w K - 0 1",
-            //"4r3/8/8/8/8/8/8/4K2R w K - 0 1",
-            //"5r2/8/8/8/8/8/8/4K2R w K - 0 1",
-            //"6r1/8/8/8/8/8/8/4K2R w K - 0 1",
-            //"8/8/8/8/8/8/3p4/4K2R w K - 0 1",
-            //"8/8/8/8/8/8/4p3/4K2R w K - 0 1",
-            //"8/8/8/8/8/8/5p2/4K2R w K - 0 1",
-            //"8/8/8/8/8/8/6p1/4K2R w K - 0 1",
-            //"8/8/8/8/8/8/7p/4K2R w K - 0 1",
-            //"8/8/8/8/1q6/8/8/4K2R w K - 0 1",
-            //"8/8/8/8/2q5/8/8/4K2R w K - 0 1",
-            "8/8/8/8/3q4/8/8/4K2R w K - 0 1",
+            "1k6/8/8/8/3q4/8/8/4K2R w K - 0 1",
+            "1k6/8/8/8/8/3q4/8/4K2R w K - 0 1",
+            "1k6/8/8/8/8/8/8/q3K2R w K - 0 1",
+            "1k6/8/8/8/8/8/7q/4K2R w K - 0 1",
+            "1k6/8/8/8/8/7q/8/4K2R w K - 0 1",
+            "1k4q1/8/8/8/8/8/8/4K2R w K - 0 1",
+            "1k3q2/8/8/8/8/8/8/4K2R w K - 0 1",
+            "1k2q3/8/8/8/8/8/8/4K2R w K - 0 1",
+            "1k6/8/8/1q6/8/8/8/4K2R w K - 0 1",
         ];
 
         for fen in fens {
@@ -1092,19 +1089,16 @@ mod tests {
     #[test]
     pub fn make_move_queen_castle_white_through_attacked_squares_is_illegal() {
         let fens = vec![
-            "8/8/8/8/5q2/8/8/R3K3 w Q - 0 1",
+            "6k1/8/8/8/5q2/8/8/R3K3 w Q - 0 1",
             "2k5/8/8/8/6q1/8/8/R3K3 w Q - 0 1",
             "2k5/8/8/8/8/6q1/8/R3K3 w Q - 0 1",
             "2k5/8/8/8/8/8/8/R3K2q w Q - 0 1",
             "2k5/8/8/8/8/4q3/8/R3K3 w Q - 0 1",
             "2k5/8/8/8/8/3q4/8/R3K3 w Q - 0 1",
             "2k5/8/8/8/8/q7/8/R3K3 w Q - 0 1",
-            "1qk5/8/8/8/8/8/8/R3K3 w Q - 0 1",
             "2k5/2q5/8/8/8/8/8/R3K3 w Q - 0 1",
             "2k5/8/8/8/q7/8/8/R3K3 w Q - 0 1",
             "2k5/8/8/8/8/q7/8/R3K3 w Q - 0 1",
-            "2k5/8/8/8/8/8/q7/R3K3 w Q - 0 1",
-            "2k5/6q1/8/8/8/8/8/R3K3 w Q - 0 1",
         ];
 
         for fen in fens {
@@ -1122,25 +1116,14 @@ mod tests {
     #[test]
     pub fn make_move_king_castle_black_through_attacked_squares_is_illegal() {
         let fens = vec![
-            "4k2r/8/8/8/8/Q7/8/8 b k - 0 1",
-            "4k2r/8/8/8/Q7/8/8/8 b k - 0 1",
-            "4k2r/8/8/8/8/8/Q7/8 b k - 0 1",
-            "4k2r/8/8/8/8/8/8/4R3 b k - 0 1",
-            "4k2r/8/8/8/8/8/8/5R2 b k - 0 1",
-            "4k2r/8/8/8/8/8/8/6R1 b k - 0 1",
-            "4k2r/8/8/7B/8/8/8/8 b k - 0 1",
-            "4k2r/8/7B/8/8/8/8/8 b k - 0 1",
-            "4k2r/7B/8/8/8/8/8/8 b k - 0 1",
-            "4k2r/8/3N4/8/8/8/8/8 b k - 0 1",
-            "4k2r/8/4N3/8/8/8/8/8 b k - 0 1",
-            "4k2r/8/5N2/8/8/8/8/8 b k - 0 1",
-            "4k2r/8/6N1/8/8/8/8/8 b k - 0 1",
-            "4k2r/8/7N/8/8/8/8/8 b k - 0 1",
-            "4k2r/3P4/8/8/8/8/8/8 b k - 0 1",
-            "4k2r/4P3/8/8/8/8/8/8 b k - 0 1",
-            "4k2r/5P2/8/8/8/8/8/8 b k - 0 1",
-            "4k2r/6P1/8/8/8/8/8/8 b k - 0 1",
-            "4k2r/6P1/8/8/8/8/8/8 b k - 0 1",
+            "4k2r/8/8/8/Q7/8/8/7K b k - 0 1",
+            "4k2r/8/8/8/8/Q7/8/7K b k - 0 1",
+            "4k2r/8/8/8/8/1Q6/8/7K b k - 0 1",
+            "4k2r/8/8/8/8/5Q2/8/7K b k - 0 1",
+            "4k2r/8/8/8/8/6Q1/8/7K b k - 0 1",
+            "4k2r/8/7Q/8/8/8/8/7K b k - 0 1",
+            "4k2r/7Q/8/8/8/8/8/7K b k - 0 1",
+            "4k2r/4Q3/8/8/8/8/8/7K b k - 0 1",
         ];
 
         for fen in fens {
@@ -1157,7 +1140,6 @@ mod tests {
     #[test]
     pub fn make_move_queen_castle_black_through_attacked_squares_is_illegal() {
         let fens = vec![
-            "r3k3/8/8/8/8/8/7Q/1K6 b q - 0 1",
             "r3k3/8/8/7Q/8/8/8/1K6 b q - 0 1",
             "r3k3/8/8/3Q4/8/8/8/1K6 b q - 0 1",
             "r3k3/8/2Q5/8/8/8/8/1K6 b q - 0 1",

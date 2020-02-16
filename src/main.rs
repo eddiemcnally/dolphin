@@ -22,9 +22,9 @@ fn main() {
     //     }
     // }
 
-        let epd = "r3k3/1K6/8/8/8/8/8/8 w q - 0 1 ;D1 4 ;D2 49 ;D3 243 ;D4 3991 ;D5 20780 ;D6 367724";
-        let row = perft::epd_parser::extract_row(epd.to_string());
-        process_row(&row, 2);
+    let epd = "r3k3/1K6/8/8/8/8/8/8 w q - 0 1 ;D1 4 ;D2 49 ;D3 243 ;D4 3991 ;D5 20780 ;D6 367724";
+    let row = perft::epd_parser::extract_row(epd.to_string());
+    process_row(&row, 2);
 }
 
 fn process_row(row: &perft::epd_parser::EpdRow, depth: u8) {
