@@ -14,19 +14,34 @@ use perft::perft_runner;
 use position::position::Position;
 
 fn main() {
-    let depth = 1;
-    let expected_move_count = 2;
+    // let epd_rows = perft::epd_parser::extract_epd("../../src/resources/perftsuite.epd".to_string());
 
-    // 6kq/8/8/8/8/8/8/7K w - - 0 1 ;D1 2 ;D2 36 ;D3 143 ;D4 3637 ;D5 14893 ;D6 391507
+    // for depth in 1..6 {
+    //     for epd in &epd_rows {
+    //         process_row(epd, depth);
+    //     }
+    // }
 
-    let fen = "6kq/8/8/8/8/8/8/7K w - - 0 1 ";
+        let epd = "r3k3/1K6/8/8/8/8/8/8 w q - 0 1 ;D1 4 ;D2 49 ;D3 243 ;D4 3991 ;D5 20780 ;D6 367724";
+        let row = perft::epd_parser::extract_row(epd.to_string());
+        process_row(&row, 2);
+}
+
+fn process_row(row: &perft::epd_parser::EpdRow, depth: u8) {
+    let fen = &row.fen;
+
+    println!("Depth: {}, Testing FEN '{}'", depth, fen);
+
+    let expected_moves = &row.depth_map[&depth];
     let parsed_fen = fen::get_position(&fen);
     let mut position = Position::new(parsed_fen);
 
+    //println!("{}", position.board());
+
     let num_moves = perft_runner::perft(depth, &mut position);
 
-    println!(
-        "#ExpectedMoves={}, #ActualMoves={}",
-        expected_move_count, num_moves
-    );
+    if *expected_moves != num_moves {
+        println!("**************** problem ***************************")
+    }
+    println!("Expected: {}, found: {}", expected_moves, num_moves);
 }

@@ -16,10 +16,13 @@ pub fn perft(depth: u8, position: &mut Position) -> u64 {
         let move_legality = position.make_move(*mv);
         if move_legality == MoveLegality::Legal {
             nodes += perft(depth - 1, position);
+        } else {
+            //println!("Move Illegal: {}", *mv);
         }
         position.take_move();
     }
 
+    //println!("#Nodes: {}, Move List: {:?}", nodes, move_list);
     return nodes;
 }
 

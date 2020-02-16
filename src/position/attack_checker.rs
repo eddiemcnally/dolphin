@@ -44,7 +44,6 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
     if is_attacked_by_king(board, sq, attacking_side) {
         return true;
     }
-
     return false;
 }
 
@@ -129,8 +128,8 @@ fn is_diagonally_attacked(board: &Board, attack_sq: Square, attacking_side: Colo
 
 fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colour) -> bool {
     let attacking_king = match attacking_side {
-        Colour::Black => *piece::KING_WHITE,
-        Colour::White => *piece::KING_BLACK,
+        Colour::Black => *piece::KING_BLACK,
+        Colour::White => *piece::KING_WHITE,
     };
     let mut pce_bb = board.get_piece_bitboard(attacking_king);
     let attacking_king_sq = bitboard::pop_1st_bit(&mut pce_bb);

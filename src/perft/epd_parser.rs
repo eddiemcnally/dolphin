@@ -6,8 +6,8 @@ use std::{
 };
 
 pub struct EpdRow {
-    fen: String,
-    depth_map: HashMap<u8, u64>,
+    pub fen: String,
+    pub depth_map: HashMap<u8, u64>,
 }
 
 // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ;D1 20 ;D2 400 ;D3 8902 ;D4 197281 ;D5 4865609 ;D6 119060324
@@ -23,8 +23,10 @@ pub fn extract_epd(file_name: String) -> Vec<EpdRow> {
     return retval;
 }
 
-fn extract_row(row: String) -> EpdRow {
+pub fn extract_row(row: String) -> EpdRow {
     let v: Vec<&str> = row.split(";").collect();
+
+    //println!("EPD Row : {}", row);
 
     assert_eq!(v.len(), 7); // FEN + 6-ply move counts
 

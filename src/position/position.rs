@@ -64,11 +64,11 @@ impl fmt::Debug for MoveLegality {
 
 static CASTLE_SQUARES_KING_WHITE: [Square; 3] = [Square::e1, Square::f1, Square::g1];
 
-static CASTLE_SQUARES_QUEEN_WHITE: [Square; 4] = [Square::b1, Square::c1, Square::d1, Square::e1];
+static CASTLE_SQUARES_QUEEN_WHITE: [Square; 3] = [Square::c1, Square::d1, Square::e1];
 
 static CASTLE_SQUARES_KING_BLACK: [Square; 3] = [Square::e8, Square::f8, Square::g8];
 
-static CASTLE_SQUARES_QUEEN_BLACK: [Square; 4] = [Square::b8, Square::c8, Square::d8, Square::e8];
+static CASTLE_SQUARES_QUEEN_BLACK: [Square; 3] = [Square::c8, Square::d8, Square::e8];
 
 const MAX_MOVE_HISTORY: u16 = 2048;
 
@@ -237,8 +237,6 @@ impl Position {
 
         handle_50_move_rule(self, mv, piece);
 
-        let mut castle_move_legality = MoveLegality::Illegal;
-
         // make the move
         if mv.is_quiet() {
             update_hash_on_piece_move(self, piece, from_sq, to_sq);
@@ -246,7 +244,7 @@ impl Position {
         } else if mv.is_double_pawn() {
             do_double_pawn_move(self, self.side_to_move, piece, from_sq, to_sq);
         } else if mv.is_castle() {
-            castle_move_legality = do_castle_move(self, mv);
+            do_castle_move(self, mv);
         } else if mv.is_en_passant() {
             do_en_passant(self, from_sq, to_sq);
         } else if mv.is_promote() {
@@ -262,14 +260,11 @@ impl Position {
         // flip side
         self.update_side_to_move();
 
-        // test move legality
-        if mv.is_castle() {
-            if castle_move_legality == MoveLegality::Illegal
-                || move_legality == MoveLegality::Illegal
-            {
-                return MoveLegality::Illegal;
-            }
-            return MoveLegality::Legal;
+
+        if move_legality == MoveLegality::Illegal{
+            println!("*****Illegal");
+            println!("Board:: {}",self.board());
+            println!("move: {}", mv);
         }
 
         return move_legality;
@@ -294,22 +289,21 @@ impl Position {
     fn get_move_legality(&self, mv: Mov) -> MoveLegality {
         // check if move results in king being in check
         let king_sq = self.board().get_king_sq(self.side_to_move);
-        if self.board.get_piece_on_square(king_sq).is_none() {
-            // this move captured the king
-            return MoveLegality::Illegal;
-        }
-
         let attacking_side = self.side_to_move.flip_side();
-
         if attack_checker::is_sq_attacked(self.board(), king_sq, attacking_side) {
             return MoveLegality::Illegal;
         }
 
         // check castle through attacked squares (or king was in check before the castle move)
         if mv.is_castle() {
-            let legality = self.get_castle_legality(mv, self.side_to_move);
-            if legality == MoveLegality::Illegal {
+            let squares_to_check = self.get_castle_squares_to_check(mv, self.side_to_move);
+            let is_invalid_castle =
+                self.is_castle_through_attacked_squares(attacking_side, squares_to_check);
+
+            if is_invalid_castle == true {
                 return MoveLegality::Illegal;
+            } else {
+                return MoveLegality::Legal;
             }
         }
         return MoveLegality::Legal;
@@ -318,18 +312,6 @@ impl Position {
     fn update_side_to_move(&mut self) {
         self.flip_side_to_move();
         hash::update_side(&mut self.position_key);
-    }
-
-    fn get_castle_legality(&self, mv: Mov, side_to_move: Colour) -> MoveLegality {
-        let squares_to_check = self.get_castle_squares_to_check(mv, side_to_move);
-        let is_invalid_castle =
-            self.is_castle_through_attacked_squares(side_to_move, squares_to_check);
-
-        if is_invalid_castle == true {
-            return MoveLegality::Illegal;
-        } else {
-            return MoveLegality::Legal;
-        }
     }
 
     fn get_castle_squares_to_check(&self, mv: Mov, side_to_move: Colour) -> &[Square] {
@@ -356,9 +338,13 @@ impl Position {
         }
     }
 
-    fn is_castle_through_attacked_squares(&self, side_to_move: Colour, sq_list: &[Square]) -> bool {
+    fn is_castle_through_attacked_squares(
+        &self,
+        attacking_side: Colour,
+        sq_list: &[Square],
+    ) -> bool {
         for sq in sq_list {
-            let is_attacked = attack_checker::is_sq_attacked(self.board(), *sq, side_to_move);
+            let is_attacked = attack_checker::is_sq_attacked(self.board(), *sq, attacking_side);
             if is_attacked == true {
                 return true;
             }
@@ -406,26 +392,16 @@ fn update_en_passant_sq(position: &mut Position, mv: Mov) {
     }
 }
 
-fn do_castle_move(position: &mut Position, mv: Mov) -> MoveLegality {
+fn do_castle_move(position: &mut Position, mv: Mov) {
     let king_sq = match position.side_to_move {
         Colour::Black => Square::e8,
         Colour::White => Square::e1,
     };
 
-    // can't castle if already in check
-    let attacking_side = position.side_to_move.flip_side();
-    let is_king_in_check = attack_checker::is_sq_attacked(&position.board, king_sq, attacking_side);
-
     if mv.is_king_castle() {
         do_castle_move_king(position, position.side_to_move, king_sq);
     } else if mv.is_queen_castle() {
         do_castle_move_queen(position, position.side_to_move, king_sq);
-    }
-
-    if is_king_in_check == true {
-        return MoveLegality::Illegal;
-    } else {
-        return MoveLegality::Legal;
     }
 }
 
