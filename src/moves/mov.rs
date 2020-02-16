@@ -13,8 +13,8 @@ impl fmt::Debug for Mov {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
 
-        debug_str.push_str(&format!("FromSq : {}, ", self.from_sq));
-        debug_str.push_str(&format!("ToSq : {}, ", self.to_sq));
+        debug_str.push_str(&format!("{}->", self.from_sq));
+        debug_str.push_str(&format!("{}", self.to_sq));
 
         write!(f, "{}", debug_str)
     }

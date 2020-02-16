@@ -12,12 +12,17 @@ pub fn perft(depth: u8, position: &mut Position) -> u64 {
 
     move_gen::generate_moves(position, &mut move_list);
 
+    println!(">>>>>>>>>>>>>>>>>>> PERFT >>>>>  depth={} >>>>>>>>>", depth);
+    println!("BOARD - {}", position.board());
+    println!("Move List : {:?}", move_list);
+    println!("<<<<<<<<<<<<<<<<");
+
     for mv in &move_list {
         let move_legality = position.make_move(*mv);
         if move_legality == MoveLegality::Legal {
-            nodes += perft(depth - 1, position);
+            nodes = nodes + perft(depth - 1, position);
         } else {
-            //println!("Move Illegal: {}", *mv);
+            println!("Move Illegal: {}", *mv);
         }
         position.take_move();
     }
@@ -34,8 +39,8 @@ pub mod tests {
 
     #[test]
     pub fn sample_perft() {
-        let depth = 4;
-        let expected_move_count = 197281;
+        let depth = 3;
+        let expected_move_count = 8902;
 
         // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ;D1 20 ;D2 400 ;D3 8902 ;D4 197281 ;D5 4865609 ;D6 119060324
 

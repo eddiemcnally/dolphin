@@ -188,28 +188,36 @@ fn generate_castling_moves(pos: &Position, move_list: &mut Vec<Mov>) {
 
     match side {
         Colour::White => {
+            let wr_bb = pos.board().get_piece_bitboard(*piece::ROOK_WHITE);
+
             if castle_permissions::is_king_set(cp, side)
                 && (bb & occupancy_masks::CASTLE_MASK_WK == 0)
+                && bitboard::is_set(wr_bb, Square::h1)
             {
                 let mv = Mov::encode_move_castle_kingside_white();
                 move_list.push(mv);
             }
             if castle_permissions::is_queen_set(cp, side)
                 && (bb & occupancy_masks::CASTLE_MASK_WQ == 0)
+                && bitboard::is_set(wr_bb, Square::a1)
             {
                 let mv = Mov::encode_move_castle_queenside_white();
                 move_list.push(mv);
             }
         }
         Colour::Black => {
+            let br_bb = pos.board().get_piece_bitboard(*piece::ROOK_BLACK);
+
             if castle_permissions::is_king_set(cp, side)
                 && (bb & occupancy_masks::CASTLE_MASK_BK == 0)
+                && bitboard::is_set(br_bb, Square::h8)
             {
                 let mv = Mov::encode_move_castle_kingside_black();
                 move_list.push(mv);
             }
             if castle_permissions::is_queen_set(cp, side)
                 && (bb & occupancy_masks::CASTLE_MASK_BQ == 0)
+                && bitboard::is_set(br_bb, Square::a8)
             {
                 let mv = Mov::encode_move_castle_queenside_black();
                 move_list.push(mv);

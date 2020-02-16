@@ -261,7 +261,8 @@ impl Position {
             do_capture_move(self, piece, from_sq, to_sq);
         }
 
-        update_en_passant_sq(self, mv);
+        self.update_en_passant_sq(mv);
+        self.update_castle_perms(mv, from_sq, piece);
 
         let move_legality = self.get_move_legality(mv);
 
@@ -359,6 +360,51 @@ impl Position {
 
         return false;
     }
+
+    fn update_en_passant_sq(&mut self, mv: Mov) {
+        // clear en passant
+        if mv.is_double_pawn() == false {
+            self.en_pass_sq = None;
+        }
+    }
+
+    // remove castle permissions based on the move
+    fn update_castle_perms(&mut self, mv: Mov, from_sq: Square, pce: Piece) {
+        if castle_permissions::has_castle_permission(self.castle_perm) == false {
+            // nothing to do
+            return;
+        }
+
+        if pce.role() != PieceRole::King && pce.role() != PieceRole::Rook {
+            // noting to do
+            return;
+        }
+
+        if mv.is_castle() {
+            // permissions already adjusted
+            return;
+        }
+
+        if pce == *piece::KING_WHITE {
+            castle_permissions::clear_king(&mut self.castle_perm, Colour::White);
+            castle_permissions::clear_queen(&mut self.castle_perm, Colour::White);
+        } else if pce == *piece::KING_BLACK {
+            castle_permissions::clear_king(&mut self.castle_perm, Colour::Black);
+            castle_permissions::clear_queen(&mut self.castle_perm, Colour::Black);
+        } else if pce == *piece::ROOK_WHITE {
+            match from_sq {
+                Square::a1 => castle_permissions::clear_queen(&mut self.castle_perm, Colour::White),
+                Square::h1 => castle_permissions::clear_king(&mut self.castle_perm, Colour::White),
+                _ => (),
+            };
+        } else if pce == *piece::ROOK_BLACK {
+            match from_sq {
+                Square::a8 => castle_permissions::clear_queen(&mut self.castle_perm, Colour::Black),
+                Square::h8 => castle_permissions::clear_king(&mut self.castle_perm, Colour::Black),
+                _ => (),
+            };
+        }
+    }
 }
 
 fn find_en_passant_sq(from_sq: Square, col: Colour) -> Square {
@@ -389,13 +435,6 @@ fn handle_50_move_rule(position: &mut Position, mv: Mov, pce_to_move: Piece) {
         position.fifty_move_cntr = 0;
     } else {
         position.fifty_move_cntr += 1;
-    }
-}
-
-fn update_en_passant_sq(position: &mut Position, mv: Mov) {
-    // clear en passant
-    if mv.is_double_pawn() == false {
-        position.en_pass_sq = None;
     }
 }
 
@@ -1159,6 +1198,123 @@ mod tests {
             let move_legality = pos.make_move(mv);
             assert_eq!(move_legality, MoveLegality::Illegal);
         }
+    }
+
+    #[test]
+    pub fn make_move_white_king_moved_castle_permissions_cleared() {
+        let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQ - 0 1";
+
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::White) == true);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::White) == true);
+
+        let mv = Mov::encode_move_quiet(Square::e1, Square::e2);
+
+        let move_legality = pos.make_move(mv);
+        assert_eq!(move_legality, MoveLegality::Legal);
+
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::White) == false);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::White) == false);
+    }
+
+    #[test]
+    pub fn make_move_white_kings_rook_moved_castle_permissions_cleared() {
+        let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQ - 0 1";
+
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::White) == true);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::White) == true);
+
+        let mv = Mov::encode_move_quiet(Square::h1, Square::g1);
+
+        let move_legality = pos.make_move(mv);
+        assert_eq!(move_legality, MoveLegality::Legal);
+
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::White) == false);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::White) == true);
+    }
+
+    #[test]
+    pub fn make_move_white_queens_rook_moved_castle_permissions_cleared() {
+        let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQ - 0 1";
+
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::White) == true);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::White) == true);
+
+        let mv = Mov::encode_move_quiet(Square::a1, Square::b1);
+
+        let move_legality = pos.make_move(mv);
+        assert_eq!(move_legality, MoveLegality::Legal);
+
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::White) == true);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::White) == false);
+    }
+
+    /////////////////////////////
+    ///
+
+    #[test]
+    pub fn make_move_black_king_moved_castle_permissions_cleared() {
+        let fen = "r3k2r/8/8/8/8/8/8/R3K2R b kq - 0 1";
+
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::Black) == true);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::Black) == true);
+
+        let mv = Mov::encode_move_quiet(Square::e8, Square::e7);
+
+        let move_legality = pos.make_move(mv);
+        assert_eq!(move_legality, MoveLegality::Legal);
+
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::Black) == false);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::Black) == false);
+    }
+
+    #[test]
+    pub fn make_move_black_kings_rook_moved_castle_permissions_cleared() {
+        let fen = "r3k2r/8/8/8/8/8/8/R3K2R b kq - 0 1";
+
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::Black) == true);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::Black) == true);
+
+        let mv = Mov::encode_move_quiet(Square::h8, Square::g8);
+
+        let move_legality = pos.make_move(mv);
+        assert_eq!(move_legality, MoveLegality::Legal);
+
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::Black) == false);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::Black) == true);
+    }
+
+    #[test]
+    pub fn make_move_black_queens_rook_moved_castle_permissions_cleared() {
+        let fen = "r3k2r/8/8/8/8/8/8/R3K2R b kq - 0 1";
+
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::Black) == true);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::Black) == true);
+
+        let mv = Mov::encode_move_quiet(Square::a8, Square::b8);
+
+        let move_legality = pos.make_move(mv);
+        assert_eq!(move_legality, MoveLegality::Legal);
+
+        assert!(castle_permissions::is_king_set(pos.castle_permissions(), Colour::Black) == true);
+        assert!(castle_permissions::is_queen_set(pos.castle_permissions(), Colour::Black) == false);
     }
 
     #[test]
