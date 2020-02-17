@@ -16,6 +16,6 @@ Main features and current status:
 - perft results to depth=6 has been verified
 
 To Do:
-Implement move evaluation
-UCI
+- Implement move evaluation
+- UCI
 
