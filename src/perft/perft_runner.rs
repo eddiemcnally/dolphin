@@ -12,17 +12,10 @@ pub fn perft(depth: u8, position: &mut Position) -> u64 {
 
     move_gen::generate_moves(position, &mut move_list);
 
-    println!(">>>>>>>>>>>>>>>>>>> PERFT >>>>>  depth={} >>>>>>>>>", depth);
-    println!("BOARD - {}", position.board());
-    println!("Move List : {:?}", move_list);
-    println!("<<<<<<<<<<<<<<<<");
-
     for mv in &move_list {
         let move_legality = position.make_move(*mv);
         if move_legality == MoveLegality::Legal {
             nodes = nodes + perft(depth - 1, position);
-        } else {
-            println!("Move Illegal: {}", *mv);
         }
         position.take_move();
     }

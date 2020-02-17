@@ -269,12 +269,6 @@ impl Position {
         // flip side
         self.update_side_to_move();
 
-        // if move_legality == MoveLegality::Illegal{
-        //     println!("*****Illegal");
-        //     println!("Board:: {}",self.board());
-        //     println!("move: {}", mv);
-        // }
-
         return move_legality;
     }
 
@@ -471,6 +465,7 @@ fn do_castle_move_king(position: &mut Position, col: Colour, king_from_sq: Squar
     position.board.move_piece(rook_from_sq, rook_to_sq, rook);
 
     castle_permissions::clear_king(&mut position.castle_perm, col);
+    castle_permissions::clear_queen(&mut position.castle_perm, col);
 }
 
 fn do_castle_move_queen(position: &mut Position, col: Colour, king_from_sq: Square) {
@@ -492,6 +487,7 @@ fn do_castle_move_queen(position: &mut Position, col: Colour, king_from_sq: Squa
     position.board.move_piece(rook_from_sq, rook_to_sq, rook);
 
     castle_permissions::clear_queen(&mut position.castle_perm, col);
+    castle_permissions::clear_king(&mut position.castle_perm, col);
 }
 
 fn do_double_pawn_move(

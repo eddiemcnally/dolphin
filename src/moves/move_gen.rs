@@ -14,39 +14,26 @@ pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
     let board = position.board();
     let side_to_move = position.side_to_move();
 
-    let knight = match side_to_move {
-        Colour::White => *piece::KNIGHT_WHITE,
-        Colour::Black => *piece::KNIGHT_BLACK,
+    match side_to_move {
+        Colour::White => {
+            generate_non_sliding_piece_moves(&board, *piece::KNIGHT_WHITE, move_list);
+            generate_non_sliding_piece_moves(&board, *piece::KING_WHITE, move_list);
+            generate_sliding_diagonal_antidiagonal_moves(&board, *piece::BISHOP_WHITE, move_list);
+            generate_sliding_rank_file_moves(&board, *piece::ROOK_WHITE, move_list);
+            generate_sliding_rank_file_moves(&board, *piece::QUEEN_WHITE, move_list);
+            generate_sliding_diagonal_antidiagonal_moves(&board, *piece::QUEEN_WHITE, move_list);
+        }
+        Colour::Black => {
+            generate_non_sliding_piece_moves(&board, *piece::KNIGHT_BLACK, move_list);
+            generate_non_sliding_piece_moves(&board, *piece::KING_BLACK, move_list);
+            generate_sliding_diagonal_antidiagonal_moves(&board, *piece::BISHOP_BLACK, move_list);
+            generate_sliding_rank_file_moves(&board, *piece::ROOK_BLACK, move_list);
+            generate_sliding_rank_file_moves(&board, *piece::QUEEN_BLACK, move_list);
+            generate_sliding_diagonal_antidiagonal_moves(&board, *piece::QUEEN_BLACK, move_list);
+        }
     };
-    generate_non_sliding_piece_moves(&board, knight, move_list);
-
-    let king = match side_to_move {
-        Colour::White => *piece::KING_WHITE,
-        Colour::Black => *piece::KING_BLACK,
-    };
-    generate_non_sliding_piece_moves(&board, king, move_list);
-
-    let bishop = match side_to_move {
-        Colour::White => *piece::BISHOP_WHITE,
-        Colour::Black => *piece::BISHOP_BLACK,
-    };
-    generate_sliding_diagonal_antidiagonal_moves(&board, bishop, move_list);
-
-    let rook = match side_to_move {
-        Colour::White => *piece::ROOK_WHITE,
-        Colour::Black => *piece::ROOK_BLACK,
-    };
-    generate_sliding_rank_file_moves(&board, rook, move_list);
-
-    let queen = match side_to_move {
-        Colour::White => *piece::QUEEN_WHITE,
-        Colour::Black => *piece::QUEEN_BLACK,
-    };
-    generate_sliding_rank_file_moves(&board, queen, move_list);
-    generate_sliding_diagonal_antidiagonal_moves(&board, queen, move_list);
 
     generate_castling_moves(&position, move_list);
-
     generate_pawn_moves(&position, move_list);
 }
 
