@@ -12,11 +12,10 @@ Main features and current status:
 - move generation is coded and tested:
 	- uses Hyperbola Quintessence for sliding piece attacks (see https://www.chessprogramming.org/Hyperbola_Quintessence)
 	- uses occupancy masks for other pieces
-- make_move is currently being coded/tested (uses pseudo-legality)
+- make_move/take-move is coded and tested
+- perft results to depth=6 has been verified
 
 To Do:
-In rough order of intended implementation:
-- check if king is attacked after make_move
-- take_move
-- implement standard perf tests 
+Implement move evaluation
+UCI
 
