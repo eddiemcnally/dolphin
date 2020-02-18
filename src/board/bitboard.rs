@@ -25,7 +25,7 @@ pub fn pop_1st_bit(bb: &mut u64) -> Square {
     debug_assert!(*bb != 0, "bitboard is already zero");
 
     let bit_being_cleared = bb.trailing_zeros();
-    let sq_clear = Square::from_u8(bit_being_cleared as u8);
+    let sq_clear = Square::from_num(bit_being_cleared as u8);
 
     clear_bit(bb, sq_clear);
 

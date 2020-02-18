@@ -1,8 +1,10 @@
 use board::square::file::File;
 use board::square::rank::Rank;
+use num::FromPrimitive;
 use std::fmt;
 use std::mem::transmute;
 
+enum_from_primitive! {
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 #[repr(u8)]
@@ -71,6 +73,7 @@ pub enum Square {
     f8,
     g8,
     h8,
+}
 }
 impl Default for Square {
     fn default() -> Square {
@@ -162,7 +165,7 @@ impl Square {
         );
 
         let s = *self as u8 + 8;
-        return Square::from_u8(s);
+        return Square::from_num(s);
     }
 
     pub fn square_minus_1_rank(&self) -> Square {
@@ -172,7 +175,7 @@ impl Square {
         );
 
         let s = *self as u8 - 8;
-        return Square::from_u8(s);
+        return Square::from_num(s);
     }
 
     pub fn square_plus_2_ranks(&self) -> Square {
@@ -182,7 +185,7 @@ impl Square {
         );
 
         let s = *self as u8 + 16;
-        return Square::from_u8(s);
+        return Square::from_num(s);
     }
 
     pub fn square_minus_2_ranks(&self) -> Square {
@@ -192,7 +195,7 @@ impl Square {
         );
 
         let s = *self as u8 - 16;
-        return Square::from_u8(s);
+        return Square::from_num(s);
     }
 
     pub fn rank(self) -> Rank {
@@ -245,74 +248,8 @@ impl Square {
         Square::get_square(rank, file)
     }
 
-    pub fn from_u8(num: u8) -> Square {
-        match num {
-            0 => Square::a1,
-            1 => Square::b1,
-            2 => Square::c1,
-            3 => Square::d1,
-            4 => Square::e1,
-            5 => Square::f1,
-            6 => Square::g1,
-            7 => Square::h1,
-            8 => Square::a2,
-            9 => Square::b2,
-            10 => Square::c2,
-            11 => Square::d2,
-            12 => Square::e2,
-            13 => Square::f2,
-            14 => Square::g2,
-            15 => Square::h2,
-            16 => Square::a3,
-            17 => Square::b3,
-            18 => Square::c3,
-            19 => Square::d3,
-            20 => Square::e3,
-            21 => Square::f3,
-            22 => Square::g3,
-            23 => Square::h3,
-            24 => Square::a4,
-            25 => Square::b4,
-            26 => Square::c4,
-            27 => Square::d4,
-            28 => Square::e4,
-            29 => Square::f4,
-            30 => Square::g4,
-            31 => Square::h4,
-            32 => Square::a5,
-            33 => Square::b5,
-            34 => Square::c5,
-            35 => Square::d5,
-            36 => Square::e5,
-            37 => Square::f5,
-            38 => Square::g5,
-            39 => Square::h5,
-            40 => Square::a6,
-            41 => Square::b6,
-            42 => Square::c6,
-            43 => Square::d6,
-            44 => Square::e6,
-            45 => Square::f6,
-            46 => Square::g6,
-            47 => Square::h6,
-            48 => Square::a7,
-            49 => Square::b7,
-            50 => Square::c7,
-            51 => Square::d7,
-            52 => Square::e7,
-            53 => Square::f7,
-            54 => Square::g7,
-            55 => Square::h7,
-            56 => Square::a8,
-            57 => Square::b8,
-            58 => Square::c8,
-            59 => Square::d8,
-            60 => Square::e8,
-            61 => Square::f8,
-            62 => Square::g8,
-            63 => Square::h8,
-            _ => panic!("Invalid square {}", num),
-        }
+    pub fn from_num(num: u8) -> Square {
+        return Square::from_u8(num).unwrap();
     }
 
     pub fn to_offset(&self) -> usize {

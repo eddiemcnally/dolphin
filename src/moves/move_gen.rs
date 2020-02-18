@@ -10,6 +10,13 @@ use moves::mov::Mov;
 use position::castle_permissions;
 use position::position::Position;
 
+static PROMOTION_ROLES: [PieceRole; 4] = [
+    PieceRole::Bishop,
+    PieceRole::Knight,
+    PieceRole::Queen,
+    PieceRole::Rook,
+];
+
 pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
     let board = position.board();
     let side_to_move = position.side_to_move();
@@ -409,47 +416,13 @@ fn encode_promotion_moves(
     move_list: &mut Vec<Mov>,
 ) {
     if is_capture {
-        move_list.push(Mov::encode_move_with_promotion_capture(
-            from_sq,
-            to_sq,
-            PieceRole::Bishop,
-        ));
-        move_list.push(Mov::encode_move_with_promotion_capture(
-            from_sq,
-            to_sq,
-            PieceRole::Knight,
-        ));
-        move_list.push(Mov::encode_move_with_promotion_capture(
-            from_sq,
-            to_sq,
-            PieceRole::Queen,
-        ));
-        move_list.push(Mov::encode_move_with_promotion_capture(
-            from_sq,
-            to_sq,
-            PieceRole::Rook,
-        ));
+        for pr in &PROMOTION_ROLES {
+            move_list.push(Mov::encode_move_with_promotion_capture(from_sq, to_sq, *pr));
+        }
     } else {
-        move_list.push(Mov::encode_move_with_promotion(
-            from_sq,
-            to_sq,
-            PieceRole::Bishop,
-        ));
-        move_list.push(Mov::encode_move_with_promotion(
-            from_sq,
-            to_sq,
-            PieceRole::Knight,
-        ));
-        move_list.push(Mov::encode_move_with_promotion(
-            from_sq,
-            to_sq,
-            PieceRole::Queen,
-        ));
-        move_list.push(Mov::encode_move_with_promotion(
-            from_sq,
-            to_sq,
-            PieceRole::Rook,
-        ));
+        for pr in &PROMOTION_ROLES {
+            move_list.push(Mov::encode_move_with_promotion(from_sq, to_sq, *pr));
+        }
     }
 }
 
