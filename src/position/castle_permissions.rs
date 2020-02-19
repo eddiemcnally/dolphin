@@ -28,12 +28,31 @@ pub fn set_king(perm: &mut CastlePermission, colour: Colour) {
     *perm = cp;
 }
 
-pub fn clear_king(perm: &mut CastlePermission, colour: Colour) {
+pub fn clear_king_and_queen(perm: &mut CastlePermission, colour: Colour) {
     let mut cp = *perm;
     match colour {
-        Colour::White => cp = cp & !(CastlePermissionType::WhiteKing as u8),
-        Colour::Black => cp = cp & !(CastlePermissionType::BlackKing as u8),
+        Colour::White => {
+            cp = cp & !(CastlePermissionType::WhiteKing as u8);
+            cp = cp & !(CastlePermissionType::WhiteQueen as u8);
+        }
+
+        Colour::Black => {
+            cp = cp & !(CastlePermissionType::BlackKing as u8);
+            cp = cp & !(CastlePermissionType::BlackQueen as u8);
+        }
     }
+    *perm = cp;
+}
+
+pub fn clear_king_black(perm: &mut CastlePermission) {
+    let mut cp = *perm;
+    cp = cp & !(CastlePermissionType::BlackKing as u8);
+    *perm = cp;
+}
+
+pub fn clear_king_white(perm: &mut CastlePermission) {
+    let mut cp = *perm;
+    cp = cp & !(CastlePermissionType::WhiteKing as u8);
     *perm = cp;
 }
 
@@ -53,12 +72,15 @@ pub fn set_queen(perm: &mut CastlePermission, colour: Colour) {
     *perm = cp;
 }
 
-pub fn clear_queen(perm: &mut CastlePermission, colour: Colour) {
+pub fn clear_queen_black(perm: &mut CastlePermission) {
     let mut cp = *perm;
-    match colour {
-        Colour::White => cp = cp & !(CastlePermissionType::WhiteQueen as u8),
-        Colour::Black => cp = cp & !(CastlePermissionType::BlackQueen as u8),
-    }
+    cp = cp & !(CastlePermissionType::BlackQueen as u8);
+    *perm = cp;
+}
+
+pub fn clear_queen_white(perm: &mut CastlePermission) {
+    let mut cp = *perm;
+    cp = cp & !(CastlePermissionType::WhiteQueen as u8);
     *perm = cp;
 }
 

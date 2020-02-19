@@ -379,24 +379,26 @@ impl Position {
             return;
         }
 
-        if pce == *piece::KING_WHITE {
-            castle_permissions::clear_king(&mut self.castle_perm, Colour::White);
-            castle_permissions::clear_queen(&mut self.castle_perm, Colour::White);
-        } else if pce == *piece::KING_BLACK {
-            castle_permissions::clear_king(&mut self.castle_perm, Colour::Black);
-            castle_permissions::clear_queen(&mut self.castle_perm, Colour::Black);
-        } else if pce == *piece::ROOK_WHITE {
-            match from_sq {
-                Square::a1 => castle_permissions::clear_queen(&mut self.castle_perm, Colour::White),
-                Square::h1 => castle_permissions::clear_king(&mut self.castle_perm, Colour::White),
-                _ => (),
-            };
-        } else if pce == *piece::ROOK_BLACK {
-            match from_sq {
-                Square::a8 => castle_permissions::clear_queen(&mut self.castle_perm, Colour::Black),
-                Square::h8 => castle_permissions::clear_king(&mut self.castle_perm, Colour::Black),
-                _ => (),
-            };
+        if pce.role() == PieceRole::King {
+            if pce.colour() == Colour::White {
+                castle_permissions::clear_king_and_queen(&mut self.castle_perm, Colour::White);
+            } else if pce.colour() == Colour::Black {
+                castle_permissions::clear_king_and_queen(&mut self.castle_perm, Colour::Black);
+            }
+        } else if pce.role() == PieceRole::Rook {
+            if pce.colour() == Colour::White {
+                match from_sq {
+                    Square::a1 => castle_permissions::clear_queen_white(&mut self.castle_perm),
+                    Square::h1 => castle_permissions::clear_king_white(&mut self.castle_perm),
+                    _ => (),
+                };
+            } else if pce.colour() == Colour::Black {
+                match from_sq {
+                    Square::a8 => castle_permissions::clear_queen_black(&mut self.castle_perm),
+                    Square::h8 => castle_permissions::clear_king_black(&mut self.castle_perm),
+                    _ => (),
+                };
+            }
         }
     }
 }
@@ -446,14 +448,9 @@ fn do_castle_move(position: &mut Position, mv: Mov) {
 }
 
 fn do_castle_move_king(position: &mut Position, col: Colour, king_from_sq: Square) {
-    let king_to_sq = match col {
-        Colour::Black => Square::g8,
-        Colour::White => Square::g1,
-    };
-
-    let (rook_from_sq, rook_to_sq) = match col {
-        Colour::Black => (Square::h8, Square::f8),
-        Colour::White => (Square::h1, Square::f1),
+    let (rook_from_sq, rook_to_sq, king_to_sq) = match col {
+        Colour::Black => (Square::h8, Square::f8, Square::g8),
+        Colour::White => (Square::h1, Square::f1, Square::g1),
     };
 
     let king = Piece::new(PieceRole::King, col);
@@ -464,18 +461,13 @@ fn do_castle_move_king(position: &mut Position, col: Colour, king_from_sq: Squar
     update_hash_on_piece_move(position, rook, rook_from_sq, rook_to_sq);
     position.board.move_piece(rook_from_sq, rook_to_sq, rook);
 
-    castle_permissions::clear_king(&mut position.castle_perm, col);
-    castle_permissions::clear_queen(&mut position.castle_perm, col);
+    castle_permissions::clear_king_and_queen(&mut position.castle_perm, col);
 }
 
 fn do_castle_move_queen(position: &mut Position, col: Colour, king_from_sq: Square) {
-    let king_to_sq = match col {
-        Colour::Black => Square::c8,
-        Colour::White => Square::c1,
-    };
-    let (rook_from_sq, rook_to_sq) = match col {
-        Colour::Black => (Square::a8, Square::d8),
-        Colour::White => (Square::a1, Square::d1),
+    let (rook_from_sq, rook_to_sq, king_to_sq) = match col {
+        Colour::Black => (Square::a8, Square::d8, Square::c8),
+        Colour::White => (Square::a1, Square::d1, Square::c1),
     };
 
     let king = Piece::new(PieceRole::King, col);
@@ -486,8 +478,7 @@ fn do_castle_move_queen(position: &mut Position, col: Colour, king_from_sq: Squa
     update_hash_on_piece_move(position, rook, rook_from_sq, rook_to_sq);
     position.board.move_piece(rook_from_sq, rook_to_sq, rook);
 
-    castle_permissions::clear_queen(&mut position.castle_perm, col);
-    castle_permissions::clear_king(&mut position.castle_perm, col);
+    castle_permissions::clear_king_and_queen(&mut position.castle_perm, col);
 }
 
 fn do_double_pawn_move(
@@ -504,18 +495,17 @@ fn do_double_pawn_move(
 }
 
 fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
-    let capt_sq = match position.side_to_move {
-        Colour::White => to_sq.square_minus_1_rank(),
-        Colour::Black => to_sq.square_plus_1_rank(),
-    };
-
-    let pawn = match position.side_to_move {
-        Colour::White => *piece::PAWN_WHITE,
-        Colour::Black => *piece::PAWN_BLACK,
-    };
-    let capt_pawn = match position.side_to_move.flip_side() {
-        Colour::White => *piece::PAWN_WHITE,
-        Colour::Black => *piece::PAWN_BLACK,
+    let (capt_sq, pawn, capt_pawn) = match position.side_to_move {
+        Colour::White => (
+            to_sq.square_minus_1_rank(),
+            *piece::PAWN_WHITE,
+            *piece::PAWN_BLACK,
+        ),
+        Colour::Black => (
+            to_sq.square_plus_1_rank(),
+            *piece::PAWN_BLACK,
+            *piece::PAWN_WHITE,
+        ),
     };
 
     remove_piece_from_board(position, capt_pawn, capt_sq);
