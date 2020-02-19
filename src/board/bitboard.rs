@@ -17,10 +17,6 @@ pub fn is_set(bb: u64, sq: Square) -> bool {
     ret != 0
 }
 
-pub fn count_set_bits(bb: u64) -> u8 {
-    bb.count_ones() as u8
-}
-
 pub fn pop_1st_bit(bb: &mut u64) -> Square {
     debug_assert!(*bb != 0, "bitboard is already zero");
 
@@ -79,20 +75,6 @@ pub mod tests {
     }
 
     #[test]
-    pub fn count_set_bits() {
-        let map = utils::get_square_rank_file_map();
-        let mut i: u8 = 0;
-        let mut bb: u64 = 0;
-
-        for (square, (_, _)) in map {
-            bitboard::set_bit(&mut bb, square);
-            i = i + 1;
-
-            assert_eq!(i, bitboard::count_set_bits(bb));
-        }
-    }
-
-    #[test]
     pub fn pop_bit_all_bits() {
         let map = utils::get_square_rank_file_map();
         for (square, (_, _)) in map {
@@ -102,7 +84,7 @@ pub mod tests {
             let s = bitboard::pop_1st_bit(&mut bb);
 
             assert_eq!(s, square);
-            assert_eq!(bitboard::count_set_bits(bb), 0);
+            assert_eq!(bb, 0);
         }
     }
 

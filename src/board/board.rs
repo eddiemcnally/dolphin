@@ -26,6 +26,8 @@ pub struct Board {
     pieces: [Option<Piece>; NUM_SQUARES],
     // square containing the king
     king_sq: [Square; NUM_COLOURS],
+    // material value
+    material: [u32; NUM_COLOURS],
 }
 
 impl Default for Board {
@@ -36,6 +38,7 @@ impl Default for Board {
             colour_bb: [0; NUM_COLOURS],
             pieces: [None; NUM_SQUARES],
             king_sq: [Square::a1; NUM_COLOURS],
+            material: [0; NUM_COLOURS],
         };
         return brd;
     }
@@ -65,6 +68,10 @@ impl PartialEq for Board {
             }
             if self.king_sq[i] != other.king_sq[i] {
                 println!("BOARD: king_sq are different");
+                return false;
+            }
+            if self.material[i] != other.material[i] {
+                println!("BOARD: material values are different");
                 return false;
             }
         }
@@ -128,6 +135,7 @@ impl Clone for Board {
             colour_bb: self.colour_bb,
             pieces: cp_pieces,
             king_sq: self.king_sq,
+            material: self.material,
         };
         return brd;
     }
@@ -135,14 +143,7 @@ impl Clone for Board {
 
 impl Board {
     pub fn new() -> Board {
-        let brd = Board {
-            board_bb: 0,
-            piece_bb: [0; NUM_PIECES],
-            colour_bb: [0; NUM_COLOURS],
-            pieces: [None; NUM_SQUARES],
-            king_sq: [Square::a1; NUM_COLOURS],
-        };
-        return brd;
+        Board::default()
     }
 
     pub fn from_fen(parsed_fen: &ParsedFen) -> Board {
@@ -176,6 +177,10 @@ impl Board {
 
     pub fn get_colour_bb(&self, colour: Colour) -> u64 {
         self.colour_bb[colour.offset()]
+    }
+
+    pub fn get_material(&self, colour: Colour) -> u32 {
+        self.material[colour.offset()]
     }
 
     pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece) {
@@ -224,6 +229,7 @@ impl Board {
         if piece.role() == PieceRole::King {
             self.king_sq[piece.colour().offset()] = sq;
         }
+        self.material[piece.colour().offset()] += piece.value();
     }
 
     fn clear_bitboards(&mut self, piece: Piece, sq: Square) {
@@ -231,6 +237,7 @@ impl Board {
         bitboard::clear_bit(&mut self.piece_bb[piece.offset()], sq);
         bitboard::clear_bit(&mut self.colour_bb[piece.colour().offset()], sq);
         self.pieces[sq.to_offset()] = None;
+        self.material[piece.colour().offset()] -= piece.value();
     }
 }
 #[cfg(test)]
@@ -279,6 +286,92 @@ pub mod tests {
             board.remove_piece(pce, square);
             assert!(board.is_sq_empty(square) == true);
         }
+    }
+
+    #[test]
+    pub fn add_remove_white_pieces_material_as_expected() {
+        let mut board = Board::new();
+
+        let pce1 = Piece::new(PieceRole::Bishop, Colour::White);
+        let pce2 = Piece::new(PieceRole::Queen, Colour::White);
+
+        board.add_piece(pce1, Square::a1);
+        board.add_piece(pce2, Square::d3);
+
+        let expected_material = pce1.value() + pce2.value();
+
+        assert_eq!(expected_material, board.get_material(Colour::White));
+        assert_eq!(0, board.get_material(Colour::Black));
+
+        board.remove_piece(pce1, Square::a1);
+        assert_eq!(pce2.value(), board.get_material(Colour::White));
+        assert_eq!(0, board.get_material(Colour::Black));
+    }
+
+    #[test]
+    pub fn add_remove_black_pieces_material_as_expected() {
+        let mut board = Board::new();
+
+        let pce1 = Piece::new(PieceRole::Bishop, Colour::Black);
+        let pce2 = Piece::new(PieceRole::Queen, Colour::Black);
+
+        board.add_piece(pce1, Square::a1);
+        board.add_piece(pce2, Square::d3);
+
+        let expected_material = pce1.value() + pce2.value();
+
+        assert_eq!(expected_material, board.get_material(Colour::Black));
+        assert_eq!(0, board.get_material(Colour::White));
+
+        board.remove_piece(pce1, Square::a1);
+        assert_eq!(pce2.value(), board.get_material(Colour::Black));
+        assert_eq!(0, board.get_material(Colour::White));
+    }
+
+    #[test]
+    pub fn move_white_piece_material_unchanged() {
+        let pce = Piece::new(PieceRole::Knight, Colour::White);
+        let from_sq = Square::d4;
+        let to_sq = Square::c6;
+
+        let mut board = Board::new();
+
+        board.add_piece(pce, from_sq);
+        let start_white_material = board.get_material(Colour::White);
+        let start_black_material = board.get_material(Colour::Black);
+
+        assert_eq!(start_white_material, pce.value());
+        assert_eq!(start_black_material, 0);
+
+        board.move_piece(from_sq, to_sq, pce);
+        let end_white_material = board.get_material(Colour::White);
+        let end_black_material = board.get_material(Colour::Black);
+
+        assert_eq!(start_white_material, end_white_material);
+        assert_eq!(start_black_material, end_black_material);
+    }
+
+    #[test]
+    pub fn move_black_piece_material_unchanged() {
+        let pce = Piece::new(PieceRole::Knight, Colour::Black);
+        let from_sq = Square::d4;
+        let to_sq = Square::c6;
+
+        let mut board = Board::new();
+
+        board.add_piece(pce, Square::d4);
+        let start_white_material = board.get_material(Colour::White);
+        let start_black_material = board.get_material(Colour::Black);
+
+        assert_eq!(start_black_material, pce.value());
+        assert_eq!(start_white_material, 0);
+
+        board.move_piece(from_sq, to_sq, pce);
+        let end_white_material = board.get_material(Colour::White);
+        let end_black_material = board.get_material(Colour::Black);
+
+        assert_eq!(start_white_material, end_white_material);
+        assert_eq!(start_black_material, end_black_material);
     }
 
     #[test]
