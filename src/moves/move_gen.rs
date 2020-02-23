@@ -1,7 +1,6 @@
 use board::bitboard;
 use board::board::Board;
 use board::occupancy_masks;
-use board::piece;
 use board::piece::Colour;
 use board::piece::Piece;
 use board::piece::PieceRole;
@@ -23,20 +22,20 @@ pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
 
     match side_to_move {
         Colour::White => {
-            generate_non_sliding_piece_moves(&board, *piece::KNIGHT_WHITE, move_list);
-            generate_non_sliding_piece_moves(&board, *piece::KING_WHITE, move_list);
-            generate_sliding_diagonal_antidiagonal_moves(&board, *piece::BISHOP_WHITE, move_list);
-            generate_sliding_rank_file_moves(&board, *piece::ROOK_WHITE, move_list);
-            generate_sliding_rank_file_moves(&board, *piece::QUEEN_WHITE, move_list);
-            generate_sliding_diagonal_antidiagonal_moves(&board, *piece::QUEEN_WHITE, move_list);
+            generate_non_sliding_piece_moves(&board, Piece::WhiteKnight, move_list);
+            generate_non_sliding_piece_moves(&board, Piece::WhiteKing, move_list);
+            generate_sliding_diagonal_antidiagonal_moves(&board, Piece::WhiteBishop, move_list);
+            generate_sliding_rank_file_moves(&board, Piece::WhiteRook, move_list);
+            generate_sliding_rank_file_moves(&board, Piece::WhiteQueen, move_list);
+            generate_sliding_diagonal_antidiagonal_moves(&board, Piece::WhiteQueen, move_list);
         }
         Colour::Black => {
-            generate_non_sliding_piece_moves(&board, *piece::KNIGHT_BLACK, move_list);
-            generate_non_sliding_piece_moves(&board, *piece::KING_BLACK, move_list);
-            generate_sliding_diagonal_antidiagonal_moves(&board, *piece::BISHOP_BLACK, move_list);
-            generate_sliding_rank_file_moves(&board, *piece::ROOK_BLACK, move_list);
-            generate_sliding_rank_file_moves(&board, *piece::QUEEN_BLACK, move_list);
-            generate_sliding_diagonal_antidiagonal_moves(&board, *piece::QUEEN_BLACK, move_list);
+            generate_non_sliding_piece_moves(&board, Piece::BlackKnight, move_list);
+            generate_non_sliding_piece_moves(&board, Piece::BlackKing, move_list);
+            generate_sliding_diagonal_antidiagonal_moves(&board, Piece::BlackBishop, move_list);
+            generate_sliding_rank_file_moves(&board, Piece::BlackRook, move_list);
+            generate_sliding_rank_file_moves(&board, Piece::BlackQueen, move_list);
+            generate_sliding_diagonal_antidiagonal_moves(&board, Piece::BlackQueen, move_list);
         }
     };
 
@@ -182,7 +181,7 @@ fn generate_castling_moves(pos: &Position, move_list: &mut Vec<Mov>) {
 
     match side {
         Colour::White => {
-            let wr_bb = pos.board().get_piece_bitboard(*piece::ROOK_WHITE);
+            let wr_bb = pos.board().get_piece_bitboard(Piece::WhiteRook);
 
             if castle_permissions::is_king_set(cp, side)
                 && (bb & occupancy_masks::CASTLE_MASK_WK == 0)
@@ -200,7 +199,7 @@ fn generate_castling_moves(pos: &Position, move_list: &mut Vec<Mov>) {
             }
         }
         Colour::Black => {
-            let br_bb = pos.board().get_piece_bitboard(*piece::ROOK_BLACK);
+            let br_bb = pos.board().get_piece_bitboard(Piece::BlackRook);
 
             if castle_permissions::is_king_set(cp, side)
                 && (bb & occupancy_masks::CASTLE_MASK_BK == 0)
@@ -230,8 +229,8 @@ fn generate_misc_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>) {
     let side_to_move = pos.side_to_move();
 
     let pawn = match side_to_move {
-        Colour::White => *piece::PAWN_WHITE,
-        Colour::Black => *piece::PAWN_BLACK,
+        Colour::White => Piece::WhitePawn,
+        Colour::Black => Piece::BlackPawn,
     };
 
     // bitboard of all pawns
@@ -294,8 +293,8 @@ fn generate_first_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>) {
     let side_to_move = pos.side_to_move();
 
     let pawn = match side_to_move {
-        Colour::White => *piece::PAWN_WHITE,
-        Colour::Black => *piece::PAWN_BLACK,
+        Colour::White => Piece::WhitePawn,
+        Colour::Black => Piece::BlackPawn,
     };
 
     // bitboard of all pawns
@@ -363,8 +362,8 @@ fn generate_promotion_moves(pos: &Position, move_list: &mut Vec<Mov>) {
     let side_to_move = pos.side_to_move();
 
     let pawn = match side_to_move {
-        Colour::White => *piece::PAWN_WHITE,
-        Colour::Black => *piece::PAWN_BLACK,
+        Colour::White => Piece::WhitePawn,
+        Colour::Black => Piece::BlackPawn,
     };
 
     // bitboard of all pawns

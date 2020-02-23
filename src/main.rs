@@ -6,6 +6,8 @@ extern crate lazy_static;
 #[macro_use]
 extern crate enum_primitive;
 extern crate num;
+#[macro_use]
+extern crate num_derive;
 
 mod board;
 mod input;
@@ -19,6 +21,7 @@ use position::position::Position;
 use std::time::Instant;
 
 fn main() {
+    
     // let epd_rows = perft::epd_parser::extract_epd("../../src/resources/perftsuite.epd".to_string());
 
     // for epd in &epd_rows {

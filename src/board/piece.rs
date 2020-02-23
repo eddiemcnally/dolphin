@@ -1,21 +1,216 @@
+use enum_primitive::FromPrimitive;
 use std::fmt;
 
-#[derive(Eq, PartialEq, Debug, Clone, Copy, Hash)]
-#[repr(u8)]
-pub enum PieceRole {
-    Pawn = 0,
-    Bishop,
-    Knight,
-    Rook,
-    Queen,
-    King,
-}
-
-#[derive(Eq, PartialEq, Clone, Copy, Hash)]
-#[repr(u8)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
 pub enum Colour {
     White,
     Black,
+}
+
+// ---- -XXX    ROLE
+// ---- X---    Colour 0-> White, 1 -> Black
+// XXXX ----    Offset when used in an array
+//===========================================
+// 0000 0001    Pawn
+// 0000 0010    Bishop
+// 0000 0011    Knight
+// 0000 0100    Rook
+// 0000 0101    Queen
+// 0000 0110    King
+// 0000 1000    BLACK
+// 0000 0000    White   Pawn Offset
+// 0001 0000            Bishop Offset
+// 0010 0000            Knight Offset
+// 0011 0000            Rook Offset
+// 0100 0000            Queen Offset
+// 0101 0000            King Offset
+// 0110 0000    Black   Pawn offset
+// 0111 0000            Bishop Offset
+// 1000 0000            Knight Offset
+// 1001 0000            Rook offset
+// 1010 0000            Queen Offset
+// 1011 0000            King Offset
+
+const MASK_ROLE: u8 = 0b00000111;
+const MASK_COLOUR: u8 = 0b00001000;
+const MASK_OFFSET: u8 = 0b11110000;
+const SHFT_OFFSET: u8 = 4;
+
+#[repr(u8)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
+enum Offset {
+    WhitePawn = 0b0000,
+    WhiteBishop = 0b0001,
+    WhiteKnight = 0b0010,
+    WhiteRook = 0b0011,
+    WhiteQueen = 0b0100,
+    WhiteKing = 0b0101,
+    BlackPawn = 0b0110,
+    BlackBishop = 0b0111,
+    BlackKnight = 0b1000,
+    BlackRook = 0b1001,
+    BlackQueen = 0b1010,
+    BlackKing = 0b1011,
+}
+
+#[repr(u8)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy, FromPrimitive, ToPrimitive)]
+pub enum PieceRole {
+    Pawn = 0b00000001,
+    Bishop = 0b00000010,
+    Knight = 0b00000011,
+    Rook = 0b00000100,
+    Queen = 0b00000101,
+    King = 0b00000110,
+}
+
+impl fmt::Debug for PieceRole {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_str = String::new();
+
+        match self {
+            PieceRole::Pawn => debug_str.push_str(&format!("RolePawn")),
+            PieceRole::Bishop => debug_str.push_str(&format!("RoleBishop")),
+            PieceRole::Knight => debug_str.push_str(&format!("RoleKnight")),
+            PieceRole::Rook => debug_str.push_str(&format!("RoleRook")),
+            PieceRole::Queen => debug_str.push_str(&format!("RoleQueen")),
+            PieceRole::King => debug_str.push_str(&format!("RoleKing")),
+        }
+
+        write!(f, "{}", debug_str)
+    }
+}
+
+impl fmt::Display for PieceRole {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
+    }
+}
+
+#[repr(u8)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy, FromPrimitive, ToPrimitive)]
+pub enum Piece {
+    // white
+    WhitePawn = PieceRole::Pawn as u8 | ((Offset::WhitePawn as u8) << SHFT_OFFSET),
+    WhiteBishop = PieceRole::Bishop as u8 | ((Offset::WhiteBishop as u8) << SHFT_OFFSET),
+    WhiteKnight = PieceRole::Knight as u8 | ((Offset::WhiteKnight as u8) << SHFT_OFFSET),
+    WhiteRook = PieceRole::Rook as u8 | ((Offset::WhiteRook as u8) << SHFT_OFFSET),
+    WhiteQueen = PieceRole::Queen as u8 | ((Offset::WhiteQueen as u8) << SHFT_OFFSET),
+    WhiteKing = PieceRole::King as u8 | ((Offset::WhiteKing as u8) << SHFT_OFFSET),
+    // black
+    BlackPawn = PieceRole::Pawn as u8 | ((Offset::BlackPawn as u8) << SHFT_OFFSET) | MASK_COLOUR,
+    BlackBishop =
+        PieceRole::Bishop as u8 | ((Offset::BlackBishop as u8) << SHFT_OFFSET) | MASK_COLOUR,
+    BlackKnight =
+        PieceRole::Knight as u8 | ((Offset::BlackKnight as u8) << SHFT_OFFSET) | MASK_COLOUR,
+    BlackRook = PieceRole::Rook as u8 | ((Offset::BlackRook as u8) << SHFT_OFFSET) | MASK_COLOUR,
+    BlackQueen = PieceRole::Queen as u8 | ((Offset::BlackQueen as u8) << SHFT_OFFSET) | MASK_COLOUR,
+    BlackKing = PieceRole::King as u8 | ((Offset::BlackKing as u8) << SHFT_OFFSET) | MASK_COLOUR,
+}
+
+impl Piece {
+    pub fn new(role: PieceRole, col: Colour) -> Piece {
+        match col {
+            Colour::White => match role {
+                PieceRole::Pawn => return Piece::WhitePawn,
+                PieceRole::Bishop => return Piece::WhiteBishop,
+                PieceRole::Knight => return Piece::WhiteKnight,
+                PieceRole::Rook => return Piece::WhiteRook,
+                PieceRole::Queen => return Piece::WhiteQueen,
+                PieceRole::King => return Piece::WhiteKing,
+            },
+            Colour::Black => match role {
+                PieceRole::Pawn => return Piece::BlackPawn,
+                PieceRole::Bishop => return Piece::BlackBishop,
+                PieceRole::Knight => return Piece::BlackKnight,
+                PieceRole::Rook => return Piece::BlackRook,
+                PieceRole::Queen => return Piece::BlackQueen,
+                PieceRole::King => return Piece::BlackKing,
+            },
+        }
+    }
+
+    pub fn colour(&self) -> Colour {
+        if *self as u8 & MASK_COLOUR > 0 {
+            return Colour::Black;
+        }
+        return Colour::White;
+    }
+
+    pub fn role(&self) -> PieceRole {
+        let role = (*self as u8) & MASK_ROLE;
+        return PieceRole::from_u8(role).unwrap();
+    }
+
+    pub fn offset(&self) -> usize {
+        let o = (*self as u8 & MASK_OFFSET) >> SHFT_OFFSET;
+        return o as usize;
+    }
+
+    pub fn from_char(piece_char: char) -> Piece {
+        match piece_char {
+            'P' => return Piece::WhitePawn,
+            'B' => return Piece::WhiteBishop,
+            'N' => return Piece::WhiteKnight,
+            'R' => return Piece::WhiteRook,
+            'Q' => return Piece::WhiteQueen,
+            'K' => return Piece::WhiteKing,
+            'p' => return Piece::BlackPawn,
+            'b' => return Piece::BlackBishop,
+            'n' => return Piece::BlackKnight,
+            'r' => return Piece::BlackRook,
+            'q' => return Piece::BlackQueen,
+            'k' => return Piece::BlackKing,
+            _ => panic!("Invalid piece character {}.", piece_char),
+        };
+    }
+
+    pub fn value(&self) -> u32 {
+        let role = self.role();
+
+        match role {
+            PieceRole::Pawn => return 300,
+            PieceRole::Bishop => return 550,
+            PieceRole::Knight => return 550,
+            PieceRole::Rook => return 800,
+            PieceRole::Queen => return 1000,
+            PieceRole::King => return 50000,
+        };
+    }
+
+    pub fn to_label(&self) -> String {
+        let role = self.role();
+
+        let col = match self.colour() {
+            Colour::White => "W",
+            Colour::Black => "B",
+        };
+
+        match role {
+            PieceRole::Pawn => return col.to_owned() + "P",
+            PieceRole::Bishop => return col.to_owned() + "B",
+            PieceRole::Knight => return col.to_owned() + "N",
+            PieceRole::Rook => return col.to_owned() + "R",
+            PieceRole::Queen => return col.to_owned() + "Q",
+            PieceRole::King => return col.to_owned() + "K",
+        };
+    }
+}
+
+impl fmt::Debug for Piece {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_str = String::new();
+        let label = self.to_label().to_string();
+        debug_str.push_str(&format!("{:?}", label));
+
+        write!(f, "{}", debug_str)
+    }
+}
+
+impl fmt::Display for Piece {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
+    }
 }
 
 impl Colour {
@@ -55,138 +250,9 @@ impl fmt::Display for Colour {
     }
 }
 
-// todo look at mapping this to a u64 (or u32 if we remove the value)
-#[derive(Eq, PartialEq, Clone, Copy, Hash)]
-pub struct Piece {
-    piece_role: PieceRole,
-    colour: Colour,
-    offset: u8,
-    value: u32,
-}
-
-impl fmt::Debug for Piece {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_label())
-    }
-}
-
-impl fmt::Display for Piece {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(&self, f)
-    }
-}
-
-lazy_static! {
-    pub static ref ROOK_BLACK: Piece = Piece::new(PieceRole::Rook, Colour::Black);
-    pub static ref ROOK_WHITE: Piece = Piece::new(PieceRole::Rook, Colour::White);
-    pub static ref QUEEN_BLACK: Piece = Piece::new(PieceRole::Queen, Colour::Black);
-    pub static ref QUEEN_WHITE: Piece = Piece::new(PieceRole::Queen, Colour::White);
-    pub static ref BISHOP_BLACK: Piece = Piece::new(PieceRole::Bishop, Colour::Black);
-    pub static ref BISHOP_WHITE: Piece = Piece::new(PieceRole::Bishop, Colour::White);
-    pub static ref KNIGHT_BLACK: Piece = Piece::new(PieceRole::Knight, Colour::Black);
-    pub static ref KNIGHT_WHITE: Piece = Piece::new(PieceRole::Knight, Colour::White);
-    pub static ref KING_BLACK: Piece = Piece::new(PieceRole::King, Colour::Black);
-    pub static ref KING_WHITE: Piece = Piece::new(PieceRole::King, Colour::White);
-    pub static ref PAWN_BLACK: Piece = Piece::new(PieceRole::Pawn, Colour::Black);
-    pub static ref PAWN_WHITE: Piece = Piece::new(PieceRole::Pawn, Colour::White);
-}
-
-impl Piece {
-    pub fn new(role: PieceRole, colour: Colour) -> Piece {
-        let off = pce_to_offset(role, colour);
-        let val = pce_value(role);
-        Piece {
-            piece_role: role,
-            colour: colour,
-            offset: off,
-            value: val,
-        }
-    }
-
-    pub fn from_char(piece_char: char) -> Piece {
-        match piece_char {
-            'P' => return *PAWN_WHITE,
-            'B' => return *BISHOP_WHITE,
-            'N' => return *KNIGHT_WHITE,
-            'R' => return *ROOK_WHITE,
-            'Q' => return *QUEEN_WHITE,
-            'K' => return *KING_WHITE,
-            'p' => return *PAWN_BLACK,
-            'b' => return *BISHOP_BLACK,
-            'n' => return *KNIGHT_BLACK,
-            'r' => return *ROOK_BLACK,
-            'q' => return *QUEEN_BLACK,
-            'k' => return *KING_BLACK,
-            _ => panic!("Invalid piece character {}.", piece_char),
-        };
-    }
-
-    pub fn colour(self) -> Colour {
-        self.colour
-    }
-    pub fn role(self) -> PieceRole {
-        self.piece_role
-    }
-
-    pub fn offset(self) -> usize {
-        self.offset as usize
-    }
-    pub fn value(self) -> u32 {
-        self.value
-    }
-
-    pub fn to_label(self) -> String {
-        match self.colour() {
-            Colour::White => match self.role() {
-                PieceRole::Pawn => return String::from("WP"),
-                PieceRole::Bishop => return String::from("WB"),
-                PieceRole::Knight => return String::from("WN"),
-                PieceRole::Rook => return String::from("WR"),
-                PieceRole::Queen => return String::from("WQ"),
-                PieceRole::King => return String::from("WK"),
-            },
-            Colour::Black => match self.role() {
-                PieceRole::Pawn => return String::from("BP"),
-                PieceRole::Bishop => return String::from("BB"),
-                PieceRole::Knight => return String::from("BN"),
-                PieceRole::Rook => return String::from("BR"),
-                PieceRole::Queen => return String::from("BQ"),
-                PieceRole::King => return String::from("BK"),
-            },
-        }
-    }
-}
-
 pub const NUM_PIECES: usize = 12;
 pub const NUM_PIECE_ROLES: usize = 6;
 pub const NUM_COLOURS: usize = 2;
-
-fn pce_to_offset(pce_role: PieceRole, col: Colour) -> u8 {
-    let mut role_val = match pce_role {
-        PieceRole::Pawn => 0,
-        PieceRole::Bishop => 1,
-        PieceRole::Knight => 2,
-        PieceRole::Rook => 3,
-        PieceRole::Queen => 4,
-        PieceRole::King => 5,
-    };
-
-    if col == Colour::Black {
-        role_val += NUM_PIECE_ROLES;
-    }
-    return role_val as u8;
-}
-
-fn pce_value(role: PieceRole) -> u32 {
-    match role {
-        PieceRole::Pawn => 300,
-        PieceRole::Bishop => 550,
-        PieceRole::Knight => 550,
-        PieceRole::Rook => 800,
-        PieceRole::Queen => 1000,
-        PieceRole::King => 50000,
-    }
-}
 
 #[cfg(test)]
 pub mod tests {
@@ -213,119 +279,98 @@ pub mod tests {
     }
 
     #[test]
-    pub fn pce_offset_as_expected() {
-        let mut pce = Piece::new(PieceRole::Pawn, Colour::White);
-        assert_eq!(pce.offset, 0);
-
-        pce = Piece::new(PieceRole::Bishop, Colour::White);
-        assert_eq!(pce.offset, 1);
-
-        pce = Piece::new(PieceRole::Knight, Colour::White);
-        assert_eq!(pce.offset, 2);
-
-        pce = Piece::new(PieceRole::Rook, Colour::White);
-        assert_eq!(pce.offset, 3);
-
-        pce = Piece::new(PieceRole::Queen, Colour::White);
-        assert_eq!(pce.offset, 4);
-
-        pce = Piece::new(PieceRole::King, Colour::White);
-        assert_eq!(pce.offset, 5);
-
-        pce = Piece::new(PieceRole::Pawn, Colour::Black);
-        assert_eq!(pce.offset, 6);
-
-        pce = Piece::new(PieceRole::Bishop, Colour::Black);
-        assert_eq!(pce.offset, 7);
-
-        pce = Piece::new(PieceRole::Knight, Colour::Black);
-        assert_eq!(pce.offset, 8);
-
-        pce = Piece::new(PieceRole::Rook, Colour::Black);
-        assert_eq!(pce.offset, 9);
-
-        pce = Piece::new(PieceRole::Queen, Colour::Black);
-        assert_eq!(pce.offset, 10);
-
-        pce = Piece::new(PieceRole::King, Colour::Black);
-        assert_eq!(pce.offset, 11);
+    pub fn piece_colour_flipped() {
+        let pce = Piece::WhiteKnight;
+        assert!(pce.colour().flip_side() == Colour::Black);
     }
 
     #[test]
-    pub fn piece_role_value() {
-        let mut pce = Piece::new(PieceRole::Pawn, Colour::White);
-        assert_eq!(pce.value, 300);
+    pub fn roles_as_expected() {
+        assert_eq!(Piece::WhiteBishop.role(), PieceRole::Bishop);
+        assert_eq!(Piece::BlackBishop.role(), PieceRole::Bishop);
 
-        pce = Piece::new(PieceRole::Bishop, Colour::White);
-        assert_eq!(pce.value, 550);
+        assert_eq!(Piece::WhiteKnight.role(), PieceRole::Knight);
+        assert_eq!(Piece::BlackKnight.role(), PieceRole::Knight);
 
-        pce = Piece::new(PieceRole::Knight, Colour::White);
-        assert_eq!(pce.value, 550);
+        assert_eq!(Piece::WhitePawn.role(), PieceRole::Pawn);
+        assert_eq!(Piece::BlackPawn.role(), PieceRole::Pawn);
 
-        pce = Piece::new(PieceRole::Rook, Colour::White);
-        assert_eq!(pce.value, 800);
+        assert_eq!(Piece::WhiteRook.role(), PieceRole::Rook);
+        assert_eq!(Piece::BlackRook.role(), PieceRole::Rook);
 
-        pce = Piece::new(PieceRole::Queen, Colour::White);
-        assert_eq!(pce.value, 1000);
+        assert_eq!(Piece::WhiteQueen.role(), PieceRole::Queen);
+        assert_eq!(Piece::BlackQueen.role(), PieceRole::Queen);
 
-        pce = Piece::new(PieceRole::King, Colour::White);
-        assert_eq!(pce.value, 50000);
-
-        pce = Piece::new(PieceRole::Pawn, Colour::Black);
-        assert_eq!(pce.value, 300);
-
-        pce = Piece::new(PieceRole::Bishop, Colour::Black);
-        assert_eq!(pce.value, 550);
-
-        pce = Piece::new(PieceRole::Knight, Colour::Black);
-        assert_eq!(pce.value, 550);
-
-        pce = Piece::new(PieceRole::Rook, Colour::Black);
-        assert_eq!(pce.value, 800);
-
-        pce = Piece::new(PieceRole::Queen, Colour::Black);
-        assert_eq!(pce.value, 1000);
-
-        pce = Piece::new(PieceRole::King, Colour::Black);
-        assert_eq!(pce.value, 50000);
+        assert_eq!(Piece::WhiteKing.role(), PieceRole::King);
+        assert_eq!(Piece::BlackKing.role(), PieceRole::King);
     }
 
     #[test]
-    pub fn piece_label_is_valid() {
-        let mut pce = Piece::from_char('P');
-        assert_eq!(Piece::new(PieceRole::Pawn, Colour::White), pce);
+    pub fn create_piece() {
+        assert_eq!(
+            Piece::new(PieceRole::Bishop, Colour::White),
+            Piece::WhiteBishop
+        );
+        assert_eq!(Piece::new(PieceRole::King, Colour::White), Piece::WhiteKing);
+        assert_eq!(
+            Piece::new(PieceRole::Knight, Colour::White),
+            Piece::WhiteKnight
+        );
+        assert_eq!(Piece::new(PieceRole::Pawn, Colour::White), Piece::WhitePawn);
+        assert_eq!(
+            Piece::new(PieceRole::Queen, Colour::White),
+            Piece::WhiteQueen
+        );
+        assert_eq!(Piece::new(PieceRole::Rook, Colour::White), Piece::WhiteRook);
 
-        pce = Piece::from_char('B');
-        assert_eq!(Piece::new(PieceRole::Bishop, Colour::White), pce);
+        assert_eq!(
+            Piece::new(PieceRole::Bishop, Colour::Black),
+            Piece::BlackBishop
+        );
+        assert_eq!(Piece::new(PieceRole::King, Colour::Black), Piece::BlackKing);
+        assert_eq!(
+            Piece::new(PieceRole::Knight, Colour::Black),
+            Piece::BlackKnight
+        );
+        assert_eq!(Piece::new(PieceRole::Pawn, Colour::Black), Piece::BlackPawn);
+        assert_eq!(
+            Piece::new(PieceRole::Queen, Colour::Black),
+            Piece::BlackQueen
+        );
+        assert_eq!(Piece::new(PieceRole::Rook, Colour::Black), Piece::BlackRook);
+    }
 
-        pce = Piece::from_char('N');
-        assert_eq!(Piece::new(PieceRole::Knight, Colour::White), pce);
+    #[test]
+    pub fn colour_as_expected() {
+        assert_eq!(Colour::Black, Piece::BlackBishop.colour());
+        assert_eq!(Colour::Black, Piece::BlackKing.colour());
+        assert_eq!(Colour::Black, Piece::BlackKnight.colour());
+        assert_eq!(Colour::Black, Piece::BlackPawn.colour());
+        assert_eq!(Colour::Black, Piece::BlackQueen.colour());
+        assert_eq!(Colour::Black, Piece::BlackRook.colour());
 
-        pce = Piece::from_char('R');
-        assert_eq!(Piece::new(PieceRole::Rook, Colour::White), pce);
+        assert_eq!(Colour::White, Piece::WhiteBishop.colour());
+        assert_eq!(Colour::White, Piece::WhiteKing.colour());
+        assert_eq!(Colour::White, Piece::WhiteKnight.colour());
+        assert_eq!(Colour::White, Piece::WhitePawn.colour());
+        assert_eq!(Colour::White, Piece::WhiteQueen.colour());
+        assert_eq!(Colour::White, Piece::WhiteRook.colour());
+    }
 
-        pce = Piece::from_char('Q');
-        assert_eq!(Piece::new(PieceRole::Queen, Colour::White), pce);
+    #[test]
+    pub fn offset_as_expected() {
+        assert_eq!(Piece::new(PieceRole::Pawn, Colour::White).offset(), 0);
+        assert_eq!(Piece::new(PieceRole::Bishop, Colour::White).offset(), 1);
+        assert_eq!(Piece::new(PieceRole::Knight, Colour::White).offset(), 2);
+        assert_eq!(Piece::new(PieceRole::Rook, Colour::White).offset(), 3);
+        assert_eq!(Piece::new(PieceRole::Queen, Colour::White).offset(), 4);
+        assert_eq!(Piece::new(PieceRole::King, Colour::White).offset(), 5);
 
-        pce = Piece::from_char('K');
-        assert_eq!(Piece::new(PieceRole::King, Colour::White), pce);
-
-        pce = Piece::from_char('p');
-        assert_eq!(Piece::new(PieceRole::Pawn, Colour::Black), pce);
-
-        pce = Piece::from_char('b');
-        assert_eq!(Piece::new(PieceRole::Bishop, Colour::Black), pce);
-
-        pce = Piece::from_char('n');
-        assert_eq!(Piece::new(PieceRole::Knight, Colour::Black), pce);
-
-        pce = Piece::from_char('r');
-        assert_eq!(Piece::new(PieceRole::Rook, Colour::Black), pce);
-
-        pce = Piece::from_char('q');
-        assert_eq!(Piece::new(PieceRole::Queen, Colour::Black), pce);
-
-        pce = Piece::from_char('k');
-        assert_eq!(Piece::new(PieceRole::King, Colour::Black), pce);
+        assert_eq!(Piece::new(PieceRole::Pawn, Colour::Black).offset(), 6);
+        assert_eq!(Piece::new(PieceRole::Bishop, Colour::Black).offset(), 7);
+        assert_eq!(Piece::new(PieceRole::Knight, Colour::Black).offset(), 8);
+        assert_eq!(Piece::new(PieceRole::Rook, Colour::Black).offset(), 9);
+        assert_eq!(Piece::new(PieceRole::Queen, Colour::Black).offset(), 10);
+        assert_eq!(Piece::new(PieceRole::King, Colour::Black).offset(), 11);
     }
 }

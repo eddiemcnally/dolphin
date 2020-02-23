@@ -2,7 +2,6 @@ use board::bitboard;
 use board::board;
 use board::board::Board;
 use board::occupancy_masks;
-use board::piece;
 use board::piece::Colour;
 use board::piece::Piece;
 use board::square;
@@ -11,10 +10,10 @@ use board::square::Square;
 use std::ops::Shl;
 
 lazy_static! {
-    static ref ROOK_QUEEN_BLACK_VEC: [Piece; 2] = [*piece::ROOK_BLACK, *piece::QUEEN_BLACK];
-    static ref ROOK_QUEEN_WHITE_VEC: [Piece; 2] = [*piece::ROOK_WHITE, *piece::QUEEN_WHITE];
-    static ref BISHOP_QUEEN_BLACK_VEC: [Piece; 2] = [*piece::BISHOP_BLACK, *piece::QUEEN_BLACK];
-    static ref BISHOP_QUEEN_WHITE_VEC: [Piece; 2] = [*piece::BISHOP_WHITE, *piece::QUEEN_WHITE];
+    static ref ROOK_QUEEN_BLACK_VEC: [Piece; 2] = [Piece::BlackRook, Piece::BlackQueen];
+    static ref ROOK_QUEEN_WHITE_VEC: [Piece; 2] = [Piece::WhiteRook, Piece::WhiteQueen];
+    static ref BISHOP_QUEEN_BLACK_VEC: [Piece; 2] = [Piece::BlackBishop, Piece::BlackQueen];
+    static ref BISHOP_QUEEN_WHITE_VEC: [Piece; 2] = [Piece::WhiteBishop, Piece::WhiteQueen];
     // A lookup array of bitmasks for squares between the "from" and "to"
     // squares.
     // Since there is a commutative property associated with to/from squares
@@ -49,8 +48,8 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
 
 fn is_knight_attacking(board: &Board, attack_sq: Square, attacking_side: Colour) -> bool {
     let pce = match attacking_side {
-        Colour::Black => *piece::KNIGHT_BLACK,
-        Colour::White => *piece::KNIGHT_WHITE,
+        Colour::Black => Piece::BlackKnight,
+        Colour::White => Piece::WhiteKnight,
     };
 
     let mut pce_bb = board.get_piece_bitboard(pce);
@@ -85,7 +84,6 @@ fn is_horizontal_or_vertical_attacking(
         let mut pce_bb = board.get_piece_bitboard(*pce);
         while pce_bb != 0 {
             let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
-
             if pce_sq.rank() == target_rank || pce_sq.file() == target_file {
                 let blocking_pces = INTER_SQ_LOOKUP[pce_sq as usize][attack_sq as usize];
                 if blocking_pces & all_pces_bb == 0 {
@@ -128,8 +126,8 @@ fn is_diagonally_attacked(board: &Board, attack_sq: Square, attacking_side: Colo
 
 fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colour) -> bool {
     let attacking_king = match attacking_side {
-        Colour::Black => *piece::KING_BLACK,
-        Colour::White => *piece::KING_WHITE,
+        Colour::Black => Piece::BlackKing,
+        Colour::White => Piece::WhiteKing,
     };
     let mut pce_bb = board.get_piece_bitboard(attacking_king);
     let attacking_king_sq = bitboard::pop_1st_bit(&mut pce_bb);
@@ -140,8 +138,8 @@ fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colou
 
 fn is_attacked_by_pawn(board: &Board, attacked_sq: Square, attacking_side: Colour) -> bool {
     let attacking_pce = match attacking_side {
-        Colour::Black => *piece::PAWN_BLACK,
-        Colour::White => *piece::PAWN_WHITE,
+        Colour::Black => Piece::BlackPawn,
+        Colour::White => Piece::WhitePawn,
     };
 
     let mut pce_bb = board.get_piece_bitboard(attacking_pce);

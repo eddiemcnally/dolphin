@@ -1,5 +1,4 @@
 use board::board::Board;
-use board::piece;
 use board::piece::Colour;
 use board::piece::Piece;
 use board::piece::PieceRole;
@@ -166,9 +165,9 @@ impl Position {
         };
 
         // validate position
-        let bk_bb = pos.board().get_piece_bitboard(*piece::KING_BLACK);
+        let bk_bb = pos.board().get_piece_bitboard(Piece::BlackKing);
         assert_ne!(bk_bb, 0);
-        let wk_bb = pos.board().get_piece_bitboard(*piece::KING_WHITE);
+        let wk_bb = pos.board().get_piece_bitboard(Piece::WhiteKing);
         assert_ne!(wk_bb, 0);
 
         return pos;
@@ -292,6 +291,7 @@ impl Position {
         // check if move results in king being in check
         let king_sq = self.board().get_king_sq(self.side_to_move);
         let attacking_side = self.side_to_move.flip_side();
+
         if attack_checker::is_sq_attacked(self.board(), king_sq, attacking_side) {
             return MoveLegality::Illegal;
         }
@@ -498,13 +498,13 @@ fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
     let (capt_sq, pawn, capt_pawn) = match position.side_to_move {
         Colour::White => (
             to_sq.square_minus_1_rank(),
-            *piece::PAWN_WHITE,
-            *piece::PAWN_BLACK,
+            Piece::WhitePawn,
+            Piece::BlackPawn,
         ),
         Colour::Black => (
             to_sq.square_plus_1_rank(),
-            *piece::PAWN_BLACK,
-            *piece::PAWN_WHITE,
+            Piece::BlackPawn,
+            Piece::WhitePawn,
         ),
     };
 
