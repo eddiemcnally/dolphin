@@ -1,7 +1,6 @@
 use board::bitboard;
 use board::piece::Colour;
 use board::piece::Piece;
-use board::piece::PieceRole;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
 use board::square;
@@ -162,7 +161,7 @@ impl Board {
             "add_piece, square not empty. {:?}",
             sq
         );
-        self.set_bitboards(piece, sq);
+        self.set_bitboards_with_material(piece, sq);
     }
 
     pub fn remove_piece(&mut self, piece: Piece, sq: Square) {
@@ -172,7 +171,7 @@ impl Board {
             sq
         );
 
-        self.clear_bitboards(piece, sq);
+        self.clear_bitboards_with_material(piece, sq);
     }
 
     pub fn get_colour_bb(&self, colour: Colour) -> u64 {
@@ -220,16 +219,14 @@ impl Board {
         return self.king_sq[colour.offset()];
     }
 
-    fn set_bitboards(&mut self, piece: Piece, sq: Square) {
-        bitboard::set_bit(&mut self.board_bb, sq);
-        bitboard::set_bit(&mut self.piece_bb[piece.offset()], sq);
-        bitboard::set_bit(&mut self.colour_bb[piece.colour().offset()], sq);
-        self.pieces[sq.to_offset()] = Some(piece);
-
-        if piece.role() == PieceRole::King {
-            self.king_sq[piece.colour().offset()] = sq;
-        }
+    fn set_bitboards_with_material(&mut self, piece: Piece, sq: Square) {
+        self.set_bitboards(piece, sq);
         self.material[piece.colour().offset()] += piece.value();
+    }
+
+    fn clear_bitboards_with_material(&mut self, piece: Piece, sq: Square) {
+        self.clear_bitboards(piece, sq);
+        self.material[piece.colour().offset()] -= piece.value();
     }
 
     fn clear_bitboards(&mut self, piece: Piece, sq: Square) {
@@ -237,9 +234,21 @@ impl Board {
         bitboard::clear_bit(&mut self.piece_bb[piece.offset()], sq);
         bitboard::clear_bit(&mut self.colour_bb[piece.colour().offset()], sq);
         self.pieces[sq.to_offset()] = None;
-        self.material[piece.colour().offset()] -= piece.value();
+    }
+
+    fn set_bitboards(&mut self, piece: Piece, sq: Square) {
+        bitboard::set_bit(&mut self.board_bb, sq);
+        bitboard::set_bit(&mut self.piece_bb[piece.offset()], sq);
+        bitboard::set_bit(&mut self.colour_bb[piece.colour().offset()], sq);
+        self.pieces[sq.to_offset()] = Some(piece);
+
+        match piece {
+            Piece::BlackKing | Piece::WhiteKing => self.king_sq[piece.colour().offset()] = sq,
+            _ => (),
+        }
     }
 }
+
 #[cfg(test)]
 pub mod tests {
     use board::bitboard;

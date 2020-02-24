@@ -8,6 +8,7 @@ use board::square::Square;
 use moves::mov::Mov;
 use position::castle_permissions;
 use position::position::Position;
+use smallvec::SmallVec;
 
 static PROMOTION_ROLES: [PieceRole; 4] = [
     PieceRole::Bishop,
@@ -22,16 +23,14 @@ pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
 
     match side_to_move {
         Colour::White => {
-            generate_non_sliding_piece_moves(&board, Piece::WhiteKnight, move_list);
-            generate_non_sliding_piece_moves(&board, Piece::WhiteKing, move_list);
+            generate_non_sliding_piece_moves(&board, side_to_move, move_list);
             generate_sliding_diagonal_antidiagonal_moves(&board, Piece::WhiteBishop, move_list);
             generate_sliding_rank_file_moves(&board, Piece::WhiteRook, move_list);
             generate_sliding_rank_file_moves(&board, Piece::WhiteQueen, move_list);
             generate_sliding_diagonal_antidiagonal_moves(&board, Piece::WhiteQueen, move_list);
         }
         Colour::Black => {
-            generate_non_sliding_piece_moves(&board, Piece::BlackKnight, move_list);
-            generate_non_sliding_piece_moves(&board, Piece::BlackKing, move_list);
+            generate_non_sliding_piece_moves(&board, side_to_move, move_list);
             generate_sliding_diagonal_antidiagonal_moves(&board, Piece::BlackBishop, move_list);
             generate_sliding_rank_file_moves(&board, Piece::BlackRook, move_list);
             generate_sliding_rank_file_moves(&board, Piece::BlackQueen, move_list);
@@ -142,30 +141,37 @@ fn generate_sliding_rank_file_moves(board: &Board, pce: Piece, move_list: &mut V
 }
 
 // generates moves for King and Knight
-fn generate_non_sliding_piece_moves(board: &Board, pce: Piece, move_list: &mut Vec<Mov>) {
-    let mut pce_bb = board.get_piece_bitboard(pce);
-    while pce_bb != 0 {
-        let sq = bitboard::pop_1st_bit(&mut pce_bb);
+fn generate_non_sliding_piece_moves(board: &Board, side_to_move: Colour, move_list: &mut Vec<Mov>) {
+    let pieces: SmallVec<[Piece; 2]> = match side_to_move {
+        Colour::White => smallvec![Piece::WhiteKing, Piece::WhiteKnight],
+        Colour::Black => smallvec![Piece::BlackKing, Piece::BlackKnight],
+    };
 
-        let occ_mask = match pce.role() {
-            PieceRole::King => occupancy_masks::get_occupancy_mask_king(sq),
-            PieceRole::Knight => occupancy_masks::get_occupancy_mask_knight(sq),
-            _ => panic!("Invalid piece role"),
-        };
+    for pce in pieces {
+        let mut pce_bb = board.get_piece_bitboard(pce);
+        while pce_bb != 0 {
+            let sq = bitboard::pop_1st_bit(&mut pce_bb);
 
-        // generate capture moves
-        // ----------------------
-        // AND'ing with opposite colour pieces with the occupancy mask, willbetter toml
-        // give all pieces that can be captured by the piece on this square
-        let opposite_side = pce.colour().flip_side();
-        let opp_occ_sq_bb = board.get_colour_bb(opposite_side);
-        let mut capt_bb = opp_occ_sq_bb & occ_mask;
-        encode_multiple_capture_moves(&mut capt_bb, sq, move_list);
+            let occ_mask = match pce.role() {
+                PieceRole::King => occupancy_masks::get_occupancy_mask_king(sq),
+                PieceRole::Knight => occupancy_masks::get_occupancy_mask_knight(sq),
+                _ => panic!("Invalid piece role"),
+            };
 
-        // generate quiet moves
-        let unoccupied_squares_bb = !board.get_bitboard();
-        let mut quiet_move_bb = unoccupied_squares_bb & occ_mask;
-        encode_multiple_quiet_moves(&mut quiet_move_bb, sq, move_list);
+            // generate capture moves
+            // ----------------------
+            // AND'ing with opposite colour pieces with the occupancy mask, willbetter toml
+            // give all pieces that can be captured by the piece on this square
+            let opposite_side = pce.colour().flip_side();
+            let opp_occ_sq_bb = board.get_colour_bb(opposite_side);
+            let mut capt_bb = opp_occ_sq_bb & occ_mask;
+            encode_multiple_capture_moves(&mut capt_bb, sq, move_list);
+
+            // generate quiet moves
+            let unoccupied_squares_bb = !board.get_bitboard();
+            let mut quiet_move_bb = unoccupied_squares_bb & occ_mask;
+            encode_multiple_quiet_moves(&mut quiet_move_bb, sq, move_list);
+        }
     }
 }
 

@@ -9,6 +9,9 @@ extern crate num;
 #[macro_use]
 extern crate num_derive;
 
+#[macro_use]
+extern crate smallvec;
+
 mod board;
 mod input;
 mod moves;
@@ -21,7 +24,6 @@ use position::position::Position;
 use std::time::Instant;
 
 fn main() {
-    
     // let epd_rows = perft::epd_parser::extract_epd("../../src/resources/perftsuite.epd".to_string());
 
     // for epd in &epd_rows {
