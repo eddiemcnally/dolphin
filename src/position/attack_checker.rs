@@ -1,10 +1,8 @@
 use board::bitboard;
-use board::board;
 use board::board::Board;
 use board::occupancy_masks;
 use board::piece::Colour;
 use board::piece::Piece;
-use board::square;
 use board::square::Square;
 
 use std::ops::Shl;
@@ -14,16 +12,16 @@ lazy_static! {
     static ref ROOK_QUEEN_WHITE_VEC: [Piece; 2] = [Piece::WhiteRook, Piece::WhiteQueen];
     static ref BISHOP_QUEEN_BLACK_VEC: [Piece; 2] = [Piece::BlackBishop, Piece::BlackQueen];
     static ref BISHOP_QUEEN_WHITE_VEC: [Piece; 2] = [Piece::WhiteBishop, Piece::WhiteQueen];
-    // A lookup array of bitmasks for squares between the "from" and "to"
-    // squares.
-    // Since there is a commutative property associated with to/from squares
-    // when identifying intervening squares, it's irrelevent whether you index using
-    // [from][to] or [to][from]
-    static ref INTER_SQ_LOOKUP: [[u64; board::NUM_SQUARES]; board::NUM_SQUARES] = populate_intervening_sq_lookup();
-
 }
 
 pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool {
+    if is_attacked_by_pawn(board, sq, attacking_side) {
+        return true;
+    }
+
+    if is_attacked_by_king(board, sq, attacking_side) {
+        return true;
+    }
     if is_knight_attacking(board, sq, attacking_side) {
         return true;
     }
@@ -36,13 +34,6 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
         return true;
     }
 
-    if is_attacked_by_pawn(board, sq, attacking_side) {
-        return true;
-    }
-
-    if is_attacked_by_king(board, sq, attacking_side) {
-        return true;
-    }
     return false;
 }
 
@@ -85,7 +76,7 @@ fn is_horizontal_or_vertical_attacking(
         while pce_bb != 0 {
             let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
             if pce_sq.rank() == target_rank || pce_sq.file() == target_file {
-                let blocking_pces = INTER_SQ_LOOKUP[pce_sq as usize][attack_sq as usize];
+                let blocking_pces = get_intervening_bitboard(pce_sq, attack_sq);
                 if blocking_pces & all_pces_bb == 0 {
                     // no blocking pieces, attacked
                     return true;
@@ -112,7 +103,7 @@ fn is_diagonally_attacked(board: &Board, attack_sq: Square, attacking_side: Colo
             let diagonal_bb = occupancy_masks::get_occupancy_mask_bishop(pce_sq);
             if bitboard::is_set(diagonal_bb, attack_sq) {
                 // potentially attacking
-                let blocking_pces = INTER_SQ_LOOKUP[pce_sq as usize][attack_sq as usize];
+                let blocking_pces = get_intervening_bitboard(pce_sq, attack_sq);
                 if blocking_pces & all_pces_bb == 0 {
                     // no blocking pieces, attacked
                     return true;
@@ -159,26 +150,13 @@ fn is_attacked_by_pawn(board: &Board, attacked_sq: Square, attacking_side: Colou
     return false;
 }
 
-fn populate_intervening_sq_lookup() -> [[u64; board::NUM_SQUARES]; board::NUM_SQUARES] {
-    let mut retval: [[u64; board::NUM_SQUARES]; board::NUM_SQUARES] =
-        [[0; board::NUM_SQUARES]; board::NUM_SQUARES];
-
-    for from_sq in square::get_square_array() {
-        for to_sq in square::get_square_array() {
-            let bitmap = get_intervening_bitboard(*from_sq, *to_sq);
-            retval[*from_sq as usize][*to_sq as usize] = bitmap;
-        }
-    }
-    retval
-}
-
 // This code returns a bitboard with bits set representing squares between
 // the given 2 squares.
 //
 // The code is taken from :
 // https://www.chessprogramming.org/Square_Attacked_By
 //
-pub fn get_intervening_bitboard(sq1: Square, sq2: Square) -> u64 {
+fn get_intervening_bitboard(sq1: Square, sq2: Square) -> u64 {
     const M1: u64 = 0xffffffffffffffff;
     const A2A7: u64 = 0x0001010101010100;
     const B2G7: u64 = 0x0040201008040200;
@@ -251,14 +229,13 @@ mod tests {
     pub fn white_knight_attacking_true() {
         // set up a list of FENs with BK and WN such that BK *is* under attack
         let fens = vec![
-            "7k/5N2/6N1/8/8/8/8/8 w - - 0 1",
-            "7k/5N2/4N3/8/8/8/8/8 w - - 0 1",
-            "3k4/5N2/4N3/8/8/8/8/8 w - - 0 1",
-            "8/5N2/3kN3/8/8/8/8/8 w - - 0 1",
-            "8/5N2/4N3/4k3/8/8/8/8 w - - 0 1",
-            "8/8/8/8/8/1N6/2N5/k7 w - - 0 1",
-            "8/8/8/8/8/8/N1N5/k7 w - - 0 1",
-            "8/8/8/8/8/8/5N2/5N1k w - - 0 1",
+            "7k/5N2/6N1/8/8/8/8/K7 w - - 0 1",
+            "7k/5N2/8/8/8/5N2/8/K7 w - - 0 1",
+            "8/8/8/8/8/6N1/5N2/K6k w - - 0 1",
+            "8/8/8/8/4k3/6N1/5N2/K7 w - - 0 1",
+            "k7/8/1N6/3N4/8/8/8/K7 w - - 0 1",
+            "k7/2N5/1N6/8/8/8/8/K7 w - - 0 1",
+            "8/8/8/5N2/3k4/1N6/8/K7 w - - 0 1",
         ];
 
         for fen in fens {
@@ -274,17 +251,17 @@ mod tests {
     pub fn black_knight_attacking_true() {
         // set up a list of FENs with WK and BN such that WK *is* under attack
         let fens = vec![
-            "7K/5n2/6n1/8/8/8/8/8 w - - 0 1",
-            "7K/5n2/8/4n3/8/8/8/8 w - - 0 1",
-            "8/5n2/7K/5n2/8/8/8/8 w - - 0 1",
-            "8/8/8/8/8/6n1/5n2/7K w - - 0 1",
-            "8/8/8/8/8/6n1/8/5n1K w - - 0 1",
-            "8/8/8/8/8/8/2n5/K1n5 w - - 0 1",
-            "8/8/8/8/8/1n6/2n5/K7 w - - 0 1",
-            "8/8/8/8/8/nn6/8/K7 w - - 0 1",
-            "8/8/1n6/3n4/2K5/8/8/8 w - - 0 1",
-            "8/8/1n6/3n4/8/2K5/8/8 w - - 0 1",
-            "8/8/1n6/3n4/1K6/8/8/8 w - - 0 1",
+            "7K/k4n2/6n1/8/8/8/8/8 w - - 0 1",
+            "7K/k4n2/8/4n3/8/8/8/8 w - - 0 1",
+            "8/k4n2/8/4n1K1/8/8/8/8 w - - 0 1",
+            "8/k2K4/8/2n1n3/8/8/8/8 w - - 0 1",
+            "8/k7/8/2n1n3/8/3K4/8/8 w - - 0 1",
+            "8/k7/8/2n1n3/8/3K4/8/8 w - - 0 1",
+            "8/k7/8/8/8/1n6/2n5/K7 w - - 0 1",
+            "K1n5/8/1n4k1/8/8/8/8/8 w - - 0 1",
+            "K7/2n5/1n4k1/8/8/8/8/8 w - - 0 1",
+            "8/5n2/8/8/8/k5n1/8/7K w - - 0 1",
+            "8/8/8/8/8/k5n1/5n2/7K w - - 0 1",
         ];
 
         for fen in fens {
@@ -363,16 +340,12 @@ mod tests {
     pub fn white_horizontal_vertical_attacking_true() {
         // set up a list of FENs with WK, WR and WQ such that BK *is* under attack
         let fens = vec![
-            "8/8/8/1R6/8/8/4Q3/3R3k w - - 0 1",
-            "8/8/8/1R6/8/8/3R4/4Q2k w - - 0 1",
-            "8/8/8/8/7k/8/3R4/4Q2R w - - 0 1",
-            "4k3/8/8/8/8/8/3R4/4Q2R w - - 0 1",
-            "k7/8/8/8/8/8/3R4/Q6R w - - 0 1",
-            "k6R/8/8/8/8/8/3R4/5Q2 w - - 0 1",
-            "k6R/8/8/8/8/8/3R4/5Q2 w - - 0 1",
-            "8/8/8/RR1k4/8/8/8/5Q2 w - - 0 1",
-            "3Q4/8/8/3k4/8/3R4/3R4/8 w - - 0 1",
-            "3Q4/8/8/3k4/8/6R1/R7/8 w - - 0 1",
+            "4k3/8/8/8/8/K7/3R4/4Q2R w - - 0 1",
+            "8/8/8/8/8/K7/6R1/4Q1kR w - - 0 1",
+            "3Rk3/8/8/8/8/K7/8/4Q2R w - - 0 1",
+            "7k/8/8/8/8/K7/6R1/4Q2R w - - 0 1",
+            "3R4/8/8/7k/8/K7/8/4Q2R w - - 0 1",
+            "k2R4/8/8/8/8/K7/8/4Q2R w - - 0 1",
         ];
 
         for fen in fens {
@@ -388,14 +361,13 @@ mod tests {
     pub fn black_horizontal_vertical_attacking_true() {
         // set up a list of FENs with BK, BR and BQ such that WK *is* under attack
         let fens = vec![
-            "8/8/8/8/8/8/2qr4/3r3K w - - 0 1",
-            "8/8/8/8/8/8/2qr3K/3r4 w - - 0 1",
-            "3K4/8/8/8/8/8/2qr4/3r4 w - - 0 1",
-            "8/8/8/8/8/8/K1qr4/3r4 w - - 0 1",
-            "8/3r2q1/8/8/8/8/3K4/3r4 w - - 0 1",
-            "8/K2r2q1/8/8/8/8/8/3r4 w - - 0 1",
-            "8/K2r4/8/8/8/8/q7/3r4 w - - 0 1",
-            "8/K2r4/8/8/r7/8/q7/8 w - - 0 1",
+            "1k6/3r2q1/8/8/8/8/3K4/3r4 w - - 0 1",
+            "1k6/3r2q1/8/8/8/8/8/3r2K1 w - - 0 1",
+            "1k6/3r2q1/8/8/8/8/8/K2r4 w - - 0 1",
+            "1k6/3rK1q1/8/8/8/8/8/3r4 w - - 0 1",
+            "7k/K2r2q1/8/8/8/8/8/3r4 w - - 0 1",
+            "7k/3r4/3r4/8/8/3K2q1/8/8 w - - 0 1",
+            "7k/3r4/K2r4/8/8/6q1/8/8 w - - 0 1",
         ];
 
         for fen in fens {
@@ -462,15 +434,15 @@ mod tests {
     pub fn white_diagonal_attacking_true() {
         // set up a list of FENs with WK, WB and WQ such that BK *is* under attack
         let fens = vec![
-            "8/8/8/4Q3/4BB2/8/8/7k w - - 0 1",
-            "8/1Q6/8/8/4BB2/8/8/7k w - - 0 1",
-            "8/1Q6/8/8/4BB2/8/7k/8 w - - 0 1",
-            "7k/1Q6/8/4B3/4B3/8/8/8 w - - 0 1",
-            "7k/8/3B4/8/4B3/8/1Q6/8 w - - 0 1",
-            "3k4/8/8/5B2/7B/3Q4/8/8 w - - 0 1",
-            "8/8/8/2B2k2/4B3/3Q4/8/8 w - - 0 1",
-            "8/8/8/2B5/4B3/3Q4/8/1k6 w - - 0 1",
-            "4k2r/8/8/8/Q7/8/8/8 w - - 0 1",
+            "8/8/1K6/4Q3/4BB2/8/8/7k w - - 0 1",
+            "7K/1Q6/8/8/4BB2/8/8/7k w - - 0 1",
+            "6K1/1Q6/8/8/4BB2/8/7k/8 w - - 0 1",
+            "7k/1Q6/8/4B3/4B3/8/8/1K6 w - - 0 1",
+            "3K4/1Q6/8/4B3/4B3/8/8/1k6 w - - 0 1",
+            "3K4/1Q6/8/4B3/4B3/8/1k6/8 w - - 0 1",
+            "3K4/1Q6/8/4B3/4B3/8/8/k7 w - - 0 1",
+            "3K4/1Q5k/8/4B3/4B3/8/8/8 w - - 0 1",
+            "3K4/1Q6/8/4B3/4B3/8/7k/8 w - - 0 1",
         ];
 
         for fen in fens {
@@ -487,13 +459,12 @@ mod tests {
     pub fn black_diagonal_attacking_true() {
         // set up a list of FENs with BK, BB and BQ such that WK *is* under attack
         let fens = vec![
-            "8/8/8/2b5/4b3/3q4/8/6K1 w - - 0 1",
-            "8/8/8/4b3/3qb3/8/8/K7 w - - 0 1",
-            "7K/8/8/4b3/3qb3/8/8/8 w - - 0 1",
-            "K7/8/8/4b3/3qb3/8/8/8 w - - 0 1",
-            "8/8/1K6/4b3/3qb3/8/8/8 w - - 0 1",
-            "8/8/2b2K2/8/3b4/8/8/q7 w - - 0 1",
-            "8/6b1/2b5/8/3K4/8/8/q7 w - - 0 1",
+            "1k6/8/8/2b5/4b3/3q4/8/6K1 w - - 0 1",
+            "1k6/8/1q6/2b5/4b3/8/8/6K1 w - - 0 1",
+            "1k6/8/1q6/2b5/4b3/K7/8/8 w - - 0 1",
+            "1k6/8/1q6/2bK4/4b3/8/8/8 w - - 0 1",
+            "1k5q/8/8/4K3/8/8/1b6/7b w - - 0 1",
+            "1k5q/8/2K5/8/8/8/1b6/7b w - - 0 1",
         ];
         for fen in fens {
             print!("fen={}", fen);
