@@ -17,24 +17,32 @@ lazy_static! {
 }
 
 pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool {
-    if attacking_side == Colour::White {
-        if is_attacked_by_pawn_white(board, sq) {
-            return true;
+    match attacking_side {
+        Colour::White => {
+            if is_attacked_by_pawn_white(board, sq) {
+                return true;
+            }
+            if is_knight_attacking(board, sq, Piece::WhiteKnight) {
+                return true;
+            }
+            if is_horizontal_or_vertical_attacking(board, sq, Piece::WhiteRook, Piece::WhiteQueen) {
+                return true;
+            }
         }
-    } else {
-        if is_attacked_by_pawn_black(board, sq) {
-            return true;
+        Colour::Black => {
+            if is_attacked_by_pawn_black(board, sq) {
+                return true;
+            }
+            if is_knight_attacking(board, sq, Piece::BlackKnight) {
+                return true;
+            }
+            if is_horizontal_or_vertical_attacking(board, sq, Piece::BlackRook, Piece::BlackQueen) {
+                return true;
+            }
         }
     }
 
     if is_attacked_by_king(board, sq, attacking_side) {
-        return true;
-    }
-    if is_knight_attacking(board, sq, attacking_side) {
-        return true;
-    }
-
-    if is_horizontal_or_vertical_attacking(board, sq, attacking_side) {
         return true;
     }
 
@@ -45,13 +53,8 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
     return false;
 }
 
-fn is_knight_attacking(board: &Board, attack_sq: Square, attacking_side: Colour) -> bool {
-    let pce = match attacking_side {
-        Colour::Black => Piece::BlackKnight,
-        Colour::White => Piece::WhiteKnight,
-    };
-
-    let mut pce_bb = board.get_piece_bitboard(pce);
+fn is_knight_attacking(board: &Board, attack_sq: Square, attacking_pce: Piece) -> bool {
+    let mut pce_bb = board.get_piece_bitboard(attacking_pce);
 
     while pce_bb != 0 {
         let sq = bitboard::pop_1st_bit(&mut pce_bb);
@@ -67,28 +70,29 @@ fn is_knight_attacking(board: &Board, attack_sq: Square, attacking_side: Colour)
 fn is_horizontal_or_vertical_attacking(
     board: &Board,
     attack_sq: Square,
-    attacking_side: Colour,
+    rook: Piece,
+    queen: Piece,
 ) -> bool {
-    let target_rank = attack_sq.rank();
-    let target_file = attack_sq.file();
+    if check_horiz_vert(board, rook, attack_sq) {
+        return true;
+    }
 
-    let pces = match attacking_side {
-        Colour::Black => *ROOK_QUEEN_BLACK_VEC,
-        Colour::White => *ROOK_QUEEN_WHITE_VEC,
-    };
+    if check_horiz_vert(board, queen, attack_sq) {
+        return true;
+    }
 
-    let all_pces_bb = board.get_bitboard();
+    return false;
+}
 
-    for pce in &pces {
-        let mut pce_bb = board.get_piece_bitboard(*pce);
-        while pce_bb != 0 {
-            let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
-            if pce_sq.rank() == target_rank || pce_sq.file() == target_file {
-                let blocking_pces = get_intervening_bitboard(pce_sq, attack_sq);
-                if blocking_pces & all_pces_bb == 0 {
-                    // no blocking pieces, attacked
-                    return true;
-                }
+fn check_horiz_vert(board: &Board, piece: Piece, attack_sq: Square) -> bool {
+    let mut pce_bb = board.get_piece_bitboard(piece);
+    while pce_bb != 0 {
+        let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
+        if pce_sq.rank() == attack_sq.rank() || pce_sq.file() == attack_sq.file() {
+            let blocking_pces = get_intervening_bitboard(pce_sq, attack_sq);
+            if blocking_pces & board.get_bitboard() == 0 {
+                // no blocking pieces, attacked
+                return true;
             }
         }
     }
@@ -124,14 +128,8 @@ fn is_diagonally_attacked(board: &Board, attack_sq: Square, attacking_side: Colo
 }
 
 fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colour) -> bool {
-    let attacking_king = match attacking_side {
-        Colour::Black => Piece::BlackKing,
-        Colour::White => Piece::WhiteKing,
-    };
-    let mut pce_bb = board.get_piece_bitboard(attacking_king);
-    let attacking_king_sq = bitboard::pop_1st_bit(&mut pce_bb);
+    let attacking_king_sq = board.get_king_sq(attacking_side);
     let king_occ_mask = occupancy_masks::get_occupancy_mask_king(attacking_king_sq);
-
     return bitboard::is_set(king_occ_mask, attacked_sq);
 }
 
