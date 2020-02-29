@@ -68,8 +68,8 @@ pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, Piece> {
                     // not a number, so it's a piece
                     let piece = Piece::from_char(c);
 
-                    let r: Rank = Rank::from_int(rank as u8);
-                    let f: File = File::from_int(file);
+                    let r: Rank = Rank::from_num(rank as u8);
+                    let f: File = File::from_num(file);
 
                     let sq: Square = Square::get_square(r, f);
                     file += 1;

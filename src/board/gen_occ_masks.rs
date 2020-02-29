@@ -316,8 +316,8 @@ fn is_valid_file(f: i8) -> bool {
 
 fn set_dest_sq_if_valid(bb: &mut u64, dest_rank: i8, dest_file: i8) {
     if is_valid_rank(dest_rank) && is_valid_file(dest_file) {
-        let r: Rank = Rank::from_int(dest_rank as u8);
-        let f: File = File::from_int(dest_file as u8);
+        let r: Rank = Rank::from_num(dest_rank as u8);
+        let f: File = File::from_num(dest_file as u8);
 
         let sq = Square::get_square(r, f);
 

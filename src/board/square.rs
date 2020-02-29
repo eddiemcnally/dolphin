@@ -258,8 +258,10 @@ impl Square {
 }
 
 pub mod rank {
+    use enum_primitive::FromPrimitive;
     use std::slice::Iter;
 
+    enum_from_primitive! {
     #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
     #[repr(u8)]
     pub enum Rank {
@@ -271,9 +273,13 @@ pub mod rank {
         Rank6,
         Rank7,
         Rank8,
-    }
+    }}
 
     impl Rank {
+        pub fn from_num(num: u8) -> Rank {
+            return Rank::from_u8(num).unwrap();
+        }
+
         pub fn from_char(rank: char) -> Rank {
             match rank {
                 '1' => Rank::Rank1,
@@ -299,30 +305,9 @@ pub mod rank {
                 Rank::Rank8 => '8',
             }
         }
-        pub fn from_int(rank: u8) -> Rank {
-            match rank {
-                0 => Rank::Rank1,
-                1 => Rank::Rank2,
-                2 => Rank::Rank3,
-                3 => Rank::Rank4,
-                4 => Rank::Rank5,
-                5 => Rank::Rank6,
-                6 => Rank::Rank7,
-                7 => Rank::Rank8,
-                _ => panic!("Invalid rank character {}", rank),
-            }
-        }
+
         pub fn to_int(rank: Rank) -> u8 {
-            match rank {
-                Rank::Rank1 => 0,
-                Rank::Rank2 => 1,
-                Rank::Rank3 => 2,
-                Rank::Rank4 => 3,
-                Rank::Rank5 => 4,
-                Rank::Rank6 => 5,
-                Rank::Rank7 => 6,
-                Rank::Rank8 => 7,
-            }
+            return rank as u8;
         }
         pub fn iterator() -> Iter<'static, Rank> {
             static RANKS: [Rank; 8] = [
@@ -355,46 +340,31 @@ pub mod rank {
 }
 
 pub mod file {
+    use enum_primitive::FromPrimitive;
     use std::slice::Iter;
 
-    #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
-    #[repr(u8)]
-    pub enum File {
-        FileA = 0,
-        FileB,
-        FileC,
-        FileD,
-        FileE,
-        FileF,
-        FileG,
-        FileH,
+    enum_from_primitive! {
+        #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
+        #[repr(u8)]
+        pub enum File {
+            FileA = 0,
+            FileB,
+            FileC,
+            FileD,
+            FileE,
+            FileF,
+            FileG,
+            FileH,
+        }
     }
 
     impl File {
-        pub fn from_int(fint: u8) -> File {
-            match fint {
-                0 => File::FileA,
-                1 => File::FileB,
-                2 => File::FileC,
-                3 => File::FileD,
-                4 => File::FileE,
-                5 => File::FileF,
-                6 => File::FileG,
-                7 => File::FileH,
-                _ => panic!("Invalid file number {}", fint),
-            }
+        pub fn from_num(num: u8) -> File {
+            return File::from_u8(num).unwrap();
         }
+
         pub fn to_int(file: File) -> u8 {
-            match file {
-                File::FileA => 0,
-                File::FileB => 1,
-                File::FileC => 2,
-                File::FileD => 3,
-                File::FileE => 4,
-                File::FileF => 5,
-                File::FileG => 6,
-                File::FileH => 7,
-            }
+            return file as u8;
         }
 
         pub fn from_char(file: char) -> File {
