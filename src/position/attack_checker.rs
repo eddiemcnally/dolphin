@@ -3,6 +3,8 @@ use board::board::Board;
 use board::occupancy_masks;
 use board::piece::Colour;
 use board::piece::Piece;
+use board::square::file::File;
+use board::square::rank::Rank;
 use board::square::Square;
 
 use std::ops::Shl;
@@ -15,8 +17,14 @@ lazy_static! {
 }
 
 pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool {
-    if is_attacked_by_pawn(board, sq, attacking_side) {
-        return true;
+    if attacking_side == Colour::White {
+        if is_attacked_by_pawn_white(board, sq) {
+            return true;
+        }
+    } else {
+        if is_attacked_by_pawn_black(board, sq) {
+            return true;
+        }
     }
 
     if is_attacked_by_king(board, sq, attacking_side) {
@@ -127,27 +135,57 @@ fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colou
     return bitboard::is_set(king_occ_mask, attacked_sq);
 }
 
-fn is_attacked_by_pawn(board: &Board, attacked_sq: Square, attacking_side: Colour) -> bool {
-    let attacking_pce = match attacking_side {
-        Colour::Black => Piece::BlackPawn,
-        Colour::White => Piece::WhitePawn,
-    };
+fn is_attacked_by_pawn_white(board: &Board, attacked_sq: Square) -> bool {
+    let wp_bb = board.get_piece_bitboard(Piece::WhitePawn);
 
-    let mut pce_bb = board.get_piece_bitboard(attacking_pce);
-    while pce_bb != 0 {
-        let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
-
-        let occ_mask = match attacking_side {
-            Colour::White => occupancy_masks::get_white_pawn_capture_mask(pce_sq),
-            Colour::Black => occupancy_masks::get_black_pawn_capture_mask(pce_sq),
-        };
-
-        if bitboard::is_set(occ_mask, attacked_sq) {
-            // attacked
+    // -1 Rank and +/- 1 File
+    let r: i8 = attacked_sq.rank() as i8 - 1;
+    let mut f: i8 = attacked_sq.file() as i8 - 1;
+    if is_valid_rank_and_file(r, f) {
+        let pawn_sq = Square::get_square(Rank::from_num(r as u8), File::from_num(f as u8));
+        if bitboard::is_set(wp_bb, pawn_sq) {
             return true;
         }
     }
+
+    f = attacked_sq.file() as i8 + 1;
+    if is_valid_rank_and_file(r, f) {
+        let pawn_sq = Square::get_square(Rank::from_num(r as u8), File::from_num(f as u8));
+        if bitboard::is_set(wp_bb, pawn_sq) {
+            return true;
+        }
+    }
+
     return false;
+}
+
+fn is_attacked_by_pawn_black(board: &Board, attacked_sq: Square) -> bool {
+    let bp_bb = board.get_piece_bitboard(Piece::BlackPawn);
+
+    // +1 Rank and +/- 1 File
+    let r: i8 = attacked_sq.rank() as i8 + 1;
+    let mut f: i8 = attacked_sq.file() as i8 - 1;
+    if is_valid_rank_and_file(r, f) {
+        let pawn_sq = Square::get_square(Rank::from_num(r as u8), File::from_num(f as u8));
+        if bitboard::is_set(bp_bb, pawn_sq) {
+            return true;
+        }
+    }
+
+    f = attacked_sq.file() as i8 + 1;
+    if is_valid_rank_and_file(r, f) {
+        let pawn_sq = Square::get_square(Rank::from_num(r as u8), File::from_num(f as u8));
+        if bitboard::is_set(bp_bb, pawn_sq) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+fn is_valid_rank_and_file(r: i8, f: i8) -> bool {
+    let range = 0..8;
+    return range.contains(&r) && range.contains(&f);
 }
 
 // This code returns a bitboard with bits set representing squares between

@@ -59,4 +59,26 @@ Depth: 5, #Expected: 193690690, #found: 193690690
 
 
 
+Reworked attack checker code that checks for pawn attack. 
+========================================================
+Did some profiling and tweaked the pawn attack checker code to only check for pawns explicitly attacking the target square.
+
+
+[profile.release]
+lto = true
+
+Release build
+
+Results:
+-------
+
+
+Sampl Perf : Depth: 5, perft - r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 ;D1 48 ;D2 2039 ;D3 97862 ;D4 4085603 ;D5 193690690 ;D6 8031647685
+Nodes/sec: 9126259.807917168
+Depth: 5, #Expected: 193690690, #found: 193690690
+
+
+
+
+
 
