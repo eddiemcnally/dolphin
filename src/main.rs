@@ -11,6 +11,7 @@ extern crate num_derive;
 
 #[macro_use]
 extern crate smallvec;
+extern crate core_affinity;
 
 mod board;
 mod input;
@@ -24,6 +25,11 @@ use position::position::Position;
 use std::time::Instant;
 
 fn main() {
+
+    // Pin current thread to a core
+    let core_ids = core_affinity::get_core_ids().unwrap();
+    core_affinity::set_for_current(core_ids[0]);
+
     // let epd_rows = perft::epd_parser::extract_epd("../../src/resources/perftsuite.epd".to_string());
 
     // for epd in &epd_rows {

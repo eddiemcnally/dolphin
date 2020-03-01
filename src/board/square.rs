@@ -2,7 +2,7 @@ use board::square::file::File;
 use board::square::rank::Rank;
 use num::FromPrimitive;
 use std::fmt;
-use std::mem::transmute;
+use std::ops::Shl;
 
 enum_from_primitive! {
 #[allow(non_camel_case_types)]
@@ -200,42 +200,24 @@ impl Square {
 
     pub fn rank(self) -> Rank {
         let rank_num = self as u8 >> 3;
-
-        match rank_num {
-            0 => Rank::Rank1,
-            1 => Rank::Rank2,
-            2 => Rank::Rank3,
-            4 => Rank::Rank5,
-            3 => Rank::Rank4,
-            5 => Rank::Rank6,
-            6 => Rank::Rank7,
-            7 => Rank::Rank8,
-            _ => panic!("invalid rank number"),
-        }
+        return Rank::from_num(rank_num);
     }
 
     pub fn file(self) -> File {
         let file_num = (self as u8 % 8) as u8;
-
-        match file_num {
-            0 => File::FileA,
-            1 => File::FileB,
-            2 => File::FileC,
-            3 => File::FileD,
-            4 => File::FileE,
-            5 => File::FileF,
-            6 => File::FileG,
-            7 => File::FileH,
-            _ => panic!("invalid file number"),
-        }
+        return File::from_num(file_num);
     }
 
     pub fn get_square(rank: Rank, file: File) -> Square {
         let sq = rank as u8 * 8 + file as u8;
+        return Square::from_num(sq);
+    }
 
-        // todo: find a way of removing the "unsafe" code
-        let retval: Square = unsafe { transmute(sq as u8) };
-        return retval;
+
+    pub fn get_square_as_bb(rank:u8, file:u8) -> u64 {
+        let sq = rank as u8 * 8 + file as u8;
+        let bit: u64 = 1;
+        return bit.shl(sq);    
     }
 
     pub fn get_from_string(square_str: &str) -> Square {
@@ -252,8 +234,20 @@ impl Square {
         return Square::from_u8(num).unwrap();
     }
 
-    pub fn to_offset(&self) -> usize {
-        return *self as usize;
+    pub fn to_offset(self) -> usize {
+        return self as usize;
+    }
+
+    pub fn same_rank(self, other:Square) -> bool {
+        let this_rank = self as u8 >> 3;
+        let other_rank = other as u8 >> 3;
+        return this_rank == other_rank;
+    }
+
+    pub fn same_file(self, other:Square) -> bool {
+        let this_file = (self as u8 % 8) as u8;
+        let other_file = (other as u8 % 8) as u8;
+        return this_file == other_file;
     }
 }
 

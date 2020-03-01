@@ -3,10 +3,7 @@ use board::board::Board;
 use board::occupancy_masks;
 use board::piece::Colour;
 use board::piece::Piece;
-use board::square::file::File;
-use board::square::rank::Rank;
 use board::square::Square;
-
 use std::ops::Shl;
 
 lazy_static! {
@@ -86,11 +83,13 @@ fn is_horizontal_or_vertical_attacking(
 
 fn check_horiz_vert(board: &Board, piece: Piece, attack_sq: Square) -> bool {
     let mut pce_bb = board.get_piece_bitboard(piece);
+    let all_bb = board.get_bitboard();
+
     while pce_bb != 0 {
         let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
-        if pce_sq.rank() == attack_sq.rank() || pce_sq.file() == attack_sq.file() {
+        if pce_sq.same_rank(attack_sq) || pce_sq.same_file(attack_sq) {
             let blocking_pces = get_intervening_bitboard(pce_sq, attack_sq);
-            if blocking_pces & board.get_bitboard() == 0 {
+            if blocking_pces & all_bb == 0 {
                 // no blocking pieces, attacked
                 return true;
             }
@@ -139,19 +138,12 @@ fn is_attacked_by_pawn_white(board: &Board, attacked_sq: Square) -> bool {
     // -1 Rank and +/- 1 File
     let r: i8 = attacked_sq.rank() as i8 - 1;
     let mut f: i8 = attacked_sq.file() as i8 - 1;
-    if is_valid_rank_and_file(r, f) {
-        let pawn_sq = Square::get_square(Rank::from_num(r as u8), File::from_num(f as u8));
-        if bitboard::is_set(wp_bb, pawn_sq) {
-            return true;
-        }
+    if is_pawn_attacking(r, f, wp_bb) {
+        return true;
     }
-
     f = attacked_sq.file() as i8 + 1;
-    if is_valid_rank_and_file(r, f) {
-        let pawn_sq = Square::get_square(Rank::from_num(r as u8), File::from_num(f as u8));
-        if bitboard::is_set(wp_bb, pawn_sq) {
-            return true;
-        }
+    if is_pawn_attacking(r, f, wp_bb) {
+        return true;
     }
 
     return false;
@@ -163,23 +155,28 @@ fn is_attacked_by_pawn_black(board: &Board, attacked_sq: Square) -> bool {
     // +1 Rank and +/- 1 File
     let r: i8 = attacked_sq.rank() as i8 + 1;
     let mut f: i8 = attacked_sq.file() as i8 - 1;
-    if is_valid_rank_and_file(r, f) {
-        let pawn_sq = Square::get_square(Rank::from_num(r as u8), File::from_num(f as u8));
-        if bitboard::is_set(bp_bb, pawn_sq) {
-            return true;
-        }
+    if is_pawn_attacking(r, f, bp_bb) {
+        return true;
     }
 
     f = attacked_sq.file() as i8 + 1;
-    if is_valid_rank_and_file(r, f) {
-        let pawn_sq = Square::get_square(Rank::from_num(r as u8), File::from_num(f as u8));
-        if bitboard::is_set(bp_bb, pawn_sq) {
-            return true;
-        }
+    if is_pawn_attacking(r, f, bp_bb) {
+        return true;
     }
 
     return false;
 }
+
+fn is_pawn_attacking(attacking_rank:i8, attacking_file:i8, pawn_bb:u64) -> bool{
+    if is_valid_rank_and_file(attacking_rank, attacking_file) {
+        let sq_as_bb = Square::get_square_as_bb(attacking_rank as u8, attacking_file as u8);
+        if sq_as_bb & pawn_bb != 0 {
+            return true;
+        }        
+    }
+    return false;
+}
+
 
 fn is_valid_rank_and_file(r: i8, f: i8) -> bool {
     let range = 0..8;
