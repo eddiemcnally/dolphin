@@ -213,11 +213,10 @@ impl Square {
         return Square::from_num(sq);
     }
 
-
-    pub fn get_square_as_bb(rank:u8, file:u8) -> u64 {
+    pub fn get_square_as_bb(rank: u8, file: u8) -> u64 {
         let sq = rank as u8 * 8 + file as u8;
         let bit: u64 = 1;
-        return bit.shl(sq);    
+        return bit.shl(sq);
     }
 
     pub fn get_from_string(square_str: &str) -> Square {
@@ -238,13 +237,13 @@ impl Square {
         return self as usize;
     }
 
-    pub fn same_rank(self, other:Square) -> bool {
+    pub fn same_rank(self, other: Square) -> bool {
         let this_rank = self as u8 >> 3;
         let other_rank = other as u8 >> 3;
         return this_rank == other_rank;
     }
 
-    pub fn same_file(self, other:Square) -> bool {
+    pub fn same_file(self, other: Square) -> bool {
         let this_file = (self as u8 % 8) as u8;
         let other_file = (other as u8 % 8) as u8;
         return this_file == other_file;
