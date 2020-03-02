@@ -199,13 +199,21 @@ impl Square {
     }
 
     pub fn rank(self) -> Rank {
-        let rank_num = self as u8 >> 3;
+        let rank_num = self.rank_as_u8();
         return Rank::from_num(rank_num);
     }
 
+    pub fn rank_as_u8(self) -> u8 {
+        return self as u8 >> 3;
+    }
+
     pub fn file(self) -> File {
-        let file_num = (self as u8 % 8) as u8;
+        let file_num = self.file_as_u8();
         return File::from_num(file_num);
+    }
+
+    pub fn file_as_u8(self) -> u8 {
+        return (self as u8 % 8) as u8;
     }
 
     pub fn get_square(rank: Rank, file: File) -> Square {
@@ -238,14 +246,14 @@ impl Square {
     }
 
     pub fn same_rank(self, other: Square) -> bool {
-        let this_rank = self as u8 >> 3;
-        let other_rank = other as u8 >> 3;
+        let this_rank = self.rank_as_u8();
+        let other_rank = other.rank_as_u8();
         return this_rank == other_rank;
     }
 
     pub fn same_file(self, other: Square) -> bool {
-        let this_file = (self as u8 % 8) as u8;
-        let other_file = (other as u8 % 8) as u8;
+        let this_file = self.file_as_u8();
+        let other_file = other.file_as_u8();
         return this_file == other_file;
     }
 }

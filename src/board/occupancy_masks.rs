@@ -1,16 +1,5 @@
 use board::board;
-use board::piece::PieceRole;
 use board::square::Square;
-
-pub fn get_occupancy_mask_for_piece_role(role: PieceRole, sq: Square) -> u64 {
-    match role {
-        PieceRole::Bishop => get_occupancy_mask_bishop(sq),
-        PieceRole::Knight => get_occupancy_mask_bishop(sq),
-        PieceRole::Rook => get_occupancy_mask_bishop(sq),
-        PieceRole::Queen => get_occupancy_mask_bishop(sq),
-        _ => panic!("unexpected piece role"),
-    }
-}
 
 pub fn get_occupancy_mask_bishop(sq: Square) -> u64 {
     BISHOP_OCCUPANCY_MASKS[sq.to_offset()]

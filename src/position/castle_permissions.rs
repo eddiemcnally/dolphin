@@ -72,6 +72,14 @@ pub fn set_queen(perm: &mut CastlePermission, colour: Colour) {
     *perm = cp;
 }
 
+pub fn has_white_castle_permission(perm: CastlePermission) -> bool {
+    return is_king_set(perm, Colour::White) || is_queen_set(perm, Colour::White);
+}
+
+pub fn has_black_castle_permission(perm: CastlePermission) -> bool {
+    return is_king_set(perm, Colour::Black) || is_queen_set(perm, Colour::Black);
+}
+
 pub fn clear_queen_black(perm: &mut CastlePermission) {
     let mut cp = *perm;
     cp = cp & !(CastlePermissionType::BlackQueen as u8);

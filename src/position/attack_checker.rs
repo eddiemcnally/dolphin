@@ -26,7 +26,8 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
                 return true;
             }
 
-            if is_diagonally_attacked(board, sq, Piece::WhiteBishop, Piece::WhiteQueen) {
+            if is_diagonally_attacked(board, sq, Piece::WhiteBishop, Piece::WhiteQueen, all_pce_bb)
+            {
                 return true;
             }
         }
@@ -46,7 +47,8 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
                 return true;
             }
 
-            if is_diagonally_attacked(board, sq, Piece::BlackBishop, Piece::BlackQueen) {
+            if is_diagonally_attacked(board, sq, Piece::BlackBishop, Piece::BlackQueen, all_pce_bb)
+            {
                 return true;
             }
         }
@@ -78,9 +80,14 @@ fn is_horizontal_or_vertical_attacking(
     attack_sq: Square,
 ) -> bool {
     let mut pce_bb = attack_pce_bb;
+    let attack_sq_rank = attack_sq.rank_as_u8();
+    let attack_sq_file = attack_sq.file_as_u8();
+
     while pce_bb != 0 {
         let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
-        if pce_sq.same_rank(attack_sq) || pce_sq.same_file(attack_sq) {
+
+        if pce_sq.rank_as_u8() == attack_sq_rank || pce_sq.file_as_u8() == attack_sq_file {
+            // potentially attacking
             let blocking_pces = get_intervening_bitboard(pce_sq, attack_sq);
             if blocking_pces & all_piece_bb == 0 {
                 // no blocking pieces, attacked
@@ -91,34 +98,31 @@ fn is_horizontal_or_vertical_attacking(
     return false;
 }
 
-fn is_diagonally_attacked(board: &Board, attack_sq: Square, bishop: Piece, queen: Piece) -> bool {
+fn is_diagonally_attacked(
+    board: &Board,
+    attack_sq: Square,
+    bishop: Piece,
+    queen: Piece,
+    all_pce_bb: u64,
+) -> bool {
     // combine piece bitboards
     let mut attack_pce_bb = board.get_piece_bitboard(bishop);
     attack_pce_bb |= board.get_piece_bitboard(queen);
 
-    if check_diagonal(board, attack_pce_bb, attack_sq) {
-        return true;
-    }
-
-    return false;
-}
-
-fn check_diagonal(board: &Board, piece_bb: u64, attack_sq: Square) -> bool {
-    let all_bb = board.get_bitboard();
-    let mut pce_bb = piece_bb;
-    while pce_bb != 0 {
-        let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
+    while attack_pce_bb != 0 {
+        let pce_sq = bitboard::pop_1st_bit(&mut attack_pce_bb);
 
         let diagonal_bb = occupancy_masks::get_occupancy_mask_bishop(pce_sq);
         if bitboard::is_set(diagonal_bb, attack_sq) {
             // potentially attacking
             let blocking_pces = get_intervening_bitboard(pce_sq, attack_sq);
-            if blocking_pces & all_bb == 0 {
+            if blocking_pces & all_pce_bb == 0 {
                 // no blocking pieces, attacked
                 return true;
             }
         }
     }
+
     return false;
 }
 
@@ -129,53 +133,67 @@ fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colou
 }
 
 fn is_attacked_by_pawn_white(board: &Board, attacked_sq: Square) -> bool {
+    // -1 Rank and +/- 1 File
+    let r: i8 = attacked_sq.rank_as_u8() as i8 - 1;
+    if is_rank_valid(r) == false {
+        return false;
+    }
+
     let wp_bb = board.get_piece_bitboard(Piece::WhitePawn);
 
-    // -1 Rank and +/- 1 File
-    let r: i8 = attacked_sq.rank() as i8 - 1;
-    let mut f: i8 = attacked_sq.file() as i8 - 1;
-    if is_pawn_attacking(r, f, wp_bb) {
-        return true;
+    let mut f: i8 = attacked_sq.file_as_u8() as i8 - 1;
+    if is_file_valid(f) {
+        if is_pawn_attacking(r, f, wp_bb) {
+            return true;
+        }
     }
-    f = attacked_sq.file() as i8 + 1;
-    if is_pawn_attacking(r, f, wp_bb) {
-        return true;
-    }
-
-    return false;
-}
-
-fn is_attacked_by_pawn_black(board: &Board, attacked_sq: Square) -> bool {
-    let bp_bb = board.get_piece_bitboard(Piece::BlackPawn);
-
-    // +1 Rank and +/- 1 File
-    let r: i8 = attacked_sq.rank() as i8 + 1;
-    let mut f: i8 = attacked_sq.file() as i8 - 1;
-    if is_pawn_attacking(r, f, bp_bb) {
-        return true;
-    }
-
-    f = attacked_sq.file() as i8 + 1;
-    if is_pawn_attacking(r, f, bp_bb) {
-        return true;
-    }
-
-    return false;
-}
-
-fn is_pawn_attacking(attacking_rank: i8, attacking_file: i8, pawn_bb: u64) -> bool {
-    if is_valid_rank_and_file(attacking_rank, attacking_file) {
-        let sq_as_bb = Square::get_square_as_bb(attacking_rank as u8, attacking_file as u8);
-        if sq_as_bb & pawn_bb != 0 {
+    f = attacked_sq.file_as_u8() as i8 + 1;
+    if is_file_valid(f) {
+        if is_pawn_attacking(r, f, wp_bb) {
             return true;
         }
     }
     return false;
 }
 
-fn is_valid_rank_and_file(r: i8, f: i8) -> bool {
-    let range = 0..8;
-    return range.contains(&r) && range.contains(&f);
+fn is_attacked_by_pawn_black(board: &Board, attacked_sq: Square) -> bool {
+    // +1 Rank and +/- 1 File
+    let r: i8 = attacked_sq.rank_as_u8() as i8 + 1;
+    if is_rank_valid(r) == false {
+        return false;
+    }
+
+    let bp_bb = board.get_piece_bitboard(Piece::BlackPawn);
+
+    let mut f: i8 = attacked_sq.file_as_u8() as i8 - 1;
+    if is_file_valid(f) {
+        if is_pawn_attacking(r, f, bp_bb) {
+            return true;
+        }
+    }
+    f = attacked_sq.file_as_u8() as i8 + 1;
+    if is_file_valid(f) {
+        if is_pawn_attacking(r, f, bp_bb) {
+            return true;
+        }
+    }
+    return false;
+}
+
+fn is_pawn_attacking(attacking_rank: i8, attacking_file: i8, pawn_bb: u64) -> bool {
+    let sq_as_bb = Square::get_square_as_bb(attacking_rank as u8, attacking_file as u8);
+    if sq_as_bb & pawn_bb != 0 {
+        return true;
+    }
+    return false;
+}
+
+fn is_rank_valid(r: i8) -> bool {
+    return r >= 0 && r <= 7;
+}
+
+fn is_file_valid(f: i8) -> bool {
+    return f >= 0 && f <= 7;
 }
 
 // This code returns a bitboard with bits set representing squares between
