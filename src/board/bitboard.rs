@@ -1,6 +1,8 @@
 use board::square::Square;
 use std::ops::Shl;
 
+const BIT_0: u64 = 0x01;
+
 pub fn set_bit(bb: &mut u64, sq: Square) {
     let mask = to_mask(sq);
     *bb = *bb | mask
@@ -24,7 +26,6 @@ pub fn pop_1st_bit(bb: &mut u64) -> Square {
     let sq_clear = Square::from_num(bit_being_cleared as u8);
 
     clear_bit(bb, sq_clear);
-
     return sq_clear;
 }
 
@@ -42,8 +43,7 @@ pub fn print_hex(bb: u64) {
 }
 
 fn to_mask(sq: Square) -> u64 {
-    let bit: u64 = 1;
-    bit.shl(sq.to_offset())
+    BIT_0.shl(sq.to_offset())
 }
 
 #[cfg(test)]

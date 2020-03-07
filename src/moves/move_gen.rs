@@ -8,14 +8,6 @@ use board::square::Square;
 use moves::mov::Mov;
 use position::castle_permissions;
 use position::position::Position;
-use smallvec::SmallVec;
-
-static PROMOTION_ROLES: [PieceRole; 4] = [
-    PieceRole::Bishop,
-    PieceRole::Knight,
-    PieceRole::Queen,
-    PieceRole::Rook,
-];
 
 pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
     let board = position.board();
@@ -23,7 +15,13 @@ pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
 
     match side_to_move {
         Colour::White => {
-            generate_non_sliding_piece_moves(&board, side_to_move, move_list);
+            generate_non_sliding_piece_moves(
+                &board,
+                Piece::WhiteKing,
+                Piece::WhiteKnight,
+                Colour::White,
+                move_list,
+            );
             generate_sliding_rank_file_moves(
                 &board,
                 Piece::WhiteRook,
@@ -44,7 +42,13 @@ pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
             generate_misc_pawn_moves_white(&position, move_list);
         }
         Colour::Black => {
-            generate_non_sliding_piece_moves(&board, side_to_move, move_list);
+            generate_non_sliding_piece_moves(
+                &board,
+                Piece::BlackKing,
+                Piece::BlackKnight,
+                Colour::Black,
+                move_list,
+            );
             generate_sliding_rank_file_moves(
                 &board,
                 Piece::BlackRook,
@@ -178,37 +182,52 @@ fn generate_sliding_rank_file_moves(
 }
 
 // generates moves for King and Knight
-fn generate_non_sliding_piece_moves(board: &Board, side_to_move: Colour, move_list: &mut Vec<Mov>) {
-    let pieces: SmallVec<[Piece; 2]> = match side_to_move {
-        Colour::White => smallvec![Piece::WhiteKing, Piece::WhiteKnight],
-        Colour::Black => smallvec![Piece::BlackKing, Piece::BlackKnight],
-    };
+fn generate_non_sliding_piece_moves(
+    board: &Board,
+    king: Piece,
+    knight: Piece,
+    side_to_move: Colour,
+    move_list: &mut Vec<Mov>,
+) {
+    let opposite_side = side_to_move.flip_side();
+    let opp_occ_sq_bb = board.get_colour_bb(opposite_side);
 
-    for pce in pieces {
-        let mut pce_bb = board.get_piece_bitboard(pce);
-        while pce_bb != 0 {
-            let sq = bitboard::pop_1st_bit(&mut pce_bb);
+    // knight
+    let mut pce_bb = board.get_piece_bitboard(knight);
+    while pce_bb != 0 {
+        let sq = bitboard::pop_1st_bit(&mut pce_bb);
+        let occ_mask = occupancy_masks::get_occupancy_mask_knight(sq);
 
-            let occ_mask = match pce.role() {
-                PieceRole::King => occupancy_masks::get_occupancy_mask_king(sq),
-                PieceRole::Knight => occupancy_masks::get_occupancy_mask_knight(sq),
-                _ => panic!("Invalid piece role"),
-            };
+        // generate capture moves
+        // ----------------------
+        // AND'ing with opposite colour pieces with the occupancy mask, will
+        // give all pieces that can be captured by the piece on this square
+        let mut capt_bb = opp_occ_sq_bb & occ_mask;
+        encode_multiple_capture_moves(&mut capt_bb, sq, move_list);
 
-            // generate capture moves
-            // ----------------------
-            // AND'ing with opposite colour pieces with the occupancy mask, willbetter toml
-            // give all pieces that can be captured by the piece on this square
-            let opposite_side = pce.colour().flip_side();
-            let opp_occ_sq_bb = board.get_colour_bb(opposite_side);
-            let mut capt_bb = opp_occ_sq_bb & occ_mask;
-            encode_multiple_capture_moves(&mut capt_bb, sq, move_list);
+        // generate quiet moves
+        let unoccupied_squares_bb = !board.get_bitboard();
+        let mut quiet_move_bb = unoccupied_squares_bb & occ_mask;
+        encode_multiple_quiet_moves(&mut quiet_move_bb, sq, move_list);
+    }
 
-            // generate quiet moves
-            let unoccupied_squares_bb = !board.get_bitboard();
-            let mut quiet_move_bb = unoccupied_squares_bb & occ_mask;
-            encode_multiple_quiet_moves(&mut quiet_move_bb, sq, move_list);
-        }
+    // king
+    pce_bb = board.get_piece_bitboard(king);
+    while pce_bb != 0 {
+        let sq = bitboard::pop_1st_bit(&mut pce_bb);
+        let occ_mask = occupancy_masks::get_occupancy_mask_king(sq);
+
+        // generate capture moves
+        // ----------------------
+        // AND'ing with opposite colour pieces with the occupancy mask, will
+        // give all pieces that can be captured by the piece on this square
+        let mut capt_bb = opp_occ_sq_bb & occ_mask;
+        encode_multiple_capture_moves(&mut capt_bb, sq, move_list);
+
+        // generate quiet moves
+        let unoccupied_squares_bb = !board.get_bitboard();
+        let mut quiet_move_bb = unoccupied_squares_bb & occ_mask;
+        encode_multiple_quiet_moves(&mut quiet_move_bb, sq, move_list);
     }
 }
 
@@ -217,14 +236,14 @@ fn generate_white_castle_moves(pos: &Position, move_list: &mut Vec<Mov>) {
     let bb = pos.board().get_bitboard();
     let wr_bb = pos.board().get_piece_bitboard(Piece::WhiteRook);
 
-    if castle_permissions::is_king_set(cp, Colour::White)
+    if castle_permissions::is_white_king_set(cp)
         && (bb & occupancy_masks::CASTLE_MASK_WK == 0)
         && bitboard::is_set(wr_bb, Square::h1)
     {
         let mv = Mov::encode_move_castle_kingside_white();
         move_list.push(mv);
     }
-    if castle_permissions::is_queen_set(cp, Colour::White)
+    if castle_permissions::is_white_queen_set(cp)
         && (bb & occupancy_masks::CASTLE_MASK_WQ == 0)
         && bitboard::is_set(wr_bb, Square::a1)
     {
@@ -238,14 +257,14 @@ fn generate_black_castle_moves(pos: &Position, move_list: &mut Vec<Mov>) {
     let bb = pos.board().get_bitboard();
     let br_bb = pos.board().get_piece_bitboard(Piece::BlackRook);
 
-    if castle_permissions::is_king_set(cp, Colour::Black)
+    if castle_permissions::is_black_king_set(cp)
         && (bb & occupancy_masks::CASTLE_MASK_BK == 0)
         && bitboard::is_set(br_bb, Square::h8)
     {
         let mv = Mov::encode_move_castle_kingside_black();
         move_list.push(mv);
     }
-    if castle_permissions::is_queen_set(cp, Colour::Black)
+    if castle_permissions::is_black_queen_set(cp)
         && (bb & occupancy_masks::CASTLE_MASK_BQ == 0)
         && bitboard::is_set(br_bb, Square::a8)
     {
@@ -485,7 +504,7 @@ fn generate_promotion_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
 
         if bitboard::is_set(all_bb, quiet_to_sq) == false {
             // free square ahead
-            encode_promotion_moves(from_sq, quiet_to_sq, false, move_list);
+            encode_promotion_moves(from_sq, quiet_to_sq, move_list);
         }
 
         // check for capture promotions
@@ -495,7 +514,7 @@ fn generate_promotion_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
 
         while capt_bb != 0 {
             let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
-            encode_promotion_moves(from_sq, to_sq, true, move_list);
+            encode_promotion_capture_moves(from_sq, to_sq, move_list);
         }
     }
 }
@@ -525,7 +544,7 @@ fn generate_promotion_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
 
         if bitboard::is_set(all_bb, quiet_to_sq) == false {
             // free square ahead
-            encode_promotion_moves(from_sq, quiet_to_sq, false, move_list);
+            encode_promotion_moves(from_sq, quiet_to_sq, move_list);
         }
 
         // check for capture promotions
@@ -534,26 +553,55 @@ fn generate_promotion_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
 
         while capt_bb != 0 {
             let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
-            encode_promotion_moves(from_sq, to_sq, true, move_list);
+            encode_promotion_capture_moves(from_sq, to_sq, move_list);
         }
     }
 }
 
-fn encode_promotion_moves(
-    from_sq: Square,
-    to_sq: Square,
-    is_capture: bool,
-    move_list: &mut Vec<Mov>,
-) {
-    if is_capture {
-        for pr in &PROMOTION_ROLES {
-            move_list.push(Mov::encode_move_with_promotion_capture(from_sq, to_sq, *pr));
-        }
-    } else {
-        for pr in &PROMOTION_ROLES {
-            move_list.push(Mov::encode_move_with_promotion(from_sq, to_sq, *pr));
-        }
-    }
+fn encode_promotion_moves(from_sq: Square, to_sq: Square, move_list: &mut Vec<Mov>) {
+    move_list.push(Mov::encode_move_with_promotion(
+        from_sq,
+        to_sq,
+        PieceRole::Bishop,
+    ));
+    move_list.push(Mov::encode_move_with_promotion(
+        from_sq,
+        to_sq,
+        PieceRole::Knight,
+    ));
+    move_list.push(Mov::encode_move_with_promotion(
+        from_sq,
+        to_sq,
+        PieceRole::Queen,
+    ));
+    move_list.push(Mov::encode_move_with_promotion(
+        from_sq,
+        to_sq,
+        PieceRole::Rook,
+    ));
+}
+
+fn encode_promotion_capture_moves(from_sq: Square, to_sq: Square, move_list: &mut Vec<Mov>) {
+    move_list.push(Mov::encode_move_with_promotion_capture(
+        from_sq,
+        to_sq,
+        PieceRole::Bishop,
+    ));
+    move_list.push(Mov::encode_move_with_promotion_capture(
+        from_sq,
+        to_sq,
+        PieceRole::Knight,
+    ));
+    move_list.push(Mov::encode_move_with_promotion_capture(
+        from_sq,
+        to_sq,
+        PieceRole::Queen,
+    ));
+    move_list.push(Mov::encode_move_with_promotion_capture(
+        from_sq,
+        to_sq,
+        PieceRole::Rook,
+    ));
 }
 
 fn encode_quite_or_capture(
@@ -589,7 +637,6 @@ fn encode_multiple_quiet_moves(quiet_move_bb: &mut u64, from_sq: Square, move_li
 
 #[cfg(test)]
 pub mod tests {
-    use board::piece::Colour;
     use board::piece::PieceRole;
     use board::square::Square;
     use input::fen;
@@ -962,7 +1009,7 @@ pub mod tests {
         let pos = Position::new(parsed_fen);
 
         let cp = pos.castle_permissions();
-        assert!(castle_permissions::is_queen_set(cp, Colour::Black));
+        assert!(castle_permissions::is_black_queen_set(cp));
 
         move_gen::generate_moves(&pos, &mut move_list);
 

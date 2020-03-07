@@ -1,7 +1,6 @@
 extern crate rand;
 
 use board::board::NUM_SQUARES;
-use board::piece::Colour;
 use board::piece::Piece;
 use board::piece::NUM_PIECES;
 use board::square::Square;
@@ -40,16 +39,16 @@ pub fn generate_from_fen(parsed_fen: &ParsedFen) -> PositionHash {
 
     let cp = parsed_fen.castle_perm;
 
-    if castle_permissions::is_king_set(cp, Colour::Black) {
+    if castle_permissions::is_black_king_set(cp) {
         update_castle_permissions(&mut hash, CastlePermissionType::BlackKing);
     }
-    if castle_permissions::is_king_set(cp, Colour::White) {
+    if castle_permissions::is_white_king_set(cp) {
         update_castle_permissions(&mut hash, CastlePermissionType::WhiteKing);
     }
-    if castle_permissions::is_queen_set(cp, Colour::Black) {
+    if castle_permissions::is_black_queen_set(cp) {
         update_castle_permissions(&mut hash, CastlePermissionType::BlackQueen);
     }
-    if castle_permissions::is_queen_set(cp, Colour::White) {
+    if castle_permissions::is_white_queen_set(cp) {
         update_castle_permissions(&mut hash, CastlePermissionType::WhiteQueen);
     }
 
