@@ -167,14 +167,16 @@ impl Piece {
 
     pub fn value(&self) -> u32 {
         let role = self.role();
+        // piece values from here:
+        // https://www.chessprogramming.org/Simplified_Evaluation_Function
 
         match role {
-            PieceRole::Pawn => return 300,
-            PieceRole::Bishop => return 550,
-            PieceRole::Knight => return 550,
-            PieceRole::Rook => return 800,
-            PieceRole::Queen => return 1000,
-            PieceRole::King => return 50000,
+            PieceRole::Pawn => return 100,
+            PieceRole::Knight => return 320,
+            PieceRole::Bishop => return 330,
+            PieceRole::Rook => return 500,
+            PieceRole::Queen => return 900,
+            PieceRole::King => return 20000,
         };
     }
 
