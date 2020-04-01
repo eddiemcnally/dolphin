@@ -1,6 +1,7 @@
 use board::bitboard;
 use board::piece::Colour;
 use board::piece::Piece;
+use board::piece::PieceRole;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
 use board::square;
@@ -236,15 +237,14 @@ impl Board {
         self.pieces[sq.to_offset()] = None;
     }
 
-    fn set_bitboards(&mut self, piece: Piece, sq: Square) {
+    fn set_bitboards(&mut self, pce: Piece, sq: Square) {
         bitboard::set_bit(&mut self.board_bb, sq);
-        bitboard::set_bit(&mut self.piece_bb[piece.offset()], sq);
-        bitboard::set_bit(&mut self.colour_bb[piece.colour().offset()], sq);
-        self.pieces[sq.to_offset()] = Some(piece);
+        bitboard::set_bit(&mut self.piece_bb[pce.offset()], sq);
+        bitboard::set_bit(&mut self.colour_bb[pce.colour().offset()], sq);
+        self.pieces[sq.to_offset()] = Some(pce);
 
-        match piece {
-            Piece::BlackKing | Piece::WhiteKing => self.king_sq[piece.colour().offset()] = sq,
-            _ => (),
+        if pce.role() == PieceRole::King {
+            self.king_sq[pce.colour().offset()] = sq;
         }
     }
 }
