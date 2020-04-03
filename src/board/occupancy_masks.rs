@@ -2,45 +2,49 @@ use board::board;
 use board::square::Square;
 
 pub fn get_occupancy_mask_bishop(sq: Square) -> u64 {
-    BISHOP_OCCUPANCY_MASKS[sq.to_offset()]
+    return *BISHOP_OCCUPANCY_MASKS.get(sq.to_offset()).unwrap();
 }
 
 pub fn get_occupancy_mask_knight(sq: Square) -> u64 {
-    KNIGHT_OCCUPANCY_MASKS[sq.to_offset()]
+    return *KNIGHT_OCCUPANCY_MASKS.get(sq.to_offset()).unwrap();
 }
 
 pub fn get_occupancy_mask_rook(sq: Square) -> u64 {
-    ROOK_OCCUPANCY_MASKS[sq.to_offset()]
+    return *ROOK_OCCUPANCY_MASKS.get(sq.to_offset()).unwrap();
 }
 
 pub fn get_occupancy_mask_queen(sq: Square) -> u64 {
-    QUEEN_OCCUPANCY_MASKS[sq.to_offset()]
+    return *QUEEN_OCCUPANCY_MASKS.get(sq.to_offset()).unwrap();
 }
 
 pub fn get_occupancy_mask_king(sq: Square) -> u64 {
-    KING_OCCUPANCY_MASKS[sq.to_offset()]
+    return *KING_OCCUPANCY_MASKS.get(sq.to_offset()).unwrap();
 }
 
 pub fn get_vertical_move_mask(sq: Square) -> u64 {
-    VERTICAL_MOVE_MASK[sq.to_offset()]
+    return *VERTICAL_MOVE_MASK.get(sq.to_offset()).unwrap();
 }
 
 pub fn get_horizontal_move_mask(sq: Square) -> u64 {
-    HORIZONTAL_MOVE_MASK[sq.to_offset()]
+    return *HORIZONTAL_MOVE_MASK.get(sq.to_offset()).unwrap();
 }
 
 pub fn get_diagonal_move_mask(sq: Square) -> u64 {
-    DIAGONAL_MOVE_MASK[sq.to_offset()]
+    return *DIAGONAL_MOVE_MASK.get(sq.to_offset()).unwrap();
 }
 pub fn get_anti_diagonal_move_mask(sq: Square) -> u64 {
-    ANTI_DIAGONAL_MOVE_MASK[sq.to_offset()]
+    return *ANTI_DIAGONAL_MOVE_MASK.get(sq.to_offset()).unwrap();
 }
 
 pub fn get_black_pawn_capture_mask(sq: Square) -> u64 {
-    BLACK_PAWN_CAPTURE_NON_FIRST_DOUBLE_MOVE[sq.to_offset()]
+    return *BLACK_PAWN_CAPTURE_NON_FIRST_DOUBLE_MOVE
+        .get(sq.to_offset())
+        .unwrap();
 }
 pub fn get_white_pawn_capture_mask(sq: Square) -> u64 {
-    WHITE_PAWN_CAPTURE_NON_FIRST_DOUBLE_MOVE[sq.to_offset()]
+    return *WHITE_PAWN_CAPTURE_NON_FIRST_DOUBLE_MOVE
+        .get(sq.to_offset())
+        .unwrap();
 }
 
 // Bitboards representing commonly used ranks

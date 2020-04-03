@@ -69,8 +69,6 @@ static CASTLE_SQUARES_KING_BLACK: [Square; 3] = [Square::e8, Square::f8, Square:
 
 static CASTLE_SQUARES_QUEEN_BLACK: [Square; 3] = [Square::c8, Square::d8, Square::e8];
 
-const MAX_MOVE_HISTORY: u16 = 2048;
-
 pub struct Position {
     board: Board,
     side_to_move: Colour,
@@ -160,7 +158,7 @@ impl Position {
             castle_perm: parsed_fen.castle_perm,
             move_cntr: mv_cntr,
             fifty_move_cntr: 0,
-            position_history: PositionHistory::new(MAX_MOVE_HISTORY),
+            position_history: PositionHistory::new(),
             position_key: hash::generate_from_fen(&parsed_fen),
         };
 
@@ -230,7 +228,7 @@ impl Position {
             capt_piece = self.board.get_piece_on_square(to_sq);
         }
         self.position_history.push(
-            self.board.clone(),
+            &self.board,
             self.position_key,
             mv,
             self.fifty_move_cntr,

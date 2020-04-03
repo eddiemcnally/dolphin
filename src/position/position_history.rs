@@ -2,11 +2,12 @@ use board::board::Board;
 use board::piece::Piece;
 use board::square::Square;
 use moves::mov::Mov;
+use position::castle_permissions;
 use position::castle_permissions::CastlePermission;
 use std::fmt;
 
 #[derive(Clone, Copy)]
-struct History {
+struct HistoryItem {
     board: Board,
     position_hash: u64,
     mov: Mov,
@@ -16,7 +17,7 @@ struct History {
     capt_piece: Option<Piece>,
 }
 
-impl fmt::Debug for History {
+impl fmt::Debug for HistoryItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
 
@@ -35,13 +36,28 @@ impl fmt::Debug for History {
     }
 }
 
-impl fmt::Display for History {
+impl Default for HistoryItem {
+    fn default() -> Self {
+        let hi = HistoryItem {
+            board: Board::default(),
+            position_hash: 0,
+            mov: Mov::encode_move_quiet(Square::a1, Square::a2),
+            fifty_move_cntr: 0,
+            en_pass_sq: None,
+            castle_perm: castle_permissions::NO_CASTLE_PERMS,
+            capt_piece: None,
+        };
+        return hi;
+    }
+}
+
+impl fmt::Display for HistoryItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self, f)
     }
 }
 
-impl PartialEq for History {
+impl PartialEq for HistoryItem {
     fn eq(&self, other: &Self) -> bool {
         if self.board != other.board {
             println!("POS: boards are different");
@@ -77,19 +93,21 @@ impl PartialEq for History {
 }
 
 pub struct PositionHistory {
-    max_hist_size: u16,
-    history: Vec<History>,
+    count: u16,
+    history: [HistoryItem; PositionHistory::MAX_MOVE_HISTORY],
 }
 
 impl PartialEq for PositionHistory {
     fn eq(&self, other: &Self) -> bool {
-        if self.max_hist_size != other.max_hist_size {
+        if self.count != other.count {
             println!("POS: max sizes are different");
             return false;
         }
 
-        if self.history != other.history {
-            return false;
+        for i in 0..self.count {
+            if self.history[i as usize] != other.history[i as usize] {
+                return false;
+            }
         }
 
         return true;
@@ -103,8 +121,8 @@ impl fmt::Debug for PositionHistory {
         if self.history.len() == 0 {
             debug_str.push_str(&format!("Hist : Empty\n"));
         } else {
-            for h in &self.history {
-                debug_str.push_str(&format!("Hist : {}\n", h));
+            for i in 0..self.count {
+                debug_str.push_str(&format!("Hist : {}\n", self.history[i as usize]));
             }
         }
 
@@ -119,21 +137,20 @@ impl fmt::Display for PositionHistory {
 }
 
 impl PositionHistory {
-    // new
-    pub fn new(max_hist_size: u16) -> PositionHistory {
-        let mut hist: Vec<History> = Vec::new();
-        hist.reserve(max_hist_size as usize);
+    const MAX_MOVE_HISTORY: usize = 1024;
 
+    // new
+    pub fn new() -> PositionHistory {
         PositionHistory {
-            max_hist_size: max_hist_size,
-            history: hist,
+            count: 0,
+            history: [HistoryItem::default(); PositionHistory::MAX_MOVE_HISTORY],
         }
     }
 
     // push
     pub fn push(
         &mut self,
-        board: Board,
+        board: &Board,
         position_hash: u64,
         mov: Mov,
         fifty_move_cntr: u8,
@@ -142,13 +159,13 @@ impl PositionHistory {
         capt_piece: Option<Piece>,
     ) {
         debug_assert!(
-            self.history.len() <= self.max_hist_size as usize,
+            self.count <= (PositionHistory::MAX_MOVE_HISTORY - 1) as u16,
             "max length exceeded. {:?}",
-            self.max_hist_size
+            self.count
         );
 
-        let hist = History {
-            board: board,
+        let hist = HistoryItem {
+            board: *board,
             position_hash: position_hash,
             mov: mov,
             fifty_move_cntr: fifty_move_cntr,
@@ -157,7 +174,10 @@ impl PositionHistory {
             capt_piece: capt_piece,
         };
 
-        self.history.push(hist);
+        // todo - remove indexer, use get()
+        self.history[self.count as usize] = hist;
+
+        self.count += 1;
     }
 
     pub fn pop(
@@ -171,38 +191,23 @@ impl PositionHistory {
         CastlePermission,
         Option<Piece>,
     ) {
-        debug_assert!(self.history.len() > 0, "attempt to pop, len = 0");
+        debug_assert!(self.count > 0, "attempt to pop, len = 0");
 
-        let popped = self.history.pop();
-        match popped {
-            None => panic!("Nothing to pop from history"),
-            Some(popped) => {
-                let board = popped.board;
-                let pos_key = popped.position_hash;
-                let mov = popped.mov;
-                let fifty_move_cntr = popped.fifty_move_cntr;
-                let en_pass_sq = popped.en_pass_sq;
-                let castle_perm = popped.castle_perm;
-                let capt_piece = popped.capt_piece;
-                (
-                    board,
-                    pos_key,
-                    mov,
-                    fifty_move_cntr,
-                    en_pass_sq,
-                    castle_perm,
-                    capt_piece,
-                )
-            }
-        }
+        self.count -= 1;
+
+        (
+            self.history[self.count as usize].board,
+            self.history[self.count as usize].position_hash,
+            self.history[self.count as usize].mov,
+            self.history[self.count as usize].fifty_move_cntr,
+            self.history[self.count as usize].en_pass_sq,
+            self.history[self.count as usize].castle_perm,
+            self.history[self.count as usize].capt_piece,
+        )
     }
 
     pub fn len(&self) -> usize {
-        self.history.len()
-    }
-
-    pub fn capacity(&self) -> usize {
-        self.history.capacity()
+        self.count as usize
     }
 }
 
@@ -217,18 +222,10 @@ mod tests {
     use position::position_history::PositionHistory;
 
     #[test]
-    pub fn ensure_init_capacity_is_max_size() {
-        let mut pos_hist = PositionHistory::new(10);
-        assert_eq!(pos_hist.capacity(), 10);
-        pos_hist = PositionHistory::new(2048);
-        assert_eq!(pos_hist.capacity(), 2048);
-    }
-
-    #[test]
     pub fn posh_pop_element_order_as_expected() {
         let num_to_test = 50;
 
-        let mut pos_hist = PositionHistory::new(num_to_test);
+        let mut pos_hist = PositionHistory::new();
 
         // push multiple positions
         for i in 0..num_to_test {
@@ -240,7 +237,7 @@ mod tests {
             let castperm = castle_permissions::NO_CASTLE_PERMS;
             let capt_pce = Some(Piece::new(PieceRole::Bishop, Colour::Black));
 
-            pos_hist.push(board, pk, mv, fifty_move_cntr, enp, castperm, capt_pce);
+            pos_hist.push(&board, pk, mv, fifty_move_cntr, enp, castperm, capt_pce);
         }
 
         // pop and check the order
@@ -254,7 +251,7 @@ mod tests {
     pub fn posh_pop_len_as_expected() {
         let num_to_test = 50;
 
-        let mut pos_hist = PositionHistory::new(num_to_test);
+        let mut pos_hist = PositionHistory::new();
 
         assert_eq!(pos_hist.len(), 0);
 
@@ -267,7 +264,7 @@ mod tests {
             let fifty_move_cntr = i as u8;
             let castperm = castle_permissions::NO_CASTLE_PERMS;
 
-            pos_hist.push(board, pk, mv, fifty_move_cntr, enp, castperm, None);
+            pos_hist.push(&board, pk, mv, fifty_move_cntr, enp, castperm, None);
 
             assert_eq!(pos_hist.len(), (i + 1) as usize);
         }

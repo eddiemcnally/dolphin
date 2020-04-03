@@ -16,8 +16,6 @@ pub const NUM_SQUARES: usize = 64;
 
 #[derive(Copy)]
 pub struct Board {
-    // bitboard representing occupied/vacant squares (for all pieces)
-    board_bb: u64,
     // piece bitboard, an entry for each piece type (enum Piece)
     piece_bb: [u64; NUM_PIECES],
     // bitboard for each Colour
@@ -33,7 +31,6 @@ pub struct Board {
 impl Default for Board {
     fn default() -> Self {
         let brd = Board {
-            board_bb: 0,
             piece_bb: [0; NUM_PIECES],
             colour_bb: [0; NUM_COLOURS],
             pieces: [None; NUM_SQUARES],
@@ -46,14 +43,6 @@ impl Default for Board {
 
 impl PartialEq for Board {
     fn eq(&self, other: &Self) -> bool {
-        if self.board_bb != other.board_bb {
-            println!(
-                "BOARD: board_bb are different. self={}, other={}",
-                self.board_bb, other.board_bb
-            );
-            return false;
-        }
-
         for i in 0..NUM_PIECES - 1 {
             if self.piece_bb[i] != other.piece_bb[i] {
                 println!("BOARD: piece_bb are different");
@@ -130,7 +119,6 @@ impl Clone for Board {
         }
 
         let brd = Board {
-            board_bb: self.board_bb,
             piece_bb: self.piece_bb,
             colour_bb: self.colour_bb,
             pieces: cp_pieces,
@@ -205,7 +193,8 @@ impl Board {
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
-        bitboard::is_set(self.board_bb, sq) == false
+        let bb = self.get_bitboard();
+        bitboard::is_set(bb, sq) == false
     }
 
     pub fn get_piece_bitboard(&self, piece: Piece) -> u64 {
@@ -213,7 +202,7 @@ impl Board {
     }
 
     pub fn get_bitboard(&self) -> u64 {
-        return self.board_bb;
+        return self.get_colour_bb(Colour::White) | self.get_colour_bb(Colour::Black);
     }
 
     pub fn get_king_sq(&self, colour: Colour) -> Square {
@@ -231,14 +220,12 @@ impl Board {
     }
 
     fn clear_bitboards(&mut self, piece: Piece, sq: Square) {
-        bitboard::clear_bit(&mut self.board_bb, sq);
         bitboard::clear_bit(&mut self.piece_bb[piece.offset()], sq);
         bitboard::clear_bit(&mut self.colour_bb[piece.colour().offset()], sq);
         self.pieces[sq.to_offset()] = None;
     }
 
     fn set_bitboards(&mut self, pce: Piece, sq: Square) {
-        bitboard::set_bit(&mut self.board_bb, sq);
         bitboard::set_bit(&mut self.piece_bb[pce.offset()], sq);
         bitboard::set_bit(&mut self.colour_bb[pce.colour().offset()], sq);
         self.pieces[sq.to_offset()] = Some(pce);

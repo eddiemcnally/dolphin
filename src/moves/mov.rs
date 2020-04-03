@@ -50,7 +50,7 @@ const MV_FLG_PROMOTE_QUEEN_CAPTURE: u16 = MV_FLG_PROMOTE_QUEEN | MV_FLG_CAPTURE;
 
 const MV_FLG_BIT_PROMOTE: u16 = 0x8000;
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
 pub struct Mov {
     mv: u16,
 }
