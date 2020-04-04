@@ -1,7 +1,7 @@
 use board;
 use board::bitboard;
-use board::square::file::File;
-use board::square::rank::Rank;
+use board::square::File;
+use board::square::Rank;
 use board::square::Square;
 use utils;
 

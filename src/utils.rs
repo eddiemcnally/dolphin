@@ -1,8 +1,8 @@
 use board::piece::Colour;
 use board::piece::Piece;
 use board::piece::PieceRole;
-use board::square::file::File;
-use board::square::rank::Rank;
+use board::square::File;
+use board::square::Rank;
 use board::square::Square;
 use position::castle_permissions::CastlePermissionType;
 use std::collections::HashMap;

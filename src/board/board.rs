@@ -5,8 +5,8 @@ use board::piece::PieceRole;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
 use board::square;
-use board::square::file::File;
-use board::square::rank::Rank;
+use board::square::File;
+use board::square::Rank;
 use board::square::Square;
 use input::fen::ParsedFen;
 use std::fmt;
@@ -82,7 +82,7 @@ impl fmt::Debug for Board {
         debug_str.push_str("\n");
 
         for r in Rank::reverse_iterator() {
-            debug_str.push(square::rank::Rank::to_char(*r));
+            debug_str.push(square::Rank::to_char(*r));
             debug_str.push(' ');
 
             for f in File::iterator() {

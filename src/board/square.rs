@@ -1,8 +1,8 @@
-use board::square::file::File;
-use board::square::rank::Rank;
 use num::FromPrimitive;
 use std::fmt;
 use std::ops::Shl;
+use std::slice::Iter;
+
 
 enum_from_primitive! {
 #[allow(non_camel_case_types)]
@@ -258,175 +258,165 @@ impl Square {
     }
 }
 
-pub mod rank {
-    use enum_primitive::FromPrimitive;
-    use std::slice::Iter;
+enum_from_primitive! {
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
+#[repr(u8)]
+pub enum Rank {
+    Rank1 = 0,
+    Rank2,
+    Rank3,
+    Rank4,
+    Rank5,
+    Rank6,
+    Rank7,
+    Rank8,
+}}
 
-    enum_from_primitive! {
-    #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
-    #[repr(u8)]
-    pub enum Rank {
-        Rank1 = 0,
-        Rank2,
-        Rank3,
-        Rank4,
-        Rank5,
-        Rank6,
-        Rank7,
-        Rank8,
-    }}
+impl Rank {
+    pub fn from_num(num: u8) -> Rank {
+        return Rank::from_u8(num).unwrap();
+    }
 
-    impl Rank {
-        pub fn from_num(num: u8) -> Rank {
-            return Rank::from_u8(num).unwrap();
+    pub fn from_char(rank: char) -> Rank {
+        match rank {
+            '1' => Rank::Rank1,
+            '2' => Rank::Rank2,
+            '3' => Rank::Rank3,
+            '4' => Rank::Rank4,
+            '5' => Rank::Rank5,
+            '6' => Rank::Rank6,
+            '7' => Rank::Rank7,
+            '8' => Rank::Rank8,
+            _ => panic!("Invalid rank character {}", rank),
         }
+    }
+    pub fn to_char(rank: Rank) -> char {
+        match rank {
+            Rank::Rank1 => '1',
+            Rank::Rank2 => '2',
+            Rank::Rank3 => '3',
+            Rank::Rank4 => '4',
+            Rank::Rank5 => '5',
+            Rank::Rank6 => '6',
+            Rank::Rank7 => '7',
+            Rank::Rank8 => '8',
+        }
+    }
 
-        pub fn from_char(rank: char) -> Rank {
-            match rank {
-                '1' => Rank::Rank1,
-                '2' => Rank::Rank2,
-                '3' => Rank::Rank3,
-                '4' => Rank::Rank4,
-                '5' => Rank::Rank5,
-                '6' => Rank::Rank6,
-                '7' => Rank::Rank7,
-                '8' => Rank::Rank8,
-                _ => panic!("Invalid rank character {}", rank),
-            }
-        }
-        pub fn to_char(rank: Rank) -> char {
-            match rank {
-                Rank::Rank1 => '1',
-                Rank::Rank2 => '2',
-                Rank::Rank3 => '3',
-                Rank::Rank4 => '4',
-                Rank::Rank5 => '5',
-                Rank::Rank6 => '6',
-                Rank::Rank7 => '7',
-                Rank::Rank8 => '8',
-            }
-        }
+    pub fn to_int(rank: Rank) -> u8 {
+        return rank as u8;
+    }
+    pub fn iterator() -> Iter<'static, Rank> {
+        static RANKS: [Rank; 8] = [
+            Rank::Rank1,
+            Rank::Rank2,
+            Rank::Rank3,
+            Rank::Rank4,
+            Rank::Rank5,
+            Rank::Rank6,
+            Rank::Rank7,
+            Rank::Rank8,
+        ];
+        RANKS.iter()
+    }
 
-        pub fn to_int(rank: Rank) -> u8 {
-            return rank as u8;
-        }
-        pub fn iterator() -> Iter<'static, Rank> {
-            static RANKS: [Rank; 8] = [
-                Rank::Rank1,
-                Rank::Rank2,
-                Rank::Rank3,
-                Rank::Rank4,
-                Rank::Rank5,
-                Rank::Rank6,
-                Rank::Rank7,
-                Rank::Rank8,
-            ];
-            RANKS.iter()
-        }
-
-        pub fn reverse_iterator() -> Iter<'static, Rank> {
-            static RANKS: [Rank; 8] = [
-                Rank::Rank8,
-                Rank::Rank7,
-                Rank::Rank6,
-                Rank::Rank5,
-                Rank::Rank4,
-                Rank::Rank3,
-                Rank::Rank2,
-                Rank::Rank1,
-            ];
-            RANKS.iter()
-        }
+    pub fn reverse_iterator() -> Iter<'static, Rank> {
+        static RANKS: [Rank; 8] = [
+            Rank::Rank8,
+            Rank::Rank7,
+            Rank::Rank6,
+            Rank::Rank5,
+            Rank::Rank4,
+            Rank::Rank3,
+            Rank::Rank2,
+            Rank::Rank1,
+        ];
+        RANKS.iter()
     }
 }
 
-pub mod file {
-    use enum_primitive::FromPrimitive;
-    use std::slice::Iter;
+enum_from_primitive! {
+    #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
+    #[repr(u8)]
+    pub enum File {
+        FileA = 0,
+        FileB,
+        FileC,
+        FileD,
+        FileE,
+        FileF,
+        FileG,
+        FileH,
+    }
+}
 
-    enum_from_primitive! {
-        #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
-        #[repr(u8)]
-        pub enum File {
-            FileA = 0,
-            FileB,
-            FileC,
-            FileD,
-            FileE,
-            FileF,
-            FileG,
-            FileH,
-        }
+impl File {
+    pub fn from_num(num: u8) -> File {
+        return File::from_u8(num).unwrap();
     }
 
-    impl File {
-        pub fn from_num(num: u8) -> File {
-            return File::from_u8(num).unwrap();
-        }
+    pub fn to_int(file: File) -> u8 {
+        return file as u8;
+    }
 
-        pub fn to_int(file: File) -> u8 {
-            return file as u8;
+    pub fn from_char(file: char) -> File {
+        match file {
+            'a' => File::FileA,
+            'b' => File::FileB,
+            'c' => File::FileC,
+            'd' => File::FileD,
+            'e' => File::FileE,
+            'f' => File::FileF,
+            'g' => File::FileG,
+            'h' => File::FileH,
+            _ => panic!("Invalid file character {}", file),
         }
-
-        pub fn from_char(file: char) -> File {
-            match file {
-                'a' => File::FileA,
-                'b' => File::FileB,
-                'c' => File::FileC,
-                'd' => File::FileD,
-                'e' => File::FileE,
-                'f' => File::FileF,
-                'g' => File::FileG,
-                'h' => File::FileH,
-                _ => panic!("Invalid file character {}", file),
-            }
+    }
+    pub fn to_char(file: File) -> char {
+        match file {
+            File::FileA => 'a',
+            File::FileB => 'b',
+            File::FileC => 'c',
+            File::FileD => 'd',
+            File::FileE => 'e',
+            File::FileF => 'f',
+            File::FileG => 'g',
+            File::FileH => 'h',
         }
-        pub fn to_char(file: File) -> char {
-            match file {
-                File::FileA => 'a',
-                File::FileB => 'b',
-                File::FileC => 'c',
-                File::FileD => 'd',
-                File::FileE => 'e',
-                File::FileF => 'f',
-                File::FileG => 'g',
-                File::FileH => 'h',
-            }
-        }
-        pub fn iterator() -> Iter<'static, File> {
-            static FILES: [File; 8] = [
-                File::FileA,
-                File::FileB,
-                File::FileC,
-                File::FileD,
-                File::FileE,
-                File::FileF,
-                File::FileG,
-                File::FileH,
-            ];
-            FILES.iter()
-        }
-        pub fn reverse_iterator() -> Iter<'static, File> {
-            static FILES: [File; 8] = [
-                File::FileH,
-                File::FileG,
-                File::FileF,
-                File::FileE,
-                File::FileD,
-                File::FileC,
-                File::FileB,
-                File::FileA,
-            ];
-            FILES.iter()
-        }
+    }
+    pub fn iterator() -> Iter<'static, File> {
+        static FILES: [File; 8] = [
+            File::FileA,
+            File::FileB,
+            File::FileC,
+            File::FileD,
+            File::FileE,
+            File::FileF,
+            File::FileG,
+            File::FileH,
+        ];
+        FILES.iter()
+    }
+    pub fn reverse_iterator() -> Iter<'static, File> {
+        static FILES: [File; 8] = [
+            File::FileH,
+            File::FileG,
+            File::FileF,
+            File::FileE,
+            File::FileD,
+            File::FileC,
+            File::FileB,
+            File::FileA,
+        ];
+        FILES.iter()
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use super::File;
-    use super::Rank;
     use super::Square;
+    use super::Rank;
+    use super::File;
     use std::collections::HashMap;
     use utils;
 
