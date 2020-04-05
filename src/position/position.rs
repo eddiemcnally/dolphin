@@ -401,7 +401,7 @@ impl Position {
     }
 }
 
-fn find_en_passant_sq(from_sq: Square, col: Colour) -> Square {
+fn find_en_passant_sq(from_sq: Square, col: Colour) -> Option<Square> {
     // use the *from_sq* to find the en passant sq
     match col {
         Colour::White => from_sq.square_plus_1_rank(),
@@ -495,7 +495,11 @@ fn do_double_pawn_move(
     update_hash_on_piece_move(position, piece, from_sq, to_sq);
     position.board.move_piece(from_sq, to_sq, piece);
     let s = find_en_passant_sq(from_sq, col);
-    position.en_pass_sq = Some(s);
+
+    match s {
+        Some(_) => position.en_pass_sq = s,
+        None => panic!("Unable to find en passant square"),
+    }
 }
 
 fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
@@ -512,9 +516,14 @@ fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
         ),
     };
 
-    remove_piece_from_board(position, capt_pawn, capt_sq);
-    position.board.move_piece(from_sq, to_sq, pawn);
-    update_hash_on_piece_move(position, pawn, from_sq, to_sq);
+    match capt_sq {
+        Some(_) => {
+            remove_piece_from_board(position, capt_pawn, capt_sq.unwrap());
+            position.board.move_piece(from_sq, to_sq, pawn);
+            update_hash_on_piece_move(position, pawn, from_sq, to_sq);
+        }
+        None => panic!("Invalid capture square for en passant move"),
+    }
 }
 
 fn do_promotion(

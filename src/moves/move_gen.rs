@@ -293,9 +293,14 @@ fn generate_misc_pawn_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
         // quiet moves
         // ===========
         let quiet_to_sq = from_sq.square_minus_1_rank();
-        if bitboard::is_set(all_bb, quiet_to_sq) == false {
-            let mv = Mov::encode_move_quiet(from_sq, quiet_to_sq);
-            move_list.push(mv);
+        match quiet_to_sq {
+            Some(_) => {
+                if bitboard::is_set(all_bb, quiet_to_sq.unwrap()) == false {
+                    let mv = Mov::encode_move_quiet(from_sq, quiet_to_sq.unwrap());
+                    move_list.push(mv);
+                }
+            }
+            None => panic!("Problem trying for Rank-1"),
         }
 
         // =============
@@ -345,9 +350,14 @@ fn generate_misc_pawn_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
         // quiet moves
         // ===========
         let quiet_to_sq = from_sq.square_plus_1_rank();
-        if bitboard::is_set(all_bb, quiet_to_sq) == false {
-            let mv = Mov::encode_move_quiet(from_sq, quiet_to_sq);
-            move_list.push(mv);
+        match quiet_to_sq {
+            Some(_) => {
+                if bitboard::is_set(all_bb, quiet_to_sq.unwrap()) == false {
+                    let mv = Mov::encode_move_quiet(from_sq, quiet_to_sq.unwrap());
+                    move_list.push(mv);
+                }
+            }
+            None => panic!("Invalid square when trying for Rank+1"),
         }
 
         // =============
@@ -397,22 +407,32 @@ fn generate_first_pawn_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
         // =======================================================
         let single_mv_to_sq = from_sq.square_minus_1_rank();
 
-        if bitboard::is_set(all_bb, single_mv_to_sq) == false {
-            // free square
-            let mv = Mov::encode_move_quiet(from_sq, single_mv_to_sq);
-            move_list.push(mv);
+        match single_mv_to_sq {
+            Some(_) => {
+                if bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) == false {
+                    // free square
+                    let mv = Mov::encode_move_quiet(from_sq, single_mv_to_sq.unwrap());
+                    move_list.push(mv);
+                }
+            }
+            None => panic!("Invalid square when trying to get Rank-1"),
         }
 
         // ===================
         // double square moves
         // ===================
         let double_mv_to_sq = from_sq.square_minus_2_ranks();
-        if bitboard::is_set(all_bb, single_mv_to_sq) == false
-            && bitboard::is_set(all_bb, double_mv_to_sq) == false
-        {
-            // both squares free
-            let mv = Mov::encode_move_double_pawn_first(from_sq, double_mv_to_sq);
-            move_list.push(mv);
+        match double_mv_to_sq {
+            Some(_) => {
+                if bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) == false
+                    && bitboard::is_set(all_bb, double_mv_to_sq.unwrap()) == false
+                {
+                    // both squares free
+                    let mv = Mov::encode_move_double_pawn_first(from_sq, double_mv_to_sq.unwrap());
+                    move_list.push(mv);
+                }
+            }
+            None => panic!("Invalid square when trying Rank-2"),
         }
 
         // =====================
@@ -448,22 +468,32 @@ fn generate_first_pawn_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
         // =======================================================
         let single_mv_to_sq = from_sq.square_plus_1_rank();
 
-        if bitboard::is_set(all_bb, single_mv_to_sq) == false {
-            // free square
-            let mv = Mov::encode_move_quiet(from_sq, single_mv_to_sq);
-            move_list.push(mv);
+        match single_mv_to_sq {
+            Some(_) => {
+                if bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) == false {
+                    // free square
+                    let mv = Mov::encode_move_quiet(from_sq, single_mv_to_sq.unwrap());
+                    move_list.push(mv);
+                }
+            }
+            None => panic!("Problem trying to get Rank+1"),
         }
 
         // ===================
         // double square moves
         // ===================
         let double_mv_to_sq = from_sq.square_plus_2_ranks();
-        if bitboard::is_set(all_bb, single_mv_to_sq) == false
-            && bitboard::is_set(all_bb, double_mv_to_sq) == false
-        {
-            // both squares free
-            let mv = Mov::encode_move_double_pawn_first(from_sq, double_mv_to_sq);
-            move_list.push(mv);
+        match double_mv_to_sq {
+            Some(_) => {
+                if bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) == false
+                    && bitboard::is_set(all_bb, double_mv_to_sq.unwrap()) == false
+                {
+                    // both squares free
+                    let mv = Mov::encode_move_double_pawn_first(from_sq, double_mv_to_sq.unwrap());
+                    move_list.push(mv);
+                }
+            }
+            None => panic!("Problem trying to get Rank+2"),
         }
 
         // =====================
@@ -501,10 +531,14 @@ fn generate_promotion_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
 
         // quiet promotion
         let quiet_to_sq = from_sq.square_minus_1_rank();
-
-        if bitboard::is_set(all_bb, quiet_to_sq) == false {
-            // free square ahead
-            encode_promotion_moves(from_sq, quiet_to_sq, move_list);
+        match quiet_to_sq {
+            Some(_) => {
+                if bitboard::is_set(all_bb, quiet_to_sq.unwrap()) == false {
+                    // free square ahead
+                    encode_promotion_moves(from_sq, quiet_to_sq.unwrap(), move_list);
+                }
+            }
+            None => panic!("Problem with promotion trying to get Rank-1"),
         }
 
         // check for capture promotions
@@ -542,9 +576,14 @@ fn generate_promotion_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
         // quiet promotion
         let quiet_to_sq = from_sq.square_plus_1_rank();
 
-        if bitboard::is_set(all_bb, quiet_to_sq) == false {
-            // free square ahead
-            encode_promotion_moves(from_sq, quiet_to_sq, move_list);
+        match quiet_to_sq {
+            Some(_) => {
+                if bitboard::is_set(all_bb, quiet_to_sq.unwrap()) == false {
+                    // free square ahead
+                    encode_promotion_moves(from_sq, quiet_to_sq.unwrap(), move_list);
+                }
+            }
+            None => panic!("Problem with promotion trying to get Rank+1"),
         }
 
         // check for capture promotions

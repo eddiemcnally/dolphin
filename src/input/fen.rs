@@ -68,13 +68,17 @@ pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, Piece> {
                     // not a number, so it's a piece
                     let piece = Piece::from_char(c);
 
-                    let r: Rank = Rank::from_num(rank as u8);
-                    let f: File = File::from_num(file);
+                    let r = Rank::from_num(rank as i8);
+                    let f = File::from_num(file as i8);
 
-                    let sq: Square = Square::get_square(r, f);
-                    file += 1;
+                    if r.is_some() && f.is_some() {
+                        let sq: Square = Square::get_square(r.unwrap(), f.unwrap());
+                        file += 1;
 
-                    retval.insert(sq, piece);
+                        retval.insert(sq, piece);
+                    } else {
+                        panic!("Invalid rank or file");
+                    }
                 }
             }
         }
@@ -94,7 +98,7 @@ fn get_en_passant_sq(en_pass: &str) -> Option<Square> {
     if en_pass == "-" {
         None
     } else {
-        Some(Square::get_from_string(en_pass))
+        Some(Square::get_from_string(en_pass).unwrap())
     }
 }
 

@@ -1,5 +1,6 @@
 use board::board;
 use board::square::Square;
+use core::core_traits::ArrayAccessor;
 
 pub fn get_occupancy_mask_bishop(sq: Square) -> u64 {
     return *BISHOP_OCCUPANCY_MASKS.get(sq.to_offset()).unwrap();

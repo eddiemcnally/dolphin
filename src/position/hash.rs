@@ -4,6 +4,7 @@ use board::board::NUM_SQUARES;
 use board::piece::Piece;
 use board::piece::NUM_PIECES;
 use board::square::Square;
+use core::core_traits::ArrayAccessor;
 use input::fen::ParsedFen;
 use position::castle_permissions;
 use position::castle_permissions::CastlePermissionType;

@@ -12,14 +12,17 @@ extern crate num_derive;
 #[macro_use]
 extern crate smallvec;
 extern crate core_affinity;
+extern crate num_format;
 
 mod board;
+mod core;
 mod input;
 mod moves;
 mod perft;
 mod position;
 mod utils;
 use input::fen;
+use num_format::{Locale, ToFormattedString};
 use perft::perft_runner;
 use position::position::Position;
 use std::time::Instant;
@@ -57,8 +60,8 @@ fn process_row(row: &perft::epd_parser::EpdRow, depth: u8) {
     let now = Instant::now();
     let num_moves = perft_runner::perft(depth, &mut position);
     let elapsed_in_secs = now.elapsed().as_secs_f64();
-
-    println!("Nodes/sec: {}", num_moves as f64 / elapsed_in_secs);
+    let nodes_per_sec = (num_moves as f64 / elapsed_in_secs) as u64;
+    let s = nodes_per_sec.to_formatted_string(&Locale::en);
 
     if *expected_moves != num_moves {
         println!(
@@ -68,7 +71,7 @@ fn process_row(row: &perft::epd_parser::EpdRow, depth: u8) {
         panic!("**************** problem ***************************");
     }
     println!(
-        "Depth: {}, #Expected: {}, #found: {}",
-        depth, expected_moves, num_moves
+        "#Nodes/Sec: {}, Depth: {}, #Expected: {}, #found: {}",
+        s, depth, expected_moves, num_moves
     );
 }

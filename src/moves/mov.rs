@@ -235,7 +235,7 @@ impl Mov {
     ///
     pub fn decode_from_square(&self) -> Square {
         let sq = (self.mv & MASK_FROM_SQ).shr(SHIFT_FROM_SQ);
-        return Square::from_num(sq as u8);
+        return Square::from_num(sq as u8).unwrap();
     }
 
     ///
@@ -247,7 +247,7 @@ impl Mov {
     ///
     pub fn decode_to_square(&self) -> Square {
         let sq = (self.mv & MASK_TO_SQ).shr(SHIFT_TO_SQ);
-        return Square::from_num(sq as u8);
+        return Square::from_num(sq as u8).unwrap();
     }
 
     ///

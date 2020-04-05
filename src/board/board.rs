@@ -8,6 +8,7 @@ use board::square;
 use board::square::File;
 use board::square::Rank;
 use board::square::Square;
+use core::core_traits::ArrayAccessor;
 use input::fen::ParsedFen;
 use std::fmt;
 use std::option::Option;
