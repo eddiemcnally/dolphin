@@ -2,6 +2,8 @@ use board::bitboard;
 use board::piece::Colour;
 use board::piece::Piece;
 use board::piece::PieceRole;
+use board::piece::PieceOffset;
+use board::piece::ColourOffset;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
 use board::square;
@@ -14,6 +16,20 @@ use std::fmt;
 use std::option::Option;
 
 pub const NUM_SQUARES: usize = 64;
+
+
+#[derive(Default)]
+pub struct BitboardSummary{
+    pub pawn: u64,
+    pub bishop: u64,
+    pub knight: u64,
+    pub rook: u64,
+    pub queen: u64,
+    pub white_bb: u64,
+    pub black_bb: u64
+}
+
+
 
 #[derive(Copy)]
 pub struct Board {
@@ -165,11 +181,17 @@ impl Board {
     }
 
     pub fn get_colour_bb(&self, colour: Colour) -> u64 {
-        self.colour_bb[colour.offset()]
+        match colour {
+            Colour::White => return self.colour_bb[ColourOffset::White as usize],
+            Colour::Black => return self.colour_bb[ColourOffset::Black as usize],
+        }
     }
 
     pub fn get_material(&self, colour: Colour) -> u32 {
-        self.material[colour.offset()]
+        match colour {
+            Colour::White => return self.material[ColourOffset::White as usize],
+            Colour::Black => return self.material[ColourOffset::Black as usize],
+        }
     }
 
     pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece) {
@@ -210,6 +232,27 @@ impl Board {
         return self.king_sq[colour.offset()];
     }
 
+    pub fn get_white_board_summary(&self, summary: &mut BitboardSummary){
+        summary.pawn = self.piece_bb[PieceOffset::WhitePawn as usize];
+        summary.bishop = self.piece_bb[PieceOffset::WhiteBishop as usize];
+        summary.knight = self.piece_bb[PieceOffset::WhiteKnight as usize];
+        summary.rook = self.piece_bb[PieceOffset::WhiteRook as usize];
+        summary.queen = self.piece_bb[PieceOffset::WhiteQueen as usize];
+        summary.white_bb = self.colour_bb[ColourOffset::White as usize];
+        summary.black_bb = self.colour_bb[ColourOffset::Black as usize];
+    }
+
+    pub fn get_black_board_summary(&self, summary: &mut BitboardSummary){
+        summary.pawn = self.piece_bb[PieceOffset::BlackPawn as usize];
+        summary.bishop = self.piece_bb[PieceOffset::BlackBishop as usize];
+        summary.knight = self.piece_bb[PieceOffset::BlackKnight as usize];
+        summary.rook = self.piece_bb[PieceOffset::BlackRook as usize];
+        summary.queen = self.piece_bb[PieceOffset::BlackQueen as usize];
+        summary.white_bb = self.colour_bb[ColourOffset::White as usize];
+        summary.black_bb = self.colour_bb[ColourOffset::Black as usize];
+    }
+
+
     fn set_bitboards_with_material(&mut self, piece: Piece, sq: Square) {
         self.set_bitboards(piece, sq);
         self.material[piece.colour().offset()] += piece.value();
@@ -235,6 +278,7 @@ impl Board {
             self.king_sq[pce.colour().offset()] = sq;
         }
     }
+
 }
 
 #[cfg(test)]

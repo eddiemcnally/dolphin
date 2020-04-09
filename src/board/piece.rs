@@ -1,13 +1,22 @@
 use enum_primitive::FromPrimitive;
 use std::fmt;
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy, FromPrimitive, ToPrimitive)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
 #[repr(u8)]
 pub enum Colour {
-    White = 0xFF,
-    Black = 0x00,
+    White = 0x11,
+    Black = 0x22,
 }
-const COLOUR_MASK: u8 = 0x01;
+
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
+#[repr(u8)]
+pub enum ColourOffset {
+    White = 0x0,
+    Black = 0x1,
+}
+
+
+
 
 // ---- -XXX    ROLE
 // ---- X---    Colour 0-> White, 1 -> Black
@@ -116,6 +125,31 @@ pub enum Piece {
         PieceRole::King as u8 | ((Offset::BlackKing as u8) << PCE_SHFT_OFFSET) | PCE_MASK_COLOUR,
 }
 
+// offsets into an array 
+#[repr(u8)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy, FromPrimitive, ToPrimitive)]
+pub enum PieceOffset{
+    WhitePawn = ((Piece::WhitePawn as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
+    BlackPawn = ((Piece::BlackPawn as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
+
+    WhiteBishop = ((Piece::WhiteBishop as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
+    BlackBishop = ((Piece::BlackBishop as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
+
+    WhiteKnight = ((Piece::WhiteKnight as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
+    BlackKnight = ((Piece::BlackKnight as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
+
+    WhiteRook = ((Piece::WhiteRook as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
+    BlackRook = ((Piece::BlackRook as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
+
+    WhiteQueen = ((Piece::WhiteQueen as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
+    BlackQueen = ((Piece::BlackQueen as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
+
+    WhiteKing = ((Piece::WhiteKing as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
+    BlackKing = ((Piece::BlackKing as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
+}
+
+
+
 impl Piece {
     pub fn new(role: PieceRole, col: Colour) -> Piece {
         match col {
@@ -134,7 +168,7 @@ impl Piece {
                 PieceRole::Rook => return Piece::BlackRook,
                 PieceRole::Queen => return Piece::BlackQueen,
                 PieceRole::King => return Piece::BlackKing,
-            },
+            }            
         }
     }
 
@@ -193,7 +227,7 @@ impl Piece {
 
         let col = match self.colour() {
             Colour::White => "W",
-            Colour::Black => "B",
+            Colour::Black => "B"
         };
 
         match role {
@@ -225,11 +259,17 @@ impl fmt::Display for Piece {
 
 impl Colour {
     pub fn flip_side(&self) -> Colour {
-        return Colour::from_u8(!(*self as u8)).unwrap();
+        match self{
+            Colour::White => return Colour::Black,
+            Colour::Black => return Colour::White
+        }        
     }
 
     pub fn offset(&self) -> usize {
-        return (*self as u8 & COLOUR_MASK) as usize;
+        match self{
+            Colour::White => return ColourOffset::White as usize,
+            Colour::Black => return ColourOffset::Black as usize,
+        }        
     }
 }
 
