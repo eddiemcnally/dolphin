@@ -15,9 +15,6 @@ pub enum ColourOffset {
     Black = 0x1,
 }
 
-
-
-
 // ---- -XXX    ROLE
 // ---- X---    Colour 0-> White, 1 -> Black
 // XXXX ----    Offset when used in an array
@@ -125,10 +122,10 @@ pub enum Piece {
         PieceRole::King as u8 | ((Offset::BlackKing as u8) << PCE_SHFT_OFFSET) | PCE_MASK_COLOUR,
 }
 
-// offsets into an array 
+// offsets into an array
 #[repr(u8)]
 #[derive(Eq, PartialEq, Hash, Clone, Copy, FromPrimitive, ToPrimitive)]
-pub enum PieceOffset{
+pub enum PieceOffset {
     WhitePawn = ((Piece::WhitePawn as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
     BlackPawn = ((Piece::BlackPawn as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
 
@@ -148,8 +145,6 @@ pub enum PieceOffset{
     BlackKing = ((Piece::BlackKing as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET),
 }
 
-
-
 impl Piece {
     pub fn new(role: PieceRole, col: Colour) -> Piece {
         match col {
@@ -168,7 +163,7 @@ impl Piece {
                 PieceRole::Rook => return Piece::BlackRook,
                 PieceRole::Queen => return Piece::BlackQueen,
                 PieceRole::King => return Piece::BlackKing,
-            }            
+            },
         }
     }
 
@@ -227,7 +222,7 @@ impl Piece {
 
         let col = match self.colour() {
             Colour::White => "W",
-            Colour::Black => "B"
+            Colour::Black => "B",
         };
 
         match role {
@@ -259,17 +254,17 @@ impl fmt::Display for Piece {
 
 impl Colour {
     pub fn flip_side(&self) -> Colour {
-        match self{
+        match self {
             Colour::White => return Colour::Black,
-            Colour::Black => return Colour::White
-        }        
+            Colour::Black => return Colour::White,
+        }
     }
 
     pub fn offset(&self) -> usize {
-        match self{
+        match self {
             Colour::White => return ColourOffset::White as usize,
             Colour::Black => return ColourOffset::Black as usize,
-        }        
+        }
     }
 }
 

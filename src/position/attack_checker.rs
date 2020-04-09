@@ -1,4 +1,5 @@
 use board::bitboard;
+use board::board::BitboardSummary;
 use board::board::Board;
 use board::occupancy_masks;
 use board::piece::Colour;
@@ -9,21 +10,30 @@ use std::ops::Shl;
 pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool {
     let all_pce_bb = board.get_bitboard();
 
+    let mut pce_bb_cache: BitboardSummary = BitboardSummary::default();
+
     match attacking_side {
         Colour::White => {
-            if is_attacked_by_pawn_white(board, sq) {
-                return true;
+            board.get_white_board_summary(&mut pce_bb_cache);
+
+            if pce_bb_cache.pawn != 0 {
+                if is_attacked_by_pawn_white(&pce_bb_cache.pawn, sq) {
+                    return true;
+                }
             }
 
-            if is_knight_attacking(board, sq, Piece::WhiteKnight) {
-                return true;
+            if pce_bb_cache.knight != 0 {
+                if is_knight_attacking(&pce_bb_cache.knight, sq) {
+                    return true;
+                }
             }
 
             // combine piece bitboards
-            let mut attack_pce_bb = board.get_piece_bitboard(Piece::WhiteRook);
-            attack_pce_bb |= board.get_piece_bitboard(Piece::WhiteQueen);
-            if is_horizontal_or_vertical_attacking(all_pce_bb, attack_pce_bb, sq) {
-                return true;
+            let attack_pce_bb = pce_bb_cache.rook | pce_bb_cache.queen;
+            if attack_pce_bb != 0 {
+                if is_horizontal_or_vertical_attacking(all_pce_bb, &attack_pce_bb, sq) {
+                    return true;
+                }
             }
 
             if is_diagonally_attacked(board, sq, Piece::WhiteBishop, Piece::WhiteQueen, all_pce_bb)
@@ -32,19 +42,25 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
             }
         }
         Colour::Black => {
-            if is_attacked_by_pawn_black(board, sq) {
-                return true;
+            board.get_black_board_summary(&mut pce_bb_cache);
+
+            if pce_bb_cache.pawn != 0 {
+                if is_attacked_by_pawn_black(&pce_bb_cache.pawn, sq) {
+                    return true;
+                }
             }
 
-            if is_knight_attacking(board, sq, Piece::BlackKnight) {
-                return true;
+            if pce_bb_cache.knight != 0 {
+                if is_knight_attacking(&pce_bb_cache.knight, sq) {
+                    return true;
+                }
             }
-
             // combine piece bitboards
-            let mut attack_pce_bb = board.get_piece_bitboard(Piece::BlackRook);
-            attack_pce_bb |= board.get_piece_bitboard(Piece::BlackQueen);
-            if is_horizontal_or_vertical_attacking(all_pce_bb, attack_pce_bb, sq) {
-                return true;
+            let attack_pce_bb = pce_bb_cache.rook | pce_bb_cache.queen;
+            if attack_pce_bb != 0 {
+                if is_horizontal_or_vertical_attacking(all_pce_bb, &attack_pce_bb, sq) {
+                    return true;
+                }
             }
 
             if is_diagonally_attacked(board, sq, Piece::BlackBishop, Piece::BlackQueen, all_pce_bb)
@@ -61,8 +77,8 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
     return false;
 }
 
-fn is_knight_attacking(board: &Board, attack_sq: Square, attacking_pce: Piece) -> bool {
-    let mut pce_bb = board.get_piece_bitboard(attacking_pce);
+fn is_knight_attacking(pce_bitboard: &u64, attack_sq: Square) -> bool {
+    let mut pce_bb = *pce_bitboard;
 
     while pce_bb != 0 {
         let sq = bitboard::pop_1st_bit(&mut pce_bb);
@@ -76,10 +92,10 @@ fn is_knight_attacking(board: &Board, attack_sq: Square, attacking_pce: Piece) -
 
 fn is_horizontal_or_vertical_attacking(
     all_piece_bb: u64,
-    attack_pce_bb: u64,
+    attack_pce_bb: &u64,
     attack_sq: Square,
 ) -> bool {
-    let mut pce_bb = attack_pce_bb;
+    let mut pce_bb = *attack_pce_bb;
 
     while pce_bb != 0 {
         let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
@@ -130,18 +146,12 @@ fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colou
     return bitboard::is_set(king_occ_mask, attacked_sq);
 }
 
-fn is_attacked_by_pawn_white(board: &Board, attacked_sq: Square) -> bool {
-    let wp_bb = board.get_piece_bitboard(Piece::WhitePawn);
-    if wp_bb == 0 {
-        // no white pawns
-        return false;
-    }
-
+fn is_attacked_by_pawn_white(pawn_bb: &u64, attacked_sq: Square) -> bool {
     // -1 Rank and +/- 1 File
     let mut pawn_sq = Square::derive_relative_square(attacked_sq, -1, 1);
     match pawn_sq {
         Some(_) => {
-            if bitboard::is_set(wp_bb, pawn_sq.unwrap()) {
+            if bitboard::is_set(*pawn_bb, pawn_sq.unwrap()) {
                 return true;
             }
         }
@@ -151,7 +161,7 @@ fn is_attacked_by_pawn_white(board: &Board, attacked_sq: Square) -> bool {
     pawn_sq = Square::derive_relative_square(attacked_sq, -1, -1);
     match pawn_sq {
         Some(_) => {
-            if bitboard::is_set(wp_bb, pawn_sq.unwrap()) {
+            if bitboard::is_set(*pawn_bb, pawn_sq.unwrap()) {
                 return true;
             }
         }
@@ -161,17 +171,12 @@ fn is_attacked_by_pawn_white(board: &Board, attacked_sq: Square) -> bool {
     return false;
 }
 
-fn is_attacked_by_pawn_black(board: &Board, attacked_sq: Square) -> bool {
-    let bp_bb = board.get_piece_bitboard(Piece::BlackPawn);
-    if bp_bb == 0 {
-        // no black pawns
-        return false;
-    }
+fn is_attacked_by_pawn_black(pawn_bb: &u64, attacked_sq: Square) -> bool {
     // +1 Rank and +/- 1 File
     let mut pawn_sq = Square::derive_relative_square(attacked_sq, 1, 1);
     match pawn_sq {
         Some(_) => {
-            if bitboard::is_set(bp_bb, pawn_sq.unwrap()) {
+            if bitboard::is_set(*pawn_bb, pawn_sq.unwrap()) {
                 return true;
             }
         }
@@ -181,7 +186,7 @@ fn is_attacked_by_pawn_black(board: &Board, attacked_sq: Square) -> bool {
     pawn_sq = Square::derive_relative_square(attacked_sq, 1, -1);
     match pawn_sq {
         Some(_) => {
-            if bitboard::is_set(bp_bb, pawn_sq.unwrap()) {
+            if bitboard::is_set(*pawn_bb, pawn_sq.unwrap()) {
                 return true;
             }
         }
