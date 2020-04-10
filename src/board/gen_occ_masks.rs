@@ -353,36 +353,6 @@ pub mod tests {
     }
 
     #[test]
-    pub fn compare_black_pawn_masks() {
-        let squares = board::square::SQUARES;
-
-        let masks = super::gen_black_pawn_capture_masks();
-
-        for sq in squares {
-            let new_mask = masks[sq.to_offset()];
-
-            let ref_mask = occupancy_masks::get_black_pawn_capture_mask(*sq);
-
-            assert!(new_mask == ref_mask);
-        }
-    }
-
-    #[test]
-    pub fn compare_white_pawn_masks() {
-        let squares = board::square::SQUARES;
-
-        let masks = super::gen_white_pawn_capture_masks();
-
-        for sq in squares {
-            let new_mask = masks[sq.to_offset()];
-
-            let ref_mask = occupancy_masks::get_white_pawn_capture_mask(*sq);
-
-            assert!(new_mask == ref_mask);
-        }
-    }
-
-    #[test]
     #[ignore]
     pub fn compare_queen_masks() {
         let squares = board::square::SQUARES;

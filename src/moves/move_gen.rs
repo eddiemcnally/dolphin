@@ -306,7 +306,7 @@ fn generate_misc_pawn_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
         // =============
         // capture moves
         // =============
-        let capt_mask = occupancy_masks::get_black_pawn_capture_mask(from_sq);
+        let capt_mask = gen_black_pawn_attach_squares(from_sq);
         let mut capt_bb = capt_mask & all_opposing_bb;
         while capt_bb != 0 {
             let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
@@ -363,7 +363,7 @@ fn generate_misc_pawn_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
         // =============
         // capture moves
         // =============
-        let capt_mask = occupancy_masks::get_white_pawn_capture_mask(from_sq);
+        let capt_mask = gen_white_pawn_attach_squares(from_sq);
         let mut capt_bb = capt_mask & all_opposing_bb;
         while capt_bb != 0 {
             let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
@@ -438,7 +438,7 @@ fn generate_first_pawn_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
         // =====================
         // capture on first move
         // =====================
-        let capt_mask = occupancy_masks::get_black_pawn_capture_mask(from_sq);
+        let capt_mask = gen_black_pawn_attach_squares(from_sq);
         let mut capt_bb = capt_mask & all_opposing_bb;
         while capt_bb != 0 {
             let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
@@ -446,6 +446,44 @@ fn generate_first_pawn_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
             move_list.push(mv);
         }
     }
+}
+
+fn gen_white_pawn_attach_squares(pawn_sq: Square) -> u64 {
+    let mut retval: u64 = 0;
+
+    // +1 Rank and +/- 1 File
+    let mut sq = Square::derive_relative_square(pawn_sq, 1, 1);
+    match sq {
+        Some(_) => bitboard::set_bit(&mut retval, sq.unwrap()),
+        None => {}
+    }
+    // +1 Rank and +/- 1 File
+    sq = Square::derive_relative_square(pawn_sq, 1, -1);
+    match sq {
+        Some(_) => bitboard::set_bit(&mut retval, sq.unwrap()),
+        None => {}
+    }
+
+    return retval;
+}
+
+fn gen_black_pawn_attach_squares(pawn_sq: Square) -> u64 {
+    let mut retval: u64 = 0;
+
+    // -1 Rank and +/- 1 File
+    let mut sq = Square::derive_relative_square(pawn_sq, -1, 1);
+    match sq {
+        Some(_) => bitboard::set_bit(&mut retval, sq.unwrap()),
+        None => {}
+    }
+    // +1 Rank and +/- 1 File
+    sq = Square::derive_relative_square(pawn_sq, -1, -1);
+    match sq {
+        Some(_) => bitboard::set_bit(&mut retval, sq.unwrap()),
+        None => {}
+    }
+
+    return retval;
 }
 
 fn generate_first_pawn_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
@@ -499,7 +537,7 @@ fn generate_first_pawn_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
         // =====================
         // capture on first move
         // =====================
-        let capt_mask = occupancy_masks::get_white_pawn_capture_mask(from_sq);
+        let capt_mask = gen_white_pawn_attach_squares(from_sq);
         let mut capt_bb = capt_mask & all_opposing_bb;
         while capt_bb != 0 {
             let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
@@ -542,7 +580,7 @@ fn generate_promotion_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
         }
 
         // check for capture promotions
-        let capt_mask = occupancy_masks::get_black_pawn_capture_mask(from_sq);
+        let capt_mask = gen_black_pawn_attach_squares(from_sq);
 
         let mut capt_bb = capt_mask & all_opposing_bb;
 
@@ -587,7 +625,7 @@ fn generate_promotion_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
         }
 
         // check for capture promotions
-        let capt_mask = occupancy_masks::get_white_pawn_capture_mask(from_sq);
+        let capt_mask = gen_white_pawn_attach_squares(from_sq);
         let mut capt_bb = capt_mask & all_opposing_bb;
 
         while capt_bb != 0 {
