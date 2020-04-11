@@ -67,7 +67,7 @@ pub fn update_side(pos_hash: &mut PositionHash) {
 }
 
 pub fn update_piece(pos_hash: &mut PositionHash, piece: Piece, square: Square) {
-    let pce_offset = piece.offset();
+    let pce_offset = piece.to_offset();
     let sq_offset = square.to_offset();
     let k = KEYS.piece_keys[sq_offset][pce_offset];
 

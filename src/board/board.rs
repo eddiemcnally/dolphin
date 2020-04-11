@@ -1,9 +1,6 @@
 use board::bitboard;
 use board::piece::Colour;
-use board::piece::ColourOffset;
 use board::piece::Piece;
-use board::piece::PieceOffset;
-use board::piece::PieceRole;
 use board::piece::NUM_COLOURS;
 use board::piece::NUM_PIECES;
 use board::square;
@@ -17,17 +14,6 @@ use std::option::Option;
 
 pub const NUM_SQUARES: usize = 64;
 
-#[derive(Default)]
-pub struct BitboardSummary {
-    pub pawn: u64,
-    pub bishop: u64,
-    pub knight: u64,
-    pub rook: u64,
-    pub queen: u64,
-    pub white_bb: u64,
-    pub black_bb: u64,
-}
-
 #[derive(Copy)]
 pub struct Board {
     // piece bitboard, an entry for each piece type (enum Piece)
@@ -36,8 +22,6 @@ pub struct Board {
     colour_bb: [u64; NUM_COLOURS],
     // the pieces on each square
     pieces: [Option<Piece>; NUM_SQUARES],
-    // square containing the king
-    king_sq: [Square; NUM_COLOURS],
     // material value
     material: [u32; NUM_COLOURS],
 }
@@ -48,7 +32,6 @@ impl Default for Board {
             piece_bb: [0; NUM_PIECES],
             colour_bb: [0; NUM_COLOURS],
             pieces: [None; NUM_SQUARES],
-            king_sq: [Square::a1; NUM_COLOURS],
             material: [0; NUM_COLOURS],
         };
         return brd;
@@ -67,10 +50,6 @@ impl PartialEq for Board {
         for i in 0..NUM_COLOURS - 1 {
             if self.colour_bb[i] != other.colour_bb[i] {
                 println!("BOARD: colour_bb are different");
-                return false;
-            }
-            if self.king_sq[i] != other.king_sq[i] {
-                println!("BOARD: king_sq are different");
                 return false;
             }
             if self.material[i] != other.material[i] {
@@ -136,7 +115,6 @@ impl Clone for Board {
             piece_bb: self.piece_bb,
             colour_bb: self.colour_bb,
             pieces: cp_pieces,
-            king_sq: self.king_sq,
             material: self.material,
         };
         return brd;
@@ -178,17 +156,11 @@ impl Board {
     }
 
     pub fn get_colour_bb(&self, colour: Colour) -> u64 {
-        match colour {
-            Colour::White => return self.colour_bb[ColourOffset::White as usize],
-            Colour::Black => return self.colour_bb[ColourOffset::Black as usize],
-        }
+        return self.colour_bb[colour.to_offset()];
     }
 
     pub fn get_material(&self, colour: Colour) -> u32 {
-        match colour {
-            Colour::White => return self.material[ColourOffset::White as usize],
-            Colour::Black => return self.material[ColourOffset::Black as usize],
-        }
+        return self.material[colour.to_offset()];
     }
 
     pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece) {
@@ -218,7 +190,7 @@ impl Board {
     }
 
     pub fn get_piece_bitboard(&self, piece: Piece) -> u64 {
-        return self.piece_bb[piece.offset()];
+        return self.piece_bb[piece.to_offset()];
     }
 
     pub fn get_bitboard(&self) -> u64 {
@@ -226,53 +198,34 @@ impl Board {
     }
 
     pub fn get_king_sq(&self, colour: Colour) -> Square {
-        return self.king_sq[colour.offset()];
-    }
-
-    pub fn get_white_board_summary(&self, summary: &mut BitboardSummary) {
-        summary.pawn = self.piece_bb[PieceOffset::WhitePawn as usize];
-        summary.bishop = self.piece_bb[PieceOffset::WhiteBishop as usize];
-        summary.knight = self.piece_bb[PieceOffset::WhiteKnight as usize];
-        summary.rook = self.piece_bb[PieceOffset::WhiteRook as usize];
-        summary.queen = self.piece_bb[PieceOffset::WhiteQueen as usize];
-        summary.white_bb = self.colour_bb[ColourOffset::White as usize];
-        summary.black_bb = self.colour_bb[ColourOffset::Black as usize];
-    }
-
-    pub fn get_black_board_summary(&self, summary: &mut BitboardSummary) {
-        summary.pawn = self.piece_bb[PieceOffset::BlackPawn as usize];
-        summary.bishop = self.piece_bb[PieceOffset::BlackBishop as usize];
-        summary.knight = self.piece_bb[PieceOffset::BlackKnight as usize];
-        summary.rook = self.piece_bb[PieceOffset::BlackRook as usize];
-        summary.queen = self.piece_bb[PieceOffset::BlackQueen as usize];
-        summary.white_bb = self.colour_bb[ColourOffset::White as usize];
-        summary.black_bb = self.colour_bb[ColourOffset::Black as usize];
+        let mut king_bb = match colour {
+            Colour::White => self.piece_bb[Piece::WhiteKing.to_offset()],
+            Colour::Black => self.piece_bb[Piece::BlackKing.to_offset()],
+        };
+        let sq = bitboard::pop_1st_bit(&mut king_bb);
+        return sq;
     }
 
     fn set_bitboards_with_material(&mut self, piece: Piece, sq: Square) {
         self.set_bitboards(piece, sq);
-        self.material[piece.colour().offset()] += piece.value();
+        self.material[piece.colour().to_offset()] += piece.value();
     }
 
     fn clear_bitboards_with_material(&mut self, piece: Piece, sq: Square) {
         self.clear_bitboards(piece, sq);
-        self.material[piece.colour().offset()] -= piece.value();
+        self.material[piece.colour().to_offset()] -= piece.value();
     }
 
     fn clear_bitboards(&mut self, piece: Piece, sq: Square) {
-        bitboard::clear_bit(&mut self.piece_bb[piece.offset()], sq);
-        bitboard::clear_bit(&mut self.colour_bb[piece.colour().offset()], sq);
+        bitboard::clear_bit(&mut self.piece_bb[piece.to_offset()], sq);
+        bitboard::clear_bit(&mut self.colour_bb[piece.colour().to_offset()], sq);
         self.pieces[sq.to_offset()] = None;
     }
 
     fn set_bitboards(&mut self, pce: Piece, sq: Square) {
-        bitboard::set_bit(&mut self.piece_bb[pce.offset()], sq);
-        bitboard::set_bit(&mut self.colour_bb[pce.colour().offset()], sq);
+        bitboard::set_bit(&mut self.piece_bb[pce.to_offset()], sq);
+        bitboard::set_bit(&mut self.colour_bb[pce.colour().to_offset()], sq);
         self.pieces[sq.to_offset()] = Some(pce);
-
-        if pce.role() == PieceRole::King {
-            self.king_sq[pce.colour().offset()] = sq;
-        }
     }
 }
 

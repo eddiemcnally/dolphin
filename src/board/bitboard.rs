@@ -20,6 +20,10 @@ pub fn is_set(bb: u64, sq: Square) -> bool {
     ret != 0
 }
 
+pub fn count_bits(bb: u64) -> u8 {
+    return bb.count_ones() as u8;
+}
+
 pub fn pop_1st_bit(bb: &mut u64) -> Square {
     debug_assert!(*bb != 0, "bitboard is already zero");
 

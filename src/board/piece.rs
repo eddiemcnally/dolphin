@@ -1,16 +1,10 @@
+use core::core_traits::ArrayAccessor;
 use enum_primitive::FromPrimitive;
 use std::fmt;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 #[repr(u8)]
 pub enum Colour {
-    White = 0x11,
-    Black = 0x22,
-}
-
-#[derive(Eq, PartialEq, Hash, Clone, Copy)]
-#[repr(u8)]
-pub enum ColourOffset {
     White = 0x0,
     Black = 0x1,
 }
@@ -179,11 +173,6 @@ impl Piece {
         return PieceRole::from_u8(role).unwrap();
     }
 
-    pub fn offset(&self) -> usize {
-        let o = (*self as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET;
-        return o as usize;
-    }
-
     pub fn from_char(piece_char: char) -> Piece {
         match piece_char {
             'P' => return Piece::WhitePawn,
@@ -236,6 +225,13 @@ impl Piece {
     }
 }
 
+impl ArrayAccessor for Piece {
+    fn to_offset(&self) -> usize {
+        let o = (*self as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET;
+        return o as usize;
+    }
+}
+
 impl fmt::Debug for Piece {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
@@ -259,18 +255,17 @@ impl Colour {
             Colour::Black => return Colour::White,
         }
     }
-
-    pub fn offset(&self) -> usize {
-        match self {
-            Colour::White => return ColourOffset::White as usize,
-            Colour::Black => return ColourOffset::Black as usize,
-        }
-    }
 }
 
 impl Default for Colour {
     fn default() -> Colour {
         Colour::White
+    }
+}
+
+impl ArrayAccessor for Colour {
+    fn to_offset(&self) -> usize {
+        return *self as usize;
     }
 }
 
@@ -298,6 +293,7 @@ pub mod tests {
     use board::piece::Colour;
     use board::piece::Piece;
     use board::piece::PieceRole;
+    use core::core_traits::ArrayAccessor;
 
     #[test]
     pub fn flip_side_as_expected() {
@@ -398,18 +394,18 @@ pub mod tests {
 
     #[test]
     pub fn offset_as_expected() {
-        assert_eq!(Piece::new(PieceRole::Pawn, Colour::White).offset(), 0);
-        assert_eq!(Piece::new(PieceRole::Bishop, Colour::White).offset(), 1);
-        assert_eq!(Piece::new(PieceRole::Knight, Colour::White).offset(), 2);
-        assert_eq!(Piece::new(PieceRole::Rook, Colour::White).offset(), 3);
-        assert_eq!(Piece::new(PieceRole::Queen, Colour::White).offset(), 4);
-        assert_eq!(Piece::new(PieceRole::King, Colour::White).offset(), 5);
+        assert_eq!(Piece::new(PieceRole::Pawn, Colour::White).to_offset(), 0);
+        assert_eq!(Piece::new(PieceRole::Bishop, Colour::White).to_offset(), 1);
+        assert_eq!(Piece::new(PieceRole::Knight, Colour::White).to_offset(), 2);
+        assert_eq!(Piece::new(PieceRole::Rook, Colour::White).to_offset(), 3);
+        assert_eq!(Piece::new(PieceRole::Queen, Colour::White).to_offset(), 4);
+        assert_eq!(Piece::new(PieceRole::King, Colour::White).to_offset(), 5);
 
-        assert_eq!(Piece::new(PieceRole::Pawn, Colour::Black).offset(), 6);
-        assert_eq!(Piece::new(PieceRole::Bishop, Colour::Black).offset(), 7);
-        assert_eq!(Piece::new(PieceRole::Knight, Colour::Black).offset(), 8);
-        assert_eq!(Piece::new(PieceRole::Rook, Colour::Black).offset(), 9);
-        assert_eq!(Piece::new(PieceRole::Queen, Colour::Black).offset(), 10);
-        assert_eq!(Piece::new(PieceRole::King, Colour::Black).offset(), 11);
+        assert_eq!(Piece::new(PieceRole::Pawn, Colour::Black).to_offset(), 6);
+        assert_eq!(Piece::new(PieceRole::Bishop, Colour::Black).to_offset(), 7);
+        assert_eq!(Piece::new(PieceRole::Knight, Colour::Black).to_offset(), 8);
+        assert_eq!(Piece::new(PieceRole::Rook, Colour::Black).to_offset(), 9);
+        assert_eq!(Piece::new(PieceRole::Queen, Colour::Black).to_offset(), 10);
+        assert_eq!(Piece::new(PieceRole::King, Colour::Black).to_offset(), 11);
     }
 }
