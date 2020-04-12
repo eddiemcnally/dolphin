@@ -159,8 +159,11 @@ impl Board {
         return self.colour_bb[colour.to_offset()];
     }
 
-    pub fn get_material(&self, colour: Colour) -> u32 {
-        return self.material[colour.to_offset()];
+    pub fn get_material(&self) -> (u32, u32) {
+        (
+            self.material[Colour::White.to_offset()],
+            self.material[Colour::Black.to_offset()],
+        )
     }
 
     pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece) {
@@ -286,15 +289,15 @@ pub mod tests {
 
         board.add_piece(pce1, Square::a1);
         board.add_piece(pce2, Square::d3);
+        let material_after_add = (pce1.value() + pce2.value(), 0);
 
-        let expected_material = pce1.value() + pce2.value();
-
-        assert_eq!(expected_material, board.get_material(Colour::White));
-        assert_eq!(0, board.get_material(Colour::Black));
+        assert_eq!(material_after_add, board.get_material());
 
         board.remove_piece(pce1, Square::a1);
-        assert_eq!(pce2.value(), board.get_material(Colour::White));
-        assert_eq!(0, board.get_material(Colour::Black));
+
+        let material_after_remove = (pce2.value(), 0);
+
+        assert_eq!(material_after_remove, board.get_material());
     }
 
     #[test]
@@ -306,15 +309,15 @@ pub mod tests {
 
         board.add_piece(pce1, Square::a1);
         board.add_piece(pce2, Square::d3);
+        let material_after_add = (0, pce1.value() + pce2.value());
 
-        let expected_material = pce1.value() + pce2.value();
-
-        assert_eq!(expected_material, board.get_material(Colour::Black));
-        assert_eq!(0, board.get_material(Colour::White));
+        assert_eq!(material_after_add, board.get_material());
 
         board.remove_piece(pce1, Square::a1);
-        assert_eq!(pce2.value(), board.get_material(Colour::Black));
-        assert_eq!(0, board.get_material(Colour::White));
+
+        let material_after_remove = (0, pce2.value());
+
+        assert_eq!(material_after_remove, board.get_material());
     }
 
     #[test]
@@ -326,18 +329,15 @@ pub mod tests {
         let mut board = Board::new();
 
         board.add_piece(pce, from_sq);
-        let start_white_material = board.get_material(Colour::White);
-        let start_black_material = board.get_material(Colour::Black);
+        let start_material = board.get_material();
 
-        assert_eq!(start_white_material, pce.value());
-        assert_eq!(start_black_material, 0);
+        assert_eq!(start_material.0, pce.value());
+        assert_eq!(start_material.1, 0);
 
         board.move_piece(from_sq, to_sq, pce);
-        let end_white_material = board.get_material(Colour::White);
-        let end_black_material = board.get_material(Colour::Black);
+        let end_material = board.get_material();
 
-        assert_eq!(start_white_material, end_white_material);
-        assert_eq!(start_black_material, end_black_material);
+        assert_eq!(start_material, end_material);
     }
 
     #[test]
@@ -349,18 +349,14 @@ pub mod tests {
         let mut board = Board::new();
 
         board.add_piece(pce, Square::d4);
-        let start_white_material = board.get_material(Colour::White);
-        let start_black_material = board.get_material(Colour::Black);
+        let start_material = board.get_material();
 
-        assert_eq!(start_black_material, pce.value());
-        assert_eq!(start_white_material, 0);
+        assert_eq!(start_material.1, pce.value());
 
         board.move_piece(from_sq, to_sq, pce);
-        let end_white_material = board.get_material(Colour::White);
-        let end_black_material = board.get_material(Colour::Black);
+        let end_material = board.get_material();
 
-        assert_eq!(start_white_material, end_white_material);
-        assert_eq!(start_black_material, end_black_material);
+        assert_eq!(start_material, end_material);
     }
 
     #[test]

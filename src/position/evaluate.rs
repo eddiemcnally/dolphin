@@ -4,7 +4,6 @@ use board::board::Board;
 use board::piece::Colour;
 use board::piece::Piece;
 use core::core_traits::ArrayAccessor;
-use std::convert::TryInto;
 
 // Values for piece square arrays are taken from
 // https://www.chessprogramming.org/Simplified_Evaluation_Function
@@ -75,48 +74,50 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
     let black_queen_bb = board.get_piece_bitboard(Piece::BlackQueen);
     let black_king_bb = board.get_piece_bitboard(Piece::BlackKing);
 
-    let mut score: i32 = (board.get_material(Colour::White) - board.get_material(Colour::Black))
-        .try_into()
-        .unwrap();
+    let material = board.get_material();
 
-    score += eval_piece_on_square(Colour::White, white_pawn_bb, &PAWN_SQ_VALUE);
-    score -= eval_piece_on_square(Colour::Black, black_pawn_bb, &PAWN_SQ_VALUE);
+    let mut score = (material.0 - material.1) as i32;
 
-    score += eval_piece_on_square(Colour::White, white_bishop_bb, &BISHOP_SQ_VALUE);
-    score -= eval_piece_on_square(Colour::Black, black_bishop_bb, &BISHOP_SQ_VALUE);
+    // evaluate piece locations
+    score += eval_white_piece_on_square(white_pawn_bb, &PAWN_SQ_VALUE);
+    score += eval_white_piece_on_square(white_bishop_bb, &BISHOP_SQ_VALUE);
+    score += eval_white_piece_on_square(white_knight_bb, &KNIGHT_SQ_VALUE);
+    score += eval_white_piece_on_square(white_rook_bb, &ROOK_SQ_VALUE);
+    score += eval_white_piece_on_square(white_queen_bb, &QUEEN_SQ_VALUE);
+    score += eval_white_piece_on_square(white_king_bb, &KING_SQ_VALUE);
 
-    score += eval_piece_on_square(Colour::White, white_knight_bb, &KNIGHT_SQ_VALUE);
-    score -= eval_piece_on_square(Colour::Black, black_knight_bb, &KNIGHT_SQ_VALUE);
-
-    score += eval_piece_on_square(Colour::White, white_rook_bb, &ROOK_SQ_VALUE);
-    score -= eval_piece_on_square(Colour::Black, black_rook_bb, &ROOK_SQ_VALUE);
-
-    score += eval_piece_on_square(Colour::White, white_queen_bb, &QUEEN_SQ_VALUE);
-    score -= eval_piece_on_square(Colour::Black, black_queen_bb, &QUEEN_SQ_VALUE);
-
-    // todo : process king based on game state
-    score += eval_piece_on_square(Colour::White, white_king_bb, &KING_SQ_VALUE);
-    score -= eval_piece_on_square(Colour::Black, black_king_bb, &KING_SQ_VALUE);
+    score -= eval_black_piece_on_square(black_pawn_bb, &PAWN_SQ_VALUE);
+    score -= eval_black_piece_on_square(black_bishop_bb, &BISHOP_SQ_VALUE);
+    score -= eval_black_piece_on_square(black_knight_bb, &KNIGHT_SQ_VALUE);
+    score -= eval_black_piece_on_square(black_rook_bb, &ROOK_SQ_VALUE);
+    score -= eval_black_piece_on_square(black_queen_bb, &QUEEN_SQ_VALUE);
+    score -= eval_black_piece_on_square(black_king_bb, &KING_SQ_VALUE);
 
     if side_to_move == Colour::White {
         return score;
+    } else {
+        return -score;
     }
-
-    return -score;
 }
 
-fn eval_piece_on_square(colour: Colour, pce_bb: u64, values: &[i8]) -> i32 {
+fn eval_white_piece_on_square(pce_bb: u64, values: &[i8]) -> i32 {
     let mut score: i32 = 0;
     let mut bb = pce_bb;
 
     while bb != 0 {
         let offset = bitboard::pop_1st_bit(&mut bb).to_offset() as usize;
+        score += values[offset] as i32;
+    }
+    return score;
+}
 
-        if colour == Colour::White {
-            score += values[offset] as i32;
-        } else {
-            score += values[MIRROR_VALUE[offset] as usize] as i32;
-        }
+fn eval_black_piece_on_square(pce_bb: u64, values: &[i8]) -> i32 {
+    let mut score: i32 = 0;
+    let mut bb = pce_bb;
+
+    while bb != 0 {
+        let offset = bitboard::pop_1st_bit(&mut bb).to_offset() as usize;
+        score += values[MIRROR_VALUE[offset] as usize] as i32;
     }
     return score;
 }

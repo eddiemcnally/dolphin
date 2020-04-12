@@ -16,6 +16,7 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
             let bishop_bb = board.get_piece_bitboard(Piece::WhiteBishop);
             let rook_bb = board.get_piece_bitboard(Piece::WhiteRook);
             let queen_bb = board.get_piece_bitboard(Piece::WhiteQueen);
+            let king_bb = board.get_piece_bitboard(Piece::WhiteKing);
 
             if pawn_bb != 0 {
                 if is_attacked_by_pawn_white(pawn_bb, sq) {
@@ -43,6 +44,10 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
                     return true;
                 }
             }
+
+            if is_attacked_by_king(king_bb, sq) {
+                return true;
+            }
         }
         Colour::Black => {
             let pawn_bb = board.get_piece_bitboard(Piece::BlackPawn);
@@ -50,6 +55,7 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
             let bishop_bb = board.get_piece_bitboard(Piece::BlackBishop);
             let rook_bb = board.get_piece_bitboard(Piece::BlackRook);
             let queen_bb = board.get_piece_bitboard(Piece::BlackQueen);
+            let king_bb = board.get_piece_bitboard(Piece::BlackKing);
 
             if pawn_bb != 0 {
                 if is_attacked_by_pawn_black(pawn_bb, sq) {
@@ -76,11 +82,10 @@ pub fn is_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool
                     return true;
                 }
             }
+            if is_attacked_by_king(king_bb, sq) {
+                return true;
+            }
         }
-    }
-
-    if is_attacked_by_king(board, sq, attacking_side) {
-        return true;
     }
 
     return false;
@@ -141,8 +146,9 @@ fn is_diagonally_attacked(attack_sq: Square, diag_bb: u64, all_pce_bb: u64) -> b
     return false;
 }
 
-fn is_attacked_by_king(board: &Board, attacked_sq: Square, attacking_side: Colour) -> bool {
-    let attacking_king_sq = board.get_king_sq(attacking_side);
+fn is_attacked_by_king(king_bb: u64, attacked_sq: Square) -> bool {
+    let mut bb = king_bb;
+    let attacking_king_sq = bitboard::pop_1st_bit(&mut bb);
     let king_occ_mask = occupancy_masks::get_occupancy_mask_king(attacking_king_sq);
     return bitboard::is_set(king_occ_mask, attacked_sq);
 }

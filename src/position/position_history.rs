@@ -164,18 +164,13 @@ impl PositionHistory {
             self.count
         );
 
-        let hist = HistoryItem {
-            board: *board,
-            position_hash: position_hash,
-            mov: mov,
-            fifty_move_cntr: fifty_move_cntr,
-            en_pass_sq: en_pass_sq,
-            castle_perm: castle_perm,
-            capt_piece: capt_piece,
-        };
-
-        // todo - remove indexer, use get()
-        self.history[self.count as usize] = hist;
+        self.history[self.count as usize].board = *board;
+        self.history[self.count as usize].position_hash = position_hash;
+        self.history[self.count as usize].mov = mov;
+        self.history[self.count as usize].fifty_move_cntr = fifty_move_cntr;
+        self.history[self.count as usize].en_pass_sq = en_pass_sq;
+        self.history[self.count as usize].castle_perm = castle_perm;
+        self.history[self.count as usize].capt_piece = capt_piece;
 
         self.count += 1;
     }
