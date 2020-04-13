@@ -290,7 +290,7 @@ impl Position {
         let king_sq = self.board().get_king_sq(self.side_to_move);
         let attacking_side = self.side_to_move.flip_side();
 
-        if attack_checker::is_sq_attacked(self.board(), king_sq, attacking_side) {
+        if attack_checker::is_king_sq_attacked(self.board(), king_sq, attacking_side) {
             return MoveLegality::Illegal;
         }
 
@@ -343,13 +343,10 @@ impl Position {
         attacking_side: Colour,
         sq_list: &[Square],
     ) -> bool {
-        for sq in sq_list {
-            let is_attacked = attack_checker::is_sq_attacked(self.board(), *sq, attacking_side);
-            if is_attacked == true {
-                return true;
-            }
+        if attack_checker::is_castle_squares_attacked(self.board(), sq_list, attacking_side) == true
+        {
+            return true;
         }
-
         return false;
     }
 

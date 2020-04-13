@@ -80,5 +80,18 @@ Depth: 5, #Expected: 193690690, #found: 193690690
 
 
 
+Profiling indicated attack checker was a bottleneck. Reworked the attack checker code to pre-cache all required bitboards. 
+==========================================================================================================================
+Also tweaked the release profile
 
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+Results:
+-------
+
+Sampl Perf : Depth: 5, perft - r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 ;D1 48 ;D2 2039 ;D3 97862 ;D4 4085603 ;D5 193690690 ;D6 8031647685
+#Nodes/Sec: 13,750,454, Depth: 5, #Expected: 193690690, #found: 193690690
 
