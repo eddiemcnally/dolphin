@@ -15,7 +15,7 @@ pub fn get_all_castle_permissions() -> Vec<CastlePermissionType> {
     list.push(CastlePermissionType::BlackQueen);
     list.push(CastlePermissionType::WhiteKing);
     list.push(CastlePermissionType::WhiteQueen);
-    return list;
+    list
 }
 
 pub fn get_all_pieces() -> Vec<Piece> {
@@ -47,7 +47,8 @@ pub fn get_all_pieces() -> Vec<Piece> {
     list.push(pce);
     pce = Piece::new(PieceRole::King, Colour::Black);
     list.push(pce);
-    return list;
+
+    list
 }
 
 // TODO : move into square.rs
@@ -126,7 +127,7 @@ pub fn get_ordered_square_list_by_file() -> Vec<Square> {
     list.push(Square::g8);
     list.push(Square::h8);
 
-    return list;
+    list
 }
 
 pub fn get_square_rank_file_map() -> HashMap<Square, (Rank, File)> {
@@ -204,7 +205,7 @@ pub fn get_square_rank_file_map() -> HashMap<Square, (Rank, File)> {
     map.insert(Square::h7, (Rank::Rank7, File::FileH));
     map.insert(Square::h8, (Rank::Rank8, File::FileH));
 
-    return map;
+    map
 }
 
 static REVERSE_BITS: [u8; 256] = [
@@ -227,5 +228,5 @@ static REVERSE_BITS: [u8; 256] = [
 ];
 
 pub fn reverse_byte(b: u8) -> u8 {
-    return REVERSE_BITS[b as usize];
+    REVERSE_BITS[b as usize]
 }

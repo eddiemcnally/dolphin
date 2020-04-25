@@ -3,23 +3,23 @@ pub type CastlePermission = u8;
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 enum Offset {
-    WhiteKing = 0b00000000,
-    WhiteQueen = 0b00010000,
-    BlackKing = 0b00100000,
-    BlackQueen = 0b00110000,
+    WhiteKing = 0b0000_0000,
+    WhiteQueen = 0b0001_0000,
+    BlackKing = 0b0010_0000,
+    BlackQueen = 0b0011_0000,
 }
 
-const OFFSET_MASK: u8 = 0b11110000;
+const OFFSET_MASK: u8 = 0b1111_0000;
 const OFFSET_SHIFT: u8 = 4;
 const PERM_MASK: u8 = !OFFSET_MASK;
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum CastlePermissionType {
-    WhiteKing = (0b00000001 | Offset::WhiteKing as u8),
-    WhiteQueen = (0b00000010 | Offset::WhiteQueen as u8),
-    BlackKing = (0b00000100 | Offset::BlackKing as u8),
-    BlackQueen = (0b00001000 | Offset::BlackQueen as u8),
+    WhiteKing = (0b0000_0001 | Offset::WhiteKing as u8),
+    WhiteQueen = (0b0000_0010 | Offset::WhiteQueen as u8),
+    BlackKing = (0b0000_0100 | Offset::BlackKing as u8),
+    BlackQueen = (0b0000_1000 | Offset::BlackQueen as u8),
 }
 
 pub const NUM_CASTLE_PERMS: usize = 4;
@@ -27,7 +27,7 @@ pub const NUM_CASTLE_PERMS: usize = 4;
 pub const NO_CASTLE_PERMS: u8 = 0;
 
 pub fn has_castle_permission(perm: CastlePermission) -> bool {
-    return (perm & PERM_MASK) != NO_CASTLE_PERMS;
+    (perm & PERM_MASK) != NO_CASTLE_PERMS
 }
 
 pub fn set_black_king(perm: &mut CastlePermission) {
@@ -44,80 +44,80 @@ pub fn set_white_king(perm: &mut CastlePermission) {
 
 pub fn clear_white_king_and_queen(perm: &mut CastlePermission) {
     let mut cp = *perm;
-    cp = cp & !(CastlePermissionType::WhiteKing as u8);
-    cp = cp & !(CastlePermissionType::WhiteQueen as u8);
+    cp &= !(CastlePermissionType::WhiteKing as u8);
+    cp &= !(CastlePermissionType::WhiteQueen as u8);
     *perm = cp;
 }
 
 pub fn clear_black_king_and_queen(perm: &mut CastlePermission) {
     let mut cp = *perm;
-    cp = cp & !(CastlePermissionType::BlackKing as u8);
-    cp = cp & !(CastlePermissionType::BlackQueen as u8);
+    cp &= !(CastlePermissionType::BlackKing as u8);
+    cp &= !(CastlePermissionType::BlackQueen as u8);
     *perm = cp;
 }
 
 pub fn clear_king_black(perm: &mut CastlePermission) {
     let mut cp = *perm;
-    cp = cp & !(CastlePermissionType::BlackKing as u8);
+    cp &= !(CastlePermissionType::BlackKing as u8);
     *perm = cp;
 }
 
 pub fn clear_king_white(perm: &mut CastlePermission) {
     let mut cp = *perm;
-    cp = cp & !(CastlePermissionType::WhiteKing as u8);
+    cp &= !(CastlePermissionType::WhiteKing as u8);
     *perm = cp;
 }
 
 pub fn is_white_king_set(perm: CastlePermission) -> bool {
-    return (perm & PERM_MASK) & CastlePermissionType::WhiteKing as u8 != 0;
+    (perm & PERM_MASK) & CastlePermissionType::WhiteKing as u8 != 0
 }
 
 pub fn is_black_king_set(perm: CastlePermission) -> bool {
-    return (perm & PERM_MASK) & CastlePermissionType::BlackKing as u8 != 0;
+    (perm & PERM_MASK) & CastlePermissionType::BlackKing as u8 != 0
 }
 
 pub fn set_white_queen(perm: &mut CastlePermission) {
     let mut cp = *perm;
-    cp = cp | CastlePermissionType::WhiteQueen as u8;
+    cp |= CastlePermissionType::WhiteQueen as u8;
     *perm = cp;
 }
 
 pub fn set_black_queen(perm: &mut CastlePermission) {
     let mut cp = *perm;
-    cp = cp | CastlePermissionType::BlackQueen as u8;
+    cp |= CastlePermissionType::BlackQueen as u8;
     *perm = cp;
 }
 
 pub fn has_white_castle_permission(perm: CastlePermission) -> bool {
-    return is_white_king_set(perm) || is_white_queen_set(perm);
+    is_white_king_set(perm) || is_white_queen_set(perm)
 }
 
 pub fn has_black_castle_permission(perm: CastlePermission) -> bool {
-    return is_black_king_set(perm) || is_black_queen_set(perm);
+    is_black_king_set(perm) || is_black_queen_set(perm)
 }
 
 pub fn clear_queen_black(perm: &mut CastlePermission) {
     let mut cp = *perm;
-    cp = cp & !(CastlePermissionType::BlackQueen as u8);
+    cp &= !(CastlePermissionType::BlackQueen as u8);
     *perm = cp;
 }
 
 pub fn clear_queen_white(perm: &mut CastlePermission) {
     let mut cp = *perm;
-    cp = cp & !(CastlePermissionType::WhiteQueen as u8);
+    cp &= !(CastlePermissionType::WhiteQueen as u8);
     *perm = cp;
 }
 
 pub fn is_white_queen_set(perm: CastlePermission) -> bool {
-    return (perm & PERM_MASK) & CastlePermissionType::WhiteQueen as u8 != 0;
+    (perm & PERM_MASK) & CastlePermissionType::WhiteQueen as u8 != 0
 }
 
 pub fn is_black_queen_set(perm: CastlePermission) -> bool {
-    return (perm & PERM_MASK) & CastlePermissionType::BlackQueen as u8 != 0;
+    (perm & PERM_MASK) & CastlePermissionType::BlackQueen as u8 != 0
 }
 
 pub fn to_offset(perm_type: CastlePermissionType) -> usize {
-    return (((perm_type as u8) & OFFSET_MASK) >> OFFSET_SHIFT) as usize;
+    (((perm_type as u8) & OFFSET_MASK) >> OFFSET_SHIFT) as usize
 }
 
 #[cfg(test)]

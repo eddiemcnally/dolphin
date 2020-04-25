@@ -48,7 +48,7 @@ pub fn get_position(fen: &str) -> ParsedFen {
     retval.half_move_cnt = get_half_move_clock(piece_pos[FEN_HALF_MOVE]);
     retval.full_move_cnt = get_full_move_number(piece_pos[FEN_FULL_MOVE]);
 
-    return retval;
+    retval
 }
 
 /// takes the list of ranks (starting at rank 8)
@@ -62,7 +62,7 @@ pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, Piece> {
             match c.to_digit(10) {
                 Some(n) => {
                     // it's a number, so incr the file
-                    file = file + n as u8;
+                    file += n as u8;
                 }
                 None => {
                     // not a number, so it's a piece
@@ -83,7 +83,7 @@ pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, Piece> {
             }
         }
     }
-    return retval;
+    retval
 }
 
 fn get_side_to_move(side: &str) -> Colour {
@@ -103,30 +103,30 @@ fn get_en_passant_sq(en_pass: &str) -> Option<Square> {
 }
 
 fn get_half_move_clock(half_cnt: &str) -> u16 {
-    return half_cnt.parse::<u16>().unwrap();
+    half_cnt.parse::<u16>().unwrap()
 }
 
 fn get_full_move_number(full_move_num: &str) -> u16 {
-    return full_move_num.parse::<u16>().unwrap();
+    full_move_num.parse::<u16>().unwrap()
 }
 
 fn get_castle_permissions(castleperm: &str) -> CastlePermission {
     let mut cp = castle_permissions::NO_CASTLE_PERMS;
     if castleperm.trim() != "-" {
-        if castleperm.contains("K") {
+        if castleperm.contains('K') {
             castle_permissions::set_white_king(&mut cp);
         }
-        if castleperm.contains("Q") {
+        if castleperm.contains('Q') {
             castle_permissions::set_white_queen(&mut cp);
         }
-        if castleperm.contains("k") {
+        if castleperm.contains('k') {
             castle_permissions::set_black_king(&mut cp);
         }
-        if castleperm.contains("q") {
+        if castleperm.contains('q') {
             castle_permissions::set_black_queen(&mut cp);
         }
     }
-    return cp;
+    cp
 }
 
 #[cfg(test)]

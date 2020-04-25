@@ -54,16 +54,15 @@ pub fn generate_from_fen(parsed_fen: &ParsedFen) -> PositionHash {
     }
 
     let enp = parsed_fen.en_pass_sq;
-    match enp {
-        Some(enp) => update_en_passant(&mut hash, enp),
-        None => {}
-    };
+    if let Some(enp) = enp {
+        update_en_passant(&mut hash, enp);
+    }
 
-    return hash;
+    hash
 }
 
 pub fn update_side(pos_hash: &mut PositionHash) {
-    *pos_hash = *pos_hash ^ KEYS.side_key;
+    *pos_hash ^= KEYS.side_key;
 }
 
 pub fn update_piece(pos_hash: &mut PositionHash, piece: Piece, square: Square) {
@@ -71,20 +70,20 @@ pub fn update_piece(pos_hash: &mut PositionHash, piece: Piece, square: Square) {
     let sq_offset = square.to_offset();
     let k = KEYS.piece_keys[sq_offset][pce_offset];
 
-    *pos_hash = *pos_hash ^ k;
+    *pos_hash ^= k;
 }
 
 pub fn update_en_passant(pos_hash: &mut PositionHash, square: Square) {
     let sq_offset = square.to_offset();
     let k = KEYS.en_passant_sq_keys[sq_offset];
 
-    *pos_hash = *pos_hash ^ k;
+    *pos_hash ^= k;
 }
 
 pub fn update_castle_permissions(pos_hash: &mut PositionHash, perm_type: CastlePermissionType) {
     let perm_offset = castle_permissions::to_offset(perm_type);
     let k = KEYS.castle_keys[perm_offset];
-    *pos_hash = *pos_hash ^ k;
+    *pos_hash ^= k;
 }
 
 fn init_piece_keys() -> [[u64; NUM_PIECES]; NUM_SQUARES] {
@@ -95,7 +94,7 @@ fn init_piece_keys() -> [[u64; NUM_PIECES]; NUM_SQUARES] {
             retval[p][c] = seed;
         }
     }
-    return retval;
+    retval
 }
 
 fn init_castle_keys() -> [u64; NUM_CASTLE_PERMS] {
@@ -106,7 +105,7 @@ fn init_castle_keys() -> [u64; NUM_CASTLE_PERMS] {
         retval[p] = seed;
     }
 
-    return retval;
+    retval
 }
 
 fn init_en_passant_keys() -> [u64; NUM_SQUARES] {
@@ -117,7 +116,7 @@ fn init_en_passant_keys() -> [u64; NUM_SQUARES] {
         retval[p] = seed;
     }
 
-    return retval;
+    retval
 }
 
 #[cfg(test)]

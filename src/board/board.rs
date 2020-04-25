@@ -28,13 +28,12 @@ pub struct Board {
 
 impl Default for Board {
     fn default() -> Self {
-        let brd = Board {
+        Board {
             piece_bb: [0; NUM_PIECES],
             colour_bb: [0; NUM_COLOURS],
             pieces: [None; NUM_SQUARES],
             material: [0; NUM_COLOURS],
-        };
-        return brd;
+        }
     }
 }
 
@@ -65,7 +64,7 @@ impl PartialEq for Board {
             }
         }
 
-        return true;
+        true
     }
 }
 
@@ -111,13 +110,12 @@ impl Clone for Board {
             cp_pieces[sq.to_offset()] = self.pieces[sq.to_offset()];
         }
 
-        let brd = Board {
+        Board {
             piece_bb: self.piece_bb,
             colour_bb: self.colour_bb,
             pieces: cp_pieces,
             material: self.material,
-        };
-        return brd;
+        }
     }
 }
 
@@ -133,7 +131,7 @@ impl Board {
         for (sq, pce) in positions {
             brd.add_piece(*pce, *sq);
         }
-        return brd;
+        brd
     }
 
     pub fn add_piece(&mut self, piece: Piece, sq: Square) {
@@ -147,7 +145,7 @@ impl Board {
 
     pub fn remove_piece(&mut self, piece: Piece, sq: Square) {
         debug_assert!(
-            self.is_sq_empty(sq) == false,
+            !self.is_sq_empty(sq),
             "remove_piece, square is empty. {:?}",
             sq
         );
@@ -156,7 +154,7 @@ impl Board {
     }
 
     pub fn get_colour_bb(&self, colour: Colour) -> u64 {
-        return self.colour_bb[colour.to_offset()];
+        self.colour_bb[colour.to_offset()]
     }
 
     pub fn get_material(&self) -> (u32, u32) {
@@ -168,13 +166,13 @@ impl Board {
 
     pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece) {
         debug_assert!(
-            self.is_sq_empty(from_sq) == false,
+            !self.is_sq_empty(from_sq),
             "move piece, from square is empty. {:?}",
             from_sq
         );
 
         debug_assert!(
-            self.is_sq_empty(to_sq) == true,
+            self.is_sq_empty(to_sq),
             "move piece, to square not empty. {:?}",
             from_sq
         );
@@ -184,20 +182,20 @@ impl Board {
     }
 
     pub fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
-        return self.pieces[sq.to_offset()];
+        self.pieces[sq.to_offset()]
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
         let bb = self.get_bitboard();
-        bitboard::is_set(bb, sq) == false
+        !bitboard::is_set(bb, sq)
     }
 
     pub fn get_piece_bitboard(&self, piece: Piece) -> u64 {
-        return self.piece_bb[piece.to_offset()];
+        self.piece_bb[piece.to_offset()]
     }
 
     pub fn get_bitboard(&self) -> u64 {
-        return self.get_colour_bb(Colour::White) | self.get_colour_bb(Colour::Black);
+        self.get_colour_bb(Colour::White) | self.get_colour_bb(Colour::Black)
     }
 
     pub fn get_king_sq(&self, colour: Colour) -> Square {
@@ -205,8 +203,7 @@ impl Board {
             Colour::White => self.piece_bb[Piece::WhiteKing.to_offset()],
             Colour::Black => self.piece_bb[Piece::BlackKing.to_offset()],
         };
-        let sq = bitboard::pop_1st_bit(&mut king_bb);
-        return sq;
+        bitboard::pop_1st_bit(&mut king_bb)
     }
 
     fn set_bitboards_with_material(&mut self, piece: Piece, sq: Square) {

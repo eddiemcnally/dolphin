@@ -32,7 +32,7 @@ pub fn gen_knight_masks() -> Vec<u64> {
 
         retval.push(bb);
     }
-    return retval;
+    retval
 }
 
 pub fn gen_white_pawn_capture_masks() -> Vec<u64> {
@@ -53,7 +53,7 @@ pub fn gen_white_pawn_capture_masks() -> Vec<u64> {
             retval.push(bb);
         }
     }
-    return retval;
+    retval
 }
 
 pub fn gen_black_pawn_capture_masks() -> Vec<u64> {
@@ -74,7 +74,7 @@ pub fn gen_black_pawn_capture_masks() -> Vec<u64> {
             retval.push(bb);
         }
     }
-    return retval;
+    retval
 }
 
 pub fn gen_king_masks() -> Vec<u64> {
@@ -101,7 +101,7 @@ pub fn gen_king_masks() -> Vec<u64> {
 
         retval.push(bb);
     }
-    return retval;
+    retval
 }
 
 pub fn gen_rank_masks() -> Vec<u64> {
@@ -116,7 +116,7 @@ pub fn gen_rank_masks() -> Vec<u64> {
         }
         retval.push(bb);
     }
-    return retval;
+    retval
 }
 
 pub fn gen_file_masks() -> Vec<u64> {
@@ -132,7 +132,7 @@ pub fn gen_file_masks() -> Vec<u64> {
         retval.push(bb);
     }
 
-    return retval;
+    retval
 }
 
 pub fn gen_queen_masks() -> Vec<u64> {
@@ -156,7 +156,7 @@ pub fn gen_queen_masks() -> Vec<u64> {
         retval.push(queen_mask);
     }
 
-    return retval;
+    retval
 }
 
 pub fn get_diagonal_masks() -> Vec<u64> {
@@ -190,7 +190,7 @@ pub fn get_diagonal_masks() -> Vec<u64> {
 
         retval.push(bb);
     }
-    return retval;
+    retval
 }
 
 pub fn get_anti_diagonal_masks() -> Vec<u64> {
@@ -224,7 +224,7 @@ pub fn get_anti_diagonal_masks() -> Vec<u64> {
 
         retval.push(bb);
     }
-    return retval;
+    retval
 }
 
 pub fn gen_bishop_masks() -> Vec<u64> {
@@ -247,7 +247,7 @@ pub fn gen_bishop_masks() -> Vec<u64> {
         retval.push(bishop_mask);
     }
 
-    return retval;
+    retval
 }
 
 pub fn gen_rook_masks() -> Vec<u64> {
@@ -274,7 +274,7 @@ pub fn gen_rook_masks() -> Vec<u64> {
 
         retval.push(bb);
     }
-    return retval;
+    retval
 }
 
 fn is_valid_rank(r: i8) -> bool {
@@ -291,10 +291,8 @@ fn set_dest_sq_if_valid(bb: &mut u64, sq: Square, rank_offset: i8, file_offset: 
 
     if is_valid_rank(dest_rank) && is_valid_file(dest_file) {
         let new_sq = Square::derive_relative_square(sq, rank_offset, file_offset);
-
-        match new_sq {
-            Some(_) => bitboard::set_bit(bb, new_sq.unwrap()),
-            None => {}
+        if let Some(_) = new_sq {
+            bitboard::set_bit(bb, new_sq.unwrap());
         }
     }
 }

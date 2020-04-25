@@ -94,9 +94,9 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
     score -= eval_black_piece_on_square(black_king_bb, &KING_SQ_VALUE);
 
     if side_to_move == Colour::White {
-        return score;
+        score
     } else {
-        return -score;
+        -score
     }
 }
 
@@ -108,7 +108,7 @@ fn eval_white_piece_on_square(pce_bb: u64, values: &[i8]) -> i32 {
         let offset = bitboard::pop_1st_bit(&mut bb).to_offset() as usize;
         score += values[offset] as i32;
     }
-    return score;
+    score
 }
 
 fn eval_black_piece_on_square(pce_bb: u64, values: &[i8]) -> i32 {
@@ -119,5 +119,5 @@ fn eval_black_piece_on_square(pce_bb: u64, values: &[i8]) -> i32 {
         let offset = bitboard::pop_1st_bit(&mut bb).to_offset() as usize;
         score += values[MIRROR_VALUE[offset] as usize] as i32;
     }
-    return score;
+    score
 }

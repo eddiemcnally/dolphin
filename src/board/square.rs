@@ -90,7 +90,7 @@ pub fn get_square_array() -> &'static [Square] {
     SQUARES
 }
 
-pub static SQUARES: &'static [Square] = &[
+pub static SQUARES: &[Square] = &[
     Square::a1,
     Square::b1,
     Square::c1,
@@ -163,76 +163,76 @@ impl Square {
         let target_file = sq.file_as_u8() as i8 + file_offset;
 
         let rank = Rank::from_num(target_rank);
-        if rank.is_some() == false {
+        if rank.is_none() {
             return None;
         }
 
         let file = File::from_num(target_file);
-        if file.is_some() == false {
+        if file.is_none() {
             return None;
         }
 
-        return Some(Square::get_square(rank.unwrap(), file.unwrap()));
+        Some(Square::get_square(rank.unwrap(), file.unwrap()))
     }
 
-    pub fn square_plus_1_rank(&self) -> Option<Square> {
+    pub fn square_plus_1_rank(self) -> Option<Square> {
         match self.rank() {
-            Rank::Rank8 => return None,
+            Rank::Rank8 => None,
             _ => {
-                let s = *self as u8 + 8;
-                return Square::from_num(s);
+                let s = self as u8 + 8;
+                Square::from_num(s)
             }
         }
     }
 
-    pub fn square_minus_1_rank(&self) -> Option<Square> {
+    pub fn square_minus_1_rank(self) -> Option<Square> {
         match self.rank() {
-            Rank::Rank1 => return None,
+            Rank::Rank1 => None,
             _ => {
-                let s = *self as u8 - 8;
-                return Square::from_num(s);
+                let s = self as u8 - 8;
+                Square::from_num(s)
             }
         }
     }
 
-    pub fn square_plus_2_ranks(&self) -> Option<Square> {
+    pub fn square_plus_2_ranks(self) -> Option<Square> {
         match self.rank() {
-            Rank::Rank7 | Rank::Rank8 => return None,
+            Rank::Rank7 | Rank::Rank8 => None,
             _ => {
-                let s = *self as u8 + 16;
-                return Square::from_num(s);
+                let s = self as u8 + 16;
+                Square::from_num(s)
             }
         }
     }
 
-    pub fn square_minus_2_ranks(&self) -> Option<Square> {
+    pub fn square_minus_2_ranks(self) -> Option<Square> {
         match self.rank() {
-            Rank::Rank1 | Rank::Rank2 => return None,
+            Rank::Rank1 | Rank::Rank2 => None,
             _ => {
-                let s = *self as u8 - 16;
-                return Square::from_num(s);
+                let s = self as u8 - 16;
+                Square::from_num(s)
             }
         }
     }
 
     pub fn rank(self) -> Rank {
         let rank_num = self.rank_as_u8();
-        return Rank::from_num(rank_num as i8).unwrap();
+        Rank::from_num(rank_num as i8).unwrap()
     }
 
     pub fn file(self) -> File {
         let file_num = self.file_as_u8();
-        return File::from_num(file_num as i8).unwrap();
+        File::from_num(file_num as i8).unwrap()
     }
 
     pub fn get_square(rank: Rank, file: File) -> Square {
         let sq = rank as u8 * 8 + file as u8;
-        return Square::from_num(sq).unwrap();
+        Square::from_num(sq).unwrap()
     }
 
-    pub fn get_square_as_bb(&self) -> u64 {
+    pub fn get_square_as_bb(self) -> u64 {
         let bit: u64 = 1;
-        return bit.shl(&self.to_offset());
+        bit.shl(self.to_offset())
     }
 
     pub fn get_from_string(square_str: &str) -> Option<Square> {
@@ -245,36 +245,36 @@ impl Square {
         if file.is_some() && rank.is_some() {
             return Some(Square::get_square(rank.unwrap(), file.unwrap()));
         }
-        return None;
+        None
     }
 
     pub fn from_num(num: u8) -> Option<Square> {
-        return Square::from_u8(num);
+        Square::from_u8(num)
     }
 
     pub fn same_rank(self, other: Square) -> bool {
         let this_rank = self.rank_as_u8();
         let other_rank = other.rank_as_u8();
-        return this_rank == other_rank;
+        this_rank == other_rank
     }
 
     pub fn same_file(self, other: Square) -> bool {
         let this_file = self.file_as_u8();
         let other_file = other.file_as_u8();
-        return this_file == other_file;
+        this_file == other_file
     }
 
     fn rank_as_u8(self) -> u8 {
-        return self as u8 >> 3;
+        self as u8 >> 3
     }
     fn file_as_u8(self) -> u8 {
-        return (self as u8 % 8) as u8;
+        (self as u8 % 8) as u8
     }
 }
 
 impl ArrayAccessor for Square {
-    fn to_offset(&self) -> usize {
-        return *self as usize;
+    fn to_offset(self) -> usize {
+        self as usize
     }
 }
 
@@ -293,7 +293,7 @@ pub enum Rank {
 
 impl Rank {
     pub fn from_num(num: i8) -> Option<Rank> {
-        return Rank::from_i8(num);
+        Rank::from_i8(num)
     }
 
     pub fn from_char(rank: char) -> Option<Rank> {
@@ -370,7 +370,7 @@ enum_from_primitive! {
 
 impl File {
     pub fn from_num(num: i8) -> Option<File> {
-        return File::from_i8(num);
+        File::from_i8(num)
     }
 
     // pub fn to_int(file: File) -> u8 {

@@ -1,3 +1,3 @@
 pub trait ArrayAccessor {
-    fn to_offset(&self) -> usize;
+    fn to_offset(self) -> usize;
 }

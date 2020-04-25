@@ -87,7 +87,7 @@ impl fmt::Debug for Position {
         debug_str.push_str(&format!("Board : {}\n", self.board()));
         debug_str.push_str(&format!("SideToMove : {}\n", self.side_to_move()));
         if self.en_pass_sq.is_none() {
-            debug_str.push_str(&format!("En pass Sq : -\n"));
+            debug_str.push_str(&"En pass Sq : -\n".to_string());
         } else {
             debug_str.push_str(&format!("En pass Sq : {}\n", self.en_pass_sq.unwrap()));
         }
@@ -141,7 +141,7 @@ impl PartialEq for Position {
             return false;
         }
 
-        return true;
+        true
     }
 }
 impl Position {
@@ -168,7 +168,7 @@ impl Position {
         let wk_bb = pos.board().get_piece_bitboard(Piece::WhiteKing);
         assert_ne!(wk_bb, 0);
 
-        return pos;
+        pos
     }
 
     pub fn side_to_move(&self) -> Colour {
@@ -222,11 +222,12 @@ impl Position {
         assert!(self.board().get_piece_on_square(from_sq).is_some());
         let piece = self.board().get_piece_on_square(from_sq).unwrap();
 
-        // save current position and board
-        let mut capt_piece = None;
-        if mv.is_capture() == true && mv.is_en_passant() == false {
-            capt_piece = self.board.get_piece_on_square(to_sq);
-        }
+        let capt_piece = if mv.is_capture() && !mv.is_en_passant() {
+            self.board.get_piece_on_square(to_sq)
+        } else {
+            None
+        };
+
         self.position_history.push(
             &self.board,
             self.position_key,
@@ -266,7 +267,7 @@ impl Position {
         // flip side
         self.update_side_to_move();
 
-        return move_legality;
+        move_legality
     }
 
     pub fn take_move(&mut self) {
@@ -297,16 +298,19 @@ impl Position {
         // check castle through attacked squares (or king was in check before the castle move)
         if mv.is_castle() {
             let squares_to_check = self.get_castle_squares_to_check(mv, self.side_to_move);
-            let is_invalid_castle =
-                self.is_castle_through_attacked_squares(attacking_side, squares_to_check);
+            let is_invalid_castle = attack_checker::is_castle_squares_attacked(
+                self.board(),
+                squares_to_check,
+                attacking_side,
+            );
 
-            if is_invalid_castle == true {
+            if is_invalid_castle {
                 return MoveLegality::Illegal;
             } else {
                 return MoveLegality::Legal;
             }
         }
-        return MoveLegality::Legal;
+        MoveLegality::Legal
     }
 
     fn update_side_to_move(&mut self) {
@@ -317,49 +321,29 @@ impl Position {
     fn get_castle_squares_to_check(&self, mv: Mov, side_to_move: Colour) -> &[Square] {
         if mv.is_king_castle() {
             match side_to_move {
-                Colour::White => {
-                    return &CASTLE_SQUARES_KING_WHITE;
-                }
-                Colour::Black => {
-                    return &CASTLE_SQUARES_KING_BLACK;
-                }
+                Colour::White => &CASTLE_SQUARES_KING_WHITE,
+                Colour::Black => &CASTLE_SQUARES_KING_BLACK,
             }
         } else if mv.is_queen_castle() {
             match side_to_move {
-                Colour::White => {
-                    return &CASTLE_SQUARES_QUEEN_WHITE;
-                }
-                Colour::Black => {
-                    return &CASTLE_SQUARES_QUEEN_BLACK;
-                }
+                Colour::White => &CASTLE_SQUARES_QUEEN_WHITE,
+                Colour::Black => &CASTLE_SQUARES_QUEEN_BLACK,
             }
         } else {
             panic!("Invalid move test");
         }
     }
 
-    fn is_castle_through_attacked_squares(
-        &self,
-        attacking_side: Colour,
-        sq_list: &[Square],
-    ) -> bool {
-        if attack_checker::is_castle_squares_attacked(self.board(), sq_list, attacking_side) == true
-        {
-            return true;
-        }
-        return false;
-    }
-
     fn update_en_passant_sq(&mut self, mv: Mov) {
         // clear en passant
-        if mv.is_double_pawn() == false {
+        if !mv.is_double_pawn() {
             self.en_pass_sq = None;
         }
     }
 
     // remove castle permissions based on the move
     fn update_castle_perms(&mut self, mv: Mov, from_sq: Square, pce: Piece) {
-        if castle_permissions::has_castle_permission(self.castle_perm) == false {
+        if !castle_permissions::has_castle_permission(self.castle_perm) {
             // nothing to do
             return;
         }

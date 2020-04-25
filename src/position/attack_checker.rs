@@ -24,10 +24,8 @@ pub fn is_king_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) ->
         Colour::White => {
             populate_white_bitboards(board, &mut cb);
 
-            if cb.pawn != 0 {
-                if is_attacked_by_pawn_white(cb.pawn, sq) {
-                    return true;
-                }
+            if cb.pawn != 0 && is_attacked_by_pawn_white(cb.pawn, sq) {
+                return true;
             }
             if check_non_pawn_pieces_attacking(&cb, sq) {
                 return true;
@@ -36,17 +34,15 @@ pub fn is_king_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) ->
         Colour::Black => {
             populate_black_bitboards(board, &mut cb);
 
-            if cb.pawn != 0 {
-                if is_attacked_by_pawn_black(cb.pawn, sq) {
-                    return true;
-                }
+            if cb.pawn != 0 && is_attacked_by_pawn_black(cb.pawn, sq) {
+                return true;
             }
             if check_non_pawn_pieces_attacking(&cb, sq) {
                 return true;
             }
         }
     }
-    return false;
+    false
 }
 
 pub fn is_castle_squares_attacked(
@@ -60,11 +56,9 @@ pub fn is_castle_squares_attacked(
         Colour::White => {
             populate_white_bitboards(board, &mut cb);
 
-            for sq in sq_array.into_iter() {
-                if cb.pawn != 0 {
-                    if is_attacked_by_pawn_white(cb.pawn, *sq) {
-                        return true;
-                    }
+            for sq in sq_array.iter() {
+                if cb.pawn != 0 && is_attacked_by_pawn_white(cb.pawn, *sq) {
+                    return true;
                 }
                 if check_non_pawn_pieces_attacking(&cb, *sq) {
                     return true;
@@ -74,11 +68,9 @@ pub fn is_castle_squares_attacked(
         Colour::Black => {
             populate_black_bitboards(board, &mut cb);
 
-            for sq in sq_array.into_iter() {
-                if cb.pawn != 0 {
-                    if is_attacked_by_pawn_black(cb.pawn, *sq) {
-                        return true;
-                    }
+            for sq in sq_array.iter() {
+                if cb.pawn != 0 && is_attacked_by_pawn_black(cb.pawn, *sq) {
+                    return true;
                 }
                 if check_non_pawn_pieces_attacking(&cb, *sq) {
                     return true;
@@ -87,7 +79,7 @@ pub fn is_castle_squares_attacked(
         }
     }
 
-    return false;
+    false
 }
 
 fn populate_white_bitboards(board: &Board, cache: &mut CachedBitboards) {
@@ -111,32 +103,28 @@ fn populate_black_bitboards(board: &Board, cache: &mut CachedBitboards) {
 }
 
 fn check_non_pawn_pieces_attacking(cached_bb: &CachedBitboards, sq: Square) -> bool {
-    if cached_bb.knight != 0 {
-        if is_knight_attacking(cached_bb.knight, sq) {
-            return true;
-        }
+    if cached_bb.knight != 0 && is_knight_attacking(cached_bb.knight, sq) {
+        return true;
     }
 
     // combine piece bitboards
     let horiz_vert_bb = cached_bb.rook | cached_bb.queen;
-    if horiz_vert_bb != 0 {
-        if is_horizontal_or_vertical_attacking(cached_bb.all_bb, horiz_vert_bb, sq) {
-            return true;
-        }
+    if horiz_vert_bb != 0
+        && is_horizontal_or_vertical_attacking(cached_bb.all_bb, horiz_vert_bb, sq)
+    {
+        return true;
     }
 
     let diag_bb = cached_bb.bishop | cached_bb.queen;
-    if diag_bb != 0 {
-        if is_diagonally_attacked(sq, diag_bb, cached_bb.all_bb) {
-            return true;
-        }
+    if diag_bb != 0 && is_diagonally_attacked(sq, diag_bb, cached_bb.all_bb) {
+        return true;
     }
 
     if is_attacked_by_king(cached_bb.king, sq) {
         return true;
     }
 
-    return false;
+    false
 }
 
 fn is_knight_attacking(pce_bitboard: u64, attack_sq: Square) -> bool {
@@ -149,7 +137,7 @@ fn is_knight_attacking(pce_bitboard: u64, attack_sq: Square) -> bool {
             return true;
         }
     }
-    return false;
+    false
 }
 
 fn is_horizontal_or_vertical_attacking(
@@ -171,7 +159,7 @@ fn is_horizontal_or_vertical_attacking(
             }
         }
     }
-    return false;
+    false
 }
 
 fn is_diagonally_attacked(attack_sq: Square, diag_bb: u64, all_pce_bb: u64) -> bool {
@@ -191,63 +179,52 @@ fn is_diagonally_attacked(attack_sq: Square, diag_bb: u64, all_pce_bb: u64) -> b
         }
     }
 
-    return false;
+    false
 }
 
 fn is_attacked_by_king(king_bb: u64, attacked_sq: Square) -> bool {
     let mut bb = king_bb;
     let attacking_king_sq = bitboard::pop_1st_bit(&mut bb);
     let king_occ_mask = occupancy_masks::get_occupancy_mask_king(attacking_king_sq);
-    return bitboard::is_set(king_occ_mask, attacked_sq);
+    bitboard::is_set(king_occ_mask, attacked_sq)
 }
 
 fn is_attacked_by_pawn_white(pawn_bb: u64, attacked_sq: Square) -> bool {
     // -1 Rank and +/- 1 File
     let mut pawn_sq = Square::derive_relative_square(attacked_sq, -1, 1);
-    match pawn_sq {
-        Some(_) => {
-            if bitboard::is_set(pawn_bb, pawn_sq.unwrap()) {
-                return true;
-            }
+    if let Some(_) = pawn_sq {
+        if bitboard::is_set(pawn_bb, pawn_sq.unwrap()) {
+            return true;
         }
-        None => {}
     }
 
     pawn_sq = Square::derive_relative_square(attacked_sq, -1, -1);
-    match pawn_sq {
-        Some(_) => {
-            if bitboard::is_set(pawn_bb, pawn_sq.unwrap()) {
-                return true;
-            }
+    if let Some(_) = pawn_sq {
+        if bitboard::is_set(pawn_bb, pawn_sq.unwrap()) {
+            return true;
         }
-        None => {}
     }
 
-    return false;
+    false
 }
 
 fn is_attacked_by_pawn_black(pawn_bb: u64, attacked_sq: Square) -> bool {
     // +1 Rank and +/- 1 File
     let mut pawn_sq = Square::derive_relative_square(attacked_sq, 1, 1);
-    match pawn_sq {
-        Some(_) => {
-            if bitboard::is_set(pawn_bb, pawn_sq.unwrap()) {
-                return true;
-            }
+
+    if let Some(_) = pawn_sq {
+        if bitboard::is_set(pawn_bb, pawn_sq.unwrap()) {
+            return true;
         }
-        None => {}
     }
 
     pawn_sq = Square::derive_relative_square(attacked_sq, 1, -1);
-    match pawn_sq {
-        Some(_) => {
-            if bitboard::is_set(pawn_bb, pawn_sq.unwrap()) {
-                return true;
-            }
+    if let Some(_) = pawn_sq {
+        if bitboard::is_set(pawn_bb, pawn_sq.unwrap()) {
+            return true;
         }
-        None => {}
     }
-    return false;
+    false
 }
 
 // This code returns a bitboard with bits set representing squares between
@@ -258,10 +235,10 @@ fn is_attacked_by_pawn_black(pawn_bb: u64, attacked_sq: Square) -> bool {
 //
 #[inline(always)]
 fn get_intervening_bitboard(sq1: Square, sq2: Square) -> u64 {
-    const M1: u64 = 0xffffffffffffffff;
-    const A2A7: u64 = 0x0001010101010100;
-    const B2G7: u64 = 0x0040201008040200;
-    const H1B7: u64 = 0x0002040810204080;
+    const M1: u64 = 0xffff_ffff_ffff_ffff;
+    const A2A7: u64 = 0x0001_0101_0101_0100;
+    const B2G7: u64 = 0x0040_2010_0804_0200;
+    const H1B7: u64 = 0x0002_0408_1020_4080;
 
     let btwn = (M1.shl(sq1 as u8)) ^ (M1.shl(sq2 as u8));
     let file = (sq2 as u64 & 7).wrapping_sub(sq1 as u64 & 7);
@@ -271,5 +248,5 @@ fn get_intervening_bitboard(sq1: Square, sq2: Square) -> u64 {
     line = line.wrapping_add((((rank.wrapping_sub(file)) & 15).wrapping_sub(1)) & B2G7); /* b2g7 if same diagonal */
     line = line.wrapping_add((((rank.wrapping_add(file)) & 15).wrapping_sub(1)) & H1B7); /* h1b7 if same antidiag */
     line = line.wrapping_mul(btwn & (btwn.wrapping_neg())); /* mul acts like shift by smaller square */
-    return line & btwn; /* return the bits on that line in-between */
+    line & btwn /* return the bits on that line in-between */
 }

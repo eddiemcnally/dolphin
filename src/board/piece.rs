@@ -33,10 +33,10 @@ pub enum Colour {
 // 1010 0000            Queen Offset
 // 1011 0000            King Offset
 
-const PIECE_MASK_ROLE: u8 = 0b00000111;
-const PCE_MASK_COLOUR: u8 = 0b00001000;
+const PIECE_MASK_ROLE: u8 = 0b0000_0111;
+const PCE_MASK_COLOUR: u8 = 0b0000_1000;
 const PCE_SHFT_COLOUR: u8 = 3;
-const PIECE_MASK_OFFSET: u8 = 0b11110000;
+const PIECE_MASK_OFFSET: u8 = 0b1111_0000;
 const PCE_SHFT_OFFSET: u8 = 4;
 
 #[repr(u8)]
@@ -59,12 +59,12 @@ enum Offset {
 #[repr(u8)]
 #[derive(Eq, PartialEq, Hash, Clone, Copy, FromPrimitive, ToPrimitive)]
 pub enum PieceRole {
-    Pawn = 0b00000001,
-    Bishop = 0b00000010,
-    Knight = 0b00000011,
-    Rook = 0b00000100,
-    Queen = 0b00000101,
-    King = 0b00000110,
+    Pawn = 0b0000_0001,
+    Bishop = 0b0000_0010,
+    Knight = 0b0000_0011,
+    Rook = 0b0000_0100,
+    Queen = 0b0000_0101,
+    King = 0b0000_0110,
 }
 
 impl fmt::Debug for PieceRole {
@@ -72,12 +72,12 @@ impl fmt::Debug for PieceRole {
         let mut debug_str = String::new();
 
         match self {
-            PieceRole::Pawn => debug_str.push_str(&format!("RolePawn")),
-            PieceRole::Bishop => debug_str.push_str(&format!("RoleBishop")),
-            PieceRole::Knight => debug_str.push_str(&format!("RoleKnight")),
-            PieceRole::Rook => debug_str.push_str(&format!("RoleRook")),
-            PieceRole::Queen => debug_str.push_str(&format!("RoleQueen")),
-            PieceRole::King => debug_str.push_str(&format!("RoleKing")),
+            PieceRole::Pawn => debug_str.push_str(&"RolePawn".to_string()),
+            PieceRole::Bishop => debug_str.push_str(&"RoleBishop".to_string()),
+            PieceRole::Knight => debug_str.push_str(&"RoleKnight".to_string()),
+            PieceRole::Rook => debug_str.push_str(&"RoleRook".to_string()),
+            PieceRole::Queen => debug_str.push_str(&"RoleQueen".to_string()),
+            PieceRole::King => debug_str.push_str(&"RoleKing".to_string()),
         }
 
         write!(f, "{}", debug_str)
@@ -121,67 +121,67 @@ impl Piece {
     pub fn new(role: PieceRole, col: Colour) -> Piece {
         match col {
             Colour::White => match role {
-                PieceRole::Pawn => return Piece::WhitePawn,
-                PieceRole::Bishop => return Piece::WhiteBishop,
-                PieceRole::Knight => return Piece::WhiteKnight,
-                PieceRole::Rook => return Piece::WhiteRook,
-                PieceRole::Queen => return Piece::WhiteQueen,
-                PieceRole::King => return Piece::WhiteKing,
+                PieceRole::Pawn => Piece::WhitePawn,
+                PieceRole::Bishop => Piece::WhiteBishop,
+                PieceRole::Knight => Piece::WhiteKnight,
+                PieceRole::Rook => Piece::WhiteRook,
+                PieceRole::Queen => Piece::WhiteQueen,
+                PieceRole::King => Piece::WhiteKing,
             },
             Colour::Black => match role {
-                PieceRole::Pawn => return Piece::BlackPawn,
-                PieceRole::Bishop => return Piece::BlackBishop,
-                PieceRole::Knight => return Piece::BlackKnight,
-                PieceRole::Rook => return Piece::BlackRook,
-                PieceRole::Queen => return Piece::BlackQueen,
-                PieceRole::King => return Piece::BlackKing,
+                PieceRole::Pawn => Piece::BlackPawn,
+                PieceRole::Bishop => Piece::BlackBishop,
+                PieceRole::Knight => Piece::BlackKnight,
+                PieceRole::Rook => Piece::BlackRook,
+                PieceRole::Queen => Piece::BlackQueen,
+                PieceRole::King => Piece::BlackKing,
             },
         }
     }
 
-    pub fn colour(&self) -> Colour {
-        return Colour::from_u8((*self as u8 & PCE_MASK_COLOUR) >> PCE_SHFT_COLOUR).unwrap();
+    pub fn colour(self) -> Colour {
+        Colour::from_u8((self as u8 & PCE_MASK_COLOUR) >> PCE_SHFT_COLOUR).unwrap()
     }
 
-    pub fn role(&self) -> PieceRole {
-        let role = (*self as u8) & PIECE_MASK_ROLE;
-        return PieceRole::from_u8(role).unwrap();
+    pub fn role(self) -> PieceRole {
+        let role = (self as u8) & PIECE_MASK_ROLE;
+        PieceRole::from_u8(role).unwrap()
     }
 
     pub fn from_char(piece_char: char) -> Piece {
         match piece_char {
-            'P' => return Piece::WhitePawn,
-            'B' => return Piece::WhiteBishop,
-            'N' => return Piece::WhiteKnight,
-            'R' => return Piece::WhiteRook,
-            'Q' => return Piece::WhiteQueen,
-            'K' => return Piece::WhiteKing,
-            'p' => return Piece::BlackPawn,
-            'b' => return Piece::BlackBishop,
-            'n' => return Piece::BlackKnight,
-            'r' => return Piece::BlackRook,
-            'q' => return Piece::BlackQueen,
-            'k' => return Piece::BlackKing,
+            'P' => Piece::WhitePawn,
+            'B' => Piece::WhiteBishop,
+            'N' => Piece::WhiteKnight,
+            'R' => Piece::WhiteRook,
+            'Q' => Piece::WhiteQueen,
+            'K' => Piece::WhiteKing,
+            'p' => Piece::BlackPawn,
+            'b' => Piece::BlackBishop,
+            'n' => Piece::BlackKnight,
+            'r' => Piece::BlackRook,
+            'q' => Piece::BlackQueen,
+            'k' => Piece::BlackKing,
             _ => panic!("Invalid piece character {}.", piece_char),
-        };
+        }
     }
 
-    pub fn value(&self) -> u32 {
+    pub fn value(self) -> u32 {
         let role = self.role();
         // piece values from here:
         // https://www.chessprogramming.org/Simplified_Evaluation_Function
 
         match role {
-            PieceRole::Pawn => return 100,
-            PieceRole::Knight => return 320,
-            PieceRole::Bishop => return 330,
-            PieceRole::Rook => return 500,
-            PieceRole::Queen => return 900,
-            PieceRole::King => return 20000,
-        };
+            PieceRole::Pawn => 100,
+            PieceRole::Knight => 320,
+            PieceRole::Bishop => 330,
+            PieceRole::Rook => 500,
+            PieceRole::Queen => 900,
+            PieceRole::King => 20000,
+        }
     }
 
-    pub fn to_label(&self) -> String {
+    pub fn to_label(self) -> String {
         let role = self.role();
 
         let col = match self.colour() {
@@ -190,27 +190,27 @@ impl Piece {
         };
 
         match role {
-            PieceRole::Pawn => return col.to_owned() + "P",
-            PieceRole::Bishop => return col.to_owned() + "B",
-            PieceRole::Knight => return col.to_owned() + "N",
-            PieceRole::Rook => return col.to_owned() + "R",
-            PieceRole::Queen => return col.to_owned() + "Q",
-            PieceRole::King => return col.to_owned() + "K",
-        };
+            PieceRole::Pawn => col.to_owned() + "P",
+            PieceRole::Bishop => col.to_owned() + "B",
+            PieceRole::Knight => col.to_owned() + "N",
+            PieceRole::Rook => col.to_owned() + "R",
+            PieceRole::Queen => col.to_owned() + "Q",
+            PieceRole::King => col.to_owned() + "K",
+        }
     }
 }
 
 impl ArrayAccessor for Piece {
-    fn to_offset(&self) -> usize {
-        let o = (*self as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET;
-        return o as usize;
+    fn to_offset(self) -> usize {
+        let o = (self as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET;
+        o as usize
     }
 }
 
 impl fmt::Debug for Piece {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
-        let label = self.to_label().to_string();
+        let label = self.to_label();
         debug_str.push_str(&format!("{:?}", label));
 
         write!(f, "{}", debug_str)
@@ -224,10 +224,10 @@ impl fmt::Display for Piece {
 }
 
 impl Colour {
-    pub fn flip_side(&self) -> Colour {
+    pub fn flip_side(self) -> Colour {
         match self {
-            Colour::White => return Colour::Black,
-            Colour::Black => return Colour::White,
+            Colour::White => Colour::Black,
+            Colour::Black => Colour::White,
         }
     }
 }
@@ -239,8 +239,8 @@ impl Default for Colour {
 }
 
 impl ArrayAccessor for Colour {
-    fn to_offset(&self) -> usize {
-        return *self as usize;
+    fn to_offset(self) -> usize {
+        self as usize
     }
 }
 

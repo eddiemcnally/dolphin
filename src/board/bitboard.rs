@@ -6,22 +6,21 @@ const BIT_0: u64 = 0x01;
 
 pub fn set_bit(bb: &mut u64, sq: Square) {
     let mask = to_mask(sq);
-    *bb = *bb | mask
+    *bb |= mask
 }
 
 pub fn clear_bit(bb: &mut u64, sq: Square) {
     let mask = to_mask(sq);
-    *bb = *bb & !mask
+    *bb &= !mask
 }
 
 pub fn is_set(bb: u64, sq: Square) -> bool {
     let mask = to_mask(sq);
-    let ret = bb & mask;
-    ret != 0
+    (bb & mask) != 0
 }
 
 pub fn count_bits(bb: u64) -> u8 {
-    return bb.count_ones() as u8;
+    bb.count_ones() as u8
 }
 
 pub fn pop_1st_bit(bb: &mut u64) -> Square {
@@ -31,7 +30,7 @@ pub fn pop_1st_bit(bb: &mut u64) -> Square {
     let sq_clear = Square::from_num(bit_being_cleared as u8).unwrap();
 
     clear_bit(bb, sq_clear);
-    return sq_clear;
+    sq_clear
 }
 
 pub fn display_squares(bb: u64) {

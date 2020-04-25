@@ -25,7 +25,7 @@ impl fmt::Debug for HistoryItem {
         debug_str.push_str(&format!("Mov : {}\n", self.mov));
         debug_str.push_str(&format!("FiftyMoveCntr : {}\n", self.fifty_move_cntr));
         if self.en_pass_sq.is_none() {
-            debug_str.push_str(&format!("En pass Sq : -\n"));
+            debug_str.push_str(&"En pass Sq : -\n".to_string());
         } else {
             debug_str.push_str(&format!("En pass Sq : {}\n", self.en_pass_sq.unwrap()));
         }
@@ -38,7 +38,7 @@ impl fmt::Debug for HistoryItem {
 
 impl Default for HistoryItem {
     fn default() -> Self {
-        let hi = HistoryItem {
+        HistoryItem {
             board: Board::default(),
             position_hash: 0,
             mov: Mov::encode_move_quiet(Square::a1, Square::a2),
@@ -46,8 +46,7 @@ impl Default for HistoryItem {
             en_pass_sq: None,
             castle_perm: castle_permissions::NO_CASTLE_PERMS,
             capt_piece: None,
-        };
-        return hi;
+        }
     }
 }
 
@@ -88,7 +87,7 @@ impl PartialEq for HistoryItem {
             return false;
         }
 
-        return true;
+        true
     }
 }
 
@@ -109,8 +108,7 @@ impl PartialEq for PositionHistory {
                 return false;
             }
         }
-
-        return true;
+        true
     }
 }
 
@@ -118,8 +116,8 @@ impl fmt::Debug for PositionHistory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
 
-        if self.history.len() == 0 {
-            debug_str.push_str(&format!("Hist : Empty\n"));
+        if self.history.is_empty() {
+            debug_str.push_str(&"Hist : Empty\n".to_string());
         } else {
             for i in 0..self.count {
                 debug_str.push_str(&format!("Hist : {}\n", self.history[i as usize]));

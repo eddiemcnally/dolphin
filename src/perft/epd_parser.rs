@@ -20,11 +20,11 @@ pub fn extract_epd(file_name: String) -> Vec<EpdRow> {
         retval.push(parsed);
     }
 
-    return retval;
+    retval
 }
 
 pub fn extract_row(row: String) -> EpdRow {
-    let v: Vec<&str> = row.split(";").collect();
+    let v: Vec<&str> = row.split(';').collect();
 
     //println!("EPD Row : {}", row);
 
@@ -54,11 +54,11 @@ fn lines_from_file(filename: impl AsRef<Path>) -> Vec<String> {
 }
 
 fn extract_ply_and_count(ply_count: String) -> (u8, u64) {
-    let v: Vec<&str> = ply_count.split(" ").collect();
+    let v: Vec<&str> = ply_count.split(' ').collect();
     // extract the number from "D5"
     let d = &v[0][1..2];
 
-    return (d.parse::<u8>().unwrap(), v[1].parse::<u64>().unwrap());
+    (d.parse::<u8>().unwrap(), v[1].parse::<u64>().unwrap())
 }
 
 #[test]

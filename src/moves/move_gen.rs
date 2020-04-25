@@ -295,7 +295,7 @@ fn generate_misc_pawn_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
         let quiet_to_sq = from_sq.square_minus_1_rank();
         match quiet_to_sq {
             Some(_) => {
-                if bitboard::is_set(all_bb, quiet_to_sq.unwrap()) == false {
+                if !bitboard::is_set(all_bb, quiet_to_sq.unwrap()) {
                     let mv = Mov::encode_move_quiet(from_sq, quiet_to_sq.unwrap());
                     move_list.push(mv);
                 }
@@ -317,15 +317,12 @@ fn generate_misc_pawn_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
         // ===============
         // en passant move
         // ===============
-        match pos.en_passant_square() {
-            Some(en_sq) => {
-                if bitboard::is_set(capt_mask, en_sq) {
-                    // en passant sq can be "captured"
-                    let en_pass_mv = Mov::encode_move_en_passant(from_sq, en_sq);
-                    move_list.push(en_pass_mv);
-                }
+        if let Some(en_sq) = pos.en_passant_square() {
+            if bitboard::is_set(capt_mask, en_sq) {
+                // en passant sq can be "captured"
+                let en_pass_mv = Mov::encode_move_en_passant(from_sq, en_sq);
+                move_list.push(en_pass_mv);
             }
-            None => (),
         }
     }
 }
@@ -352,7 +349,7 @@ fn generate_misc_pawn_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
         let quiet_to_sq = from_sq.square_plus_1_rank();
         match quiet_to_sq {
             Some(_) => {
-                if bitboard::is_set(all_bb, quiet_to_sq.unwrap()) == false {
+                if !bitboard::is_set(all_bb, quiet_to_sq.unwrap()) {
                     let mv = Mov::encode_move_quiet(from_sq, quiet_to_sq.unwrap());
                     move_list.push(mv);
                 }
@@ -374,15 +371,12 @@ fn generate_misc_pawn_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
         // ===============
         // en passant move
         // ===============
-        match pos.en_passant_square() {
-            Some(en_sq) => {
-                if bitboard::is_set(capt_mask, en_sq) {
-                    // en passant sq can be "captured"
-                    let en_pass_mv = Mov::encode_move_en_passant(from_sq, en_sq);
-                    move_list.push(en_pass_mv);
-                }
+        if let Some(en_sq) = pos.en_passant_square() {
+            if bitboard::is_set(capt_mask, en_sq) {
+                // en passant sq can be "captured"
+                let en_pass_mv = Mov::encode_move_en_passant(from_sq, en_sq);
+                move_list.push(en_pass_mv);
             }
-            None => (),
         }
     }
 }
@@ -409,7 +403,7 @@ fn generate_first_pawn_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
 
         match single_mv_to_sq {
             Some(_) => {
-                if bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) == false {
+                if !bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) {
                     // free square
                     let mv = Mov::encode_move_quiet(from_sq, single_mv_to_sq.unwrap());
                     move_list.push(mv);
@@ -424,8 +418,8 @@ fn generate_first_pawn_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
         let double_mv_to_sq = from_sq.square_minus_2_ranks();
         match double_mv_to_sq {
             Some(_) => {
-                if bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) == false
-                    && bitboard::is_set(all_bb, double_mv_to_sq.unwrap()) == false
+                if !bitboard::is_set(all_bb, single_mv_to_sq.unwrap())
+                    && !bitboard::is_set(all_bb, double_mv_to_sq.unwrap())
                 {
                     // both squares free
                     let mv = Mov::encode_move_double_pawn_first(from_sq, double_mv_to_sq.unwrap());
@@ -453,18 +447,17 @@ fn gen_white_pawn_attach_squares(pawn_sq: Square) -> u64 {
 
     // +1 Rank and +/- 1 File
     let mut sq = Square::derive_relative_square(pawn_sq, 1, 1);
-    match sq {
-        Some(_) => bitboard::set_bit(&mut retval, sq.unwrap()),
-        None => {}
-    }
-    // +1 Rank and +/- 1 File
-    sq = Square::derive_relative_square(pawn_sq, 1, -1);
-    match sq {
-        Some(_) => bitboard::set_bit(&mut retval, sq.unwrap()),
-        None => {}
+    if let Some(_) = sq {
+        bitboard::set_bit(&mut retval, sq.unwrap());
     }
 
-    return retval;
+    // +1 Rank and +/- 1 File
+    sq = Square::derive_relative_square(pawn_sq, 1, -1);
+    if let Some(_) = sq {
+        bitboard::set_bit(&mut retval, sq.unwrap());
+    }
+
+    retval
 }
 
 fn gen_black_pawn_attach_squares(pawn_sq: Square) -> u64 {
@@ -472,18 +465,16 @@ fn gen_black_pawn_attach_squares(pawn_sq: Square) -> u64 {
 
     // -1 Rank and +/- 1 File
     let mut sq = Square::derive_relative_square(pawn_sq, -1, 1);
-    match sq {
-        Some(_) => bitboard::set_bit(&mut retval, sq.unwrap()),
-        None => {}
+    if let Some(_) = sq {
+        bitboard::set_bit(&mut retval, sq.unwrap());
     }
     // +1 Rank and +/- 1 File
     sq = Square::derive_relative_square(pawn_sq, -1, -1);
-    match sq {
-        Some(_) => bitboard::set_bit(&mut retval, sq.unwrap()),
-        None => {}
+    if let Some(_) = sq {
+        bitboard::set_bit(&mut retval, sq.unwrap());
     }
 
-    return retval;
+    retval
 }
 
 fn generate_first_pawn_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
@@ -508,7 +499,7 @@ fn generate_first_pawn_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
 
         match single_mv_to_sq {
             Some(_) => {
-                if bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) == false {
+                if !bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) {
                     // free square
                     let mv = Mov::encode_move_quiet(from_sq, single_mv_to_sq.unwrap());
                     move_list.push(mv);
@@ -523,8 +514,8 @@ fn generate_first_pawn_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
         let double_mv_to_sq = from_sq.square_plus_2_ranks();
         match double_mv_to_sq {
             Some(_) => {
-                if bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) == false
-                    && bitboard::is_set(all_bb, double_mv_to_sq.unwrap()) == false
+                if !bitboard::is_set(all_bb, single_mv_to_sq.unwrap())
+                    && !bitboard::is_set(all_bb, double_mv_to_sq.unwrap())
                 {
                     // both squares free
                     let mv = Mov::encode_move_double_pawn_first(from_sq, double_mv_to_sq.unwrap());
@@ -571,7 +562,7 @@ fn generate_promotion_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
         let quiet_to_sq = from_sq.square_minus_1_rank();
         match quiet_to_sq {
             Some(_) => {
-                if bitboard::is_set(all_bb, quiet_to_sq.unwrap()) == false {
+                if !bitboard::is_set(all_bb, quiet_to_sq.unwrap()) {
                     // free square ahead
                     encode_promotion_moves(from_sq, quiet_to_sq.unwrap(), move_list);
                 }
@@ -616,7 +607,7 @@ fn generate_promotion_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
 
         match quiet_to_sq {
             Some(_) => {
-                if bitboard::is_set(all_bb, quiet_to_sq.unwrap()) == false {
+                if !bitboard::is_set(all_bb, quiet_to_sq.unwrap()) {
                     // free square ahead
                     encode_promotion_moves(from_sq, quiet_to_sq.unwrap(), move_list);
                 }

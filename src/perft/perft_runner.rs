@@ -15,13 +15,13 @@ pub fn perft(depth: u8, position: &mut Position) -> u64 {
     for mv in &move_list {
         let move_legality = position.make_move(*mv);
         if move_legality == MoveLegality::Legal {
-            nodes = nodes + perft(depth - 1, position);
+            nodes += perft(depth - 1, position);
         }
         position.take_move();
     }
 
     //println!("#Nodes: {}, Move List: {:?}", nodes, move_list);
-    return nodes;
+    nodes
 }
 
 #[cfg(test)]
