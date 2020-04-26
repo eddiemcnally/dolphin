@@ -1,12 +1,12 @@
-use board::bitboard;
-use board::piece::Colour;
-use board::piece::Piece;
-use board::piece::NUM_COLOURS;
-use board::piece::NUM_PIECES;
-use board::square;
-use board::square::File;
-use board::square::Rank;
-use board::square::Square;
+use components::bitboard;
+use components::piece::Colour;
+use components::piece::Piece;
+use components::piece::NUM_COLOURS;
+use components::piece::NUM_PIECES;
+use components::square;
+use components::square::File;
+use components::square::Rank;
+use components::square::Square;
 use core::core_traits::ArrayAccessor;
 use input::fen::ParsedFen;
 use std::fmt;
@@ -217,26 +217,29 @@ impl Board {
     }
 
     fn clear_bitboards(&mut self, piece: Piece, sq: Square) {
-        bitboard::clear_bit(&mut self.piece_bb[piece.to_offset()], sq);
-        bitboard::clear_bit(&mut self.colour_bb[piece.colour().to_offset()], sq);
+        self.piece_bb[piece.to_offset()] =
+            bitboard::clear_bit(self.piece_bb[piece.to_offset()], sq);
+        self.colour_bb[piece.colour().to_offset()] =
+            bitboard::clear_bit(self.colour_bb[piece.colour().to_offset()], sq);
         self.pieces[sq.to_offset()] = None;
     }
 
     fn set_bitboards(&mut self, pce: Piece, sq: Square) {
-        bitboard::set_bit(&mut self.piece_bb[pce.to_offset()], sq);
-        bitboard::set_bit(&mut self.colour_bb[pce.colour().to_offset()], sq);
+        self.piece_bb[pce.to_offset()] = bitboard::set_bit(self.piece_bb[pce.to_offset()], sq);
+        self.colour_bb[pce.colour().to_offset()] =
+            bitboard::set_bit(self.colour_bb[pce.colour().to_offset()], sq);
         self.pieces[sq.to_offset()] = Some(pce);
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use board::bitboard;
-    use board::board::Board;
-    use board::piece::Colour;
-    use board::piece::Piece;
-    use board::piece::PieceRole;
-    use board::square::Square;
+    use components::bitboard;
+    use components::board::Board;
+    use components::piece::Colour;
+    use components::piece::Piece;
+    use components::piece::PieceRole;
+    use components::square::Square;
     use input::fen::get_position;
     use input::fen::ParsedFen;
     use std::collections::HashMap;

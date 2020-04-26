@@ -1,5 +1,5 @@
-use board::board;
-use board::square::Square;
+use components::board;
+use components::square::Square;
 use core::core_traits::ArrayAccessor;
 
 pub fn get_occupancy_mask_bishop(sq: Square) -> u64 {

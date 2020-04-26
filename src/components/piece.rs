@@ -265,9 +265,9 @@ pub const NUM_COLOURS: usize = 2;
 
 #[cfg(test)]
 pub mod tests {
-    use board::piece::Colour;
-    use board::piece::Piece;
-    use board::piece::PieceRole;
+    use components::piece::Colour;
+    use components::piece::Piece;
+    use components::piece::PieceRole;
     use core::core_traits::ArrayAccessor;
 
     #[test]

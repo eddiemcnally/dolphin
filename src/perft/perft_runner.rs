@@ -1,6 +1,6 @@
+use engine::position::MoveLegality;
+use engine::position::Position;
 use moves::move_gen;
-use position::position::MoveLegality;
-use position::position::Position;
 
 pub fn perft(depth: u8, position: &mut Position) -> u64 {
     let mut nodes = 0;
@@ -26,9 +26,9 @@ pub fn perft(depth: u8, position: &mut Position) -> u64 {
 
 #[cfg(test)]
 pub mod tests {
+    use engine::position::Position;
     use input::fen;
     use perft::perft_runner;
-    use position::position::Position;
 
     #[test]
     pub fn sample_perft_1() {

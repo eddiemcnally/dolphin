@@ -1,9 +1,9 @@
-use board::bitboard;
-use board::board::Board;
-use board::occupancy_masks;
-use board::piece::Colour;
-use board::piece::Piece;
-use board::square::Square;
+use components::bitboard;
+use components::board::Board;
+use components::occupancy_masks;
+use components::piece::Colour;
+use components::piece::Piece;
+use components::square::Square;
 use std::ops::Shl;
 
 #[derive(Default)]

@@ -1,10 +1,10 @@
-use board::piece::Colour;
-use board::piece::Piece;
-use board::piece::PieceRole;
-use board::square::File;
-use board::square::Rank;
-use board::square::Square;
-use position::castle_permissions::CastlePermissionType;
+use components::piece::Colour;
+use components::piece::Piece;
+use components::piece::PieceRole;
+use components::square::File;
+use components::square::Rank;
+use components::square::Square;
+use engine::castle_permissions::CastlePermissionType;
 use std::collections::HashMap;
 use std::vec::Vec;
 

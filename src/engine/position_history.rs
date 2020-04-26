@@ -1,9 +1,9 @@
-use board::board::Board;
-use board::piece::Piece;
-use board::square::Square;
+use components::board::Board;
+use components::piece::Piece;
+use components::square::Square;
+use engine::castle_permissions;
+use engine::castle_permissions::CastlePermission;
 use moves::mov::Mov;
-use position::castle_permissions;
-use position::castle_permissions::CastlePermission;
 use std::fmt;
 
 #[derive(Clone, Copy)]
@@ -206,13 +206,13 @@ impl PositionHistory {
 
 #[cfg(test)]
 mod tests {
-    use board::board::Board;
-    use board::piece::Colour;
-    use board::piece::Piece;
-    use board::piece::PieceRole;
+    use components::board::Board;
+    use components::piece::Colour;
+    use components::piece::Piece;
+    use components::piece::PieceRole;
+    use engine::castle_permissions;
+    use engine::position_history::PositionHistory;
     use moves::mov::Mov;
-    use position::castle_permissions;
-    use position::position_history::PositionHistory;
 
     #[test]
     pub fn posh_pop_element_order_as_expected() {

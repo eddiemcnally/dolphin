@@ -1,5 +1,5 @@
-use board::piece::PieceRole;
-use board::square::Square;
+use components::piece::PieceRole;
+use components::square::Square;
 use std::fmt;
 use std::ops::Shl;
 use std::ops::Shr;
@@ -363,8 +363,8 @@ pub fn print_move_list(move_list: &[Mov]) {
 
 #[cfg(test)]
 pub mod tests {
-    use board::piece::PieceRole;
-    use board::square::Square;
+    use components::piece::PieceRole;
+    use components::square::Square;
     use moves::mov::Mov;
     use utils;
 

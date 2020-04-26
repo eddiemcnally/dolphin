@@ -1,14 +1,14 @@
 extern crate rand;
 
-use board::board::NUM_SQUARES;
-use board::piece::Piece;
-use board::piece::NUM_PIECES;
-use board::square::Square;
+use components::board::NUM_SQUARES;
+use components::piece::Piece;
+use components::piece::NUM_PIECES;
+use components::square::Square;
 use core::core_traits::ArrayAccessor;
+use engine::castle_permissions;
+use engine::castle_permissions::CastlePermissionType;
+use engine::castle_permissions::NUM_CASTLE_PERMS;
 use input::fen::ParsedFen;
-use position::castle_permissions;
-use position::castle_permissions::CastlePermissionType;
-use position::castle_permissions::NUM_CASTLE_PERMS;
 
 pub type PositionHash = u64;
 
@@ -121,7 +121,7 @@ fn init_en_passant_keys() -> [u64; NUM_SQUARES] {
 
 #[cfg(test)]
 pub mod tests {
-    use position::hash::PositionHash;
+    use engine::hash::PositionHash;
     use utils;
 
     #[test]

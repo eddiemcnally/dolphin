@@ -1,8 +1,8 @@
-use board::bitboard;
-use board::board;
-use board::board::Board;
-use board::piece::Colour;
-use board::piece::Piece;
+use components::bitboard;
+use components::board;
+use components::board::Board;
+use components::piece::Colour;
+use components::piece::Piece;
 use core::core_traits::ArrayAccessor;
 
 // Values for piece square arrays are taken from

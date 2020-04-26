@@ -122,8 +122,8 @@ pub fn to_offset(perm_type: CastlePermissionType) -> usize {
 
 #[cfg(test)]
 pub mod tests {
-    use position::castle_permissions;
-    use position::castle_permissions::CastlePermissionType;
+    use engine::castle_permissions;
+    use engine::castle_permissions::CastlePermissionType;
 
     #[test]
     pub fn default_castle_permissisons_none_set() {

@@ -349,9 +349,6 @@ impl Rank {
         ];
         RANKS.iter()
     }
-    // fn to_int(rank: Rank) -> u8 {
-    //     return rank as u8;
-    // }
 }
 
 enum_from_primitive! {
@@ -372,10 +369,6 @@ impl File {
     pub fn from_num(num: i8) -> Option<File> {
         File::from_i8(num)
     }
-
-    // pub fn to_int(file: File) -> u8 {
-    //     return file as u8;
-    // }
 
     pub fn from_char(file: char) -> Option<File> {
         match file {

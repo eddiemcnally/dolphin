@@ -1,10 +1,10 @@
-use board::piece::Colour;
-use board::piece::Piece;
-use board::square::File;
-use board::square::Rank;
-use board::square::Square;
-use position::castle_permissions;
-use position::castle_permissions::CastlePermission;
+use components::piece::Colour;
+use components::piece::Piece;
+use components::square::File;
+use components::square::Rank;
+use components::square::Square;
+use engine::castle_permissions;
+use engine::castle_permissions::CastlePermission;
 use std::collections::HashMap;
 
 #[derive(Default)]
@@ -137,17 +137,17 @@ mod tests {
     use super::FEN_FULL_MOVE;
     use super::FEN_HALF_MOVE;
     use super::FEN_SIDE_TO_MOVE;
-    use board::piece::Colour;
-    use board::piece::Piece;
-    use board::piece::PieceRole;
-    use board::square::Square;
+    use components::piece::Colour;
+    use components::piece::Piece;
+    use components::piece::PieceRole;
+    use components::square::Square;
+    use engine::castle_permissions;
     use fen::extract_piece_locations;
     use fen::get_castle_permissions;
     use fen::get_en_passant_sq;
     use fen::get_full_move_number;
     use fen::get_half_move_clock;
     use fen::get_side_to_move;
-    use position::castle_permissions;
 
     #[test]
     pub fn piece_positions() {

@@ -1,17 +1,17 @@
-use board::square::Square;
+use components::square::Square;
 use core::core_traits::ArrayAccessor;
 use std::ops::Shl;
 
 const BIT_0: u64 = 0x01;
 
-pub fn set_bit(bb: &mut u64, sq: Square) {
+pub fn set_bit(bb: u64, sq: Square) -> u64 {
     let mask = to_mask(sq);
-    *bb |= mask
+    bb | mask
 }
 
-pub fn clear_bit(bb: &mut u64, sq: Square) {
+pub fn clear_bit(bb: u64, sq: Square) -> u64 {
     let mask = to_mask(sq);
-    *bb &= !mask
+    bb & !mask
 }
 
 pub fn is_set(bb: u64, sq: Square) -> bool {
@@ -29,7 +29,7 @@ pub fn pop_1st_bit(bb: &mut u64) -> Square {
     let bit_being_cleared = bb.trailing_zeros();
     let sq_clear = Square::from_num(bit_being_cleared as u8).unwrap();
 
-    clear_bit(bb, sq_clear);
+    *bb = clear_bit(*bb, sq_clear);
     sq_clear
 }
 
@@ -46,14 +46,14 @@ pub fn print_hex(bb: u64) {
     println!("{:#064X}", bb);
 }
 
-fn to_mask(sq: Square) -> u64 {
+pub fn to_mask(sq: Square) -> u64 {
     BIT_0.shl(sq.to_offset())
 }
 
 #[cfg(test)]
 pub mod tests {
-    use board::bitboard;
-    use board::square::Square;
+    use components::bitboard;
+    use components::square::Square;
     use std::u64;
     use utils;
 
@@ -70,10 +70,10 @@ pub mod tests {
 
         let map = utils::get_square_rank_file_map();
         for (sq, (_, _)) in map {
-            bitboard::set_bit(&mut bb, sq);
+            bb = bitboard::set_bit(bb, sq);
             assert!(bitboard::is_set(bb, sq));
 
-            bitboard::clear_bit(&mut bb, sq);
+            bb = bitboard::clear_bit(bb, sq);
             assert!(bitboard::is_set(bb, sq) == false);
         }
     }
@@ -82,9 +82,7 @@ pub mod tests {
     pub fn pop_bit_all_bits() {
         let map = utils::get_square_rank_file_map();
         for (square, (_, _)) in map {
-            let mut bb: u64 = 0;
-            bitboard::set_bit(&mut bb, square);
-
+            let mut bb = bitboard::set_bit(0, square);
             let s = bitboard::pop_1st_bit(&mut bb);
 
             assert_eq!(s, square);

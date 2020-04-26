@@ -1,13 +1,13 @@
-use board::bitboard;
-use board::board::Board;
-use board::occupancy_masks;
-use board::piece::Colour;
-use board::piece::Piece;
-use board::piece::PieceRole;
-use board::square::Square;
+use components::bitboard;
+use components::board::Board;
+use components::occupancy_masks;
+use components::piece::Colour;
+use components::piece::Piece;
+use components::piece::PieceRole;
+use components::square::Square;
+use engine::castle_permissions;
+use engine::position::Position;
 use moves::mov::Mov;
-use position::castle_permissions;
-use position::position::Position;
 
 pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
     let board = position.board();
@@ -90,8 +90,7 @@ fn generate_sliding_diagonal_antidiagonal_moves(
         let from_sq = bitboard::pop_1st_bit(&mut pce_bb);
         let diag_move_mask = occupancy_masks::get_diagonal_move_mask(from_sq);
         let anti_diag_move_mask = occupancy_masks::get_anti_diagonal_move_mask(from_sq);
-        let mut slider_bb: u64 = 0;
-        bitboard::set_bit(&mut slider_bb, from_sq);
+        let slider_bb = bitboard::to_mask(from_sq);
 
         // diagonal moves
         let diag1 = (occ_sq_bb & diag_move_mask)
@@ -146,8 +145,7 @@ fn generate_sliding_rank_file_moves(
         let horizontal_mask = occupancy_masks::get_horizontal_move_mask(from_sq);
         let vertical_mask = occupancy_masks::get_vertical_move_mask(from_sq);
 
-        let mut slider_bb: u64 = 0;
-        bitboard::set_bit(&mut slider_bb, from_sq);
+        let slider_bb = bitboard::to_mask(from_sq);
         let slider_bb_reverse = slider_bb.reverse_bits();
 
         // horizontal moves
@@ -448,13 +446,13 @@ fn gen_white_pawn_attach_squares(pawn_sq: Square) -> u64 {
     // +1 Rank and +/- 1 File
     let mut sq = Square::derive_relative_square(pawn_sq, 1, 1);
     if let Some(_) = sq {
-        bitboard::set_bit(&mut retval, sq.unwrap());
+        retval = bitboard::set_bit(retval, sq.unwrap());
     }
 
     // +1 Rank and +/- 1 File
     sq = Square::derive_relative_square(pawn_sq, 1, -1);
     if let Some(_) = sq {
-        bitboard::set_bit(&mut retval, sq.unwrap());
+        retval = bitboard::set_bit(retval, sq.unwrap());
     }
 
     retval
@@ -466,12 +464,12 @@ fn gen_black_pawn_attach_squares(pawn_sq: Square) -> u64 {
     // -1 Rank and +/- 1 File
     let mut sq = Square::derive_relative_square(pawn_sq, -1, 1);
     if let Some(_) = sq {
-        bitboard::set_bit(&mut retval, sq.unwrap());
+        retval = bitboard::set_bit(retval, sq.unwrap());
     }
     // +1 Rank and +/- 1 File
     sq = Square::derive_relative_square(pawn_sq, -1, -1);
     if let Some(_) = sq {
-        bitboard::set_bit(&mut retval, sq.unwrap());
+        retval = bitboard::set_bit(retval, sq.unwrap());
     }
 
     retval
@@ -705,14 +703,14 @@ fn encode_multiple_quiet_moves(quiet_move_bb: &mut u64, from_sq: Square, move_li
 
 #[cfg(test)]
 pub mod tests {
-    use board::piece::PieceRole;
-    use board::square::Square;
+    use components::piece::PieceRole;
+    use components::square::Square;
+    use engine::castle_permissions;
+    use engine::position::Position;
     use input::fen;
     use moves::mov;
     use moves::mov::Mov;
     use moves::move_gen;
-    use position::castle_permissions;
-    use position::position::Position;
 
     #[test]
     pub fn move_gen_white_king_knight_move_list_as_expected() {

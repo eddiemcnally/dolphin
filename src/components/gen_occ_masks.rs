@@ -1,15 +1,15 @@
-use board;
-use board::bitboard;
-use board::square::File;
-use board::square::Rank;
-use board::square::Square;
+use components;
+use components::bitboard;
+use components::square::File;
+use components::square::Rank;
+use components::square::Square;
 use core::core_traits::ArrayAccessor;
 use utils;
 
 pub fn gen_knight_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = board::square::SQUARES;
+    let squares = components::square::SQUARES;
 
     for sq in squares {
         let mut bb: u64 = 0;
@@ -38,7 +38,7 @@ pub fn gen_knight_masks() -> Vec<u64> {
 pub fn gen_white_pawn_capture_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = board::square::SQUARES;
+    let squares = components::square::SQUARES;
 
     for sq in squares {
         let mut bb: u64 = 0;
@@ -59,7 +59,7 @@ pub fn gen_white_pawn_capture_masks() -> Vec<u64> {
 pub fn gen_black_pawn_capture_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = board::square::SQUARES;
+    let squares = components::square::SQUARES;
 
     for sq in squares {
         let mut bb: u64 = 0;
@@ -80,7 +80,7 @@ pub fn gen_black_pawn_capture_masks() -> Vec<u64> {
 pub fn gen_king_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = board::square::SQUARES;
+    let squares = components::square::SQUARES;
 
     for sq in squares {
         let mut bb: u64 = 0;
@@ -112,7 +112,7 @@ pub fn gen_rank_masks() -> Vec<u64> {
 
         for f in File::iterator() {
             let sq = Square::get_square(*r, *f);
-            bitboard::set_bit(&mut bb, sq);
+            bb = bitboard::set_bit(bb, sq);
         }
         retval.push(bb);
     }
@@ -127,7 +127,7 @@ pub fn gen_file_masks() -> Vec<u64> {
 
         for r in Rank::iterator() {
             let sq = Square::get_square(*r, *f);
-            bitboard::set_bit(&mut bb, sq);
+            bb = bitboard::set_bit(bb, sq);
         }
         retval.push(bb);
     }
@@ -151,7 +151,7 @@ pub fn gen_queen_masks() -> Vec<u64> {
         let mut queen_mask = bishop_masks[sq.to_offset()] | rook_masks[sq.to_offset()];
 
         // remove current square
-        bitboard::clear_bit(&mut queen_mask, sq);
+        queen_mask = bitboard::clear_bit(queen_mask, sq);
 
         retval.push(queen_mask);
     }
@@ -162,7 +162,7 @@ pub fn gen_queen_masks() -> Vec<u64> {
 pub fn get_diagonal_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = board::square::SQUARES;
+    let squares = components::square::SQUARES;
 
     for sq in squares {
         let mut bb: u64 = 0;
@@ -186,7 +186,7 @@ pub fn get_diagonal_masks() -> Vec<u64> {
         }
 
         // remove current square
-        bitboard::clear_bit(&mut bb, *sq);
+        bb = bitboard::clear_bit(bb, *sq);
 
         retval.push(bb);
     }
@@ -196,7 +196,7 @@ pub fn get_diagonal_masks() -> Vec<u64> {
 pub fn get_anti_diagonal_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = board::square::SQUARES;
+    let squares = components::square::SQUARES;
 
     for sq in squares {
         let mut bb: u64 = 0;
@@ -220,7 +220,7 @@ pub fn get_anti_diagonal_masks() -> Vec<u64> {
         }
 
         // remove current square
-        bitboard::clear_bit(&mut bb, *sq);
+        bb = bitboard::clear_bit(bb, *sq);
 
         retval.push(bb);
     }
@@ -236,13 +236,13 @@ pub fn gen_bishop_masks() -> Vec<u64> {
     }
     let mut retval = Vec::new();
 
-    let squares = board::square::SQUARES;
+    let squares = components::square::SQUARES;
 
     for sq in squares {
         let mut bishop_mask = diag_masks[sq.to_offset()] | anti_diag_masks[sq.to_offset()];
 
         // remove current square
-        bitboard::clear_bit(&mut bishop_mask, *sq);
+        bishop_mask = bitboard::clear_bit(bishop_mask, *sq);
 
         retval.push(bishop_mask);
     }
@@ -253,7 +253,7 @@ pub fn gen_bishop_masks() -> Vec<u64> {
 pub fn gen_rook_masks() -> Vec<u64> {
     let mut retval: Vec<u64> = Vec::new();
 
-    let squares = board::square::SQUARES;
+    let squares = components::square::SQUARES;
 
     for sq in squares {
         let mut bb: u64 = 0;
@@ -270,7 +270,7 @@ pub fn gen_rook_masks() -> Vec<u64> {
         }
 
         // remove current square
-        bitboard::clear_bit(&mut bb, *sq);
+        bb = bitboard::clear_bit(bb, *sq);
 
         retval.push(bb);
     }
@@ -292,20 +292,20 @@ fn set_dest_sq_if_valid(bb: &mut u64, sq: Square, rank_offset: i8, file_offset: 
     if is_valid_rank(dest_rank) && is_valid_file(dest_file) {
         let new_sq = Square::derive_relative_square(sq, rank_offset, file_offset);
         if let Some(_) = new_sq {
-            bitboard::set_bit(bb, new_sq.unwrap());
+            *bb = bitboard::set_bit(*bb, new_sq.unwrap());
         }
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use board;
-    use board::occupancy_masks;
+    use components;
+    use components::occupancy_masks;
     use core::core_traits::ArrayAccessor;
 
     #[test]
     pub fn compare_knight_masks() {
-        let squares = board::square::SQUARES;
+        let squares = components::square::SQUARES;
 
         let masks = super::gen_knight_masks();
 
@@ -321,7 +321,7 @@ pub mod tests {
     #[test]
     #[ignore]
     pub fn compare_bishop_masks() {
-        let squares = board::square::SQUARES;
+        let squares = components::square::SQUARES;
 
         let masks = super::gen_bishop_masks();
 
@@ -337,7 +337,7 @@ pub mod tests {
     #[test]
     #[ignore]
     pub fn compare_rook_masks() {
-        let squares = board::square::SQUARES;
+        let squares = components::square::SQUARES;
 
         let masks = super::gen_rook_masks();
 
@@ -353,7 +353,7 @@ pub mod tests {
     #[test]
     #[ignore]
     pub fn compare_queen_masks() {
-        let squares = board::square::SQUARES;
+        let squares = components::square::SQUARES;
 
         let masks = super::gen_queen_masks();
 
@@ -368,7 +368,7 @@ pub mod tests {
 
     #[test]
     pub fn compare_king_masks() {
-        let squares = board::square::SQUARES;
+        let squares = components::square::SQUARES;
 
         let masks = super::gen_king_masks();
 

@@ -1,16 +1,16 @@
-use board::board::Board;
-use board::piece::Colour;
-use board::piece::Piece;
-use board::piece::PieceRole;
-use board::square::Square;
+use components::board::Board;
+use components::piece::Colour;
+use components::piece::Piece;
+use components::piece::PieceRole;
+use components::square::Square;
+use engine::attack_checker;
+use engine::castle_permissions;
+use engine::castle_permissions::CastlePermission;
+use engine::hash;
+use engine::hash::PositionHash;
+use engine::position_history::PositionHistory;
 use input::fen::ParsedFen;
 use moves::mov::Mov;
-use position::attack_checker;
-use position::castle_permissions;
-use position::castle_permissions::CastlePermission;
-use position::hash;
-use position::hash::PositionHash;
-use position::position_history::PositionHistory;
 use std::fmt;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
@@ -536,15 +536,15 @@ fn do_capture_move(position: &mut Position, piece_to_move: Piece, from_sq: Squar
 
 #[cfg(test)]
 mod tests {
-    use board::piece::Colour;
-    use board::piece::Piece;
-    use board::piece::PieceRole;
-    use board::square::Square;
+    use components::piece::Colour;
+    use components::piece::Piece;
+    use components::piece::PieceRole;
+    use components::square::Square;
+    use engine::castle_permissions;
+    use engine::position::MoveLegality;
+    use engine::position::Position;
     use input::fen;
     use moves::mov::Mov;
-    use position::castle_permissions;
-    use position::position::MoveLegality;
-    use position::position::Position;
 
     #[test]
     pub fn make_move_quiet_piece_moved_hash_changed() {
