@@ -37,9 +37,8 @@ pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
             if castle_permissions::has_white_castle_permission(position.castle_permissions()) {
                 generate_white_castle_moves(&position, move_list);
             }
-            generate_promotion_moves_white(&position, move_list);
-            generate_first_pawn_moves_white(&position, move_list);
-            generate_misc_pawn_moves_white(&position, move_list);
+
+            generate_white_pawn_moves(&position, move_list);
         }
         Colour::Black => {
             generate_non_sliding_piece_moves(
@@ -64,11 +63,264 @@ pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
             if castle_permissions::has_black_castle_permission(position.castle_permissions()) {
                 generate_black_castle_moves(&position, move_list);
             }
-            generate_promotion_moves_black(&position, move_list);
-            generate_first_pawn_moves_black(&position, move_list);
-            generate_misc_pawn_moves_black(&position, move_list);
+
+            generate_black_pawn_moves(&position, move_list);
         }
     };
+}
+
+fn generate_white_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>) {
+    let pawn = Piece::WhitePawn;
+
+    // bitboard of all pawns
+    let pawn_bb = pos.board().get_piece_bitboard(pawn);
+    // bitboard of entire board
+    let all_bb = pos.board().get_bitboard();
+    // opposite colour bitboard
+    let all_opposing_bb = pos.board().get_colour_bb(Colour::Black);
+
+    // ================================================
+    // exclude all first moves, and possible promotions
+    // ================================================
+    let mut excl_pawn_bb = pawn_bb & !occupancy_masks::RANK_2_BB & !occupancy_masks::RANK_7_BB;
+
+    while excl_pawn_bb != 0 {
+        let from_sq = bitboard::pop_1st_bit(&mut excl_pawn_bb);
+
+        // quiet moves
+        let quiet_to_sq = from_sq.square_plus_1_rank();
+        match quiet_to_sq {
+            Some(_) => {
+                if !bitboard::is_set(all_bb, quiet_to_sq.unwrap()) {
+                    let mv = Mov::encode_move_quiet(from_sq, quiet_to_sq.unwrap());
+                    move_list.push(mv);
+                }
+            }
+            None => panic!("Invalid square when trying for Rank+1"),
+        }
+
+        // capture moves
+        let capt_mask = gen_white_pawn_attach_squares(from_sq);
+        let mut capt_bb = capt_mask & all_opposing_bb;
+        while capt_bb != 0 {
+            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            let mv = Mov::encode_move_capture(from_sq, to_sq);
+            move_list.push(mv);
+        }
+
+        // en passant move
+        if let Some(en_sq) = pos.en_passant_square() {
+            if bitboard::is_set(capt_mask, en_sq) {
+                // en passant sq can be "captured"
+                let en_pass_mv = Mov::encode_move_en_passant(from_sq, en_sq);
+                move_list.push(en_pass_mv);
+            }
+        }
+    }
+
+    // ===================
+    // first move for pawn
+    // ===================
+    let mut starting_pawn_bb = pawn_bb & occupancy_masks::RANK_2_BB;
+
+    while starting_pawn_bb != 0 {
+        let from_sq = bitboard::pop_1st_bit(&mut starting_pawn_bb);
+
+        // single square moves from initial pawn rank - no capture
+        let single_mv_to_sq = from_sq.square_plus_1_rank();
+
+        match single_mv_to_sq {
+            Some(_) => {
+                if !bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) {
+                    // free square
+                    let mv = Mov::encode_move_quiet(from_sq, single_mv_to_sq.unwrap());
+                    move_list.push(mv);
+                }
+            }
+            None => panic!("Problem trying to get Rank+1"),
+        }
+
+        // double square moves
+        let double_mv_to_sq = from_sq.square_plus_2_ranks();
+        match double_mv_to_sq {
+            Some(_) => {
+                if !bitboard::is_set(all_bb, single_mv_to_sq.unwrap())
+                    && !bitboard::is_set(all_bb, double_mv_to_sq.unwrap())
+                {
+                    // both squares free
+                    let mv = Mov::encode_move_double_pawn_first(from_sq, double_mv_to_sq.unwrap());
+                    move_list.push(mv);
+                }
+            }
+            None => panic!("Problem trying to get Rank+2"),
+        }
+
+        // capture on first move
+        let capt_mask = gen_white_pawn_attach_squares(from_sq);
+        let mut capt_bb = capt_mask & all_opposing_bb;
+        while capt_bb != 0 {
+            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            let mv = Mov::encode_move_capture(from_sq, to_sq);
+            move_list.push(mv);
+        }
+    }
+
+    // =========
+    // promotion
+    // =========
+    let mut promo_bb = pawn_bb & occupancy_masks::RANK_7_BB;
+    while promo_bb != 0 {
+        let from_sq = bitboard::pop_1st_bit(&mut promo_bb);
+
+        // quiet promotion
+        let quiet_to_sq = from_sq.square_plus_1_rank();
+
+        match quiet_to_sq {
+            Some(_) => {
+                if !bitboard::is_set(all_bb, quiet_to_sq.unwrap()) {
+                    // free square ahead
+                    encode_promotion_moves(from_sq, quiet_to_sq.unwrap(), move_list);
+                }
+            }
+            None => panic!("Problem with promotion trying to get Rank+1"),
+        }
+
+        // check for capture promotions
+        let capt_mask = gen_white_pawn_attach_squares(from_sq);
+        let mut capt_bb = capt_mask & all_opposing_bb;
+
+        while capt_bb != 0 {
+            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            encode_promotion_capture_moves(from_sq, to_sq, move_list);
+        }
+    }
+}
+
+fn generate_black_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>) {
+    let pawn = Piece::BlackPawn;
+
+    // bitboard of all pawns
+    let pawn_bb = pos.board().get_piece_bitboard(pawn);
+    // bitboard of entire board
+    let all_bb = pos.board().get_bitboard();
+    // opposite colour bitboard
+    let all_opposing_bb = pos.board().get_colour_bb(Colour::White);
+
+    // ================================================
+    // exclude all first moves, and possible promotions
+    // ================================================
+    let mut excl_pawn_bb = pawn_bb & !occupancy_masks::RANK_2_BB & !occupancy_masks::RANK_7_BB;
+
+    while excl_pawn_bb != 0 {
+        let from_sq = bitboard::pop_1st_bit(&mut excl_pawn_bb);
+
+        // quiet moves
+        let quiet_to_sq = from_sq.square_minus_1_rank();
+        match quiet_to_sq {
+            Some(_) => {
+                if !bitboard::is_set(all_bb, quiet_to_sq.unwrap()) {
+                    let mv = Mov::encode_move_quiet(from_sq, quiet_to_sq.unwrap());
+                    move_list.push(mv);
+                }
+            }
+            None => panic!("Problem trying for Rank-1"),
+        }
+
+        // capture moves
+        let capt_mask = gen_black_pawn_attach_squares(from_sq);
+        let mut capt_bb = capt_mask & all_opposing_bb;
+        while capt_bb != 0 {
+            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            let mv = Mov::encode_move_capture(from_sq, to_sq);
+            move_list.push(mv);
+        }
+
+        // en passant move
+        if let Some(en_sq) = pos.en_passant_square() {
+            if bitboard::is_set(capt_mask, en_sq) {
+                // en passant sq can be "captured"
+                let en_pass_mv = Mov::encode_move_en_passant(from_sq, en_sq);
+                move_list.push(en_pass_mv);
+            }
+        }
+    }
+
+    // ===============
+    // pawn first move
+    // ===============
+    let mut starting_pawn_bb = pawn_bb & occupancy_masks::RANK_7_BB;
+
+    while starting_pawn_bb != 0 {
+        let from_sq = bitboard::pop_1st_bit(&mut starting_pawn_bb);
+
+        // single square moves from initial pawn rank - no capture
+        let single_mv_to_sq = from_sq.square_minus_1_rank();
+
+        match single_mv_to_sq {
+            Some(_) => {
+                if !bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) {
+                    // free square
+                    let mv = Mov::encode_move_quiet(from_sq, single_mv_to_sq.unwrap());
+                    move_list.push(mv);
+                }
+            }
+            None => panic!("Invalid square when trying to get Rank-1"),
+        }
+
+        // double square moves
+        let double_mv_to_sq = from_sq.square_minus_2_ranks();
+        match double_mv_to_sq {
+            Some(_) => {
+                if !bitboard::is_set(all_bb, single_mv_to_sq.unwrap())
+                    && !bitboard::is_set(all_bb, double_mv_to_sq.unwrap())
+                {
+                    // both squares free
+                    let mv = Mov::encode_move_double_pawn_first(from_sq, double_mv_to_sq.unwrap());
+                    move_list.push(mv);
+                }
+            }
+            None => panic!("Invalid square when trying Rank-2"),
+        }
+
+        // capture on first move
+        let capt_mask = gen_black_pawn_attach_squares(from_sq);
+        let mut capt_bb = capt_mask & all_opposing_bb;
+        while capt_bb != 0 {
+            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            let mv = Mov::encode_move_capture(from_sq, to_sq);
+            move_list.push(mv);
+        }
+    }
+
+    // =========
+    // Promotion
+    // =========
+    let mut promo_bb = pawn_bb & occupancy_masks::RANK_2_BB;
+    while promo_bb != 0 {
+        let from_sq = bitboard::pop_1st_bit(&mut promo_bb);
+
+        // quiet promotion
+        let quiet_to_sq = from_sq.square_minus_1_rank();
+        match quiet_to_sq {
+            Some(_) => {
+                if !bitboard::is_set(all_bb, quiet_to_sq.unwrap()) {
+                    // free square ahead
+                    encode_promotion_moves(from_sq, quiet_to_sq.unwrap(), move_list);
+                }
+            }
+            None => panic!("Problem with promotion trying to get Rank-1"),
+        }
+
+        // check for capture promotions
+        let capt_mask = gen_black_pawn_attach_squares(from_sq);
+
+        let mut capt_bb = capt_mask & all_opposing_bb;
+
+        while capt_bb != 0 {
+            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            encode_promotion_capture_moves(from_sq, to_sq, move_list);
+        }
+    }
 }
 
 // generates diagonal and anti-diagonal moves for queen and bishop
@@ -271,175 +523,6 @@ fn generate_black_castle_moves(pos: &Position, move_list: &mut Vec<Mov>) {
     }
 }
 
-fn generate_misc_pawn_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
-    let pawn = Piece::BlackPawn;
-
-    // bitboard of all pawns
-    let mut pawn_bb = pos.board().get_piece_bitboard(pawn);
-    // bitboard of entire board
-    let all_bb = pos.board().get_bitboard();
-    // opposite colour bitboard
-    let all_opposing_bb = pos.board().get_colour_bb(Colour::White);
-
-    // exclude all first moves, and possible promotions (handled elsewhere)
-    pawn_bb = pawn_bb & !occupancy_masks::RANK_2_BB & !occupancy_masks::RANK_7_BB;
-
-    while pawn_bb != 0 {
-        let from_sq = bitboard::pop_1st_bit(&mut pawn_bb);
-
-        // ===========
-        // quiet moves
-        // ===========
-        let quiet_to_sq = from_sq.square_minus_1_rank();
-        match quiet_to_sq {
-            Some(_) => {
-                if !bitboard::is_set(all_bb, quiet_to_sq.unwrap()) {
-                    let mv = Mov::encode_move_quiet(from_sq, quiet_to_sq.unwrap());
-                    move_list.push(mv);
-                }
-            }
-            None => panic!("Problem trying for Rank-1"),
-        }
-
-        // =============
-        // capture moves
-        // =============
-        let capt_mask = gen_black_pawn_attach_squares(from_sq);
-        let mut capt_bb = capt_mask & all_opposing_bb;
-        while capt_bb != 0 {
-            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
-            let mv = Mov::encode_move_capture(from_sq, to_sq);
-            move_list.push(mv);
-        }
-
-        // ===============
-        // en passant move
-        // ===============
-        if let Some(en_sq) = pos.en_passant_square() {
-            if bitboard::is_set(capt_mask, en_sq) {
-                // en passant sq can be "captured"
-                let en_pass_mv = Mov::encode_move_en_passant(from_sq, en_sq);
-                move_list.push(en_pass_mv);
-            }
-        }
-    }
-}
-
-fn generate_misc_pawn_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
-    let pawn = Piece::WhitePawn;
-
-    // bitboard of all pawns
-    let mut pawn_bb = pos.board().get_piece_bitboard(pawn);
-    // bitboard of entire board
-    let all_bb = pos.board().get_bitboard();
-    // opposite colour bitboard
-    let all_opposing_bb = pos.board().get_colour_bb(Colour::Black);
-
-    // exclude all first moves, and possible promotions (handled elsewhere)
-    pawn_bb = pawn_bb & !occupancy_masks::RANK_2_BB & !occupancy_masks::RANK_7_BB;
-
-    while pawn_bb != 0 {
-        let from_sq = bitboard::pop_1st_bit(&mut pawn_bb);
-
-        // ===========
-        // quiet moves
-        // ===========
-        let quiet_to_sq = from_sq.square_plus_1_rank();
-        match quiet_to_sq {
-            Some(_) => {
-                if !bitboard::is_set(all_bb, quiet_to_sq.unwrap()) {
-                    let mv = Mov::encode_move_quiet(from_sq, quiet_to_sq.unwrap());
-                    move_list.push(mv);
-                }
-            }
-            None => panic!("Invalid square when trying for Rank+1"),
-        }
-
-        // =============
-        // capture moves
-        // =============
-        let capt_mask = gen_white_pawn_attach_squares(from_sq);
-        let mut capt_bb = capt_mask & all_opposing_bb;
-        while capt_bb != 0 {
-            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
-            let mv = Mov::encode_move_capture(from_sq, to_sq);
-            move_list.push(mv);
-        }
-
-        // ===============
-        // en passant move
-        // ===============
-        if let Some(en_sq) = pos.en_passant_square() {
-            if bitboard::is_set(capt_mask, en_sq) {
-                // en passant sq can be "captured"
-                let en_pass_mv = Mov::encode_move_en_passant(from_sq, en_sq);
-                move_list.push(en_pass_mv);
-            }
-        }
-    }
-}
-
-fn generate_first_pawn_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
-    let pawn = Piece::BlackPawn;
-
-    // bitboard of all pawns
-    let pawn_bb = pos.board().get_piece_bitboard(pawn);
-    // bitboard of entire board
-    let all_bb = pos.board().get_bitboard();
-    // opposite colour bitboard
-    let all_opposing_bb = pos.board().get_colour_bb(Colour::White);
-
-    let mut starting_pawn_bb = pawn_bb & occupancy_masks::RANK_7_BB;
-
-    while starting_pawn_bb != 0 {
-        let from_sq = bitboard::pop_1st_bit(&mut starting_pawn_bb);
-
-        // =======================================================
-        // single square moves from initial pawn rank - no capture
-        // =======================================================
-        let single_mv_to_sq = from_sq.square_minus_1_rank();
-
-        match single_mv_to_sq {
-            Some(_) => {
-                if !bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) {
-                    // free square
-                    let mv = Mov::encode_move_quiet(from_sq, single_mv_to_sq.unwrap());
-                    move_list.push(mv);
-                }
-            }
-            None => panic!("Invalid square when trying to get Rank-1"),
-        }
-
-        // ===================
-        // double square moves
-        // ===================
-        let double_mv_to_sq = from_sq.square_minus_2_ranks();
-        match double_mv_to_sq {
-            Some(_) => {
-                if !bitboard::is_set(all_bb, single_mv_to_sq.unwrap())
-                    && !bitboard::is_set(all_bb, double_mv_to_sq.unwrap())
-                {
-                    // both squares free
-                    let mv = Mov::encode_move_double_pawn_first(from_sq, double_mv_to_sq.unwrap());
-                    move_list.push(mv);
-                }
-            }
-            None => panic!("Invalid square when trying Rank-2"),
-        }
-
-        // =====================
-        // capture on first move
-        // =====================
-        let capt_mask = gen_black_pawn_attach_squares(from_sq);
-        let mut capt_bb = capt_mask & all_opposing_bb;
-        while capt_bb != 0 {
-            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
-            let mv = Mov::encode_move_capture(from_sq, to_sq);
-            move_list.push(mv);
-        }
-    }
-}
-
 fn gen_white_pawn_attach_squares(pawn_sq: Square) -> u64 {
     let mut retval: u64 = 0;
 
@@ -473,155 +556,6 @@ fn gen_black_pawn_attach_squares(pawn_sq: Square) -> u64 {
     }
 
     retval
-}
-
-fn generate_first_pawn_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
-    let pawn = Piece::WhitePawn;
-
-    // bitboard of all pawns
-    let pawn_bb = pos.board().get_piece_bitboard(pawn);
-    // bitboard of entire board
-    let all_bb = pos.board().get_bitboard();
-    // opposite colour bitboard
-    let all_opposing_bb = pos.board().get_colour_bb(Colour::Black);
-
-    let mut starting_pawn_bb = pawn_bb & occupancy_masks::RANK_2_BB;
-
-    while starting_pawn_bb != 0 {
-        let from_sq = bitboard::pop_1st_bit(&mut starting_pawn_bb);
-
-        // =======================================================
-        // single square moves from initial pawn rank - no capture
-        // =======================================================
-        let single_mv_to_sq = from_sq.square_plus_1_rank();
-
-        match single_mv_to_sq {
-            Some(_) => {
-                if !bitboard::is_set(all_bb, single_mv_to_sq.unwrap()) {
-                    // free square
-                    let mv = Mov::encode_move_quiet(from_sq, single_mv_to_sq.unwrap());
-                    move_list.push(mv);
-                }
-            }
-            None => panic!("Problem trying to get Rank+1"),
-        }
-
-        // ===================
-        // double square moves
-        // ===================
-        let double_mv_to_sq = from_sq.square_plus_2_ranks();
-        match double_mv_to_sq {
-            Some(_) => {
-                if !bitboard::is_set(all_bb, single_mv_to_sq.unwrap())
-                    && !bitboard::is_set(all_bb, double_mv_to_sq.unwrap())
-                {
-                    // both squares free
-                    let mv = Mov::encode_move_double_pawn_first(from_sq, double_mv_to_sq.unwrap());
-                    move_list.push(mv);
-                }
-            }
-            None => panic!("Problem trying to get Rank+2"),
-        }
-
-        // =====================
-        // capture on first move
-        // =====================
-        let capt_mask = gen_white_pawn_attach_squares(from_sq);
-        let mut capt_bb = capt_mask & all_opposing_bb;
-        while capt_bb != 0 {
-            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
-            let mv = Mov::encode_move_capture(from_sq, to_sq);
-            move_list.push(mv);
-        }
-    }
-}
-
-fn generate_promotion_moves_black(pos: &Position, move_list: &mut Vec<Mov>) {
-    let pawn = Piece::BlackPawn;
-
-    // bitboard of all pawns
-    let pawn_bb = pos.board().get_piece_bitboard(pawn);
-    let mut promo_bb = pawn_bb & occupancy_masks::RANK_2_BB;
-
-    if promo_bb == 0 {
-        // nothing on 2nd rank, no promotion moves
-        return;
-    }
-
-    // bitboard of entire board
-    let all_bb = pos.board().get_bitboard();
-    // opposite colour bitboard
-    let all_opposing_bb = pos.board().get_colour_bb(Colour::White);
-
-    while promo_bb != 0 {
-        let from_sq = bitboard::pop_1st_bit(&mut promo_bb);
-
-        // quiet promotion
-        let quiet_to_sq = from_sq.square_minus_1_rank();
-        match quiet_to_sq {
-            Some(_) => {
-                if !bitboard::is_set(all_bb, quiet_to_sq.unwrap()) {
-                    // free square ahead
-                    encode_promotion_moves(from_sq, quiet_to_sq.unwrap(), move_list);
-                }
-            }
-            None => panic!("Problem with promotion trying to get Rank-1"),
-        }
-
-        // check for capture promotions
-        let capt_mask = gen_black_pawn_attach_squares(from_sq);
-
-        let mut capt_bb = capt_mask & all_opposing_bb;
-
-        while capt_bb != 0 {
-            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
-            encode_promotion_capture_moves(from_sq, to_sq, move_list);
-        }
-    }
-}
-
-fn generate_promotion_moves_white(pos: &Position, move_list: &mut Vec<Mov>) {
-    let pawn = Piece::WhitePawn;
-
-    // bitboard of all pawns
-    let pawn_bb = pos.board().get_piece_bitboard(pawn);
-    let mut promo_bb = pawn_bb & occupancy_masks::RANK_7_BB;
-
-    if promo_bb == 0 {
-        // nothing on 7th rank, no promotion moves
-        return;
-    }
-
-    // bitboard of entire board
-    let all_bb = pos.board().get_bitboard();
-    // opposite colour bitboard
-    let all_opposing_bb = pos.board().get_colour_bb(Colour::Black);
-
-    while promo_bb != 0 {
-        let from_sq = bitboard::pop_1st_bit(&mut promo_bb);
-
-        // quiet promotion
-        let quiet_to_sq = from_sq.square_plus_1_rank();
-
-        match quiet_to_sq {
-            Some(_) => {
-                if !bitboard::is_set(all_bb, quiet_to_sq.unwrap()) {
-                    // free square ahead
-                    encode_promotion_moves(from_sq, quiet_to_sq.unwrap(), move_list);
-                }
-            }
-            None => panic!("Problem with promotion trying to get Rank+1"),
-        }
-
-        // check for capture promotions
-        let capt_mask = gen_white_pawn_attach_squares(from_sq);
-        let mut capt_bb = capt_mask & all_opposing_bb;
-
-        while capt_bb != 0 {
-            let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
-            encode_promotion_capture_moves(from_sq, to_sq, move_list);
-        }
-    }
 }
 
 fn encode_promotion_moves(from_sq: Square, to_sq: Square, move_list: &mut Vec<Mov>) {
