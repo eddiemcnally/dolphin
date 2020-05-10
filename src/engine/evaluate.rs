@@ -3,6 +3,7 @@ use components::board;
 use components::board::Board;
 use components::piece::Colour;
 use components::piece::Piece;
+use components::square::Square;
 use core::core_traits::ArrayAccessor;
 
 // Values for piece square arrays are taken from
@@ -59,6 +60,22 @@ static MIRROR_VALUE: [i8; board::NUM_SQUARES] = [
 ];
 
 pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
+    let material = board.get_material();
+
+    // material
+    let mut score = (material.0.wrapping_sub(material.1)) as i32;
+
+    // piece positions
+    score = score + evaluate_piece_positions(board);
+
+    if side_to_move == Colour::White {
+        score
+    } else {
+        -score
+    }
+}
+
+fn evaluate_piece_positions(board: &Board) -> i32 {
     // set up bitboards needed
     let white_pawn_bb = board.get_piece_bitboard(Piece::WhitePawn);
     let white_knight_bb = board.get_piece_bitboard(Piece::WhiteKnight);
@@ -74,9 +91,7 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
     let black_queen_bb = board.get_piece_bitboard(Piece::BlackQueen);
     let black_king_bb = board.get_piece_bitboard(Piece::BlackKing);
 
-    let material = board.get_material();
-
-    let mut score = (material.0 - material.1) as i32;
+    let mut score: i32 = 0;
 
     // evaluate piece locations
     score += eval_white_piece_on_square(white_pawn_bb, &PAWN_SQ_VALUE);
@@ -93,11 +108,7 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
     score -= eval_black_piece_on_square(black_queen_bb, &QUEEN_SQ_VALUE);
     score -= eval_black_piece_on_square(black_king_bb, &KING_SQ_VALUE);
 
-    if side_to_move == Colour::White {
-        score
-    } else {
-        -score
-    }
+    return score;
 }
 
 fn eval_white_piece_on_square(pce_bb: u64, values: &[i8]) -> i32 {
@@ -105,8 +116,9 @@ fn eval_white_piece_on_square(pce_bb: u64, values: &[i8]) -> i32 {
     let mut bb = pce_bb;
 
     while bb != 0 {
-        let offset = bitboard::pop_1st_bit(&mut bb).to_offset() as usize;
-        score += values[offset] as i32;
+        let square = bitboard::pop_1st_bit(&mut bb);
+        let off = map_square_to_array_offset(square);
+        score += values[off] as i32;
     }
     score
 }
@@ -116,8 +128,97 @@ fn eval_black_piece_on_square(pce_bb: u64, values: &[i8]) -> i32 {
     let mut bb = pce_bb;
 
     while bb != 0 {
-        let offset = bitboard::pop_1st_bit(&mut bb).to_offset() as usize;
-        score += values[MIRROR_VALUE[offset] as usize] as i32;
+        let square = bitboard::pop_1st_bit(&mut bb);
+        let off = map_square_to_array_offset(square);
+        score += values[MIRROR_VALUE[off] as usize] as i32;
     }
     score
 }
+
+fn map_square_to_array_offset(sq: Square) -> usize {
+    let off = sq.to_offset();
+    return MIRROR_VALUE[off] as usize;
+}
+
+#[cfg(test)]
+mod tests {
+    use components::piece::Colour;
+    use engine::position::Position;
+    use input::fen;
+
+    #[test]
+    pub fn evaluate_sample_white_position() {
+        let fen = "k7/8/1P3B2/P6P/3Q4/1N6/3K4/7R w - - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+
+        let score = super::evaluate_board(pos.board(), Colour::White);
+        assert_eq!(score, 2365);
+
+        // white material = 22350
+        //  - 3x pawns      = 300
+        //  - 1x knight     = 320
+        //  - 1x rook       = 500
+        //  - 1x bishop     = 330
+        //  - 1x queen      = 900
+        //  - 1x king       = 20000
+        //
+        // black material = 20000
+        //  - 1x king       = 20000
+
+        //
+        // white piece positions = 35
+        //  - Pawns: 5 + 10 + 5 = 20
+        //  - Knight: 5         = 5
+        //  - Queen: 5          = 5
+        //  - King: 0           = 0
+        //  - Bishop: 5         = 5
+        //  - Rook: 0           = 0
+        //
+        // Black position pieces = 20
+        //
+        // expected score   = (22350 - 20000) + (35 - 20)
+        //                  = 2365
+    }
+
+    #[test]
+    pub fn evaluate_sample_black_position() {
+        let fen = "1k6/1pp3q1/5b2/1n6/7p/8/3K4/8 b - - 0 1";
+        let parsed_fen = fen::get_position(&fen);
+        let pos = Position::new(parsed_fen);
+
+        let score = super::evaluate_board(pos.board(), Colour::White);
+        assert_eq!(score, -1915);
+
+        // white material = 20000
+        //  - 1x king       = 20000
+        //
+        // black material = 21850
+        //  - 3x pawns      = 300
+        //  - 1x knight     = 320
+        //  - 1x bishop     = 330
+        //  - 1x queen      = 900
+        //  - 1x king       = 20000
+        //
+        // Black piece positions    = 65
+        //  - Pawns: 10 + 10 + 5 = 25
+        //  - Knight: 5          = 5
+        //  - Queen: 0           = 0
+        //  - King: 30           = 30
+        //  - Bishop: 5          = 5
+        //
+        // White position pieces = 0
+        //
+        // expected score   = (20000 - 21850) + (0 - 60)
+        //                  = -1915
+    }
+}
+
+// match role {
+//     PieceRole::Pawn => 100,
+//     PieceRole::Knight => 320,
+//     PieceRole::Bishop => 330,
+//     PieceRole::Rook => 500,
+//     PieceRole::Queen => 900,
+//     PieceRole::King => 20000,
+// }
