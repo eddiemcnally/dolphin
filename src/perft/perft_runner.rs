@@ -1,6 +1,8 @@
 use engine::position::MoveLegality;
 use engine::position::Position;
+use moves::mov::Mov;
 use moves::move_gen;
+use smallvec::SmallVec;
 
 pub fn perft(depth: u8, position: &mut Position) -> u64 {
     let mut nodes = 0;
@@ -8,7 +10,7 @@ pub fn perft(depth: u8, position: &mut Position) -> u64 {
         return 1;
     }
 
-    let mut move_list = Vec::new();
+    let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
 
     move_gen::generate_moves(position, &mut move_list);
 

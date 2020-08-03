@@ -11,6 +11,8 @@ extern crate num_derive;
 
 extern crate core_affinity;
 extern crate num_format;
+#[macro_use]
+extern crate smallvec;
 
 mod components;
 mod core;

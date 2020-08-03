@@ -8,8 +8,11 @@ use components::square::Square;
 use engine::castle_permissions;
 use engine::position::Position;
 use moves::mov::Mov;
+use smallvec::SmallVec;
 
-pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
+pub const MAX_MOVE_BUF_SZ: usize = 256;
+
+pub fn generate_moves(position: &Position, move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>) {
     let board = position.board();
     let side_to_move = position.side_to_move();
 
@@ -69,7 +72,7 @@ pub fn generate_moves(position: &Position, move_list: &mut Vec<Mov>) {
     };
 }
 
-fn generate_white_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>) {
+fn generate_white_pawn_moves(pos: &Position, move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>) {
     let pawn = Piece::WhitePawn;
 
     // bitboard of all pawns
@@ -196,7 +199,7 @@ fn generate_white_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>) {
     }
 }
 
-fn generate_black_pawn_moves(pos: &Position, move_list: &mut Vec<Mov>) {
+fn generate_black_pawn_moves(pos: &Position, move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>) {
     let pawn = Piece::BlackPawn;
 
     // bitboard of all pawns
@@ -329,7 +332,7 @@ fn generate_sliding_diagonal_antidiagonal_moves(
     board: &Board,
     bishop: Piece,
     queen: Piece,
-    move_list: &mut Vec<Mov>,
+    move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>,
 ) {
     // conflate the bitboards
     let mut pce_bb = board.get_piece_bitboard(bishop);
@@ -383,7 +386,7 @@ fn generate_sliding_rank_file_moves(
     board: &Board,
     rook: Piece,
     queen: Piece,
-    move_list: &mut Vec<Mov>,
+    move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>,
 ) {
     // conflate the 2 bitboards
     let mut pce_bb = board.get_piece_bitboard(rook);
@@ -437,7 +440,7 @@ fn generate_non_sliding_piece_moves(
     king: Piece,
     knight: Piece,
     side_to_move: Colour,
-    move_list: &mut Vec<Mov>,
+    move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>,
 ) {
     let opposite_side = side_to_move.flip_side();
     let opp_occ_sq_bb = board.get_colour_bb(opposite_side);
@@ -481,7 +484,7 @@ fn generate_non_sliding_piece_moves(
     }
 }
 
-fn generate_white_castle_moves(pos: &Position, move_list: &mut Vec<Mov>) {
+fn generate_white_castle_moves(pos: &Position, move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>) {
     let cp = pos.castle_permissions();
     let bb = pos.board().get_bitboard();
     let wr_bb = pos.board().get_piece_bitboard(Piece::WhiteRook);
@@ -502,7 +505,7 @@ fn generate_white_castle_moves(pos: &Position, move_list: &mut Vec<Mov>) {
     }
 }
 
-fn generate_black_castle_moves(pos: &Position, move_list: &mut Vec<Mov>) {
+fn generate_black_castle_moves(pos: &Position, move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>) {
     let cp = pos.castle_permissions();
     let bb = pos.board().get_bitboard();
     let br_bb = pos.board().get_piece_bitboard(Piece::BlackRook);
@@ -558,7 +561,11 @@ fn gen_black_pawn_attach_squares(pawn_sq: Square) -> u64 {
     retval
 }
 
-fn encode_promotion_moves(from_sq: Square, to_sq: Square, move_list: &mut Vec<Mov>) {
+fn encode_promotion_moves(
+    from_sq: Square,
+    to_sq: Square,
+    move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>,
+) {
     move_list.push(Mov::encode_move_with_promotion(
         from_sq,
         to_sq,
@@ -581,7 +588,11 @@ fn encode_promotion_moves(from_sq: Square, to_sq: Square, move_list: &mut Vec<Mo
     ));
 }
 
-fn encode_promotion_capture_moves(from_sq: Square, to_sq: Square, move_list: &mut Vec<Mov>) {
+fn encode_promotion_capture_moves(
+    from_sq: Square,
+    to_sq: Square,
+    move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>,
+) {
     move_list.push(Mov::encode_move_with_promotion_capture(
         from_sq,
         to_sq,
@@ -608,7 +619,7 @@ fn encode_quite_or_capture(
     board: &Board,
     from_sq: Square,
     to_sq: Square,
-    move_list: &mut Vec<Mov>,
+    move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>,
 ) {
     if board.is_sq_empty(to_sq) {
         let mv = Mov::encode_move_quiet(from_sq, to_sq);
@@ -619,7 +630,11 @@ fn encode_quite_or_capture(
     }
 }
 
-fn encode_multiple_capture_moves(capt_bb: &mut u64, from_sq: Square, move_list: &mut Vec<Mov>) {
+fn encode_multiple_capture_moves(
+    capt_bb: &mut u64,
+    from_sq: Square,
+    move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>,
+) {
     while *capt_bb != 0 {
         let to_sq = bitboard::pop_1st_bit(capt_bb);
         let mov = Mov::encode_move_capture(from_sq, to_sq);
@@ -627,7 +642,11 @@ fn encode_multiple_capture_moves(capt_bb: &mut u64, from_sq: Square, move_list: 
     }
 }
 
-fn encode_multiple_quiet_moves(quiet_move_bb: &mut u64, from_sq: Square, move_list: &mut Vec<Mov>) {
+fn encode_multiple_quiet_moves(
+    quiet_move_bb: &mut u64,
+    from_sq: Square,
+    move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>,
+) {
     while *quiet_move_bb != 0 {
         let to_sq = bitboard::pop_1st_bit(quiet_move_bb);
         let mov = Mov::encode_move_quiet(from_sq, to_sq);
@@ -645,11 +664,12 @@ pub mod tests {
     use moves::mov;
     use moves::mov::Mov;
     use moves::move_gen;
+    use smallvec::SmallVec;
 
     #[test]
     pub fn move_gen_white_king_knight_move_list_as_expected() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
         move_gen::generate_moves(&pos, &mut move_list);
@@ -695,7 +715,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_black_king_knight_move_list_as_expected() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -721,7 +741,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_white_bishop_move_list_as_expected() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/4P1K1/1RB1BP2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -765,7 +785,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_black_bishop_move_list_as_expected() {
         let fen = "1nbk3p/NP1pQpP1/2p4p/p5K1/1RBbBP2/pPR1Np2/P1r1rP1P/P2q3n b - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -794,7 +814,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_black_rook_move_list_as_expected() {
         let fen = "1nbk3p/NP1pQpP1/2p4p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn b - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -844,7 +864,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_white_rook_move_list_as_expected() {
         let fen = "1nbk3p/NP1pQpP1/2p4p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn w - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -881,7 +901,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_white_queen_move_list_as_expected() {
         let fen = "1nbk3p/NP1p1pP1/2p1Q2p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn w - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -925,7 +945,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_black_queen_move_list_as_expected() {
         let fen = "1nbk3p/NP1p1pP1/2p1Q2p/p2Bb1K1/1RB2P2/pPR2p1P/P3rP1N/Pr4qn b - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -964,7 +984,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_white_king_castle_move_move_list_as_expected() {
         let fen = "r2qk2r/pb1npp1p/1ppp1npb/8/4P3/1PNP1PP1/PBP1N1BP/R2QK2R w K - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -978,7 +998,7 @@ pub mod tests {
     pub fn move_gen_white_queen_castle_move_move_list_as_expected() {
         let fen = "r3k2r/pbqnpp1p/1ppp1npb/8/4P3/1PNP1PP1/PBPQN1BP/R3K2R w Q - 0 1";
 
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -991,7 +1011,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_black_king_castle_move_move_list_as_expected() {
         let fen = "r2qk2r/pb1npp1p/1ppp1npb/8/4P3/1PNP1PP1/PBP1N1BP/R2QK2R b k - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -1004,7 +1024,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_black_queen_castle_move_move_list_as_expected() {
         let fen = "r3k2r/pbqnpp1p/1ppp1npb/8/4P3/1PNP1PP1/PBPQN1BP/R3K2R b q - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -1021,7 +1041,7 @@ pub mod tests {
     pub fn move_gen_all_castle_options_available_list_as_expected() {
         // --- WHITE
         let fen = "r3k2r/pbqnpp1p/1ppp1npb/8/4P3/1PNP1PP1/PBPQN1BP/R3K2R w KQkq - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
@@ -1047,7 +1067,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_white_promotion_moves_as_expected() {
         let fen = "2b1rkr1/PPpP1pbP/n1p4p/2NpP1p1/1RBqBP2/pPR1NpQ1/P4P1P/P4K1n w - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -1248,7 +1268,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_black_promotion_moves_as_expected() {
         let fen = "2b1rkr1/PPpP1pbP/n6p/2NpPn2/1RBqBP2/4N1Q1/ppPpRp1P/P4K2 b - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -1334,7 +1354,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_white_first_moves_as_expected() {
         let fen = "4k2n/rbppBn1q/pP1pp3/1BQ5/P2N3p/pr2b3/P1NPPPPP/2R2R1K w - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -1363,7 +1383,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_black_first_moves_as_expected() {
         let fen = "4k2n/rbpp1ppq/pPNBp3/6n1/P7/prQBb3/P1NPPPPP/2R2R1K b - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -1389,7 +1409,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_white_misc_pawn_moves_as_expected() {
         let fen = "2b1rkr1/P1p2pb1/n1p3pp/2NpPPP1/pPBq2BP/2R1NpQ1/P1PP1P1P/R4K1n w - d6 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -1411,7 +1431,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_black_misc_pawn_moves_as_expected() {
         let fen = "2b1rkr1/P1p1qpb1/n5pN/2p3P1/pPBRpPBp/5pQ1/P1PPP1P1/R4K1N b - b3 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -1437,7 +1457,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_all_moves_white_position_as_expected() {
         let fen = "3rr1k1/pp3pp1/1qn2np1/8/3p4/PP3P2/2P1NQPP/R1B1K2R w K - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 
@@ -1501,7 +1521,7 @@ pub mod tests {
     #[test]
     pub fn move_gen_all_moves_black_position_as_expected() {
         let fen = "3rr1k1/p4pp1/1pn2np1/2P4q/1P1p4/P4P2/4NQPP/R1B1K2R b - - 0 1";
-        let mut move_list: Vec<Mov> = Vec::new();
+        let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
         let parsed_fen = fen::get_position(&fen);
         let pos = Position::new(parsed_fen);
 

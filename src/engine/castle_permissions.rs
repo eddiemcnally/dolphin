@@ -16,10 +16,10 @@ const PERM_MASK: u8 = !OFFSET_MASK;
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum CastlePermissionType {
-    WhiteKing = (0b0000_0001 | Offset::WhiteKing as u8),
-    WhiteQueen = (0b0000_0010 | Offset::WhiteQueen as u8),
-    BlackKing = (0b0000_0100 | Offset::BlackKing as u8),
-    BlackQueen = (0b0000_1000 | Offset::BlackQueen as u8),
+    WhiteKing = 0b0000_0001 | Offset::WhiteKing as u8,
+    WhiteQueen = 0b0000_0010 | Offset::WhiteQueen as u8,
+    BlackKing = 0b0000_0100 | Offset::BlackKing as u8,
+    BlackQueen = 0b0000_1000 | Offset::BlackQueen as u8,
 }
 
 pub const NUM_CASTLE_PERMS: usize = 4;
