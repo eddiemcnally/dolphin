@@ -6,38 +6,25 @@ use components::piece::Piece;
 use components::square::Square;
 use std::ops::Shl;
 
-#[derive(Default)]
-struct CachedBitboards {
-    pawn: u64,
-    bishop: u64,
-    knight: u64,
-    rook: u64,
-    queen: u64,
-    king: u64,
-    all_bb: u64,
-}
 
 pub fn is_king_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool {
-    let mut cb = CachedBitboards::default();
 
     match attacking_side {
         Colour::White => {
-            populate_white_bitboards(board, &mut cb);
-
-            if cb.pawn != 0 && is_attacked_by_pawn_white(cb.pawn, sq) {
+            let pawn_bb = board.get_piece_bitboard(Piece::WhitePawn);
+            if pawn_bb != 0 && is_attacked_by_pawn_white(pawn_bb, sq) {
                 return true;
             }
-            if check_non_pawn_pieces_attacking(&cb, sq) {
+            if check_non_pawn_pieces_attacking(Colour::White, board, sq) {
                 return true;
             }
         }
         Colour::Black => {
-            populate_black_bitboards(board, &mut cb);
-
-            if cb.pawn != 0 && is_attacked_by_pawn_black(cb.pawn, sq) {
+            let pawn_bb = board.get_piece_bitboard(Piece::BlackPawn);
+            if pawn_bb != 0 && is_attacked_by_pawn_black(pawn_bb, sq) {
                 return true;
             }
-            if check_non_pawn_pieces_attacking(&cb, sq) {
+            if check_non_pawn_pieces_attacking(Colour::Black, board, sq) {
                 return true;
             }
         }
@@ -50,29 +37,26 @@ pub fn is_castle_squares_attacked(
     sq_array: &[Square],
     attacking_side: Colour,
 ) -> bool {
-    let mut cb = CachedBitboards::default();
-
     match attacking_side {
-        Colour::White => {
-            populate_white_bitboards(board, &mut cb);
 
+        Colour::White => {
+            let pawn_bb = board.get_piece_bitboard(Piece::WhitePawn);
             for sq in sq_array.iter() {
-                if cb.pawn != 0 && is_attacked_by_pawn_white(cb.pawn, *sq) {
+                if pawn_bb != 0 && is_attacked_by_pawn_white(pawn_bb, *sq) {
                     return true;
                 }
-                if check_non_pawn_pieces_attacking(&cb, *sq) {
+                if check_non_pawn_pieces_attacking(Colour::White, board, *sq) {
                     return true;
                 }
             }
         }
         Colour::Black => {
-            populate_black_bitboards(board, &mut cb);
-
+            let pawn_bb = board.get_piece_bitboard(Piece::BlackPawn);
             for sq in sq_array.iter() {
-                if cb.pawn != 0 && is_attacked_by_pawn_black(cb.pawn, *sq) {
+                if pawn_bb != 0 && is_attacked_by_pawn_black(pawn_bb, *sq) {
                     return true;
                 }
-                if check_non_pawn_pieces_attacking(&cb, *sq) {
+                if check_non_pawn_pieces_attacking(Colour::Black, board, *sq) {
                     return true;
                 }
             }
@@ -82,45 +66,45 @@ pub fn is_castle_squares_attacked(
     false
 }
 
-fn populate_white_bitboards(board: &Board, cache: &mut CachedBitboards) {
-    cache.pawn = board.get_piece_bitboard(Piece::WhitePawn);
-    cache.knight = board.get_piece_bitboard(Piece::WhiteKnight);
-    cache.bishop = board.get_piece_bitboard(Piece::WhiteBishop);
-    cache.rook = board.get_piece_bitboard(Piece::WhiteRook);
-    cache.queen = board.get_piece_bitboard(Piece::WhiteQueen);
-    cache.king = board.get_piece_bitboard(Piece::WhiteKing);
-    cache.all_bb = board.get_bitboard();
-}
+fn check_non_pawn_pieces_attacking(side: Colour, board: &Board, sq: Square) -> bool {
 
-fn populate_black_bitboards(board: &Board, cache: &mut CachedBitboards) {
-    cache.pawn = board.get_piece_bitboard(Piece::BlackPawn);
-    cache.knight = board.get_piece_bitboard(Piece::BlackKnight);
-    cache.bishop = board.get_piece_bitboard(Piece::BlackBishop);
-    cache.rook = board.get_piece_bitboard(Piece::BlackRook);
-    cache.queen = board.get_piece_bitboard(Piece::BlackQueen);
-    cache.king = board.get_piece_bitboard(Piece::BlackKing);
-    cache.all_bb = board.get_bitboard();
-}
+    let knight_bb = match side{
+        Colour::White => board.get_piece_bitboard(Piece::WhiteKnight),
+        Colour::Black => board.get_piece_bitboard(Piece::BlackKnight),
+    };
 
-fn check_non_pawn_pieces_attacking(cached_bb: &CachedBitboards, sq: Square) -> bool {
-    if cached_bb.knight != 0 && is_knight_attacking(cached_bb.knight, sq) {
+    if knight_bb != 0 && is_knight_attacking(knight_bb, sq) {
         return true;
     }
 
-    // combine piece bitboards
-    let horiz_vert_bb = cached_bb.rook | cached_bb.queen;
+    let horiz_vert_bb = match side{
+        Colour::White => board.get_piece_bitboard(Piece::WhiteRook) | board.get_piece_bitboard(Piece::WhiteQueen),
+        Colour::Black => board.get_piece_bitboard(Piece::BlackRook) | board.get_piece_bitboard(Piece::BlackQueen),
+    };
+    let all_pce_bb = board.get_bitboard();
+
     if horiz_vert_bb != 0
-        && is_horizontal_or_vertical_attacking(cached_bb.all_bb, horiz_vert_bb, sq)
+        && is_horizontal_or_vertical_attacking(all_pce_bb, horiz_vert_bb, sq)
     {
         return true;
     }
 
-    let diag_bb = cached_bb.bishop | cached_bb.queen;
-    if diag_bb != 0 && is_diagonally_attacked(sq, diag_bb, cached_bb.all_bb) {
+    let diag_bb = match side{
+        Colour::White => board.get_piece_bitboard(Piece::WhiteBishop) | board.get_piece_bitboard(Piece::WhiteQueen),
+        Colour::Black => board.get_piece_bitboard(Piece::BlackBishop) | board.get_piece_bitboard(Piece::BlackQueen),
+    };
+
+    if diag_bb != 0 && is_diagonally_attacked(sq, diag_bb, all_pce_bb) {
         return true;
     }
 
-    if is_attacked_by_king(cached_bb.king, sq) {
+    let king_bb = match side{
+        Colour::White => board.get_piece_bitboard(Piece::WhiteKing),
+        Colour::Black => board.get_piece_bitboard(Piece::BlackKing),
+    };
+
+
+    if is_attacked_by_king(king_bb, sq) {
         return true;
     }
 
