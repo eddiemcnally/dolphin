@@ -252,22 +252,22 @@ impl Square {
         Square::from_u8(num)
     }
 
-    pub fn same_rank(self, other: Square) -> bool {
+    pub const fn same_rank(self, other: Square) -> bool {
         let this_rank = self.rank_as_u8();
         let other_rank = other.rank_as_u8();
         this_rank == other_rank
     }
 
-    pub fn same_file(self, other: Square) -> bool {
+    pub const fn same_file(self, other: Square) -> bool {
         let this_file = self.file_as_u8();
         let other_file = other.file_as_u8();
         this_file == other_file
     }
 
-    fn rank_as_u8(self) -> u8 {
+    const fn rank_as_u8(self) -> u8 {
         self as u8 >> 3
     }
-    fn file_as_u8(self) -> u8 {
+    const fn file_as_u8(self) -> u8 {
         (self as u8 % 8) as u8
     }
 }
@@ -292,8 +292,19 @@ pub enum Rank {
 }}
 
 impl Rank {
-    pub fn from_num(num: i8) -> Option<Rank> {
-        Rank::from_i8(num)
+    pub const fn from_num(num: i8) -> Option<Rank> {
+        match num {
+            0 => Some(Rank::Rank1),
+            1 => Some(Rank::Rank2),
+            2 => Some(Rank::Rank3),
+            3 => Some(Rank::Rank4),
+            4 => Some(Rank::Rank5),
+            5 => Some(Rank::Rank6),
+            6 => Some(Rank::Rank7),
+            7 => Some(Rank::Rank8),
+            _ => None,
+        }
+        //Rank::from_i8(num)
     }
 
     pub fn from_char(rank: char) -> Option<Rank> {

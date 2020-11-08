@@ -6,9 +6,7 @@ use components::piece::Piece;
 use components::square::Square;
 use std::ops::Shl;
 
-
 pub fn is_king_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool {
-
     match attacking_side {
         Colour::White => {
             let pawn_bb = board.get_piece_bitboard(Piece::WhitePawn);
@@ -38,7 +36,6 @@ pub fn is_castle_squares_attacked(
     attacking_side: Colour,
 ) -> bool {
     match attacking_side {
-
         Colour::White => {
             let pawn_bb = board.get_piece_bitboard(Piece::WhitePawn);
             for sq in sq_array.iter() {
@@ -67,45 +64,54 @@ pub fn is_castle_squares_attacked(
 }
 
 fn check_non_pawn_pieces_attacking(side: Colour, board: &Board, sq: Square) -> bool {
+    if side == Colour::White {
+        let knight_bb = board.get_piece_bitboard(Piece::WhiteKnight);
+        if knight_bb != 0 && is_knight_attacking(knight_bb, sq) {
+            return true;
+        }
 
-    let knight_bb = match side{
-        Colour::White => board.get_piece_bitboard(Piece::WhiteKnight),
-        Colour::Black => board.get_piece_bitboard(Piece::BlackKnight),
-    };
+        let horiz_vert_bb = board.get_piece_bitboard(Piece::WhiteRook)
+            | board.get_piece_bitboard(Piece::WhiteQueen);
+        let all_pce_bb = board.get_bitboard();
+        if horiz_vert_bb != 0 && is_horizontal_or_vertical_attacking(all_pce_bb, horiz_vert_bb, sq)
+        {
+            return true;
+        }
 
-    if knight_bb != 0 && is_knight_attacking(knight_bb, sq) {
-        return true;
-    }
+        let diag_bb = board.get_piece_bitboard(Piece::WhiteBishop)
+            | board.get_piece_bitboard(Piece::WhiteQueen);
+        if diag_bb != 0 && is_diagonally_attacked(sq, diag_bb, all_pce_bb) {
+            return true;
+        }
 
-    let horiz_vert_bb = match side{
-        Colour::White => board.get_piece_bitboard(Piece::WhiteRook) | board.get_piece_bitboard(Piece::WhiteQueen),
-        Colour::Black => board.get_piece_bitboard(Piece::BlackRook) | board.get_piece_bitboard(Piece::BlackQueen),
-    };
-    let all_pce_bb = board.get_bitboard();
+        let king_bb = board.get_piece_bitboard(Piece::WhiteKing);
+        if is_attacked_by_king(king_bb, sq) {
+            return true;
+        }
+    } else {
+        let knight_bb = board.get_piece_bitboard(Piece::BlackKnight);
+        if knight_bb != 0 && is_knight_attacking(knight_bb, sq) {
+            return true;
+        }
 
-    if horiz_vert_bb != 0
-        && is_horizontal_or_vertical_attacking(all_pce_bb, horiz_vert_bb, sq)
-    {
-        return true;
-    }
+        let horiz_vert_bb = board.get_piece_bitboard(Piece::BlackRook)
+            | board.get_piece_bitboard(Piece::BlackQueen);
+        let all_pce_bb = board.get_bitboard();
+        if horiz_vert_bb != 0 && is_horizontal_or_vertical_attacking(all_pce_bb, horiz_vert_bb, sq)
+        {
+            return true;
+        }
 
-    let diag_bb = match side{
-        Colour::White => board.get_piece_bitboard(Piece::WhiteBishop) | board.get_piece_bitboard(Piece::WhiteQueen),
-        Colour::Black => board.get_piece_bitboard(Piece::BlackBishop) | board.get_piece_bitboard(Piece::BlackQueen),
-    };
+        let diag_bb = board.get_piece_bitboard(Piece::BlackBishop)
+            | board.get_piece_bitboard(Piece::BlackQueen);
+        if diag_bb != 0 && is_diagonally_attacked(sq, diag_bb, all_pce_bb) {
+            return true;
+        }
 
-    if diag_bb != 0 && is_diagonally_attacked(sq, diag_bb, all_pce_bb) {
-        return true;
-    }
-
-    let king_bb = match side{
-        Colour::White => board.get_piece_bitboard(Piece::WhiteKing),
-        Colour::Black => board.get_piece_bitboard(Piece::BlackKing),
-    };
-
-
-    if is_attacked_by_king(king_bb, sq) {
-        return true;
+        let king_bb = board.get_piece_bitboard(Piece::BlackKing);
+        if is_attacked_by_king(king_bb, sq) {
+            return true;
+        }
     }
 
     false

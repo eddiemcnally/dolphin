@@ -14,14 +14,12 @@ use std::option::Option;
 
 pub const NUM_SQUARES: usize = 64;
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub struct Board {
     // piece bitboard, an entry for each piece type (enum Piece)
     piece_bb: [u64; NUM_PIECES],
     // bitboard for each Colour
     colour_bb: [u64; NUM_COLOURS],
-    // the pieces on each square
-    pieces: [Option<Piece>; NUM_SQUARES],
     // material value
     material: [u32; NUM_COLOURS],
 }
@@ -31,7 +29,6 @@ impl Default for Board {
         Board {
             piece_bb: [0; NUM_PIECES],
             colour_bb: [0; NUM_COLOURS],
-            pieces: [None; NUM_SQUARES],
             material: [0; NUM_COLOURS],
         }
     }
@@ -39,27 +36,20 @@ impl Default for Board {
 
 impl PartialEq for Board {
     fn eq(&self, other: &Self) -> bool {
-        for i in 0..NUM_PIECES - 1 {
+        for i in 0..NUM_PIECES {
             if self.piece_bb[i] != other.piece_bb[i] {
                 println!("BOARD: piece_bb are different");
                 return false;
             }
         }
 
-        for i in 0..NUM_COLOURS - 1 {
+        for i in 0..NUM_COLOURS {
             if self.colour_bb[i] != other.colour_bb[i] {
                 println!("BOARD: colour_bb are different");
                 return false;
             }
             if self.material[i] != other.material[i] {
                 println!("BOARD: material values are different");
-                return false;
-            }
-        }
-
-        for i in 0..NUM_SQUARES - 1 {
-            if self.pieces[i] != other.pieces[i] {
-                println!("BOARD: pieces array are different");
                 return false;
             }
         }
@@ -100,22 +90,6 @@ impl fmt::Debug for Board {
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self, f)
-    }
-}
-
-impl Clone for Board {
-    fn clone(&self) -> Board {
-        let mut cp_pieces: [Option<Piece>; NUM_SQUARES] = [None; NUM_SQUARES];
-        for sq in square::get_square_array().iter() {
-            cp_pieces[sq.to_offset()] = self.pieces[sq.to_offset()];
-        }
-
-        Board {
-            piece_bb: self.piece_bb,
-            colour_bb: self.colour_bb,
-            pieces: cp_pieces,
-            material: self.material,
-        }
     }
 }
 
@@ -182,7 +156,15 @@ impl Board {
     }
 
     pub fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
-        self.pieces[sq.to_offset()]
+        let mask = bitboard::to_mask(sq);
+
+        let index = self.piece_bb.iter().position(|&r| r & mask != 0);
+        if index.is_some() {
+            let pce = Piece::from_offset(index.unwrap() as u8);
+            return Some(pce);
+        }
+
+        return None;
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
@@ -221,14 +203,12 @@ impl Board {
             bitboard::clear_bit(self.piece_bb[piece.to_offset()], sq);
         self.colour_bb[piece.colour().to_offset()] =
             bitboard::clear_bit(self.colour_bb[piece.colour().to_offset()], sq);
-        self.pieces[sq.to_offset()] = None;
     }
 
     fn set_bitboards(&mut self, pce: Piece, sq: Square) {
         self.piece_bb[pce.to_offset()] = bitboard::set_bit(self.piece_bb[pce.to_offset()], sq);
         self.colour_bb[pce.colour().to_offset()] =
             bitboard::set_bit(self.colour_bb[pce.colour().to_offset()], sq);
-        self.pieces[sq.to_offset()] = Some(pce);
     }
 }
 

@@ -118,7 +118,7 @@ pub enum Piece {
 }
 
 impl Piece {
-    pub fn new(role: PieceRole, col: Colour) -> Piece {
+    pub const fn new(role: PieceRole, col: Colour) -> Piece {
         match col {
             Colour::White => match role {
                 PieceRole::Pawn => Piece::WhitePawn,
@@ -139,8 +139,38 @@ impl Piece {
         }
     }
 
-    pub fn colour(self) -> Colour {
-        Colour::from_u8((self as u8 & PCE_MASK_COLOUR) >> PCE_SHFT_COLOUR).unwrap()
+    pub const fn offset(self) -> usize {
+        let o = (self as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET;
+        o as usize
+    }
+
+    pub fn from_offset(offset: u8) -> Piece {
+        match offset {
+            0 => Piece::WhitePawn,
+            1 => Piece::WhiteBishop,
+            2 => Piece::WhiteKnight,
+            3 => Piece::WhiteRook,
+            4 => Piece::WhiteQueen,
+            5 => Piece::WhiteKing,
+            6 => Piece::BlackPawn,
+            7 => Piece::BlackBishop,
+            8 => Piece::BlackKnight,
+            9 => Piece::BlackRook,
+            10 => Piece::BlackQueen,
+            11 => Piece::BlackKing,
+            _ => panic!("Invalid piece offset {}.", offset),
+        }
+    }
+
+    pub const fn colour(self) -> Colour {
+        let c = (self as u8 & PCE_MASK_COLOUR) >> PCE_SHFT_COLOUR;
+
+        // TODO replace this with a 'match' when panic can be called in a const fn
+        if c == 0 {
+            Colour::White
+        } else {
+            Colour::Black
+        }
     }
 
     pub fn role(self) -> PieceRole {
@@ -224,7 +254,7 @@ impl fmt::Display for Piece {
 }
 
 impl Colour {
-    pub fn flip_side(self) -> Colour {
+    pub const fn flip_side(self) -> Colour {
         match self {
             Colour::White => Colour::Black,
             Colour::Black => Colour::White,
