@@ -1,44 +1,13 @@
-use core::core_traits::ArrayAccessor;
-use enum_primitive::FromPrimitive;
 use std::fmt;
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy, FromPrimitive)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
 #[repr(u8)]
 pub enum Colour {
-    White = 0x0,
-    Black = 0x1,
+    White = 0,
+    Black = 1,
 }
 
-// ---- -XXX    ROLE
-// ---- X---    Colour 0-> White, 1 -> Black
-// XXXX ----    Offset when used in an array
-//===========================================
-// 0000 0001    Pawn
-// 0000 0010    Bishop
-// 0000 0011    Knight
-// 0000 0100    Rook
-// 0000 0101    Queen
-// 0000 0110    King
-// 0000 1000    BLACK
-// 0000 0000    White   Pawn Offset
-// 0001 0000            Bishop Offset
-// 0010 0000            Knight Offset
-// 0011 0000            Rook Offset
-// 0100 0000            Queen Offset
-// 0101 0000            King Offset
-// 0110 0000    Black   Pawn offset
-// 0111 0000            Bishop Offset
-// 1000 0000            Knight Offset
-// 1001 0000            Rook offset
-// 1010 0000            Queen Offset
-// 1011 0000            King Offset
-
-const PIECE_MASK_ROLE: u8 = 0b0000_0111;
-const PCE_MASK_COLOUR: u8 = 0b0000_1000;
-const PCE_SHFT_COLOUR: u8 = 3;
-const PIECE_MASK_OFFSET: u8 = 0b1111_0000;
-const PCE_SHFT_OFFSET: u8 = 4;
-
+// Array offsets for each piece
 #[repr(u8)]
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 enum Offset {
@@ -56,15 +25,22 @@ enum Offset {
     BlackKing = 11,
 }
 
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
+pub struct Piece {
+    role: PieceRole,
+    colour: Colour,
+    offset: usize,
+}
+
 #[repr(u8)]
 #[derive(Eq, PartialEq, Hash, Clone, Copy, FromPrimitive, ToPrimitive)]
 pub enum PieceRole {
-    Pawn = 0b0000_0001,
-    Bishop = 0b0000_0010,
-    Knight = 0b0000_0011,
-    Rook = 0b0000_0100,
-    Queen = 0b0000_0101,
-    King = 0b0000_0110,
+    Pawn,
+    Bishop,
+    Knight,
+    Rook,
+    Queen,
+    King,
 }
 
 impl fmt::Debug for PieceRole {
@@ -90,114 +66,140 @@ impl fmt::Display for PieceRole {
     }
 }
 
-#[repr(u8)]
-#[derive(Eq, PartialEq, Hash, Clone, Copy, FromPrimitive, ToPrimitive)]
-pub enum Piece {
-    // white
-    WhitePawn = PieceRole::Pawn as u8 | ((Offset::WhitePawn as u8) << PCE_SHFT_OFFSET),
-    WhiteBishop = PieceRole::Bishop as u8 | ((Offset::WhiteBishop as u8) << PCE_SHFT_OFFSET),
-    WhiteKnight = PieceRole::Knight as u8 | ((Offset::WhiteKnight as u8) << PCE_SHFT_OFFSET),
-    WhiteRook = PieceRole::Rook as u8 | ((Offset::WhiteRook as u8) << PCE_SHFT_OFFSET),
-    WhiteQueen = PieceRole::Queen as u8 | ((Offset::WhiteQueen as u8) << PCE_SHFT_OFFSET),
-    WhiteKing = PieceRole::King as u8 | ((Offset::WhiteKing as u8) << PCE_SHFT_OFFSET),
-    // black
-    BlackPawn =
-        PieceRole::Pawn as u8 | ((Offset::BlackPawn as u8) << PCE_SHFT_OFFSET) | PCE_MASK_COLOUR,
-    BlackBishop = PieceRole::Bishop as u8
-        | ((Offset::BlackBishop as u8) << PCE_SHFT_OFFSET)
-        | PCE_MASK_COLOUR,
-    BlackKnight = PieceRole::Knight as u8
-        | ((Offset::BlackKnight as u8) << PCE_SHFT_OFFSET)
-        | PCE_MASK_COLOUR,
-    BlackRook =
-        PieceRole::Rook as u8 | ((Offset::BlackRook as u8) << PCE_SHFT_OFFSET) | PCE_MASK_COLOUR,
-    BlackQueen =
-        PieceRole::Queen as u8 | ((Offset::BlackQueen as u8) << PCE_SHFT_OFFSET) | PCE_MASK_COLOUR,
-    BlackKing =
-        PieceRole::King as u8 | ((Offset::BlackKing as u8) << PCE_SHFT_OFFSET) | PCE_MASK_COLOUR,
-}
-
 impl Piece {
+    pub const WHITE_PAWN: Piece = Piece {
+        role: PieceRole::Pawn,
+        colour: Colour::White,
+        offset: Offset::WhitePawn as usize,
+    };
+    pub const WHITE_BISHOP: Piece = Piece {
+        role: PieceRole::Bishop,
+        colour: Colour::White,
+        offset: Offset::WhiteBishop as usize,
+    };
+    pub const WHITE_KNIGHT: Piece = Piece {
+        role: PieceRole::Knight,
+        colour: Colour::White,
+        offset: Offset::WhiteKnight as usize,
+    };
+    pub const WHITE_ROOK: Piece = Piece {
+        role: PieceRole::Rook,
+        colour: Colour::White,
+        offset: Offset::WhiteRook as usize,
+    };
+    pub const WHITE_QUEEN: Piece = Piece {
+        role: PieceRole::Queen,
+        colour: Colour::White,
+        offset: Offset::WhiteQueen as usize,
+    };
+    pub const WHITE_KING: Piece = Piece {
+        role: PieceRole::King,
+        colour: Colour::White,
+        offset: Offset::WhiteKing as usize,
+    };
+
+    pub const BLACK_PAWN: Piece = Piece {
+        role: PieceRole::Pawn,
+        colour: Colour::Black,
+        offset: Offset::BlackPawn as usize,
+    };
+    pub const BLACK_BISHOP: Piece = Piece {
+        role: PieceRole::Bishop,
+        colour: Colour::Black,
+        offset: Offset::BlackBishop as usize,
+    };
+    pub const BLACK_KNIGHT: Piece = Piece {
+        role: PieceRole::Knight,
+        colour: Colour::Black,
+        offset: Offset::BlackKnight as usize,
+    };
+    pub const BLACK_ROOK: Piece = Piece {
+        role: PieceRole::Rook,
+        colour: Colour::Black,
+        offset: Offset::BlackRook as usize,
+    };
+    pub const BLACK_QUEEN: Piece = Piece {
+        role: PieceRole::Queen,
+        colour: Colour::Black,
+        offset: Offset::BlackQueen as usize,
+    };
+    pub const BLACK_KING: Piece = Piece {
+        role: PieceRole::King,
+        colour: Colour::Black,
+        offset: Offset::BlackKing as usize,
+    };
+
     pub const fn new(role: PieceRole, col: Colour) -> Piece {
         match col {
             Colour::White => match role {
-                PieceRole::Pawn => Piece::WhitePawn,
-                PieceRole::Bishop => Piece::WhiteBishop,
-                PieceRole::Knight => Piece::WhiteKnight,
-                PieceRole::Rook => Piece::WhiteRook,
-                PieceRole::Queen => Piece::WhiteQueen,
-                PieceRole::King => Piece::WhiteKing,
+                PieceRole::Pawn => Piece::WHITE_PAWN,
+                PieceRole::Bishop => Piece::WHITE_BISHOP,
+                PieceRole::Knight => Piece::WHITE_KNIGHT,
+                PieceRole::Rook => Piece::WHITE_ROOK,
+                PieceRole::Queen => Piece::WHITE_QUEEN,
+                PieceRole::King => Piece::WHITE_KING,
             },
             Colour::Black => match role {
-                PieceRole::Pawn => Piece::BlackPawn,
-                PieceRole::Bishop => Piece::BlackBishop,
-                PieceRole::Knight => Piece::BlackKnight,
-                PieceRole::Rook => Piece::BlackRook,
-                PieceRole::Queen => Piece::BlackQueen,
-                PieceRole::King => Piece::BlackKing,
+                PieceRole::Pawn => Piece::BLACK_PAWN,
+                PieceRole::Bishop => Piece::BLACK_BISHOP,
+                PieceRole::Knight => Piece::BLACK_KNIGHT,
+                PieceRole::Rook => Piece::BLACK_ROOK,
+                PieceRole::Queen => Piece::BLACK_QUEEN,
+                PieceRole::King => Piece::BLACK_KING,
             },
         }
     }
 
-    pub const fn offset(self) -> usize {
-        let o = (self as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET;
-        o as usize
+    pub const fn to_offset(&self) -> usize {
+        return self.offset;
     }
 
     pub fn from_offset(offset: u8) -> Piece {
         match offset {
-            0 => Piece::WhitePawn,
-            1 => Piece::WhiteBishop,
-            2 => Piece::WhiteKnight,
-            3 => Piece::WhiteRook,
-            4 => Piece::WhiteQueen,
-            5 => Piece::WhiteKing,
-            6 => Piece::BlackPawn,
-            7 => Piece::BlackBishop,
-            8 => Piece::BlackKnight,
-            9 => Piece::BlackRook,
-            10 => Piece::BlackQueen,
-            11 => Piece::BlackKing,
+            0 => Piece::WHITE_PAWN,
+            1 => Piece::WHITE_BISHOP,
+            2 => Piece::WHITE_KNIGHT,
+            3 => Piece::WHITE_ROOK,
+            4 => Piece::WHITE_QUEEN,
+            5 => Piece::WHITE_KING,
+            6 => Piece::BLACK_PAWN,
+            7 => Piece::BLACK_BISHOP,
+            8 => Piece::BLACK_KNIGHT,
+            9 => Piece::BLACK_ROOK,
+            10 => Piece::BLACK_QUEEN,
+            11 => Piece::BLACK_KING,
             _ => panic!("Invalid piece offset {}.", offset),
         }
     }
 
-    pub const fn colour(self) -> Colour {
-        let c = (self as u8 & PCE_MASK_COLOUR) >> PCE_SHFT_COLOUR;
-
-        // TODO replace this with a 'match' when panic can be called in a const fn
-        if c == 0 {
-            Colour::White
-        } else {
-            Colour::Black
-        }
+    pub const fn colour(&self) -> Colour {
+        return self.colour;
     }
 
-    pub fn role(self) -> PieceRole {
-        let role = (self as u8) & PIECE_MASK_ROLE;
-        PieceRole::from_u8(role).unwrap()
+    pub const fn role(&self) -> PieceRole {
+        return self.role;
     }
 
     pub fn from_char(piece_char: char) -> Piece {
         match piece_char {
-            'P' => Piece::WhitePawn,
-            'B' => Piece::WhiteBishop,
-            'N' => Piece::WhiteKnight,
-            'R' => Piece::WhiteRook,
-            'Q' => Piece::WhiteQueen,
-            'K' => Piece::WhiteKing,
-            'p' => Piece::BlackPawn,
-            'b' => Piece::BlackBishop,
-            'n' => Piece::BlackKnight,
-            'r' => Piece::BlackRook,
-            'q' => Piece::BlackQueen,
-            'k' => Piece::BlackKing,
+            'P' => Piece::WHITE_PAWN,
+            'B' => Piece::WHITE_BISHOP,
+            'N' => Piece::WHITE_KNIGHT,
+            'R' => Piece::WHITE_ROOK,
+            'Q' => Piece::WHITE_QUEEN,
+            'K' => Piece::WHITE_KING,
+            'p' => Piece::BLACK_PAWN,
+            'b' => Piece::BLACK_BISHOP,
+            'n' => Piece::BLACK_KNIGHT,
+            'r' => Piece::BLACK_ROOK,
+            'q' => Piece::BLACK_QUEEN,
+            'k' => Piece::BLACK_KING,
             _ => panic!("Invalid piece character {}.", piece_char),
         }
     }
 
-    pub fn value(self) -> u32 {
-        let role = self.role();
+    pub const fn value(&self) -> u32 {
+        let role = self.role;
         // piece values from here:
         // https://www.chessprogramming.org/Simplified_Evaluation_Function
 
@@ -230,13 +232,6 @@ impl Piece {
     }
 }
 
-impl ArrayAccessor for Piece {
-    fn to_offset(self) -> usize {
-        let o = (self as u8 & PIECE_MASK_OFFSET) >> PCE_SHFT_OFFSET;
-        o as usize
-    }
-}
-
 impl fmt::Debug for Piece {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
@@ -260,17 +255,14 @@ impl Colour {
             Colour::Black => Colour::White,
         }
     }
+    pub const fn to_offset(self) -> usize {
+        self as usize
+    }
 }
 
 impl Default for Colour {
     fn default() -> Colour {
         Colour::White
-    }
-}
-
-impl ArrayAccessor for Colour {
-    fn to_offset(self) -> usize {
-        self as usize
     }
 }
 
@@ -298,7 +290,6 @@ pub mod tests {
     use components::piece::Colour;
     use components::piece::Piece;
     use components::piece::PieceRole;
-    use core::core_traits::ArrayAccessor;
 
     #[test]
     pub fn flip_side_as_expected() {
@@ -320,81 +311,99 @@ pub mod tests {
 
     #[test]
     pub fn piece_colour_flipped() {
-        let pce = Piece::WhiteKnight;
+        let pce = Piece::WHITE_KNIGHT;
         assert!(pce.colour().flip_side() == Colour::Black);
     }
 
     #[test]
     pub fn roles_as_expected() {
-        assert_eq!(Piece::WhiteBishop.role(), PieceRole::Bishop);
-        assert_eq!(Piece::BlackBishop.role(), PieceRole::Bishop);
+        assert_eq!(Piece::WHITE_BISHOP.role(), PieceRole::Bishop);
+        assert_eq!(Piece::BLACK_BISHOP.role(), PieceRole::Bishop);
 
-        assert_eq!(Piece::WhiteKnight.role(), PieceRole::Knight);
-        assert_eq!(Piece::BlackKnight.role(), PieceRole::Knight);
+        assert_eq!(Piece::WHITE_KNIGHT.role(), PieceRole::Knight);
+        assert_eq!(Piece::BLACK_KNIGHT.role(), PieceRole::Knight);
 
-        assert_eq!(Piece::WhitePawn.role(), PieceRole::Pawn);
-        assert_eq!(Piece::BlackPawn.role(), PieceRole::Pawn);
+        assert_eq!(Piece::WHITE_PAWN.role(), PieceRole::Pawn);
+        assert_eq!(Piece::BLACK_PAWN.role(), PieceRole::Pawn);
 
-        assert_eq!(Piece::WhiteRook.role(), PieceRole::Rook);
-        assert_eq!(Piece::BlackRook.role(), PieceRole::Rook);
+        assert_eq!(Piece::WHITE_ROOK.role(), PieceRole::Rook);
+        assert_eq!(Piece::BLACK_ROOK.role(), PieceRole::Rook);
 
-        assert_eq!(Piece::WhiteQueen.role(), PieceRole::Queen);
-        assert_eq!(Piece::BlackQueen.role(), PieceRole::Queen);
+        assert_eq!(Piece::WHITE_QUEEN.role(), PieceRole::Queen);
+        assert_eq!(Piece::BLACK_QUEEN.role(), PieceRole::Queen);
 
-        assert_eq!(Piece::WhiteKing.role(), PieceRole::King);
-        assert_eq!(Piece::BlackKing.role(), PieceRole::King);
+        assert_eq!(Piece::WHITE_KING.role(), PieceRole::King);
+        assert_eq!(Piece::BLACK_KING.role(), PieceRole::King);
     }
 
     #[test]
     pub fn create_piece() {
         assert_eq!(
             Piece::new(PieceRole::Bishop, Colour::White),
-            Piece::WhiteBishop
+            Piece::WHITE_BISHOP
         );
-        assert_eq!(Piece::new(PieceRole::King, Colour::White), Piece::WhiteKing);
+        assert_eq!(
+            Piece::new(PieceRole::King, Colour::White),
+            Piece::WHITE_KING
+        );
         assert_eq!(
             Piece::new(PieceRole::Knight, Colour::White),
-            Piece::WhiteKnight
+            Piece::WHITE_KNIGHT
         );
-        assert_eq!(Piece::new(PieceRole::Pawn, Colour::White), Piece::WhitePawn);
+        assert_eq!(
+            Piece::new(PieceRole::Pawn, Colour::White),
+            Piece::WHITE_PAWN
+        );
         assert_eq!(
             Piece::new(PieceRole::Queen, Colour::White),
-            Piece::WhiteQueen
+            Piece::WHITE_QUEEN
         );
-        assert_eq!(Piece::new(PieceRole::Rook, Colour::White), Piece::WhiteRook);
+        assert_eq!(
+            Piece::new(PieceRole::Rook, Colour::White),
+            Piece::WHITE_ROOK
+        );
 
         assert_eq!(
             Piece::new(PieceRole::Bishop, Colour::Black),
-            Piece::BlackBishop
+            Piece::BLACK_BISHOP
         );
-        assert_eq!(Piece::new(PieceRole::King, Colour::Black), Piece::BlackKing);
+        assert_eq!(
+            Piece::new(PieceRole::King, Colour::Black),
+            Piece::BLACK_KING
+        );
         assert_eq!(
             Piece::new(PieceRole::Knight, Colour::Black),
-            Piece::BlackKnight
+            Piece::BLACK_KNIGHT
         );
-        assert_eq!(Piece::new(PieceRole::Pawn, Colour::Black), Piece::BlackPawn);
+        assert_eq!(
+            Piece::new(PieceRole::Pawn, Colour::Black),
+            Piece::BLACK_PAWN
+        );
         assert_eq!(
             Piece::new(PieceRole::Queen, Colour::Black),
-            Piece::BlackQueen
+            Piece::BLACK_QUEEN
         );
-        assert_eq!(Piece::new(PieceRole::Rook, Colour::Black), Piece::BlackRook);
+        assert_eq!(
+            Piece::new(PieceRole::Rook, Colour::Black),
+            Piece::BLACK_ROOK
+        );
     }
 
     #[test]
     pub fn colour_as_expected() {
-        assert_eq!(Colour::Black, Piece::BlackBishop.colour());
-        assert_eq!(Colour::Black, Piece::BlackKing.colour());
-        assert_eq!(Colour::Black, Piece::BlackKnight.colour());
-        assert_eq!(Colour::Black, Piece::BlackPawn.colour());
-        assert_eq!(Colour::Black, Piece::BlackQueen.colour());
-        assert_eq!(Colour::Black, Piece::BlackRook.colour());
+        assert_eq!(Colour::Black, Piece::BLACK_BISHOP.colour());
+        assert_eq!(Colour::Black, Piece::BLACK_KING.colour());
+        assert_eq!(Colour::Black, Piece::BLACK_KNIGHT.colour());
+        assert_eq!(Colour::Black, Piece::BLACK_PAWN.colour());
+        assert_eq!(Colour::Black, Piece::BLACK_QUEEN.colour());
+        assert_eq!(Colour::Black, Piece::BLACK_KING.colour());
 
-        assert_eq!(Colour::White, Piece::WhiteBishop.colour());
-        assert_eq!(Colour::White, Piece::WhiteKing.colour());
-        assert_eq!(Colour::White, Piece::WhiteKnight.colour());
-        assert_eq!(Colour::White, Piece::WhitePawn.colour());
-        assert_eq!(Colour::White, Piece::WhiteQueen.colour());
-        assert_eq!(Colour::White, Piece::WhiteRook.colour());
+        assert_eq!(Colour::White, Piece::WHITE_BISHOP.colour());
+        assert_eq!(Colour::White, Piece::WHITE_KING.colour());
+        assert_eq!(Colour::White, Piece::WHITE_KNIGHT.colour());
+        assert_eq!(Colour::White, Piece::WHITE_PAWN.colour());
+        assert_eq!(Colour::White, Piece::WHITE_QUEEN.colour());
+        assert_eq!(Colour::White, Piece::WHITE_ROOK.colour());
     }
 
     #[test]

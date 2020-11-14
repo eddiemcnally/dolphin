@@ -163,9 +163,9 @@ impl Position {
         };
 
         // validate position
-        let bk_bb = pos.board().get_piece_bitboard(Piece::BlackKing);
+        let bk_bb = pos.board().get_piece_bitboard(&Piece::BLACK_KING);
         assert_ne!(bk_bb, 0);
-        let wk_bb = pos.board().get_piece_bitboard(Piece::WhiteKing);
+        let wk_bb = pos.board().get_piece_bitboard(&Piece::WHITE_KING);
         assert_ne!(wk_bb, 0);
 
         pos
@@ -254,9 +254,9 @@ impl Position {
         } else if mv.is_en_passant() {
             do_en_passant(self, from_sq, to_sq);
         } else if mv.is_promote() {
-            do_promotion(self, mv, from_sq, to_sq, self.side_to_move);
+            do_promotion(self, mv, from_sq, to_sq, self.side_to_move, &piece);
         } else if mv.is_capture() {
-            do_capture_move(self, piece, from_sq, to_sq);
+            do_capture_move(self, piece, from_sq, to_sq, &capt_piece.unwrap());
         }
 
         self.update_en_passant_sq(mv);
@@ -349,7 +349,7 @@ impl Position {
         }
 
         if pce.role() != PieceRole::King && pce.role() != PieceRole::Rook {
-            // noting to do
+            // nothing to do
             return;
         }
 
@@ -392,17 +392,17 @@ fn find_en_passant_sq(from_sq: Square, col: Colour) -> Option<Square> {
 
 fn remove_piece_from_board(position: &mut Position, pce: Piece, sq: Square) {
     position.board.remove_piece(pce, sq);
-    hash::update_piece(&mut position.position_key, pce, sq);
+    hash::update_piece(&mut position.position_key, &pce, sq);
 }
 
 fn add_piece_to_board(position: &mut Position, pce: Piece, sq: Square) {
     position.board.add_piece(pce, sq);
-    hash::update_piece(&mut position.position_key, pce, sq);
+    hash::update_piece(&mut position.position_key, &pce, sq);
 }
 
 fn update_hash_on_piece_move(position: &mut Position, pce: Piece, from_sq: Square, to_sq: Square) {
-    hash::update_piece(&mut position.position_key, pce, from_sq);
-    hash::update_piece(&mut position.position_key, pce, to_sq);
+    hash::update_piece(&mut position.position_key, &pce, from_sq);
+    hash::update_piece(&mut position.position_key, &pce, to_sq);
 }
 
 fn handle_50_move_rule(position: &mut Position, mv: Mov, pce_to_move: Piece) {
@@ -487,13 +487,13 @@ fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
     let (capt_sq, pawn, capt_pawn) = match position.side_to_move {
         Colour::White => (
             to_sq.square_minus_1_rank(),
-            Piece::WhitePawn,
-            Piece::BlackPawn,
+            Piece::WHITE_PAWN,
+            Piece::BLACK_PAWN,
         ),
         Colour::Black => (
             to_sq.square_plus_1_rank(),
-            Piece::BlackPawn,
-            Piece::WhitePawn,
+            Piece::BLACK_PAWN,
+            Piece::WHITE_PAWN,
         ),
     };
 
@@ -513,23 +513,28 @@ fn do_promotion(
     from_sq: Square,
     to_sq: Square,
     side_to_move: Colour,
+    source_pce: &Piece,
 ) {
     if mv.is_capture() {
         let capt_pce = position.board.get_piece_on_square(to_sq).unwrap();
         remove_piece_from_board(position, capt_pce, to_sq);
     }
 
-    let source_pce = position.board.get_piece_on_square(from_sq).unwrap();
     let target_pce_role = mv.decode_promotion_piece_role();
     let target_pce = Piece::new(target_pce_role, side_to_move);
 
-    remove_piece_from_board(position, source_pce, from_sq);
+    remove_piece_from_board(position, *source_pce, from_sq);
     add_piece_to_board(position, target_pce, to_sq);
 }
 
-fn do_capture_move(position: &mut Position, piece_to_move: Piece, from_sq: Square, to_sq: Square) {
-    let capt_pce = position.board.get_piece_on_square(to_sq).unwrap();
-    remove_piece_from_board(position, capt_pce, to_sq);
+fn do_capture_move(
+    position: &mut Position,
+    piece_to_move: Piece,
+    from_sq: Square,
+    to_sq: Square,
+    capt_pce: &Piece,
+) {
+    remove_piece_from_board(position, *capt_pce, to_sq);
     update_hash_on_piece_move(position, piece_to_move, from_sq, to_sq);
     position.board.move_piece(from_sq, to_sq, piece_to_move);
 }

@@ -33,7 +33,7 @@ pub fn generate_from_fen(parsed_fen: &ParsedFen) -> PositionHash {
 
     let positions = parsed_fen.piece_positions.iter();
     for (sq, pce) in positions {
-        update_piece(&mut hash, *pce, *sq);
+        update_piece(&mut hash, pce, *sq);
     }
 
     update_side(&mut hash);
@@ -65,7 +65,7 @@ pub fn update_side(pos_hash: &mut PositionHash) {
     *pos_hash ^= KEYS.side_key;
 }
 
-pub fn update_piece(pos_hash: &mut PositionHash, piece: Piece, square: Square) {
+pub fn update_piece(pos_hash: &mut PositionHash, piece: &Piece, square: Square) {
     let pce_offset = piece.to_offset();
     let sq_offset = square.to_offset();
     let k = KEYS.piece_keys[sq_offset][pce_offset];
@@ -146,12 +146,12 @@ pub mod tests {
             for sq in utils::get_ordered_square_list_by_file() {
                 let init_hash = h;
 
-                super::update_piece(&mut h, pce, sq);
+                super::update_piece(&mut h, &pce, sq);
                 let after_hash = h;
 
                 assert!(init_hash != after_hash);
 
-                super::update_piece(&mut h, pce, sq);
+                super::update_piece(&mut h, &pce, sq);
                 let after_second_hash = h;
                 assert!(after_hash != after_second_hash);
 
@@ -159,7 +159,7 @@ pub mod tests {
                 assert!(init_hash == after_second_hash);
 
                 // now flip again to seed the next iteration with something different
-                super::update_piece(&mut h, pce, sq);
+                super::update_piece(&mut h, &pce, sq);
             }
         }
     }

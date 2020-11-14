@@ -7,7 +7,6 @@ use components::square;
 use components::square::File;
 use components::square::Rank;
 use components::square::Square;
-use core::core_traits::ArrayAccessor;
 use input::fen::ParsedFen;
 use std::fmt;
 use std::option::Option;
@@ -33,6 +32,16 @@ impl Default for Board {
         }
     }
 }
+
+const WQ_ARR_OFFSET: usize = Piece::WHITE_QUEEN.to_offset();
+const WR_ARR_OFFSET: usize = Piece::WHITE_ROOK.to_offset();
+const BQ_ARR_OFFSET: usize = Piece::BLACK_QUEEN.to_offset();
+const BR_ARR_OFFSET: usize = Piece::BLACK_ROOK.to_offset();
+const WB_ARR_OFFSET: usize = Piece::WHITE_BISHOP.to_offset();
+const BB_ARR_OFFSET: usize = Piece::BLACK_BISHOP.to_offset();
+
+const WHITE_ARR_OFFSET: usize = Colour::White.to_offset();
+const BLACK_ARR_OFFSET: usize = Colour::Black.to_offset();
 
 impl PartialEq for Board {
     fn eq(&self, other: &Self) -> bool {
@@ -133,8 +142,8 @@ impl Board {
 
     pub fn get_material(&self) -> (u32, u32) {
         (
-            self.material[Colour::White.to_offset()],
-            self.material[Colour::Black.to_offset()],
+            self.material[WHITE_ARR_OFFSET],
+            self.material[BLACK_ARR_OFFSET],
         )
     }
 
@@ -172,8 +181,24 @@ impl Board {
         !bitboard::is_set(bb, sq)
     }
 
-    pub fn get_piece_bitboard(&self, piece: Piece) -> u64 {
+    pub const fn get_piece_bitboard(&self, piece: &Piece) -> u64 {
         self.piece_bb[piece.to_offset()]
+    }
+
+    pub const fn get_white_rook_queen_bitboard(&self) -> u64 {
+        self.piece_bb[WR_ARR_OFFSET] | self.piece_bb[WQ_ARR_OFFSET]
+    }
+
+    pub const fn get_black_rook_queen_bitboard(&self) -> u64 {
+        self.piece_bb[BR_ARR_OFFSET] | self.piece_bb[BQ_ARR_OFFSET]
+    }
+
+    pub const fn get_white_bishop_queen_bitboard(&self) -> u64 {
+        self.piece_bb[WB_ARR_OFFSET] | self.piece_bb[WQ_ARR_OFFSET]
+    }
+
+    pub const fn get_black_bishop_queen_bitboard(&self) -> u64 {
+        self.piece_bb[BB_ARR_OFFSET] | self.piece_bb[BQ_ARR_OFFSET]
     }
 
     pub fn get_bitboard(&self) -> u64 {
@@ -182,8 +207,8 @@ impl Board {
 
     pub fn get_king_sq(&self, colour: Colour) -> Square {
         let mut king_bb = match colour {
-            Colour::White => self.piece_bb[Piece::WhiteKing.to_offset()],
-            Colour::Black => self.piece_bb[Piece::BlackKing.to_offset()],
+            Colour::White => self.piece_bb[Piece::WHITE_KING.to_offset()],
+            Colour::Black => self.piece_bb[Piece::BLACK_KING.to_offset()],
         };
         bitboard::pop_1st_bit(&mut king_bb)
     }
@@ -395,7 +420,7 @@ pub mod tests {
         for pce in utils::get_all_pieces() {
             for (square, _) in utils::get_square_rank_file_map() {
                 board.add_piece(pce, square);
-                let bb = board.get_piece_bitboard(pce);
+                let bb = board.get_piece_bitboard(&pce);
 
                 assert!(bitboard::is_set(bb, square));
 

@@ -11,7 +11,6 @@ pub fn perft(depth: u8, position: &mut Position) -> u64 {
     }
 
     let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
-
     move_gen::generate_moves(position, &mut move_list);
 
     for mv in &move_list {

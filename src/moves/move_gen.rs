@@ -16,27 +16,12 @@ pub fn generate_moves(position: &Position, move_list: &mut SmallVec<[Mov; MAX_MO
     let board = position.board();
     let side_to_move = position.side_to_move();
 
+    generate_non_sliding_piece_moves(&board, side_to_move, move_list);
+    generate_sliding_rank_file_moves(&board, side_to_move, move_list);
+    generate_sliding_diagonal_antidiagonal_moves(&board, side_to_move, move_list);
+
     match side_to_move {
         Colour::White => {
-            generate_non_sliding_piece_moves(
-                &board,
-                Piece::WhiteKing,
-                Piece::WhiteKnight,
-                Colour::White,
-                move_list,
-            );
-            generate_sliding_rank_file_moves(
-                &board,
-                Piece::WhiteRook,
-                Piece::WhiteQueen,
-                move_list,
-            );
-            generate_sliding_diagonal_antidiagonal_moves(
-                &board,
-                Piece::WhiteBishop,
-                Piece::WhiteQueen,
-                move_list,
-            );
             if castle_permissions::has_white_castle_permission(position.castle_permissions()) {
                 generate_white_castle_moves(&position, move_list);
             }
@@ -44,25 +29,6 @@ pub fn generate_moves(position: &Position, move_list: &mut SmallVec<[Mov; MAX_MO
             generate_white_pawn_moves(&position, move_list);
         }
         Colour::Black => {
-            generate_non_sliding_piece_moves(
-                &board,
-                Piece::BlackKing,
-                Piece::BlackKnight,
-                Colour::Black,
-                move_list,
-            );
-            generate_sliding_rank_file_moves(
-                &board,
-                Piece::BlackRook,
-                Piece::BlackQueen,
-                move_list,
-            );
-            generate_sliding_diagonal_antidiagonal_moves(
-                &board,
-                Piece::BlackBishop,
-                Piece::BlackQueen,
-                move_list,
-            );
             if castle_permissions::has_black_castle_permission(position.castle_permissions()) {
                 generate_black_castle_moves(&position, move_list);
             }
@@ -73,10 +39,10 @@ pub fn generate_moves(position: &Position, move_list: &mut SmallVec<[Mov; MAX_MO
 }
 
 fn generate_white_pawn_moves(pos: &Position, move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>) {
-    let pawn = Piece::WhitePawn;
+    let pawn = Piece::WHITE_PAWN;
 
     // bitboard of all pawns
-    let pawn_bb = pos.board().get_piece_bitboard(pawn);
+    let pawn_bb = pos.board().get_piece_bitboard(&pawn);
     // bitboard of entire board
     let all_bb = pos.board().get_bitboard();
     // opposite colour bitboard
@@ -200,10 +166,10 @@ fn generate_white_pawn_moves(pos: &Position, move_list: &mut SmallVec<[Mov; MAX_
 }
 
 fn generate_black_pawn_moves(pos: &Position, move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>) {
-    let pawn = Piece::BlackPawn;
+    let pawn = Piece::BLACK_PAWN;
 
     // bitboard of all pawns
-    let pawn_bb = pos.board().get_piece_bitboard(pawn);
+    let pawn_bb = pos.board().get_piece_bitboard(&pawn);
     // bitboard of entire board
     let all_bb = pos.board().get_bitboard();
     // opposite colour bitboard
@@ -330,16 +296,17 @@ fn generate_black_pawn_moves(pos: &Position, move_list: &mut SmallVec<[Mov; MAX_
 // see Hyperbola Quintessence
 fn generate_sliding_diagonal_antidiagonal_moves(
     board: &Board,
-    bishop: Piece,
-    queen: Piece,
+    side_to_move: Colour,
     move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>,
 ) {
-    // conflate the bitboards
-    let mut pce_bb = board.get_piece_bitboard(bishop);
-    pce_bb |= board.get_piece_bitboard(queen);
+    let mut pce_bb = if side_to_move == Colour::White {
+        board.get_white_bishop_queen_bitboard()
+    } else {
+        board.get_black_bishop_queen_bitboard()
+    };
 
     let occ_sq_bb = board.get_bitboard();
-    let occ_col_bb = board.get_colour_bb(bishop.colour());
+    let occ_col_bb = board.get_colour_bb(side_to_move);
 
     while pce_bb != 0 {
         let from_sq = bitboard::pop_1st_bit(&mut pce_bb);
@@ -384,16 +351,17 @@ fn generate_sliding_diagonal_antidiagonal_moves(
 // see Hyperbola Quintessence
 fn generate_sliding_rank_file_moves(
     board: &Board,
-    rook: Piece,
-    queen: Piece,
+    side_to_move: Colour,
     move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>,
 ) {
-    // conflate the 2 bitboards
-    let mut pce_bb = board.get_piece_bitboard(rook);
-    pce_bb |= board.get_piece_bitboard(queen);
+    let mut pce_bb = if side_to_move == Colour::White {
+        board.get_white_rook_queen_bitboard()
+    } else {
+        board.get_black_rook_queen_bitboard()
+    };
 
     let occ_sq_bb = board.get_bitboard();
-    let occ_col_bb = board.get_colour_bb(rook.colour());
+    let occ_col_bb = board.get_colour_bb(side_to_move);
 
     while pce_bb != 0 {
         let from_sq = bitboard::pop_1st_bit(&mut pce_bb);
@@ -437,16 +405,20 @@ fn generate_sliding_rank_file_moves(
 // generates moves for King and Knight
 fn generate_non_sliding_piece_moves(
     board: &Board,
-    king: Piece,
-    knight: Piece,
     side_to_move: Colour,
     move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>,
 ) {
-    let opposite_side = side_to_move.flip_side();
+    let (king, knight) = if side_to_move == Colour::White {
+        (Piece::WHITE_KING, Piece::WHITE_KNIGHT)
+    } else {
+        (Piece::BLACK_KING, Piece::BLACK_KNIGHT)
+    };
+
+    let opposite_side = king.colour().flip_side();
     let opp_occ_sq_bb = board.get_colour_bb(opposite_side);
 
     // knight
-    let mut pce_bb = board.get_piece_bitboard(knight);
+    let mut pce_bb = board.get_piece_bitboard(&knight);
     while pce_bb != 0 {
         let sq = bitboard::pop_1st_bit(&mut pce_bb);
         let occ_mask = occupancy_masks::get_occupancy_mask_knight(sq);
@@ -465,7 +437,7 @@ fn generate_non_sliding_piece_moves(
     }
 
     // king
-    pce_bb = board.get_piece_bitboard(king);
+    pce_bb = board.get_piece_bitboard(&king);
     while pce_bb != 0 {
         let sq = bitboard::pop_1st_bit(&mut pce_bb);
         let occ_mask = occupancy_masks::get_occupancy_mask_king(sq);
@@ -487,7 +459,7 @@ fn generate_non_sliding_piece_moves(
 fn generate_white_castle_moves(pos: &Position, move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>) {
     let cp = pos.castle_permissions();
     let bb = pos.board().get_bitboard();
-    let wr_bb = pos.board().get_piece_bitboard(Piece::WhiteRook);
+    let wr_bb = pos.board().get_piece_bitboard(&Piece::WHITE_ROOK);
 
     if castle_permissions::is_white_king_set(cp)
         && (bb & occupancy_masks::CASTLE_MASK_WK == 0)
@@ -508,7 +480,7 @@ fn generate_white_castle_moves(pos: &Position, move_list: &mut SmallVec<[Mov; MA
 fn generate_black_castle_moves(pos: &Position, move_list: &mut SmallVec<[Mov; MAX_MOVE_BUF_SZ]>) {
     let cp = pos.castle_permissions();
     let bb = pos.board().get_bitboard();
-    let br_bb = pos.board().get_piece_bitboard(Piece::BlackRook);
+    let br_bb = pos.board().get_piece_bitboard(&Piece::BLACK_ROOK);
 
     if castle_permissions::is_black_king_set(cp)
         && (bb & occupancy_masks::CASTLE_MASK_BK == 0)

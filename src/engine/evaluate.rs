@@ -77,19 +77,19 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
 
 fn evaluate_piece_positions(board: &Board) -> i32 {
     // set up bitboards needed
-    let white_pawn_bb = board.get_piece_bitboard(Piece::WhitePawn);
-    let white_knight_bb = board.get_piece_bitboard(Piece::WhiteKnight);
-    let white_bishop_bb = board.get_piece_bitboard(Piece::WhiteBishop);
-    let white_rook_bb = board.get_piece_bitboard(Piece::WhiteRook);
-    let white_queen_bb = board.get_piece_bitboard(Piece::WhiteQueen);
-    let white_king_bb = board.get_piece_bitboard(Piece::WhiteKing);
+    let white_pawn_bb = board.get_piece_bitboard(&Piece::WHITE_PAWN);
+    let white_knight_bb = board.get_piece_bitboard(&Piece::WHITE_KNIGHT);
+    let white_bishop_bb = board.get_piece_bitboard(&Piece::WHITE_BISHOP);
+    let white_rook_bb = board.get_piece_bitboard(&Piece::WHITE_ROOK);
+    let white_queen_bb = board.get_piece_bitboard(&Piece::WHITE_QUEEN);
+    let white_king_bb = board.get_piece_bitboard(&Piece::WHITE_KING);
 
-    let black_pawn_bb = board.get_piece_bitboard(Piece::BlackPawn);
-    let black_knight_bb = board.get_piece_bitboard(Piece::BlackKnight);
-    let black_bishop_bb = board.get_piece_bitboard(Piece::BlackBishop);
-    let black_rook_bb = board.get_piece_bitboard(Piece::BlackRook);
-    let black_queen_bb = board.get_piece_bitboard(Piece::BlackQueen);
-    let black_king_bb = board.get_piece_bitboard(Piece::BlackKing);
+    let black_pawn_bb = board.get_piece_bitboard(&Piece::BLACK_PAWN);
+    let black_knight_bb = board.get_piece_bitboard(&Piece::BLACK_KNIGHT);
+    let black_bishop_bb = board.get_piece_bitboard(&Piece::BLACK_BISHOP);
+    let black_rook_bb = board.get_piece_bitboard(&Piece::BLACK_ROOK);
+    let black_queen_bb = board.get_piece_bitboard(&Piece::BLACK_QUEEN);
+    let black_king_bb = board.get_piece_bitboard(&Piece::BLACK_KING);
 
     let mut score: i32 = 0;
 

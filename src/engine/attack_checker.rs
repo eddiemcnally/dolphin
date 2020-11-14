@@ -9,7 +9,7 @@ use std::ops::Shl;
 pub fn is_king_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool {
     match attacking_side {
         Colour::White => {
-            let pawn_bb = board.get_piece_bitboard(Piece::WhitePawn);
+            let pawn_bb = board.get_piece_bitboard(&Piece::WHITE_PAWN);
             if pawn_bb != 0 && is_attacked_by_pawn_white(pawn_bb, sq) {
                 return true;
             }
@@ -18,7 +18,7 @@ pub fn is_king_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) ->
             }
         }
         Colour::Black => {
-            let pawn_bb = board.get_piece_bitboard(Piece::BlackPawn);
+            let pawn_bb = board.get_piece_bitboard(&Piece::BLACK_PAWN);
             if pawn_bb != 0 && is_attacked_by_pawn_black(pawn_bb, sq) {
                 return true;
             }
@@ -37,7 +37,7 @@ pub fn is_castle_squares_attacked(
 ) -> bool {
     match attacking_side {
         Colour::White => {
-            let pawn_bb = board.get_piece_bitboard(Piece::WhitePawn);
+            let pawn_bb = board.get_piece_bitboard(&Piece::WHITE_PAWN);
             for sq in sq_array.iter() {
                 if pawn_bb != 0 && is_attacked_by_pawn_white(pawn_bb, *sq) {
                     return true;
@@ -48,7 +48,7 @@ pub fn is_castle_squares_attacked(
             }
         }
         Colour::Black => {
-            let pawn_bb = board.get_piece_bitboard(Piece::BlackPawn);
+            let pawn_bb = board.get_piece_bitboard(&Piece::BLACK_PAWN);
             for sq in sq_array.iter() {
                 if pawn_bb != 0 && is_attacked_by_pawn_black(pawn_bb, *sq) {
                     return true;
@@ -65,50 +65,46 @@ pub fn is_castle_squares_attacked(
 
 fn check_non_pawn_pieces_attacking(side: Colour, board: &Board, sq: Square) -> bool {
     if side == Colour::White {
-        let knight_bb = board.get_piece_bitboard(Piece::WhiteKnight);
+        let knight_bb = board.get_piece_bitboard(&Piece::WHITE_KNIGHT);
         if knight_bb != 0 && is_knight_attacking(knight_bb, sq) {
             return true;
         }
 
-        let horiz_vert_bb = board.get_piece_bitboard(Piece::WhiteRook)
-            | board.get_piece_bitboard(Piece::WhiteQueen);
+        let horiz_vert_bb = board.get_white_rook_queen_bitboard();
         let all_pce_bb = board.get_bitboard();
         if horiz_vert_bb != 0 && is_horizontal_or_vertical_attacking(all_pce_bb, horiz_vert_bb, sq)
         {
             return true;
         }
 
-        let diag_bb = board.get_piece_bitboard(Piece::WhiteBishop)
-            | board.get_piece_bitboard(Piece::WhiteQueen);
+        let diag_bb = board.get_white_bishop_queen_bitboard();
         if diag_bb != 0 && is_diagonally_attacked(sq, diag_bb, all_pce_bb) {
             return true;
         }
 
-        let king_bb = board.get_piece_bitboard(Piece::WhiteKing);
+        let king_bb = board.get_piece_bitboard(&Piece::WHITE_KING);
         if is_attacked_by_king(king_bb, sq) {
             return true;
         }
     } else {
-        let knight_bb = board.get_piece_bitboard(Piece::BlackKnight);
+        let knight_bb = board.get_piece_bitboard(&Piece::BLACK_KNIGHT);
         if knight_bb != 0 && is_knight_attacking(knight_bb, sq) {
             return true;
         }
 
-        let horiz_vert_bb = board.get_piece_bitboard(Piece::BlackRook)
-            | board.get_piece_bitboard(Piece::BlackQueen);
+        let horiz_vert_bb = board.get_black_rook_queen_bitboard();
         let all_pce_bb = board.get_bitboard();
         if horiz_vert_bb != 0 && is_horizontal_or_vertical_attacking(all_pce_bb, horiz_vert_bb, sq)
         {
             return true;
         }
 
-        let diag_bb = board.get_piece_bitboard(Piece::BlackBishop)
-            | board.get_piece_bitboard(Piece::BlackQueen);
+        let diag_bb = board.get_black_bishop_queen_bitboard();
         if diag_bb != 0 && is_diagonally_attacked(sq, diag_bb, all_pce_bb) {
             return true;
         }
 
-        let king_bb = board.get_piece_bitboard(Piece::BlackKing);
+        let king_bb = board.get_piece_bitboard(&Piece::BLACK_KING);
         if is_attacked_by_king(king_bb, sq) {
             return true;
         }
