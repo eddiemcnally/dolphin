@@ -1,8 +1,7 @@
 use engine::position::MoveLegality;
 use engine::position::Position;
-use moves::mov::Mov;
 use moves::move_gen;
-use smallvec::SmallVec;
+use moves::move_list::MoveList;
 
 pub fn perft(depth: u8, position: &mut Position) -> u64 {
     let mut nodes = 0;
@@ -10,11 +9,11 @@ pub fn perft(depth: u8, position: &mut Position) -> u64 {
         return 1;
     }
 
-    let mut move_list = SmallVec::<[Mov; move_gen::MAX_MOVE_BUF_SZ]>::new();
+    let mut move_list = MoveList::default();
     move_gen::generate_moves(position, &mut move_list);
 
-    for mv in &move_list {
-        let move_legality = position.make_move(*mv);
+    for mv in move_list {
+        let move_legality = position.make_move(mv);
         if move_legality == MoveLegality::Legal {
             nodes += perft(depth - 1, position);
         }

@@ -1,7 +1,6 @@
 use components::piece::PieceRole;
 use components::square::Square;
 use std::fmt;
-use std::ops::Shl;
 use std::ops::Shr;
 
 // ---- ---- --XX XXXX      From Square
@@ -80,23 +79,12 @@ impl Mov {
     /// * `from_sq` - the from square
     /// * `to_sq`   - the to square
     ///
-    pub fn encode_move_quiet(from_sq: Square, to_sq: Square) -> Mov {
-        debug_assert!(
-            from_sq != to_sq,
-            "from and to square are same : {}",
-            from_sq
-        );
-        let mv: u16 = from_sq as u16 & MASK_FROM_SQ | (to_sq as u16).shl(SHIFT_TO_SQ) & MASK_TO_SQ;
+    pub const fn encode_move_quiet(from_sq: Square, to_sq: Square) -> Mov {
+        let mv: u16 = from_sq as u16 & MASK_FROM_SQ | (to_sq as u16) << SHIFT_TO_SQ & MASK_TO_SQ;
         Mov { mv }
     }
 
-    pub fn encode_move_capture(from_sq: Square, to_sq: Square) -> Mov {
-        debug_assert!(
-            from_sq != to_sq,
-            "from and to square are same : {}",
-            from_sq
-        );
-
+    pub const fn encode_move_capture(from_sq: Square, to_sq: Square) -> Mov {
         let mut mov = Mov::encode_move_quiet(from_sq, to_sq);
         mov.mv |= MV_FLG_CAPTURE;
         mov
@@ -198,7 +186,7 @@ impl Mov {
 
     /// Encodes a White King-side castle move
     ///
-    pub fn encode_move_castle_kingside_white() -> Mov {
+    pub const fn encode_move_castle_kingside_white() -> Mov {
         // todo: this can be determined at compile time, so fix this
         let mut mov = Mov::encode_move_quiet(Square::e1, Square::g1);
         mov.mv |= MV_FLG_KING_CASTLE;
@@ -207,7 +195,7 @@ impl Mov {
 
     /// Encodes a Black King-side castle move
     ///
-    pub fn encode_move_castle_kingside_black() -> Mov {
+    pub const fn encode_move_castle_kingside_black() -> Mov {
         let mut mov = Mov::encode_move_quiet(Square::e8, Square::g8);
         mov.mv |= MV_FLG_KING_CASTLE;
         mov
@@ -215,7 +203,7 @@ impl Mov {
 
     /// Encodes a White Queen-side castle move
     ///
-    pub fn encode_move_castle_queenside_white() -> Mov {
+    pub const fn encode_move_castle_queenside_white() -> Mov {
         let mut mov = Mov::encode_move_quiet(Square::e1, Square::c1);
         mov.mv |= MV_FLG_QUEEN_CASTLE;
         mov
@@ -223,7 +211,7 @@ impl Mov {
 
     /// Encodes a Black Queen-side castle move
     ///
-    pub fn encode_move_castle_queenside_black() -> Mov {
+    pub const fn encode_move_castle_queenside_black() -> Mov {
         let mut mov = Mov::encode_move_quiet(Square::e8, Square::c8);
         mov.mv |= MV_FLG_QUEEN_CASTLE;
         mov
