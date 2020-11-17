@@ -191,6 +191,10 @@ impl Position {
         &self.move_cntr
     }
 
+    pub fn position_key(&self) -> PositionHash {
+        self.position_key
+    }
+
     pub fn flip_side_to_move(&mut self) {
         match self.side_to_move {
             Colour::White => self.side_to_move = Colour::Black,
@@ -1353,6 +1357,63 @@ mod tests {
         }
     }
 
+    #[test]
+    pub fn make_move_white_double_pawn_move_board_hash_updated_as_expected() {
+        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+        let init_hash = pos.position_key();
+
+        let wp_double_mv = Mov::encode_move_double_pawn_first(Square::b2, Square::b4);
+        pos.make_move(wp_double_mv);
+        assert!(init_hash != pos.position_key());
+    }
+
+    #[test]
+    pub fn make_move_black_double_pawn_move_board_hash_updated_as_expected() {
+        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1";
+
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+        let init_hash = pos.position_key();
+
+        let bp_double_mv = Mov::encode_move_double_pawn_first(Square::b7, Square::b5);
+        pos.make_move(bp_double_mv);
+        assert!(init_hash != pos.position_key());
+    }
+
+    #[test]
+    pub fn make_move_white_pawn_quiet_move_board_hash_updated_as_expected() {
+        let fen = "rnbqkbnr/pp3p1p/2pp4/4p1p1/1P1P4/6P1/P1P1PP1P/RNBQKBNR w KQkq - 0 1";
+
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+        let init_hash = pos.position_key();
+
+        let wp_double_mv = Mov::encode_move_quiet(Square::b4, Square::b5);
+        pos.make_move(wp_double_mv);
+        assert!(init_hash != pos.position_key());
+    }
+
+    #[test]
+    pub fn make_move_black_pawn_quiet_move_board_hash_updated_as_expected() {
+        let fen = "rnbqkbnr/pp3p1p/2pp4/4p1p1/1P1P4/6P1/P1P1PP1P/RNBQKBNR b KQkq - 0 1";
+
+        let parsed_fen = fen::get_position(&fen);
+        let mut pos = Position::new(parsed_fen);
+        let init_hash = pos.position_key();
+
+        let wp_double_mv = Mov::encode_move_quiet(Square::c6, Square::c5);
+        pos.make_move(wp_double_mv);
+        assert!(init_hash != pos.position_key());
+    }
+
+
+
+
+
+    
     fn is_piece_on_square_as_expected(pos: &Position, sq: Square, pce: Piece) -> bool {
         let pce_on_board = pos.board.get_piece_on_square(sq);
 
