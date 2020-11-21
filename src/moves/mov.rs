@@ -1,5 +1,6 @@
 use components::piece::PieceRole;
 use components::square::Square;
+use num::FromPrimitive;
 use std::fmt;
 use std::ops::Shr;
 
@@ -17,20 +18,20 @@ const SHIFT_TO_SQ: u16 = 6;
 // bitmap for type Move
 // See https://www.chessprogramming.org/Encoding_Moves
 //
-//  ---- 0000 Quiet move
-//  ---- 0001 Double Pawn push
-//  ---- 0010 King Castle
-//  ---- 0011 Queen Castle
-//  ---- 0100 Capture
-//  ---- 0101 En Passant Capture
-//  ---- 1000 Promotion Knight
-//  ---- 1001 Promotion Bishop
-//  ---- 1010 Promotion Rook
-//  ---- 1011 Promotion Queen
-//  ---- 1100 Promotion Knight Capture
-//  ---- 1101 Promotion Bishop Capture
-//  ---- 1110 Promotion Rook Capture
-//  ---- 1111 Promotion Queen Capture
+//  0000 ---- Quiet move
+//  0001 ---- Double Pawn push
+//  0010 ---- King Castle
+//  0011 ---- Queen Castle
+//  0100 ---- Capture
+//  0101 ---- En Passant Capture
+//  1000 ---- Promotion Knight
+//  1001 ---- Promotion Bishop
+//  1010 ---- Promotion Rook
+//  1011 ---- Promotion Queen
+//  1100 ---- Promotion Knight Capture
+//  1101 ---- Promotion Bishop Capture
+//  1110 ---- Promotion Rook Capture
+//  1111 ---- Promotion Queen Capture
 
 const MV_FLG_QUIET: u16 = 0x0000;
 const MV_FLG_DOUBLE_PAWN: u16 = 0x1000;
@@ -48,6 +49,33 @@ const MV_FLG_PROMOTE_ROOK_CAPTURE: u16 = MV_FLG_PROMOTE_ROOK | MV_FLG_CAPTURE;
 const MV_FLG_PROMOTE_QUEEN_CAPTURE: u16 = MV_FLG_PROMOTE_QUEEN | MV_FLG_CAPTURE;
 
 const MV_FLG_BIT_PROMOTE: u16 = 0x8000;
+
+enum_from_primitive! {
+#[repr(u16)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub enum MoveType{
+    Quiet = MV_FLG_QUIET,
+    DoublePawn = MV_FLG_DOUBLE_PAWN,
+    KingCastle = MV_FLG_KING_CASTLE,
+    QueenCastle = MV_FLG_QUEEN_CASTLE,
+    Capture = MV_FLG_CAPTURE,
+    EnPassant = MV_FLG_EN_PASS,
+    PromoteKnightQuiet = MV_FLG_PROMOTE_KNIGHT,
+    PromoteBishopQuiet = MV_FLG_PROMOTE_BISHOP,
+    PromoteRookQuiet = MV_FLG_PROMOTE_ROOK,
+    PromoteQueenQuiet  = MV_FLG_PROMOTE_QUEEN,
+    PromoteKnightCapture = MV_FLG_PROMOTE_KNIGHT_CAPTURE,
+    PromoteBishopCapture = MV_FLG_PROMOTE_BISHOP_CAPTURE,
+    PromoteRookCapture = MV_FLG_PROMOTE_ROOK_CAPTURE,
+    PromoteQueenCapture = MV_FLG_PROMOTE_QUEEN_CAPTURE,
+}
+}
+
+impl MoveType {
+    pub fn from_num(num: u16) -> Option<MoveType> {
+        MoveType::from_u16(num)
+    }
+}
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
 pub struct Mov {
@@ -256,14 +284,9 @@ impl Mov {
         }
     }
 
-    /// Tests the given move to see if it is a Quiet move
-    ///
-    /// # Arguments
-    ///
-    /// * `mv`         - the move to decode
-    ///
-    pub fn is_quiet(self) -> bool {
-        self.mv & MASK_FLAGS == MV_FLG_QUIET
+    pub fn get_move_type(self) -> Option<MoveType> {
+        let flag = self.mv & MASK_FLAGS;
+        MoveType::from_num(flag)
     }
 
     /// Tests the given move to see if it is a Capture move
@@ -272,18 +295,8 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_capture(self) -> bool {
+    pub const fn is_capture(self) -> bool {
         (self.mv & MASK_FLAGS & MV_FLG_CAPTURE) != 0
-    }
-
-    /// Tests the given move to see if it is a Promotion move
-    ///
-    /// # Arguments
-    ///
-    /// * `mv`         - the move to decode
-    ///
-    pub fn is_promote(self) -> bool {
-        (self.mv & MASK_FLAGS & MV_FLG_BIT_PROMOTE) != 0
     }
 
     /// Tests the given move to see if it is an En Passant move
@@ -292,7 +305,7 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_en_passant(self) -> bool {
+    pub const fn is_en_passant(self) -> bool {
         self.mv & MASK_FLAGS == MV_FLG_EN_PASS
     }
 
@@ -302,8 +315,28 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_castle(self) -> bool {
+    pub const fn is_castle(self) -> bool {
         self.is_king_castle() || self.is_queen_castle()
+    }
+
+    /// Tests the given move to see if it is a Promotion move
+    ///
+    /// # Arguments
+    ///
+    /// * `mv`         - the move to decode
+    ///
+    pub const fn is_promote(self) -> bool {
+        self.mv & MASK_FLAGS & MV_FLG_BIT_PROMOTE > 0
+    }
+
+    /// Tests the given move to see if it is a quiet move
+    ///
+    /// # Arguments
+    ///
+    /// * `mv`         - the move to decode
+    ///
+    pub const fn is_quiet(self) -> bool {
+        self.mv & MASK_FLAGS == MV_FLG_QUIET
     }
 
     /// Tests the given move to see if it is an Queen-side castle move
@@ -312,7 +345,7 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_queen_castle(self) -> bool {
+    pub const fn is_queen_castle(self) -> bool {
         self.mv & MASK_FLAGS == MV_FLG_QUEEN_CASTLE
     }
 
@@ -322,7 +355,7 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_king_castle(self) -> bool {
+    pub const fn is_king_castle(self) -> bool {
         self.mv & MASK_FLAGS == MV_FLG_KING_CASTLE
     }
 
@@ -332,7 +365,7 @@ impl Mov {
     ///
     /// * `mv`         - the move to decode
     ///
-    pub fn is_double_pawn(self) -> bool {
+    pub const fn is_double_pawn(self) -> bool {
         self.mv & MASK_FLAGS == MV_FLG_DOUBLE_PAWN
     }
 

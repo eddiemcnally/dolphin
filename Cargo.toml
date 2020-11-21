@@ -7,7 +7,7 @@ authors = ["eddie"]
 rand = "0.7.3"
 lazy_static = "1.4.0"
 typenum = "1.12.0"
-num = "0.3.0"
+num = "0.3.1"
 enum_primitive = "0.1.1"
 num-traits = "0.2.14"
 num-derive = "0.3.3"
@@ -20,6 +20,10 @@ codegen-units = 1
 debug = false
 opt-level=3
 overflow-checks=false
+
+
+[build]
+rustflags = ["-C target-cpu=native"]        # comma-separated   
 
 
 
