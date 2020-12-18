@@ -1,7 +1,7 @@
+use components::bitboard;
 use core::core_traits::ArrayAccessor;
 use num::FromPrimitive;
 use std::fmt;
-use std::ops::Shl;
 use std::slice::Iter;
 
 enum_from_primitive! {
@@ -159,15 +159,15 @@ pub static SQUARES: &[Square] = &[
 
 impl Square {
     pub fn derive_relative_square(sq: Square, rank_offset: i8, file_offset: i8) -> Option<Square> {
-        let target_rank = sq.rank_as_u8() as i8 + rank_offset;
-        let target_file = sq.file_as_u8() as i8 + file_offset;
+        let target_rank = sq.rank() as i8 + rank_offset;
+        let target_file = sq.file() as i8 + file_offset;
 
-        let rank = Rank::from_num(target_rank);
+        let rank = Rank::from_i8(target_rank);
         if rank.is_none() {
             return None;
         }
 
-        let file = File::from_num(target_file);
+        let file = File::from_i8(target_file);
         if file.is_none() {
             return None;
         }
@@ -180,7 +180,7 @@ impl Square {
             Rank::Rank8 => None,
             _ => {
                 let s = self as u8 + 8;
-                Square::from_num(s)
+                Square::from_u8(s)
             }
         }
     }
@@ -190,7 +190,7 @@ impl Square {
             Rank::Rank1 => None,
             _ => {
                 let s = self as u8 - 8;
-                Square::from_num(s)
+                Square::from_u8(s)
             }
         }
     }
@@ -200,7 +200,7 @@ impl Square {
             Rank::Rank7 | Rank::Rank8 => None,
             _ => {
                 let s = self as u8 + 16;
-                Square::from_num(s)
+                Square::from_u8(s)
             }
         }
     }
@@ -210,29 +210,28 @@ impl Square {
             Rank::Rank1 | Rank::Rank2 => None,
             _ => {
                 let s = self as u8 - 16;
-                Square::from_num(s)
+                Square::from_u8(s)
             }
         }
     }
 
     pub fn rank(self) -> Rank {
         let rank_num = self.rank_as_u8();
-        Rank::from_num(rank_num as i8).unwrap()
+        Rank::from_i8(rank_num as i8).unwrap()
     }
 
     pub fn file(self) -> File {
         let file_num = self.file_as_u8();
-        File::from_num(file_num as i8).unwrap()
+        File::from_i8(file_num as i8).unwrap()
     }
 
     pub fn get_square(rank: Rank, file: File) -> Square {
-        let sq = rank as u8 * 8 + file as u8;
-        Square::from_num(sq).unwrap()
+        let sq = ((rank as u8) << 3) + file as u8;
+        Square::from_u8(sq).unwrap()
     }
 
     pub fn get_square_as_bb(self) -> u64 {
-        let bit: u64 = 1;
-        bit.shl(self.to_offset())
+        return bitboard::set_bit(0, self);
     }
 
     pub fn get_from_string(square_str: &str) -> Option<Square> {
@@ -292,21 +291,6 @@ pub enum Rank {
 }}
 
 impl Rank {
-    pub const fn from_num(num: i8) -> Option<Rank> {
-        match num {
-            0 => Some(Rank::Rank1),
-            1 => Some(Rank::Rank2),
-            2 => Some(Rank::Rank3),
-            3 => Some(Rank::Rank4),
-            4 => Some(Rank::Rank5),
-            5 => Some(Rank::Rank6),
-            6 => Some(Rank::Rank7),
-            7 => Some(Rank::Rank8),
-            _ => None,
-        }
-        //Rank::from_i8(num)
-    }
-
     pub fn from_char(rank: char) -> Option<Rank> {
         match rank {
             '1' => Some(Rank::Rank1),
@@ -377,10 +361,6 @@ enum_from_primitive! {
 }
 
 impl File {
-    pub fn from_num(num: i8) -> Option<File> {
-        File::from_i8(num)
-    }
-
     pub fn from_char(file: char) -> Option<File> {
         match file {
             'a' => Some(File::FileA),
@@ -439,6 +419,7 @@ pub mod tests {
     use super::File;
     use super::Rank;
     use super::Square;
+    use num::FromPrimitive;
     use std::collections::HashMap;
     use utils;
 
@@ -461,6 +442,14 @@ pub mod tests {
         assert!(Square::derive_relative_square(Square::h1, 0, -1).is_some() == true);
         assert!(Square::derive_relative_square(Square::h8, -1, 0).is_some() == true);
         assert!(Square::derive_relative_square(Square::h8, 0, -1).is_some() == true);
+
+        assert!(Square::derive_relative_square(Square::a1, 1, 0).unwrap() == Square::a2);
+        assert!(Square::derive_relative_square(Square::a1, 0, 1).unwrap() == Square::b1);
+        assert!(Square::derive_relative_square(Square::b1, 1, 1).unwrap() == Square::c2);
+        assert!(Square::derive_relative_square(Square::b1, 2, 2).unwrap() == Square::d3);
+        assert!(Square::derive_relative_square(Square::b1, 1, 2).unwrap() == Square::d2);
+        assert!(Square::derive_relative_square(Square::e4, 1, 2).unwrap() == Square::g5);
+        assert!(Square::derive_relative_square(Square::h3, 3, 0).unwrap() == Square::h6);
     }
 
     #[test]
@@ -469,6 +458,10 @@ pub mod tests {
         for (square, (rank, _)) in map {
             assert_eq!(square.rank(), rank);
         }
+
+        assert!(Square::a1.rank() == Rank::Rank1);
+        assert!(Square::a5.rank() == Rank::Rank5);
+        assert!(Square::d4.rank() == Rank::Rank4);
     }
 
     #[test]
@@ -477,6 +470,46 @@ pub mod tests {
         for (square, (_, file)) in map {
             assert_eq!(square.file(), file);
         }
+
+        assert!(Square::a1.file() == File::FileA);
+        assert!(Square::e5.file() == File::FileE);
+        assert!(Square::d4.file() == File::FileD);
+    }
+
+    #[test]
+    pub fn rank_as_u8() {
+        assert!(Rank::Rank1 as u8 == 0);
+        assert!(Rank::Rank8 as u8 == 7);
+    }
+
+    #[test]
+    pub fn file_as_u8() {
+        assert!(File::FileA as u8 == 0);
+        assert!(File::FileH as u8 == 7);
+    }
+
+    #[test]
+    pub fn rank_from_u8() {
+        assert!(Rank::from_u8(0) == Some(Rank::Rank1));
+        assert!(Rank::from_u8(1) == Some(Rank::Rank2));
+        assert!(Rank::from_u8(2) == Some(Rank::Rank3));
+        assert!(Rank::from_u8(3) == Some(Rank::Rank4));
+        assert!(Rank::from_u8(4) == Some(Rank::Rank5));
+        assert!(Rank::from_u8(5) == Some(Rank::Rank6));
+        assert!(Rank::from_u8(6) == Some(Rank::Rank7));
+        assert!(Rank::from_u8(7) == Some(Rank::Rank8));
+    }
+
+    #[test]
+    pub fn file_from_u8() {
+        assert!(File::from_u8(0) == Some(File::FileA));
+        assert!(File::from_u8(1) == Some(File::FileB));
+        assert!(File::from_u8(2) == Some(File::FileC));
+        assert!(File::from_u8(3) == Some(File::FileD));
+        assert!(File::from_u8(4) == Some(File::FileE));
+        assert!(File::from_u8(5) == Some(File::FileF));
+        assert!(File::from_u8(6) == Some(File::FileG));
+        assert!(File::from_u8(7) == Some(File::FileH));
     }
 
     #[test]
@@ -561,6 +594,7 @@ pub mod tests {
             let sq = Square::get_square(rank, file);
             assert_eq!(square, sq);
         }
+        assert!(Square::get_square(Rank::Rank3, File::FileG) == Square::g3);
     }
 
     #[test]
@@ -574,5 +608,14 @@ pub mod tests {
                 None => assert!(false),
             }
         }
+    }
+
+    #[test]
+    pub fn square_from_rank_file() {
+        assert!(Square::get_square(Rank::Rank1, File::FileA) == Square::a1);
+        assert!(Square::get_square(Rank::Rank8, File::FileA) == Square::a8);
+
+        assert!(Square::get_square(Rank::Rank1, File::FileH) == Square::h1);
+        assert!(Square::get_square(Rank::Rank8, File::FileH) == Square::h8);
     }
 }

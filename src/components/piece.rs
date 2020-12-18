@@ -32,8 +32,9 @@ pub struct Piece {
     offset: usize,
 }
 
+enum_from_primitive! {
 #[repr(u8)]
-#[derive(Eq, PartialEq, Hash, Clone, Copy, FromPrimitive, ToPrimitive)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
 pub enum PieceRole {
     Pawn,
     Bishop,
@@ -41,7 +42,7 @@ pub enum PieceRole {
     Rook,
     Queen,
     King,
-}
+}}
 
 impl fmt::Debug for PieceRole {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -5,6 +5,7 @@ use components::square::Rank;
 use components::square::Square;
 use engine::castle_permissions;
 use engine::castle_permissions::CastlePermission;
+use num::FromPrimitive;
 use std::collections::HashMap;
 
 #[derive(Default)]
@@ -68,8 +69,8 @@ pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, Piece> {
                     // not a number, so it's a piece
                     let piece = Piece::from_char(c);
 
-                    let r = Rank::from_num(rank as i8);
-                    let f = File::from_num(file as i8);
+                    let r = Rank::from_u8(rank as u8);
+                    let f = File::from_u8(file as u8);
 
                     if r.is_some() && f.is_some() {
                         let sq: Square = Square::get_square(r.unwrap(), f.unwrap());
