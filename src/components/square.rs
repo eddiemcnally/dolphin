@@ -1,4 +1,3 @@
-use components::bitboard;
 use core::core_traits::ArrayAccessor;
 use num::FromPrimitive;
 use std::fmt;
@@ -162,17 +161,17 @@ impl Square {
         let target_rank = sq.rank() as i8 + rank_offset;
         let target_file = sq.file() as i8 + file_offset;
 
-        let rank = Rank::from_i8(target_rank);
-        if rank.is_none() {
+        if target_rank < 0 || target_rank > 7 {
+            return None;
+        }
+        if target_file < 0 || target_file > 7 {
             return None;
         }
 
-        let file = File::from_i8(target_file);
-        if file.is_none() {
-            return None;
-        }
+        let rank = Rank::from_i8(target_rank).unwrap();
+        let file = File::from_i8(target_file).unwrap();
 
-        Some(Square::get_square(rank.unwrap(), file.unwrap()))
+        return Some(Square::get_square(rank, file));
     }
 
     pub fn square_plus_1_rank(self) -> Option<Square> {
@@ -231,7 +230,7 @@ impl Square {
     }
 
     pub fn get_square_as_bb(self) -> u64 {
-        return bitboard::set_bit(0, self);
+        0x01u64 << (self.to_offset())
     }
 
     pub fn get_from_string(square_str: &str) -> Option<Square> {
@@ -252,15 +251,11 @@ impl Square {
     }
 
     pub const fn same_rank(self, other: Square) -> bool {
-        let this_rank = self.rank_as_u8();
-        let other_rank = other.rank_as_u8();
-        this_rank == other_rank
+        self.rank_as_u8() == other.rank_as_u8()
     }
 
     pub const fn same_file(self, other: Square) -> bool {
-        let this_file = self.file_as_u8();
-        let other_file = other.file_as_u8();
-        this_file == other_file
+        self.file_as_u8() == other.file_as_u8()
     }
 
     const fn rank_as_u8(self) -> u8 {

@@ -6,6 +6,7 @@ use components::square::Rank;
 use components::square::Square;
 use core::core_traits::ArrayAccessor;
 use enum_primitive::FromPrimitive;
+use std::ops::Shl;
 
 // Bitboards representing commonly used ranks
 pub const RANK_2_BB: u64 = 0x0000_0000_0000_FF00;
@@ -41,6 +42,10 @@ pub fn get_occupancy_mask_queen(sq: Square) -> u64 {
 
 pub fn get_occupancy_mask_king(sq: Square) -> u64 {
     *KING_OCCUPANCY_MASKS.get(sq.to_offset()).unwrap()
+}
+
+pub fn get_inbetween_squares(sq1: Square, sq2: Square) -> u64 {
+    INBETWEEN_SQUARE_MASK[sq1.to_offset()][sq2.to_offset()]
 }
 
 pub fn get_vertical_move_mask(sq: Square) -> u64 {
@@ -109,6 +114,7 @@ lazy_static! {
     static ref ROOK_OCCUPANCY_MASKS: [u64; board::NUM_SQUARES] = populate_rook_mask_array();
     static ref QUEEN_OCCUPANCY_MASKS: [u64; board::NUM_SQUARES] = populate_queen_mask_array();
     static ref KING_OCCUPANCY_MASKS: [u64; board::NUM_SQUARES] = populate_king_mask_array();
+    static ref INBETWEEN_SQUARE_MASK:  [[u64;board::NUM_SQUARES];board::NUM_SQUARES] = populate_intervening_bitboard_array();
 }
 
 fn populate_knight_occupancy_mask_array() -> [u64; board::NUM_SQUARES] {
@@ -187,7 +193,7 @@ fn populate_diagonal_mask_array() -> [u64; board::NUM_SQUARES] {
             if r.is_some() && f.is_some() {
                 let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
                 bb = bitboard::set_bit(bb, derived_sq);
-                println!("Square {}, derived {}", sq, derived_sq);
+            //println!("Square {}, derived {}", sq, derived_sq);
             } else {
                 break;
             }
@@ -206,7 +212,7 @@ fn populate_diagonal_mask_array() -> [u64; board::NUM_SQUARES] {
             if r.is_some() && f.is_some() {
                 let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
                 bb = bitboard::set_bit(bb, derived_sq);
-                println!("Square {}, derived {}", sq, derived_sq);
+            //println!("Square {}, derived {}", sq, derived_sq);
             } else {
                 break;
             }
@@ -229,8 +235,6 @@ fn populate_antidiagonal_mask_array() -> [u64; board::NUM_SQUARES] {
     for sq in squares {
         let mut bb: u64 = 0;
 
-        println!("***** ANTI-DIAGONAL NW Square={}", sq);
-
         // move NW
         let mut rank_offset = sq.rank() as i8;
         let mut file_offset = sq.file() as i8;
@@ -243,13 +247,11 @@ fn populate_antidiagonal_mask_array() -> [u64; board::NUM_SQUARES] {
             if r.is_some() && f.is_some() {
                 let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
                 bb = bitboard::set_bit(bb, derived_sq);
-                println!("Square {}, derived {}", sq, derived_sq);
+            //println!("Square {}, derived {}", sq, derived_sq);
             } else {
                 break;
             }
         }
-
-        println!("***** ANTI-DIAGONAL SE Square={}", sq);
 
         // move SE
         rank_offset = sq.rank() as i8;
@@ -264,7 +266,7 @@ fn populate_antidiagonal_mask_array() -> [u64; board::NUM_SQUARES] {
             if r.is_some() && f.is_some() {
                 let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
                 bb = bitboard::set_bit(bb, derived_sq);
-                println!("Square {}, derived {}", sq, derived_sq);
+            //println!("Square {}, derived {}", sq, derived_sq);
             } else {
                 break;
             }
@@ -323,6 +325,41 @@ fn populate_queen_mask_array() -> [u64; board::NUM_SQUARES] {
         retval[sq.to_offset()] = bb;
     }
     retval
+}
+
+// This code returns a bitboard with bits set representing squares between
+// the given 2 squares.
+//
+// The code is taken from :
+// https://www.chessprogramming.org/Square_Attacked_By
+//
+fn populate_intervening_bitboard_array() -> [[u64; board::NUM_SQUARES]; board::NUM_SQUARES] {
+    const M1: u64 = 0xffff_ffff_ffff_ffff;
+    const A2A7: u64 = 0x0001_0101_0101_0100;
+    const B2G7: u64 = 0x0040_2010_0804_0200;
+    const H1B7: u64 = 0x0002_0408_1020_4080;
+
+    let mut retval = [[0; board::NUM_SQUARES]; board::NUM_SQUARES];
+
+    let squares = components::square::SQUARES;
+
+    for sq1 in squares {
+        for sq2 in squares {
+            let btwn = (M1.shl(*sq1 as u8)) ^ (M1.shl(*sq2 as u8));
+            let file = (*sq2 as u64 & 7).wrapping_sub(*sq1 as u64 & 7);
+            let rank = ((*sq2 as u64 | 7).wrapping_sub(*sq1 as u64)) >> 3;
+            let mut line = ((file & 7).wrapping_sub(1)) & A2A7; /* a2a7 if same file */
+            line = line.wrapping_add((((rank & 7).wrapping_sub(1)) >> 58).wrapping_mul(2)); /* b1g1 if same rank */
+            line = line.wrapping_add((((rank.wrapping_sub(file)) & 15).wrapping_sub(1)) & B2G7); /* b2g7 if same diagonal */
+            line = line.wrapping_add((((rank.wrapping_add(file)) & 15).wrapping_sub(1)) & H1B7); /* h1b7 if same antidiag */
+            line = line.wrapping_mul(btwn & (btwn.wrapping_neg())); /* mul acts like shift by smaller square */
+            let val = line & btwn; /* return the bits on that line in-between */
+
+            retval[sq1.to_offset()][sq2.to_offset()] = val;
+        }
+    }
+
+    return retval;
 }
 
 fn set_dest_sq_if_valid(bb: &mut u64, sq: Square, rank_offset: i8, file_offset: i8) {

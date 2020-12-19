@@ -4,7 +4,6 @@ use components::occupancy_masks;
 use components::piece::Colour;
 use components::piece::Piece;
 use components::square::Square;
-use std::ops::Shl;
 
 pub fn is_king_sq_attacked(board: &Board, sq: Square, attacking_side: Colour) -> bool {
     match attacking_side {
@@ -138,7 +137,7 @@ fn is_horizontal_or_vertical_attacking(
 
         if pce_sq.same_rank(attack_sq) || pce_sq.same_file(attack_sq) {
             // potentially attacking
-            let blocking_pces = get_intervening_bitboard(pce_sq, attack_sq);
+            let blocking_pces = occupancy_masks::get_inbetween_squares(pce_sq, attack_sq);
             if blocking_pces & all_piece_bb == 0 {
                 // no blocking pieces, attacked
                 return true;
@@ -157,7 +156,7 @@ fn is_diagonally_attacked(attack_sq: Square, diag_bb: u64, all_pce_bb: u64) -> b
         let diagonal_bb = occupancy_masks::get_occupancy_mask_bishop(pce_sq);
         if bitboard::is_set(diagonal_bb, attack_sq) {
             // potentially attacking, sharing a diagonal
-            let blocking_pces = get_intervening_bitboard(pce_sq, attack_sq);
+            let blocking_pces = occupancy_masks::get_inbetween_squares(pce_sq, attack_sq);
             if blocking_pces & all_pce_bb == 0 {
                 // no blocking pieces, attacked
                 return true;
@@ -211,28 +210,4 @@ fn is_attacked_by_pawn_black(pawn_bb: u64, attacked_sq: Square) -> bool {
         }
     }
     false
-}
-
-// This code returns a bitboard with bits set representing squares between
-// the given 2 squares.
-//
-// The code is taken from :
-// https://www.chessprogramming.org/Square_Attacked_By
-//
-#[inline(always)]
-fn get_intervening_bitboard(sq1: Square, sq2: Square) -> u64 {
-    const M1: u64 = 0xffff_ffff_ffff_ffff;
-    const A2A7: u64 = 0x0001_0101_0101_0100;
-    const B2G7: u64 = 0x0040_2010_0804_0200;
-    const H1B7: u64 = 0x0002_0408_1020_4080;
-
-    let btwn = (M1.shl(sq1 as u8)) ^ (M1.shl(sq2 as u8));
-    let file = (sq2 as u64 & 7).wrapping_sub(sq1 as u64 & 7);
-    let rank = ((sq2 as u64 | 7).wrapping_sub(sq1 as u64)) >> 3;
-    let mut line = ((file & 7).wrapping_sub(1)) & A2A7; /* a2a7 if same file */
-    line = line.wrapping_add((((rank & 7).wrapping_sub(1)) >> 58).wrapping_mul(2)); /* b1g1 if same rank */
-    line = line.wrapping_add((((rank.wrapping_sub(file)) & 15).wrapping_sub(1)) & B2G7); /* b2g7 if same diagonal */
-    line = line.wrapping_add((((rank.wrapping_add(file)) & 15).wrapping_sub(1)) & H1B7); /* h1b7 if same antidiag */
-    line = line.wrapping_mul(btwn & (btwn.wrapping_neg())); /* mul acts like shift by smaller square */
-    line & btwn /* return the bits on that line in-between */
 }
