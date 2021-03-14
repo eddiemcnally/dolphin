@@ -3,12 +3,14 @@ use std::vec::Vec;
 
 const MAX_MOVE_BUF_SZ: usize = 256;
 
+
 #[derive(Clone, Copy)]
 pub struct MoveList {
     moves: [Mov; MAX_MOVE_BUF_SZ],
     count: usize,
     iter_count: usize,
 }
+
 
 impl Default for MoveList {
     fn default() -> Self {

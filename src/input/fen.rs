@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct ParsedFen {
-    pub piece_positions: HashMap<Square, Piece>,
+    pub piece_positions: HashMap<Square, &'static Piece>,
     pub side_to_move: Colour,
     pub castle_perm: CastlePermission,
     pub en_pass_sq: Option<Square>,
@@ -53,9 +53,9 @@ pub fn get_position(fen: &str) -> ParsedFen {
 }
 
 /// takes the list of ranks (starting at rank 8)
-pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, Piece> {
+pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, &'static Piece> {
     let ranks: Vec<_> = pieces.split('/').collect();
-    let mut retval: HashMap<Square, Piece> = HashMap::new();
+    let mut retval: HashMap<Square, &'static Piece> = HashMap::new();
     for (rank, pieces) in ranks.iter().rev().enumerate() {
         let mut file: u8 = 0;
 

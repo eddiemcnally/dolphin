@@ -18,10 +18,10 @@ pub fn get_all_castle_permissions() -> Vec<CastlePermissionType> {
     list
 }
 
-pub fn get_all_pieces() -> Vec<Piece> {
-    let mut list: Vec<Piece> = Vec::new();
+pub fn get_all_pieces() -> Vec<&'static Piece> {
+    let mut list: Vec<&'static Piece> = Vec::new();
 
-    let mut pce: Piece;
+    let mut pce: &'static Piece;
 
     pce = Piece::new(PieceRole::Pawn, Colour::White);
     list.push(pce);

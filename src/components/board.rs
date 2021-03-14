@@ -112,12 +112,12 @@ impl Board {
 
         let positions = parsed_fen.piece_positions.iter();
         for (sq, pce) in positions {
-            brd.add_piece(*pce, *sq);
+            brd.add_piece(pce, *sq);
         }
         brd
     }
 
-    pub fn add_piece(&mut self, piece: Piece, sq: Square) {
+    pub fn add_piece(&mut self, piece: &'static Piece, sq: Square) {
         debug_assert!(
             self.is_sq_empty(sq),
             "add_piece, square not empty. {:?}",
@@ -126,7 +126,7 @@ impl Board {
         self.set_bitboards_with_material(piece, sq);
     }
 
-    pub fn remove_piece(&mut self, piece: Piece, sq: Square) {
+    pub fn remove_piece(&mut self, piece: &'static Piece, sq: Square) {
         debug_assert!(
             !self.is_sq_empty(sq),
             "remove_piece, square is empty. {:?}",
@@ -147,7 +147,7 @@ impl Board {
         )
     }
 
-    pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece) {
+    pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: &'static Piece) {
         debug_assert!(
             !self.is_sq_empty(from_sq),
             "move piece, from square is empty. {:?}",
@@ -164,7 +164,7 @@ impl Board {
         self.set_bitboards(piece, to_sq);
     }
 
-    pub fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
+    pub fn get_piece_on_square(&self, sq: Square) -> Option<&'static Piece> {
         let mask = bitboard::to_mask(sq);
 
         let index = self.piece_bb.iter().position(|&r| r & mask != 0);
@@ -213,24 +213,24 @@ impl Board {
         bitboard::pop_1st_bit(&mut king_bb)
     }
 
-    fn set_bitboards_with_material(&mut self, piece: Piece, sq: Square) {
+    fn set_bitboards_with_material(&mut self, piece: &'static Piece, sq: Square) {
         self.set_bitboards(piece, sq);
         self.material[piece.colour().to_offset()] += piece.value();
     }
 
-    fn clear_bitboards_with_material(&mut self, piece: Piece, sq: Square) {
+    fn clear_bitboards_with_material(&mut self, piece: &'static Piece, sq: Square) {
         self.clear_bitboards(piece, sq);
         self.material[piece.colour().to_offset()] -= piece.value();
     }
 
-    fn clear_bitboards(&mut self, piece: Piece, sq: Square) {
+    fn clear_bitboards(&mut self, piece: &'static Piece, sq: Square) {
         self.piece_bb[piece.to_offset()] =
             bitboard::clear_bit(self.piece_bb[piece.to_offset()], sq);
         self.colour_bb[piece.colour().to_offset()] =
             bitboard::clear_bit(self.colour_bb[piece.colour().to_offset()], sq);
     }
 
-    fn set_bitboards(&mut self, pce: Piece, sq: Square) {
+    fn set_bitboards(&mut self, pce: &'static Piece, sq: Square) {
         self.piece_bb[pce.to_offset()] = bitboard::set_bit(self.piece_bb[pce.to_offset()], sq);
         self.colour_bb[pce.colour().to_offset()] =
             bitboard::set_bit(self.colour_bb[pce.colour().to_offset()], sq);
@@ -404,7 +404,7 @@ pub mod tests {
             board.add_piece(pce, square);
             assert!(board.is_sq_empty(square) == false);
 
-            let retr_pce: Option<Piece> = board.get_piece_on_square(square);
+            let retr_pce: Option<&'static Piece> = board.get_piece_on_square(square);
             assert_eq!(retr_pce.is_some(), true);
             assert_eq!(retr_pce.unwrap(), pce);
 
@@ -498,7 +498,7 @@ pub mod tests {
                 assert_eq!(brd_pce, *map_pce);
             } else {
                 // shouldn't contain a piece
-                let retr_pce: Option<Piece> = brd.get_piece_on_square(sq);
+                let retr_pce: Option<&'static Piece> = brd.get_piece_on_square(sq);
                 assert_eq!(retr_pce.is_some(), false);
             }
         }

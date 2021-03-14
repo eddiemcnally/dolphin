@@ -6,7 +6,6 @@ extern crate lazy_static;
 #[macro_use]
 extern crate enum_primitive;
 extern crate num;
-//use num::FromPrimitive;
 
 extern crate core_affinity;
 extern crate num_format;

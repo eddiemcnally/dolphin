@@ -14,7 +14,7 @@ struct HistoryItem {
     fifty_move_cntr: u8,
     en_pass_sq: Option<Square>,
     castle_perm: CastlePermission,
-    capt_piece: Option<Piece>,
+    capt_piece: Option<&'static Piece>,
 }
 
 impl fmt::Debug for HistoryItem {
@@ -154,7 +154,7 @@ impl PositionHistory {
         fifty_move_cntr: u8,
         en_pass_sq: Option<Square>,
         castle_perm: CastlePermission,
-        capt_piece: Option<Piece>,
+        capt_piece: Option<&'static Piece>,
     ) {
         debug_assert!(
             self.count <= (PositionHistory::MAX_MOVE_HISTORY - 1) as u16,
@@ -182,7 +182,7 @@ impl PositionHistory {
         u8,
         Option<Square>,
         CastlePermission,
-        Option<Piece>,
+        Option<&'static Piece>,
     ) {
         debug_assert!(self.count > 0, "attempt to pop, len = 0");
 
