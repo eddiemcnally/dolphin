@@ -143,12 +143,12 @@ mod tests {
     use components::piece::PieceRole;
     use components::square::Square;
     use engine::castle_permissions;
-    use fen::extract_piece_locations;
-    use fen::get_castle_permissions;
-    use fen::get_en_passant_sq;
-    use fen::get_full_move_number;
-    use fen::get_half_move_clock;
-    use fen::get_side_to_move;
+    use input::fen::extract_piece_locations;
+    use input::fen::get_castle_permissions;
+    use input::fen::get_en_passant_sq;
+    use input::fen::get_full_move_number;
+    use input::fen::get_half_move_clock;
+    use input::fen::get_side_to_move;
 
     #[test]
     pub fn piece_positions() {

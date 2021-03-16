@@ -24,4 +24,11 @@ overflow-checks=false
 rustflags = ["-C target-cpu=native"]        # comma-separated   
 
 
+[[bin]]
+name = "perft"
+src = "src/perft/main.rs"
+
+[[bin]]
+name = "dolphin"
+src = "src/perft/main.rs"
 

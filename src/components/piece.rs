@@ -31,6 +31,7 @@ pub struct Piece {
     colour: Colour,
     offset: usize,
     value: PieceValue,
+    label: char,
 }
 
 // piece values from here:
@@ -87,36 +88,42 @@ impl Piece {
         colour: Colour::White,
         offset: Offset::WhitePawn as usize,
         value: PieceValue::Pawn,
+        label: 'P',
     };
     pub const WHITE_BISHOP: Piece = Piece {
         role: PieceRole::Bishop,
         colour: Colour::White,
         offset: Offset::WhiteBishop as usize,
         value: PieceValue::Bishop,
+        label: 'B',
     };
     pub const WHITE_KNIGHT: Piece = Piece {
         role: PieceRole::Knight,
         colour: Colour::White,
         offset: Offset::WhiteKnight as usize,
         value: PieceValue::Knight,
+        label: 'N',
     };
     pub const WHITE_ROOK: Piece = Piece {
         role: PieceRole::Rook,
         colour: Colour::White,
         offset: Offset::WhiteRook as usize,
         value: PieceValue::Rook,
+        label: 'R',
     };
     pub const WHITE_QUEEN: Piece = Piece {
         role: PieceRole::Queen,
         colour: Colour::White,
         offset: Offset::WhiteQueen as usize,
         value: PieceValue::Queen,
+        label: 'Q',
     };
     pub const WHITE_KING: Piece = Piece {
         role: PieceRole::King,
         colour: Colour::White,
         offset: Offset::WhiteKing as usize,
         value: PieceValue::King,
+        label: 'K',
     };
 
     pub const BLACK_PAWN: Piece = Piece {
@@ -124,36 +131,42 @@ impl Piece {
         colour: Colour::Black,
         offset: Offset::BlackPawn as usize,
         value: PieceValue::Pawn,
+        label: 'p',
     };
     pub const BLACK_BISHOP: Piece = Piece {
         role: PieceRole::Bishop,
         colour: Colour::Black,
         offset: Offset::BlackBishop as usize,
         value: PieceValue::Bishop,
+        label: 'b',
     };
     pub const BLACK_KNIGHT: Piece = Piece {
         role: PieceRole::Knight,
         colour: Colour::Black,
         offset: Offset::BlackKnight as usize,
         value: PieceValue::Knight,
+        label: 'n',
     };
     pub const BLACK_ROOK: Piece = Piece {
         role: PieceRole::Rook,
         colour: Colour::Black,
         offset: Offset::BlackRook as usize,
         value: PieceValue::Rook,
+        label: 'r',
     };
     pub const BLACK_QUEEN: Piece = Piece {
         role: PieceRole::Queen,
         colour: Colour::Black,
         offset: Offset::BlackQueen as usize,
         value: PieceValue::Queen,
+        label: 'q',
     };
     pub const BLACK_KING: Piece = Piece {
         role: PieceRole::King,
         colour: Colour::Black,
         offset: Offset::BlackKing as usize,
         value: PieceValue::King,
+        label: 'k',
     };
 
     pub const fn new(role: PieceRole, col: Colour) -> &'static Piece {
@@ -229,22 +242,8 @@ impl Piece {
         self.value as u32
     }
 
-    pub fn to_label(self) -> String {
-        let role = self.role();
-
-        let col = match self.colour() {
-            Colour::White => "W",
-            Colour::Black => "B",
-        };
-
-        match role {
-            PieceRole::Pawn => col.to_owned() + "P",
-            PieceRole::Bishop => col.to_owned() + "B",
-            PieceRole::Knight => col.to_owned() + "N",
-            PieceRole::Rook => col.to_owned() + "R",
-            PieceRole::Queen => col.to_owned() + "Q",
-            PieceRole::King => col.to_owned() + "K",
-        }
+    pub fn to_label(self) -> char {
+        self.label
     }
 }
 

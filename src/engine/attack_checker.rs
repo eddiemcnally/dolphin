@@ -175,39 +175,11 @@ fn is_attacked_by_king(king_bb: u64, attacked_sq: Square) -> bool {
 }
 
 fn is_attacked_by_pawn_white(pawn_bb: u64, attacked_sq: Square) -> bool {
-    // -1 Rank and +/- 1 File
-    let mut pawn_sq = Square::derive_relative_square(attacked_sq, -1, 1);
-    if let Some(_) = pawn_sq {
-        if bitboard::is_set(pawn_bb, pawn_sq.unwrap()) {
-            return true;
-        }
-    }
-
-    pawn_sq = Square::derive_relative_square(attacked_sq, -1, -1);
-    if let Some(_) = pawn_sq {
-        if bitboard::is_set(pawn_bb, pawn_sq.unwrap()) {
-            return true;
-        }
-    }
-
-    false
+    let wp_attacking_square = occupancy_masks::get_occ_mask_white_pawns_attacking_sq(attacked_sq);
+    (pawn_bb & wp_attacking_square) != 0
 }
 
 fn is_attacked_by_pawn_black(pawn_bb: u64, attacked_sq: Square) -> bool {
-    // +1 Rank and +/- 1 File
-    let mut pawn_sq = Square::derive_relative_square(attacked_sq, 1, 1);
-
-    if let Some(_) = pawn_sq {
-        if bitboard::is_set(pawn_bb, pawn_sq.unwrap()) {
-            return true;
-        }
-    }
-
-    pawn_sq = Square::derive_relative_square(attacked_sq, 1, -1);
-    if let Some(_) = pawn_sq {
-        if bitboard::is_set(pawn_bb, pawn_sq.unwrap()) {
-            return true;
-        }
-    }
-    false
+    let bp_attacking_square = occupancy_masks::get_occ_mask_black_pawns_attacking_sq(attacked_sq);
+    (pawn_bb & bp_attacking_square) != 0
 }

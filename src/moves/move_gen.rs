@@ -487,38 +487,11 @@ fn generate_black_castle_moves(pos: &Position, move_list: &mut MoveList) {
 }
 
 fn gen_white_pawn_attach_squares(pawn_sq: Square) -> u64 {
-    let mut retval: u64 = 0;
-
-    // +1 Rank and +/- 1 File
-    let mut sq = Square::derive_relative_square(pawn_sq, 1, 1);
-    if let Some(_) = sq {
-        retval = bitboard::set_bit(retval, sq.unwrap());
-    }
-
-    // +1 Rank and +/- 1 File
-    sq = Square::derive_relative_square(pawn_sq, 1, -1);
-    if let Some(_) = sq {
-        retval = bitboard::set_bit(retval, sq.unwrap());
-    }
-
-    retval
+    occupancy_masks::get_occ_mask_white_pawn_attack_squares(pawn_sq)
 }
 
 fn gen_black_pawn_attach_squares(pawn_sq: Square) -> u64 {
-    let mut retval: u64 = 0;
-
-    // -1 Rank and +/- 1 File
-    let mut sq = Square::derive_relative_square(pawn_sq, -1, 1);
-    if let Some(_) = sq {
-        retval = bitboard::set_bit(retval, sq.unwrap());
-    }
-    // +1 Rank and +/- 1 File
-    sq = Square::derive_relative_square(pawn_sq, -1, -1);
-    if let Some(_) = sq {
-        retval = bitboard::set_bit(retval, sq.unwrap());
-    }
-
-    retval
+    occupancy_masks::get_occ_mask_black_pawn_attack_squares(pawn_sq)
 }
 
 fn encode_promotion_moves(from_sq: Square, to_sq: Square, move_list: &mut MoveList) {

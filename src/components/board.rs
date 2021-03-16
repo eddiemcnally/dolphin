@@ -82,7 +82,7 @@ impl fmt::Debug for Board {
                 let pce = self.get_piece_on_square(sq);
                 match pce {
                     Some(pce) => {
-                        debug_str.push_str(&pce.to_label());
+                        debug_str.push_str(&pce.to_label().to_string());
                         debug_str.push_str(" ");
                     }
                     _ => debug_str.push_str(" . "),

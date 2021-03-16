@@ -85,23 +85,34 @@ const fn south_west(bb: u64) -> u64 {
     (bb & !FILE_A_BB) >> 9
 }
 
+#[inline(always)]
 pub fn get_occ_mask_white_pawns_attacking_sq(sq: Square) -> u64 {
     let bb = sq.get_square_as_bb();
     south_east(bb) | south_west(bb)
 }
-
+#[inline(always)]
 pub fn get_occ_mask_black_pawns_attacking_sq(sq: Square) -> u64 {
     let bb = sq.get_square_as_bb();
     north_east(bb) | north_west(bb)
 }
-
+#[inline(always)]
 pub fn get_occ_mask_white_pawn_capture_non_first_double_move(sq: Square) -> u64 {
     let bb = sq.get_square_as_bb();
     north_east(bb) | north_west(bb)
 }
-
+#[inline(always)]
 pub fn get_occ_mask_black_pawn_capture_non_first_double_move(sq: Square) -> u64 {
     let bb = sq.get_square_as_bb();
+    south_east(bb) | south_west(bb)
+}
+#[inline(always)]
+pub fn get_occ_mask_white_pawn_attack_squares(pawn_sq: Square) -> u64 {
+    let bb = pawn_sq.get_square_as_bb();
+    north_east(bb) | north_west(bb)
+}
+#[inline(always)]
+pub fn get_occ_mask_black_pawn_attack_squares(pawn_sq: Square) -> u64 {
+    let bb = pawn_sq.get_square_as_bb();
     south_east(bb) | south_west(bb)
 }
 
