@@ -1,5 +1,4 @@
 use components::square::Square;
-use core::core_traits::ArrayAccessor;
 use std::ops::Shl;
 
 const BIT_0: u64 = 0x01;

@@ -4,7 +4,6 @@ use components::board;
 use components::square::File;
 use components::square::Rank;
 use components::square::Square;
-use core::core_traits::ArrayAccessor;
 use enum_primitive::FromPrimitive;
 use std::ops::Shl;
 

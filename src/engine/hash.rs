@@ -1,126 +1,96 @@
 extern crate rand;
 
-use components::board::NUM_SQUARES;
 use components::piece::Piece;
-use components::piece::NUM_PIECES;
 use components::square::Square;
-use core::core_traits::ArrayAccessor;
-use engine::castle_permissions;
 use engine::castle_permissions::CastlePermissionType;
-use engine::castle_permissions::NUM_CASTLE_PERMS;
+use engine::hash_seed::HashSeed;
+use std::fmt;
 
-pub type PositionHash = u64;
-
-struct HashKeys {
-    piece_keys: [[u64; NUM_PIECES]; NUM_SQUARES],
-    side_key: u64,
-    castle_keys: [u64; NUM_CASTLE_PERMS],
-    en_passant_sq_keys: [u64; NUM_SQUARES],
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub struct PositionHash {
+    hash: u64,
 }
 
-lazy_static! {
-    static ref KEYS: HashKeys = HashKeys {
-        piece_keys: init_piece_keys(),
-        side_key: rand::random::<u64>(),
-        castle_keys: init_castle_keys(),
-        en_passant_sq_keys: init_en_passant_keys(),
-    };
-}
-
-pub fn update_side(pos_hash: PositionHash) -> PositionHash {
-    return pos_hash ^ KEYS.side_key;
-}
-
-pub fn update_piece(pos_hash: PositionHash, piece: &Piece, square: Square) -> PositionHash {
-    let pce_offset = piece.to_offset();
-    let sq_offset = square.to_offset();
-    let k = KEYS.piece_keys[sq_offset][pce_offset];
-
-    return pos_hash ^ k;
-}
-
-pub fn update_en_passant(pos_hash: PositionHash, square: Square) -> PositionHash {
-    let sq_offset = square.to_offset();
-    let k = KEYS.en_passant_sq_keys[sq_offset];
-
-    return pos_hash ^ k;
-}
-
-pub fn update_castle_permissions(
-    pos_hash: PositionHash,
-    perm_type: CastlePermissionType,
-) -> PositionHash {
-    let perm_offset = castle_permissions::to_offset(perm_type);
-    let k = KEYS.castle_keys[perm_offset];
-    return pos_hash ^ k;
-}
-
-fn init_piece_keys() -> [[u64; NUM_PIECES]; NUM_SQUARES] {
-    let mut retval = [[0u64; NUM_PIECES]; NUM_SQUARES];
-    for p in 0..NUM_SQUARES {
-        for c in 0..NUM_PIECES {
-            let seed = rand::random::<u64>();
-            retval[p][c] = seed;
-        }
+impl fmt::Display for PositionHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
     }
-    retval
 }
 
-fn init_castle_keys() -> [u64; NUM_CASTLE_PERMS] {
-    let mut retval = [0u64; NUM_CASTLE_PERMS];
-
-    for p in 0..NUM_CASTLE_PERMS {
-        let seed = rand::random::<u64>();
-        retval[p] = seed;
+impl Default for PositionHash {
+    fn default() -> Self {
+        PositionHash { hash: 0 }
+    }
+}
+impl PositionHash {
+    pub fn new(val: u64) -> PositionHash {
+        PositionHash { hash: val }
+    }
+    pub const fn update_side(&self, hash_seeds: &'static HashSeed) -> PositionHash {
+        let new_hash = self.hash ^ hash_seeds.get_side_seed();
+        PositionHash { hash: new_hash }
     }
 
-    retval
-}
-
-fn init_en_passant_keys() -> [u64; NUM_SQUARES] {
-    let mut retval = [0u64; NUM_SQUARES];
-
-    for p in 0..NUM_SQUARES {
-        let seed = rand::random::<u64>();
-        retval[p] = seed;
+    pub const fn update_piece(
+        &self,
+        hash_seeds: &'static HashSeed,
+        piece: &Piece,
+        square: Square,
+    ) -> PositionHash {
+        let new_hash = self.hash ^ hash_seeds.get_piece_square_seed(piece, square);
+        PositionHash { hash: new_hash }
     }
 
-    retval
+    pub const fn update_en_passant(&self, hash_seeds: &'static HashSeed, square: Square) -> PositionHash {
+        let new_hash = self.hash ^ hash_seeds.get_en_passant_seed(square);
+        PositionHash { hash: new_hash }
+    }
+
+    pub const fn update_castle_permissions(
+        &self,
+        hash_seeds: &'static HashSeed,
+        perm_type: CastlePermissionType,
+    ) -> PositionHash {
+        let new_hash = self.hash ^ hash_seeds.get_castle_permission_seed(perm_type);
+        PositionHash { hash: new_hash }
+    }
 }
 
 #[cfg(test)]
 pub mod tests {
     use engine::hash::PositionHash;
+    use engine::hash_seed::HashSeed;
     use utils;
 
     #[test]
     pub fn hash_flip_side_result_as_expected() {
-        let mut h: PositionHash = 0;
+        let mut hash: PositionHash = PositionHash::default();
+        let seeds = HashSeed::new();
+        let init_hash = hash;
 
-        let init_hash = h;
+        hash = hash.update_side(seeds);
 
-        h = super::update_side(h);
+        assert!(init_hash != hash);
 
-        assert!(init_hash != h);
-
-        h = super::update_side(h);
-        assert!(h == init_hash);
+        hash = hash.update_side(seeds);
+        assert!(hash == init_hash);
     }
 
     #[test]
     pub fn flip_piece_and_square_result_as_expected() {
-        let mut h: PositionHash = 0;
+        let mut h: PositionHash = PositionHash::default();
+        let seeds = HashSeed::new();
 
         for pce in utils::get_all_pieces() {
             for sq in utils::get_ordered_square_list_by_file() {
                 let init_hash = h;
 
-                h = super::update_piece(h, &pce, sq);
+                h = h.update_piece(seeds, &pce, sq);
                 let after_hash = h;
 
                 assert!(init_hash != after_hash);
 
-                h = super::update_piece(h, &pce, sq);
+                h = h.update_piece(seeds, &pce, sq);
                 let after_second_hash = h;
                 assert!(after_hash != after_second_hash);
 
@@ -128,24 +98,25 @@ pub mod tests {
                 assert!(init_hash == after_second_hash);
 
                 // now flip again to seed the next iteration with something different
-                h = super::update_piece(h, &pce, sq);
+                h = h.update_piece(seeds, &pce, sq);
             }
         }
     }
 
     #[test]
     pub fn flip_en_passant_result_as_expected() {
-        let mut h: PositionHash = 0;
+        let mut h: PositionHash = PositionHash::default();
+        let seeds = HashSeed::new();
 
         for sq in utils::get_ordered_square_list_by_file() {
             let init_hash = h;
 
-            h = super::update_en_passant(h, sq);
+            h = h.update_en_passant(seeds, sq);
             let after_hash = h;
 
             assert!(init_hash != after_hash);
 
-            h = super::update_en_passant(h, sq);
+            h = h.update_en_passant(seeds, sq);
             let after_second_hash = h;
             assert!(after_hash != after_second_hash);
 
@@ -153,23 +124,24 @@ pub mod tests {
             assert!(init_hash == after_second_hash);
 
             // now flip again to seed the next iteration with something different
-            h = super::update_en_passant(h, sq);
+            h = h.update_en_passant(seeds, sq);
         }
     }
 
     #[test]
     pub fn flip_castle_permission_as_expected() {
-        let mut h: PositionHash = 0;
+        let mut h: PositionHash = PositionHash::default();
+        let seeds = HashSeed::new();
 
         for cp in utils::get_all_castle_permissions() {
             let init_hash = h;
 
-            h = super::update_castle_permissions(h, cp);
+            h = h.update_castle_permissions(seeds, cp);
             let after_hash = h;
 
             assert!(init_hash != after_hash);
 
-            h = super::update_castle_permissions(h, cp);
+            h = h.update_castle_permissions(seeds, cp);
             let after_second_hash = h;
             assert!(after_hash != after_second_hash);
 
@@ -177,7 +149,7 @@ pub mod tests {
             assert!(init_hash == after_second_hash);
 
             // now flip again to seed the next iteration with something different
-            h = super::update_castle_permissions(h, cp);
+            h = h.update_castle_permissions(seeds, cp);
         }
     }
 }

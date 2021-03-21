@@ -1,4 +1,3 @@
-use core::core_traits::ArrayAccessor;
 use num::FromPrimitive;
 use std::fmt;
 use std::slice::Iter;
@@ -264,13 +263,12 @@ impl Square {
     const fn file_as_u8(self) -> u8 {
         (self as u8 % 8) as u8
     }
-}
 
-impl ArrayAccessor for Square {
-    fn to_offset(self) -> usize {
+    pub const fn to_offset(self) -> usize {
         self as usize
     }
 }
+
 
 enum_from_primitive! {
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]

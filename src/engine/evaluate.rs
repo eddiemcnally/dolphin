@@ -4,7 +4,6 @@ use components::board::Board;
 use components::piece::Colour;
 use components::piece::Piece;
 use components::square::Square;
-use core::core_traits::ArrayAccessor;
 
 // Values for piece square arrays are taken from
 // https://www.chessprogramming.org/Simplified_Evaluation_Function

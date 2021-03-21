@@ -7,8 +7,8 @@ use engine::attack_checker;
 use engine::castle_permissions;
 use engine::castle_permissions::CastlePermission;
 use engine::castle_permissions::CastlePermissionType;
-use engine::hash;
 use engine::hash::PositionHash;
+use engine::hash_seed::HashSeed;
 use engine::position_history::PositionHistory;
 use input::fen::ParsedFen;
 use moves::mov::Mov;
@@ -79,6 +79,7 @@ pub struct Position {
     move_cntr: MoveCounter,
     fifty_move_cntr: u8,
     position_key: PositionHash,
+    hash_seeds: &'static HashSeed,
     position_history: PositionHistory,
 }
 
@@ -153,6 +154,8 @@ impl Position {
             full_move: parsed_fen.full_move_cnt,
         };
 
+        let seeds = HashSeed::new();
+
         let mut pos = Position {
             board: Board::from_fen(&parsed_fen),
             side_to_move: parsed_fen.side_to_move,
@@ -161,7 +164,8 @@ impl Position {
             move_cntr: mv_cntr,
             fifty_move_cntr: 0,
             position_history: PositionHistory::new(),
-            position_key: 0,
+            position_key: PositionHash::default(),
+            hash_seeds: seeds,
         };
 
         generate_hash_from_fen(&mut pos, &parsed_fen);
@@ -204,7 +208,7 @@ impl Position {
             Colour::White => self.side_to_move = Colour::Black,
             Colour::Black => self.side_to_move = Colour::White,
         };
-        self.position_key = hash::update_side(self.position_key);
+        self.position_key = self.position_key.update_side(self.hash_seeds);
     }
 
     pub fn make_move(&mut self, mv: Mov) -> MoveLegality {
@@ -332,8 +336,9 @@ impl Position {
         // clear en passant
         if self.en_pass_sq.is_some() {
             if mv.get_move_type().unwrap() != MoveType::DoublePawn {
-                self.position_key =
-                    hash::update_en_passant(self.position_key, self.en_pass_sq.unwrap());
+                self.position_key = self
+                    .position_key
+                    .update_en_passant(self.hash_seeds, self.en_pass_sq.unwrap());
                 self.en_pass_sq = None;
             }
         }
@@ -383,37 +388,41 @@ impl Position {
 fn generate_hash_from_fen(position: &mut Position, parsed_fen: &ParsedFen) {
     let positions = parsed_fen.piece_positions.iter();
     for (sq, pce) in positions {
-        position.position_key = hash::update_piece(position.position_key, pce, *sq);
+        position.position_key = position
+            .position_key
+            .update_piece(position.hash_seeds, pce, *sq);
     }
 
-    position.position_key = hash::update_side(position.position_key);
+    position.position_key = position.position_key.update_side(position.hash_seeds);
 
     let cp = parsed_fen.castle_perm;
 
     if castle_permissions::is_black_king_set(cp) {
-        position.position_key =
-            hash::update_castle_permissions(position.position_key, CastlePermissionType::BlackKing);
+        position.position_key = position
+            .position_key
+            .update_castle_permissions(position.hash_seeds, CastlePermissionType::BlackKing);
     }
     if castle_permissions::is_white_king_set(cp) {
-        position.position_key =
-            hash::update_castle_permissions(position.position_key, CastlePermissionType::WhiteKing);
+        position.position_key = position
+            .position_key
+            .update_castle_permissions(position.hash_seeds, CastlePermissionType::WhiteKing);
     }
     if castle_permissions::is_black_queen_set(cp) {
-        position.position_key = hash::update_castle_permissions(
-            position.position_key,
-            CastlePermissionType::BlackQueen,
-        );
+        position.position_key = position
+            .position_key
+            .update_castle_permissions(position.hash_seeds, CastlePermissionType::BlackQueen);
     }
     if castle_permissions::is_white_queen_set(cp) {
-        position.position_key = hash::update_castle_permissions(
-            position.position_key,
-            CastlePermissionType::WhiteQueen,
-        );
+        position.position_key = position
+            .position_key
+            .update_castle_permissions(position.hash_seeds, CastlePermissionType::WhiteQueen);
     }
 
     let enp = parsed_fen.en_pass_sq;
     if let Some(enp) = enp {
-        position.position_key = hash::update_en_passant(position.position_key, enp);
+        position.position_key = position
+            .position_key
+            .update_en_passant(position.hash_seeds, enp);
     }
 }
 
@@ -427,12 +436,16 @@ fn find_en_passant_sq(from_sq: Square, col: Colour) -> Option<Square> {
 
 fn remove_piece_from_board(position: &mut Position, pce: &'static Piece, sq: Square) {
     position.board.remove_piece(pce, sq);
-    position.position_key = hash::update_piece(position.position_key, &pce, sq);
+    position.position_key = position
+        .position_key
+        .update_piece(position.hash_seeds, pce, sq);
 }
 
 fn add_piece_to_board(position: &mut Position, pce: &'static Piece, sq: Square) {
     position.board.add_piece(pce, sq);
-    position.position_key = hash::update_piece(position.position_key, &pce, sq);
+    position.position_key = position
+        .position_key
+        .update_piece(position.hash_seeds, &pce, sq);
 }
 
 fn move_piece_on_board(
@@ -441,8 +454,12 @@ fn move_piece_on_board(
     from_sq: Square,
     to_sq: Square,
 ) {
-    position.position_key = hash::update_piece(position.position_key, &pce, from_sq);
-    position.position_key = hash::update_piece(position.position_key, &pce, to_sq);
+    position.position_key = position
+        .position_key
+        .update_piece(position.hash_seeds, &pce, from_sq);
+    position.position_key = position
+        .position_key
+        .update_piece(position.hash_seeds, &pce, to_sq);
     position.board.move_piece(from_sq, to_sq, pce);
 }
 
@@ -509,26 +526,22 @@ fn clear_castle_permissions_for_colour(position: &mut Position, col: Colour) {
         Colour::White => {
             castle_permissions::clear_white_king_and_queen(&mut position.castle_perm);
 
-            position.position_key = hash::update_castle_permissions(
-                position.position_key,
-                CastlePermissionType::WhiteKing,
-            );
-            position.position_key = hash::update_castle_permissions(
-                position.position_key,
-                CastlePermissionType::WhiteQueen,
-            );
+            position.position_key = position
+                .position_key
+                .update_castle_permissions(position.hash_seeds, CastlePermissionType::WhiteKing);
+            position.position_key = position
+                .position_key
+                .update_castle_permissions(position.hash_seeds, CastlePermissionType::WhiteQueen);
         }
         Colour::Black => {
             castle_permissions::clear_black_king_and_queen(&mut position.castle_perm);
 
-            position.position_key = hash::update_castle_permissions(
-                position.position_key,
-                CastlePermissionType::BlackKing,
-            );
-            position.position_key = hash::update_castle_permissions(
-                position.position_key,
-                CastlePermissionType::BlackQueen,
-            );
+            position.position_key = position
+                .position_key
+                .update_castle_permissions(position.hash_seeds, CastlePermissionType::BlackKing);
+            position.position_key = position
+                .position_key
+                .update_castle_permissions(position.hash_seeds, CastlePermissionType::BlackQueen);
         }
     }
 }
@@ -545,7 +558,9 @@ fn do_double_pawn_move(
     match s {
         Some(_) => {
             position.en_pass_sq = s;
-            position.position_key = hash::update_en_passant(position.position_key(), s.unwrap());
+            position.position_key = position
+                .position_key
+                .update_en_passant(position.hash_seeds, s.unwrap());
         }
         None => panic!("Unable to find en passant square"),
     }
@@ -611,7 +626,7 @@ mod tests {
     use components::piece::PieceRole;
     use components::square::Square;
     use engine::castle_permissions;
-    use engine::hash;
+    use engine::hash_seed::HashSeed;
     use engine::position::MoveLegality;
     use engine::position::Position;
     use input::fen;
@@ -1423,14 +1438,15 @@ mod tests {
     pub fn make_move_hash_updated_white_double_pawn_move() {
         let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+        let hash_seeds = HashSeed::new();
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
         let init_hash = pos.position_key();
 
-        let mut expected_hash = hash::update_piece(init_hash, &Piece::WHITE_PAWN, Square::b2);
-        expected_hash = hash::update_piece(expected_hash, &Piece::WHITE_PAWN, Square::b4);
-        expected_hash = hash::update_en_passant(expected_hash, Square::b3);
-        expected_hash = hash::update_side(expected_hash);
+        let mut expected_hash = init_hash.update_piece(hash_seeds, &Piece::WHITE_PAWN, Square::b2);
+        expected_hash = expected_hash.update_piece(hash_seeds, &Piece::WHITE_PAWN, Square::b4);
+        expected_hash = expected_hash.update_en_passant(hash_seeds, Square::b3);
+        expected_hash = expected_hash.update_side(hash_seeds);
 
         let wp_double_mv = Mov::encode_move_double_pawn_first(Square::b2, Square::b4);
         pos.make_move(wp_double_mv);
@@ -1443,14 +1459,15 @@ mod tests {
     pub fn make_move_hash_updated_black_double_pawn_move() {
         let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1";
 
+        let hash_seeds = HashSeed::new();
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
         let init_hash = pos.position_key();
 
-        let mut expected_hash = hash::update_piece(init_hash, &Piece::BLACK_PAWN, Square::b7);
-        expected_hash = hash::update_piece(expected_hash, &Piece::BLACK_PAWN, Square::b5);
-        expected_hash = hash::update_en_passant(expected_hash, Square::b6);
-        expected_hash = hash::update_side(expected_hash);
+        let mut expected_hash = init_hash.update_piece(hash_seeds, &Piece::BLACK_PAWN, Square::b7);
+        expected_hash = expected_hash.update_piece(hash_seeds, &Piece::BLACK_PAWN, Square::b5);
+        expected_hash = expected_hash.update_en_passant(hash_seeds, Square::b6);
+        expected_hash = expected_hash.update_side(hash_seeds);
 
         let bp_double_mv = Mov::encode_move_double_pawn_first(Square::b7, Square::b5);
         pos.make_move(bp_double_mv);
@@ -1463,13 +1480,15 @@ mod tests {
     pub fn make_move_hash_updated_white_quiet_move() {
         let fen = "r1bqkbnr/pp1n1p1p/2pp4/4p1p1/1P1P4/5PP1/P1P1PN1P/RNBQKB1R w KQkq - 0 1";
 
+        let hash_seeds = HashSeed::new();
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
         let init_hash = pos.position_key();
 
-        let mut expected_hash = hash::update_piece(init_hash, &Piece::WHITE_KNIGHT, Square::f2);
-        expected_hash = hash::update_piece(expected_hash, &Piece::WHITE_KNIGHT, Square::g4);
-        expected_hash = hash::update_side(expected_hash);
+        let mut expected_hash =
+            init_hash.update_piece(hash_seeds, &Piece::WHITE_KNIGHT, Square::f2);
+        expected_hash = expected_hash.update_piece(hash_seeds, &Piece::WHITE_KNIGHT, Square::g4);
+        expected_hash = expected_hash.update_side(hash_seeds);
 
         let wp_double_mv = Mov::encode_move_quiet(Square::f2, Square::g4);
         pos.make_move(wp_double_mv);
@@ -1482,13 +1501,15 @@ mod tests {
     pub fn make_move_hash_updated_black_quiet_move() {
         let fen = "r1bqkbnr/pp1n1p1p/2pp4/4p1p1/1P1P4/5PP1/P1P1PN1P/RNBQKB1R b KQkq - 0 1";
 
+        let hash_seeds = HashSeed::new();
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
         let init_hash = pos.position_key();
 
-        let mut expected_hash = hash::update_piece(init_hash, &Piece::BLACK_KNIGHT, Square::f6);
-        expected_hash = hash::update_piece(expected_hash, &Piece::BLACK_KNIGHT, Square::d7);
-        expected_hash = hash::update_side(expected_hash);
+        let mut expected_hash =
+            init_hash.update_piece(hash_seeds, &Piece::BLACK_KNIGHT, Square::f6);
+        expected_hash = expected_hash.update_piece(hash_seeds, &Piece::BLACK_KNIGHT, Square::d7);
+        expected_hash = expected_hash.update_side(hash_seeds);
 
         let wp_double_mv = Mov::encode_move_quiet(Square::d7, Square::f6);
         pos.make_move(wp_double_mv);
@@ -1500,18 +1521,20 @@ mod tests {
     #[test]
     pub fn make_move_hash_updated_black_en_passant_move() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/pPBP1P2/2R1NpP1/2r1r2P/R2q3n b - b3 0 1";
+
+        let hash_seeds = HashSeed::new();
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
         let init_hash = pos.position_key();
 
         // remove white pawn on b4
-        let mut expected_hash = hash::update_piece(init_hash, &Piece::WHITE_PAWN, Square::b4);
+        let mut expected_hash = init_hash.update_piece(hash_seeds, &Piece::WHITE_PAWN, Square::b4);
         // move a4->b3
-        expected_hash = hash::update_piece(expected_hash, &Piece::BLACK_PAWN, Square::a4);
-        expected_hash = hash::update_piece(expected_hash, &Piece::BLACK_PAWN, Square::b3);
-        expected_hash = hash::update_en_passant(expected_hash, Square::b3);
-        expected_hash = hash::update_side(expected_hash);
+        expected_hash = expected_hash.update_piece(hash_seeds, &Piece::BLACK_PAWN, Square::a4);
+        expected_hash = expected_hash.update_piece(hash_seeds, &Piece::BLACK_PAWN, Square::b3);
+        expected_hash = expected_hash.update_en_passant(hash_seeds, Square::b3);
+        expected_hash = expected_hash.update_side(hash_seeds);
 
         assert_eq!(pos.en_passant_square(), Some(Square::b3));
         let mv = Mov::encode_move_en_passant(Square::a4, Square::b3);
@@ -1524,18 +1547,19 @@ mod tests {
     #[test]
     pub fn make_move_hash_updated_white_en_passant() {
         let fen = "1n1k2bp/2p2pb1/1p5p/1B1pP1K1/pPBP1P2/N1R1NpPQ/P1r1r2P/R2q3n w - d6 0 1";
+        let hash_seeds = HashSeed::new();
         let parsed_fen = fen::get_position(&fen);
         let mut pos = Position::new(parsed_fen);
 
         let init_hash = pos.position_key();
 
         // remove black pawn
-        let mut expected_hash = hash::update_piece(init_hash, &Piece::BLACK_PAWN, Square::d5);
+        let mut expected_hash = init_hash.update_piece(hash_seeds, &Piece::BLACK_PAWN, Square::d5);
         // move e5->d6
-        expected_hash = hash::update_piece(expected_hash, &Piece::WHITE_PAWN, Square::e5);
-        expected_hash = hash::update_piece(expected_hash, &Piece::WHITE_PAWN, Square::d6);
-        expected_hash = hash::update_en_passant(expected_hash, Square::d6);
-        expected_hash = hash::update_side(expected_hash);
+        expected_hash = expected_hash.update_piece(hash_seeds, &Piece::WHITE_PAWN, Square::e5);
+        expected_hash = expected_hash.update_piece(hash_seeds, &Piece::WHITE_PAWN, Square::d6);
+        expected_hash = expected_hash.update_en_passant(hash_seeds, Square::d6);
+        expected_hash = expected_hash.update_side(hash_seeds);
 
         assert_eq!(pos.en_passant_square(), Some(Square::d6));
         let mv = Mov::encode_move_en_passant(Square::e5, Square::d6);

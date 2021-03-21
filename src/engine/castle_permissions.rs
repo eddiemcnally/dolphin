@@ -116,7 +116,7 @@ pub fn is_black_queen_set(perm: CastlePermission) -> bool {
     (perm & PERM_MASK) & CastlePermissionType::BlackQueen as u8 != 0
 }
 
-pub fn to_offset(perm_type: CastlePermissionType) -> usize {
+pub const fn to_offset(perm_type: CastlePermissionType) -> usize {
     (((perm_type as u8) & OFFSET_MASK) >> OFFSET_SHIFT) as usize
 }
 

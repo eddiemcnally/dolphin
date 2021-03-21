@@ -3,13 +3,14 @@ use components::piece::Piece;
 use components::square::Square;
 use engine::castle_permissions;
 use engine::castle_permissions::CastlePermission;
+use engine::hash::PositionHash;
 use moves::mov::Mov;
 use std::fmt;
 
 #[derive(Clone, Copy)]
 struct HistoryItem {
     board: Board,
-    position_hash: u64,
+    position_hash: PositionHash,
     mov: Mov,
     fifty_move_cntr: u8,
     en_pass_sq: Option<Square>,
@@ -40,7 +41,7 @@ impl Default for HistoryItem {
     fn default() -> Self {
         HistoryItem {
             board: Board::default(),
-            position_hash: 0,
+            position_hash: PositionHash::default(),
             mov: Mov::encode_move_quiet(Square::a1, Square::a2),
             fifty_move_cntr: 0,
             en_pass_sq: None,
@@ -149,7 +150,7 @@ impl PositionHistory {
     pub fn push(
         &mut self,
         board: &Board,
-        position_hash: u64,
+        position_hash: PositionHash,
         mov: Mov,
         fifty_move_cntr: u8,
         en_pass_sq: Option<Square>,
@@ -177,7 +178,7 @@ impl PositionHistory {
         &mut self,
     ) -> (
         Board,
-        u64,
+        PositionHash,
         Mov,
         u8,
         Option<Square>,
@@ -211,6 +212,7 @@ mod tests {
     use components::piece::Piece;
     use components::piece::PieceRole;
     use engine::castle_permissions;
+    use engine::hash::PositionHash;
     use engine::position_history::PositionHistory;
     use moves::mov::Mov;
 
@@ -223,7 +225,7 @@ mod tests {
         // push multiple positions
         for i in 0..num_to_test {
             let board = Board::new();
-            let pk = 1234;
+            let pk = PositionHash::new(1234);
             let mv = Mov::encode_move_castle_queenside_white();
             let enp = None;
             let fifty_move_cntr = i as u8;
@@ -251,7 +253,7 @@ mod tests {
         // push multiple positions
         for i in 0..num_to_test {
             let board = Board::new();
-            let pk = 1234;
+            let pk = PositionHash::new(1234);
             let mv = Mov::encode_move_castle_queenside_white();
             let enp = None;
             let fifty_move_cntr = i as u8;
