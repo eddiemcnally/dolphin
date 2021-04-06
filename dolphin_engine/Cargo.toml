@@ -1,0 +1,13 @@
+[package]
+name = "dolphin_engine"
+version = "0.1.0"
+authors = ["eddiemcnally <emcn@gmx.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dolphin_core = { path = "../dolphin_core" }
+typenum = "1.12.0"
+num_enum = "0.5.1"
+core_affinity = "0.5.10"

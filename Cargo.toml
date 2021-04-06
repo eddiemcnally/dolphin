@@ -1,37 +1,17 @@
-[package]
-name = "dolphin"
-version = "0.1.0"
-authors = ["eddie"]
-autobins = false
+[workspace]
 
-[dependencies]
-rand = "0.8.3"
-lazy_static = "1.4.0"
-typenum = "1.12.0"
-num = "0.4.0"
-enum_primitive = "0.1.1"
-core_affinity = "0.5.10"
-num-format = "0.4.0"
+members = [
+    "dolphin_core",
+    # "dolphin_engine",
+    "perft"
+]
+
 
 [profile.release]
 lto = "fat"
 codegen-units = 1
 debug = false
-opt-level=3
+opt-level = 3
 overflow-checks=false
-
-
-[build]
-rustflags = ["-C target-cpu=native"]        # comma-separated   
-
-
-[[bin]]
-name = "perft"
-test = true
-
-[[bin]]
-name = "dolphin"
-src = "src/main.rs"
-test = true
 
 
