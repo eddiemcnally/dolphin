@@ -1,7 +1,5 @@
-
-use std::vec::Vec;
 use crate::mov::Mov;
-
+use std::vec::Vec;
 
 const MAX_MOVE_BUF_SZ: usize = 256;
 
@@ -65,9 +63,9 @@ impl MoveList {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::square::Square;
     use crate::mov::Mov;
     use crate::move_list::MoveList;
+    use crate::square::Square;
     use std::collections::HashSet;
 
     #[test]

@@ -18,7 +18,7 @@ pub struct Board {
     piece_bb: [u64; piece::NUM_PIECES],
     // bitboard for each Colour
     colour_bb: [u64; piece::NUM_COLOURS],
-    // material value - TODO, move into position/GameState
+    // material value
     material: [u32; piece::NUM_COLOURS],
     // pieces on sqaures
     pieces: [Option<Piece>; square::NUM_SQUARES],
@@ -55,6 +55,12 @@ impl PartialEq for Board {
             }
         }
 
+        for i in 0..piece::NUM_PIECES {
+            if self.pieces[i] != other.pieces[i] {
+                println!("BOARD: pieces are different");
+                return false;
+            }
+        }
         for i in 0..piece::NUM_COLOURS as usize {
             if self.colour_bb[i] != other.colour_bb[i] {
                 println!("BOARD: colour_bb are different");
@@ -73,11 +79,11 @@ impl PartialEq for Board {
 impl fmt::Debug for Board {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
-        debug_str.push_str("\n");
+        debug_str.push_str("\n\n");
 
         for r in Rank::reverse_iterator() {
-            debug_str.push(Rank::to_char(*r));
-            debug_str.push(' ');
+            debug_str.push(r.to_char());
+            debug_str.push('\t');
 
             for f in File::iterator() {
                 let sq = Square::get_square(*r, *f);
@@ -86,15 +92,15 @@ impl fmt::Debug for Board {
                 match pce {
                     Some(pce) => {
                         debug_str.push_str(&pce.to_label().to_string());
-                        debug_str.push_str(" ");
+                        debug_str.push_str("\t");
                     }
-                    _ => debug_str.push_str(" . "),
+                    _ => debug_str.push_str(".\t"),
                 }
             }
 
             debug_str.push_str("\n");
         }
-        debug_str.push_str("   A  B  C  D  E  F  G  H");
+        debug_str.push_str("\n\tA\tB\tC\tD\tE\tF\tG\tH\n\n");
         write!(f, "{}", debug_str)
     }
 }
@@ -141,6 +147,15 @@ impl Board {
         self.pieces[sq.to_offset()] = None;
     }
 
+    pub fn remove_from_sq(&mut self, sq: Square) {
+        let piece = self.get_piece_on_square(sq);
+        if piece.is_none() {
+            panic!("attempt to remove from square but square is empty");
+        }
+
+        self.remove_piece(piece.unwrap(), sq);
+    }
+
     pub fn get_colour_bb(&self, colour: Colour) -> u64 {
         self.colour_bb[colour.to_offset()]
     }
@@ -165,6 +180,15 @@ impl Board {
             from_sq
         );
 
+        debug_assert!(
+            self.get_piece_on_square(from_sq) == Some(piece),
+            "move piece, piece on from_sq not as expected. Expected: {:?}, found: {:?}, from_sq: {:?}, to_sq: {:?}",
+            piece,
+            self.get_piece_on_square(from_sq),
+            from_sq,
+            to_sq
+        );
+
         self.clear_bitboards(piece, from_sq);
         self.pieces[from_sq.to_offset()] = None;
 
@@ -177,8 +201,7 @@ impl Board {
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
-        let bb = self.get_bitboard();
-        !bitboard::is_set(bb, sq)
+        self.pieces[sq.to_offset()] == None
     }
 
     pub const fn get_piece_bitboard(&self, piece: Piece) -> u64 {

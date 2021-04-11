@@ -7,7 +7,7 @@ pub const NUM_SQUARES: usize = 64;
 
 #[allow(non_camel_case_types)]
 #[rustfmt::skip]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, TryFromPrimitive)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash, TryFromPrimitive)]
 #[repr(u8)]
 pub enum Square {
     a1 = 0, b1, c1, d1, e1, f1, g1, h1,
@@ -28,6 +28,20 @@ impl Default for Square {
 impl fmt::Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+impl fmt::Debug for Square {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_str = String::new();
+
+        let rank = self.rank();
+        let file = self.file();
+
+        debug_str.push_str(&format!("{}", file.to_char()));
+        debug_str.push_str(&format!("{}", rank.to_char()));
+
+        write!(f, "{}", debug_str)
     }
 }
 
@@ -144,7 +158,7 @@ impl Square {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, Copy, TryFromPrimitive)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy, TryFromPrimitive)]
 #[repr(u8)]
 pub enum Rank {
     Rank1 = 0,
@@ -157,6 +171,21 @@ pub enum Rank {
     Rank8,
 }
 
+impl fmt::Display for Rank {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+impl fmt::Debug for Rank {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_str = String::new();
+
+        debug_str.push_str(&format!("{}", self.to_char()));
+
+        write!(f, "{}", debug_str)
+    }
+}
+
 impl Rank {
     pub fn from_num(num: u8) -> Option<Rank> {
         let rank = Rank::try_from(num);
@@ -166,31 +195,31 @@ impl Rank {
         }
     }
 
-    pub fn add_one(rank: Rank) -> Option<Rank> {
-        let new_rank = rank as u8 + 1;
+    pub fn add_one(&self) -> Option<Rank> {
+        let new_rank = *self as u8 + 1;
         Rank::from_num(new_rank)
     }
 
-    pub fn add_two(rank: Rank) -> Option<Rank> {
-        let new_rank = rank as u8 + 2;
+    pub fn add_two(&self) -> Option<Rank> {
+        let new_rank = *self as u8 + 2;
         Rank::from_num(new_rank)
     }
 
-    pub fn subtract_one(rank: Rank) -> Option<Rank> {
-        match rank {
+    pub fn subtract_one(&self) -> Option<Rank> {
+        match self {
             Rank::Rank1 => None,
             _ => {
-                let new_rank = rank as u8 - 1;
+                let new_rank = *self as u8 - 1;
                 Rank::from_num(new_rank)
             }
         }
     }
 
-    pub fn subtract_two(rank: Rank) -> Option<Rank> {
-        match rank {
+    pub fn subtract_two(&self) -> Option<Rank> {
+        match self {
             Rank::Rank1 | Rank::Rank2 => None,
             _ => {
-                let new_rank = rank as u8 - 2;
+                let new_rank = *self as u8 - 2;
                 Rank::from_num(new_rank)
             }
         }
@@ -209,8 +238,8 @@ impl Rank {
             _ => None,
         }
     }
-    pub fn to_char(rank: Rank) -> char {
-        match rank {
+    pub fn to_char(&self) -> char {
+        match self {
             Rank::Rank1 => '1',
             Rank::Rank2 => '2',
             Rank::Rank3 => '3',
@@ -251,7 +280,7 @@ impl Rank {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, Copy, TryFromPrimitive)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy, TryFromPrimitive)]
 #[repr(u8)]
 pub enum File {
     FileA = 0,
@@ -264,6 +293,22 @@ pub enum File {
     FileH,
 }
 
+impl fmt::Display for File {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl fmt::Debug for File {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_str = String::new();
+
+        debug_str.push_str(&format!("{}", self.to_char()));
+
+        write!(f, "{}", debug_str)
+    }
+}
+
 impl File {
     pub fn from_num(num: u8) -> Option<File> {
         let file = File::try_from(num);
@@ -273,31 +318,31 @@ impl File {
         }
     }
 
-    pub fn add_one(file: File) -> Option<File> {
-        let new_file = file as u8 + 1;
+    pub fn add_one(&self) -> Option<File> {
+        let new_file = *self as u8 + 1;
         File::from_num(new_file)
     }
 
-    pub fn subtract_one(file: File) -> Option<File> {
-        match file {
+    pub fn subtract_one(&self) -> Option<File> {
+        match self {
             File::FileA => None,
             _ => {
-                let new_file = file as u8 - 1;
+                let new_file = *self as u8 - 1;
                 File::from_num(new_file)
             }
         }
     }
 
-    pub fn add_two(file: File) -> Option<File> {
-        let new_file = file as u8 + 2;
+    pub fn add_two(&self) -> Option<File> {
+        let new_file = *self as u8 + 2;
         File::from_num(new_file)
     }
 
-    pub fn subtract_two(file: File) -> Option<File> {
-        match file {
+    pub fn subtract_two(&self) -> Option<File> {
+        match self {
             File::FileA | File::FileB => None,
             _ => {
-                let new_file = file as u8 - 2;
+                let new_file = *self as u8 - 2;
                 File::from_num(new_file)
             }
         }
@@ -316,8 +361,8 @@ impl File {
             _ => None,
         }
     }
-    pub fn to_char(file: File) -> char {
-        match file {
+    pub fn to_char(&self) -> char {
+        match self {
             File::FileA => 'a',
             File::FileB => 'b',
             File::FileC => 'c',
@@ -426,7 +471,7 @@ pub mod tests {
     pub fn file_to_char() {
         let map = get_file_map();
         for (file, ch) in map {
-            let cc = File::to_char(file);
+            let cc = file.to_char();
             assert_eq!(cc, ch);
         }
     }
@@ -444,7 +489,7 @@ pub mod tests {
     pub fn rank_to_char() {
         let map = get_rank_map();
         for (rank, ch) in map {
-            let cc = Rank::to_char(rank);
+            let cc = rank.to_char();
             assert_eq!(cc, ch);
         }
     }

@@ -1,7 +1,7 @@
 use crate::bitboard;
 use crate::board;
 use crate::square;
-use crate::square::{File, Rank, Square};
+use crate::square::Square;
 use std::ops::Shl;
 
 // Bitboards representing commonly used ranks
@@ -113,43 +113,38 @@ impl OccupancyMasks {
         (bb & !FILE_A_BB) >> 9
     }
 
-    #[inline(always)]
     pub fn get_occ_mask_white_pawns_attacking_sq(&self, sq: Square) -> u64 {
         let bb = sq.get_square_as_bb();
         self.south_east(bb) | self.south_west(bb)
     }
-    #[inline(always)]
     pub fn get_occ_mask_black_pawns_attacking_sq(&self, sq: Square) -> u64 {
         let bb = sq.get_square_as_bb();
         self.north_east(bb) | self.north_west(bb)
     }
-    #[inline(always)]
     pub fn get_occ_mask_white_pawn_capture_non_first_double_move(&self, sq: Square) -> u64 {
         let bb = sq.get_square_as_bb();
         self.north_east(bb) | self.north_west(bb)
     }
-    #[inline(always)]
     pub fn get_occ_mask_black_pawn_capture_non_first_double_move(&self, sq: Square) -> u64 {
         let bb = sq.get_square_as_bb();
         self.south_east(bb) | self.south_west(bb)
     }
-    #[inline(always)]
     pub fn get_occ_mask_white_pawn_attack_squares(&self, pawn_sq: Square) -> u64 {
         let bb = pawn_sq.get_square_as_bb();
         self.north_east(bb) | self.north_west(bb)
     }
-    #[inline(always)]
     pub fn get_occ_mask_black_pawn_attack_squares(&self, pawn_sq: Square) -> u64 {
         let bb = pawn_sq.get_square_as_bb();
         self.south_east(bb) | self.south_west(bb)
     }
 }
 
+#[inline(always)]
 fn get_vertical_move_mask(sq: Square) -> u64 {
     let file = sq.file();
     return FILE_MASK << (file as u8);
 }
-
+#[inline(always)]
 fn get_horizontal_move_mask(sq: Square) -> u64 {
     let rank = sq.rank();
     return RANK_MASK << ((rank as u8) << 3);
@@ -167,52 +162,52 @@ fn populate_knight_occupancy_mask_array() -> [u64; board::NUM_SQUARES] {
         let file = sq.file();
 
         // rank + 2, file +/- 1
-        let mut r = Rank::add_two(rank);
-        let mut f = File::add_one(file);
+        let mut r = rank.add_two();
+        let mut f = file.add_one();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
         }
-        f = File::subtract_one(file);
+        f = file.subtract_one();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
         }
 
         // rank + 1, file +/- 2
-        r = Rank::add_one(rank);
-        f = File::add_two(file);
+        r = rank.add_one();
+        f = file.add_two();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
         }
-        f = File::subtract_two(file);
+        f = file.subtract_two();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
         }
 
         // rank - 1, file +/- 2
-        r = Rank::subtract_one(rank);
-        f = File::add_two(file);
+        r = rank.subtract_one();
+        f = file.add_two();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
         }
-        f = File::subtract_two(file);
+        f = file.subtract_two();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
         }
 
         // rank - 2, file +/- 1
-        r = Rank::subtract_two(rank);
-        f = File::add_one(file);
+        r = rank.subtract_two();
+        f = file.add_one();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
         }
-        f = File::subtract_one(file);
+        f = file.subtract_one();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
@@ -235,8 +230,8 @@ fn populate_king_mask_array() -> [u64; board::NUM_SQUARES] {
         let file = sq.file();
 
         // rank+1, file -1/0/+1
-        let mut r = Rank::add_one(rank);
-        let mut f = File::subtract_one(file);
+        let mut r = rank.add_one();
+        let mut f = file.subtract_one();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
@@ -246,7 +241,7 @@ fn populate_king_mask_array() -> [u64; board::NUM_SQUARES] {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
         }
-        f = File::add_one(file);
+        f = file.add_one();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
@@ -254,20 +249,20 @@ fn populate_king_mask_array() -> [u64; board::NUM_SQUARES] {
 
         // rank, file -1/+1
         r = Some(rank);
-        f = File::subtract_one(file);
+        f = file.subtract_one();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
         }
-        f = File::add_one(file);
+        f = file.add_one();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
         }
 
         // rank-1, file -1/0/+1
-        r = Rank::subtract_one(rank);
-        f = File::subtract_one(file);
+        r = rank.subtract_one();
+        f = file.subtract_one();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
@@ -277,7 +272,7 @@ fn populate_king_mask_array() -> [u64; board::NUM_SQUARES] {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
         }
-        f = File::add_one(file);
+        f = file.add_one();
         if r.is_some() && f.is_some() {
             let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
             bb = bitboard::set_bit(bb, derived_sq);
@@ -298,8 +293,8 @@ fn populate_diagonal_mask_array() -> [u64; board::NUM_SQUARES] {
 
         // move SW
         loop {
-            let r = Rank::subtract_one(rank);
-            let f = File::subtract_one(file);
+            let r = rank.subtract_one();
+            let f = file.subtract_one();
             if r.is_some() && f.is_some() {
                 let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
                 bb = bitboard::set_bit(bb, derived_sq);
@@ -316,8 +311,8 @@ fn populate_diagonal_mask_array() -> [u64; board::NUM_SQUARES] {
         file = sq.file();
 
         loop {
-            let r = Rank::add_one(rank);
-            let f = File::add_one(file);
+            let r = rank.add_one();
+            let f = file.add_one();
             if r.is_some() && f.is_some() {
                 let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
                 bb = bitboard::set_bit(bb, derived_sq);
@@ -351,8 +346,8 @@ fn populate_antidiagonal_mask_array() -> [u64; board::NUM_SQUARES] {
 
         // move NW
         loop {
-            let r = Rank::add_one(rank);
-            let f = File::subtract_one(file);
+            let r = rank.add_one();
+            let f = file.subtract_one();
             if r.is_some() && f.is_some() {
                 let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
                 bb = bitboard::set_bit(bb, derived_sq);
@@ -368,8 +363,8 @@ fn populate_antidiagonal_mask_array() -> [u64; board::NUM_SQUARES] {
         file = sq.file();
 
         loop {
-            let r = Rank::subtract_one(rank);
-            let f = File::add_one(file);
+            let r = rank.subtract_one();
+            let f = file.add_one();
             if r.is_some() && f.is_some() {
                 let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
                 bb = bitboard::set_bit(bb, derived_sq);

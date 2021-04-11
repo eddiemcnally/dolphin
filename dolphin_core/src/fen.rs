@@ -115,16 +115,16 @@ fn get_castle_permissions(castleperm: &str) -> CastlePermission {
     let mut cp = castle_permissions::NO_CASTLE_PERMS_AVAIL;
     if castleperm.trim() != "-" {
         if castleperm.contains('K') {
-            castle_permissions::set_white_king(&mut cp);
+            cp = castle_permissions::set_white_king(cp);
         }
         if castleperm.contains('Q') {
-            castle_permissions::set_white_queen(&mut cp);
+            cp = castle_permissions::set_white_queen(cp);
         }
         if castleperm.contains('k') {
-            castle_permissions::set_black_king(&mut cp);
+            cp = castle_permissions::set_black_king(cp);
         }
         if castleperm.contains('q') {
-            castle_permissions::set_black_queen(&mut cp);
+            cp = castle_permissions::set_black_queen(cp);
         }
     }
     cp

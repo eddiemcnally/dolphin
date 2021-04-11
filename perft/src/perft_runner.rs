@@ -15,10 +15,68 @@ pub fn perft(depth: u8, position: &mut Position) -> u64 {
     move_gen::generate_moves(position, &mut move_list);
 
     for mv in move_list {
+        // println!("Level {:?}, Making move: {:?}", depth, mv);
+
+        // if mv.decode_from_square() == Square::b7 && mv.decode_to_square() == Square::b5 {
+        //     println!(
+        //         "******* Level {:?}, Making move: {:?}, Board pre-move : {:?}",
+        //         depth,
+        //         mv,
+        //         position.board()
+        //     );
+        // } else {
+        //     println!(
+        //         "Level {:?}, Making move: {:?}, Board pre-move : {:?}",
+        //         depth,
+        //         mv,
+        //         position.board()
+        //     );
+        // }
+
         let move_legality = position.make_move(mv);
+
+        // if mv.decode_from_square() == Square::b7 && mv.decode_to_square() == Square::b5 {
+        //     println!(
+        //         "******* Level {:?}, Make move: {:?}, Legality : {:?}, Board post-move : {:?}",
+        //         depth,
+        //         mv,
+        //         move_legality,
+        //         position.board()
+        //     );
+        // } else {
+        //     println!(
+        //         "Level {:?}, Make move: {:?}, Legality : {:?}, Board post-move : {:?}",
+        //         depth,
+        //         mv,
+        //         move_legality,
+        //         position.board()
+        //     );
+        // }
+
         if move_legality == MoveLegality::Legal {
             nodes += perft(depth - 1, position);
         }
+
+        // if mv.decode_from_square() == Square::b7 && mv.decode_to_square() == Square::b5 {
+        //     println!(
+        //         "******* Level {:?}, TAKE move: {:?}, Legality : {:?}, Board pre take move : {:?}",
+        //         depth,
+        //         mv,
+        //         move_legality,
+        //         position.board()
+        //     );
+        // } else {
+        //     println!(
+        //         "Level {:?}, TAKE move: {:?}, Legality : {:?}, Board pre take move : {:?}",
+        //         depth,
+        //         mv,
+        //         move_legality,
+        //         position.board()
+        //     );
+        // }
+
+        //println!("Level {:?}, Taking move: {:?}", depth, mv);
+
         position.take_move();
     }
 

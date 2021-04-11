@@ -89,8 +89,31 @@ impl fmt::Debug for Mov {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
 
-        debug_str.push_str(&format!("{}->", self.decode_from_square()));
-        debug_str.push_str(&format!("{}", self.decode_to_square()));
+        let from_sq = self.decode_from_square();
+        let to_sq = self.decode_to_square();
+
+        debug_str.push_str(&format!("[{}", from_sq.file()));
+        debug_str.push_str(&format!("{}->", from_sq.rank()));
+        debug_str.push_str(&format!("{}", to_sq.file()));
+        debug_str.push_str(&format!("{} ", to_sq.rank()));
+
+        let mt = match self.get_move_type() {
+            MoveType::Quiet => "Quiet",
+            MoveType::DoublePawn => "DoubleFirstMove",
+            MoveType::KingCastle => "KingCastle",
+            MoveType::QueenCastle => "QueenCastle",
+            MoveType::Capture => "Capture",
+            MoveType::EnPassant => "EnPassant",
+            MoveType::PromoteKnightQuiet => "PromoteKnightQuiet",
+            MoveType::PromoteBishopQuiet => "PromoteBishopQuiet",
+            MoveType::PromoteRookQuiet => "PromoteRookQuiet",
+            MoveType::PromoteQueenQuiet => "PromoteQueenQuiet",
+            MoveType::PromoteKnightCapture => "PromoteKnightCapture",
+            MoveType::PromoteBishopCapture => "PromoteBishopCapture",
+            MoveType::PromoteRookCapture => "PromoteRookCapture",
+            MoveType::PromoteQueenCapture => "PromoteQueenCapture",
+        };
+        debug_str.push_str(&format!(" : {}]", mt));
 
         write!(f, "{}", debug_str)
     }

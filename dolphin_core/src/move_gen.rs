@@ -4,7 +4,6 @@ use crate::castle_permissions;
 use crate::mov::Mov;
 use crate::move_list::MoveList;
 use crate::occupancy_masks;
-use crate::occupancy_masks::OccupancyMasks;
 use crate::piece::Colour;
 use crate::piece::Piece;
 use crate::position::Position;
@@ -24,33 +23,29 @@ static BLACK_PROMOTION_PCES: [Piece; 4] = [
 ];
 
 pub fn generate_moves(position: &Position, move_list: &mut MoveList) {
-    let board = position.board();
-    let side_to_move = position.side_to_move();
-    let occ_masks = position.occupancy_masks();
+    generate_non_sliding_piece_moves(position, move_list);
+    generate_sliding_rank_file_moves(position, move_list);
+    generate_sliding_diagonal_antidiagonal_moves(position, move_list);
 
-    generate_non_sliding_piece_moves(&occ_masks, &board, side_to_move, move_list);
-    generate_sliding_rank_file_moves(&occ_masks, &board, side_to_move, move_list);
-    generate_sliding_diagonal_antidiagonal_moves(&occ_masks, &board, side_to_move, move_list);
-
-    match side_to_move {
+    match position.side_to_move() {
         Colour::White => {
             if castle_permissions::has_white_castle_permission(position.castle_permissions()) {
                 generate_white_castle_moves(&position, move_list);
             }
 
-            generate_white_pawn_moves(&occ_masks, &position, move_list);
+            generate_white_pawn_moves(position, move_list);
         }
         Colour::Black => {
             if castle_permissions::has_black_castle_permission(position.castle_permissions()) {
                 generate_black_castle_moves(&position, move_list);
             }
 
-            generate_black_pawn_moves(&occ_masks, &position, move_list);
+            generate_black_pawn_moves(&position, move_list);
         }
     };
 }
 
-fn generate_white_pawn_moves(occ_masks: &OccupancyMasks, pos: &Position, move_list: &mut MoveList) {
+fn generate_white_pawn_moves(pos: &Position, move_list: &mut MoveList) {
     let pawn = Piece::WhitePawn;
 
     // bitboard of all pawns
@@ -81,7 +76,9 @@ fn generate_white_pawn_moves(occ_masks: &OccupancyMasks, pos: &Position, move_li
         }
 
         // capture moves
-        let capt_mask = occ_masks.get_occ_mask_white_pawn_attack_squares(from_sq);
+        let capt_mask = pos
+            .occupancy_masks()
+            .get_occ_mask_white_pawn_attack_squares(from_sq);
         let mut capt_bb = capt_mask & all_opposing_bb;
         while capt_bb != 0 {
             let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
@@ -137,7 +134,9 @@ fn generate_white_pawn_moves(occ_masks: &OccupancyMasks, pos: &Position, move_li
         }
 
         // capture on first move
-        let capt_mask = occ_masks.get_occ_mask_white_pawn_attack_squares(from_sq);
+        let capt_mask = pos
+            .occupancy_masks()
+            .get_occ_mask_white_pawn_attack_squares(from_sq);
         let mut capt_bb = capt_mask & all_opposing_bb;
         while capt_bb != 0 {
             let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
@@ -172,7 +171,9 @@ fn generate_white_pawn_moves(occ_masks: &OccupancyMasks, pos: &Position, move_li
         }
 
         // check for capture promotions
-        let capt_mask = occ_masks.get_occ_mask_white_pawn_attack_squares(from_sq);
+        let capt_mask = pos
+            .occupancy_masks()
+            .get_occ_mask_white_pawn_attack_squares(from_sq);
         let mut capt_bb = capt_mask & all_opposing_bb;
 
         while capt_bb != 0 {
@@ -182,7 +183,7 @@ fn generate_white_pawn_moves(occ_masks: &OccupancyMasks, pos: &Position, move_li
     }
 }
 
-fn generate_black_pawn_moves(occ_masks: &OccupancyMasks, pos: &Position, move_list: &mut MoveList) {
+fn generate_black_pawn_moves(pos: &Position, move_list: &mut MoveList) {
     let pawn = Piece::BlackPawn;
 
     // bitboard of all pawns
@@ -213,7 +214,9 @@ fn generate_black_pawn_moves(occ_masks: &OccupancyMasks, pos: &Position, move_li
         }
 
         // capture moves
-        let capt_mask = occ_masks.get_occ_mask_black_pawn_attack_squares(from_sq);
+        let capt_mask = pos
+            .occupancy_masks()
+            .get_occ_mask_black_pawn_attack_squares(from_sq);
         let mut capt_bb = capt_mask & all_opposing_bb;
         while capt_bb != 0 {
             let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
@@ -269,7 +272,9 @@ fn generate_black_pawn_moves(occ_masks: &OccupancyMasks, pos: &Position, move_li
         }
 
         // capture on first move
-        let capt_mask = occ_masks.get_occ_mask_black_pawn_attack_squares(from_sq);
+        let capt_mask = pos
+            .occupancy_masks()
+            .get_occ_mask_black_pawn_attack_squares(from_sq);
         let mut capt_bb = capt_mask & all_opposing_bb;
         while capt_bb != 0 {
             let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
@@ -303,7 +308,9 @@ fn generate_black_pawn_moves(occ_masks: &OccupancyMasks, pos: &Position, move_li
         }
 
         // check for capture promotions
-        let capt_mask = occ_masks.get_occ_mask_black_pawn_attack_squares(from_sq);
+        let capt_mask = pos
+            .occupancy_masks()
+            .get_occ_mask_black_pawn_attack_squares(from_sq);
 
         let mut capt_bb = capt_mask & all_opposing_bb;
 
@@ -316,25 +323,21 @@ fn generate_black_pawn_moves(occ_masks: &OccupancyMasks, pos: &Position, move_li
 
 // generates diagonal and anti-diagonal moves for queen and bishop
 // see Hyperbola Quintessence
-fn generate_sliding_diagonal_antidiagonal_moves(
-    occ_masks: &OccupancyMasks,
-    board: &Board,
-    side_to_move: Colour,
-    move_list: &mut MoveList,
-) {
-    let mut pce_bb = if side_to_move == Colour::White {
+fn generate_sliding_diagonal_antidiagonal_moves(pos: &Position, move_list: &mut MoveList) {
+    let board = pos.board();
+    let mut pce_bb = if pos.side_to_move() == Colour::White {
         board.get_white_bishop_queen_bitboard()
     } else {
         board.get_black_bishop_queen_bitboard()
     };
 
     let occ_sq_bb = board.get_bitboard();
-    let occ_col_bb = board.get_colour_bb(side_to_move);
+    let occ_col_bb = board.get_colour_bb(pos.side_to_move());
 
     while pce_bb != 0 {
         let from_sq = bitboard::pop_1st_bit(&mut pce_bb);
-        let diag_move_mask = occ_masks.get_diagonal_move_mask(from_sq);
-        let anti_diag_move_mask = occ_masks.get_anti_diagonal_move_mask(from_sq);
+        let diag_move_mask = pos.occupancy_masks().get_diagonal_move_mask(from_sq);
+        let anti_diag_move_mask = pos.occupancy_masks().get_anti_diagonal_move_mask(from_sq);
         let slider_bb = bitboard::to_mask(from_sq);
 
         // diagonal moves
@@ -372,25 +375,20 @@ fn generate_sliding_diagonal_antidiagonal_moves(
 
 // generates sliding rank and file moves for queen and rook
 // see Hyperbola Quintessence
-fn generate_sliding_rank_file_moves(
-    occ_masks: &OccupancyMasks,
-    board: &Board,
-    side_to_move: Colour,
-    move_list: &mut MoveList,
-) {
-    let mut pce_bb = if side_to_move == Colour::White {
-        board.get_white_rook_queen_bitboard()
+fn generate_sliding_rank_file_moves(pos: &Position, move_list: &mut MoveList) {
+    let mut pce_bb = if pos.side_to_move() == Colour::White {
+        pos.board().get_white_rook_queen_bitboard()
     } else {
-        board.get_black_rook_queen_bitboard()
+        pos.board().get_black_rook_queen_bitboard()
     };
 
-    let occ_sq_bb = board.get_bitboard();
-    let occ_col_bb = board.get_colour_bb(side_to_move);
+    let occ_sq_bb = pos.board().get_bitboard();
+    let occ_col_bb = pos.board().get_colour_bb(pos.side_to_move());
 
     while pce_bb != 0 {
         let from_sq = bitboard::pop_1st_bit(&mut pce_bb);
-        let horizontal_mask = occ_masks.get_horizontal_move_mask(from_sq);
-        let vertical_mask = occ_masks.get_vertical_move_mask(from_sq);
+        let horizontal_mask = pos.occupancy_masks().get_horizontal_move_mask(from_sq);
+        let vertical_mask = pos.occupancy_masks().get_vertical_move_mask(from_sq);
 
         let slider_bb = bitboard::to_mask(from_sq);
         let slider_bb_reverse = slider_bb.reverse_bits();
@@ -421,32 +419,27 @@ fn generate_sliding_rank_file_moves(
 
         while all_excl_same_col != 0 {
             let to_sq = bitboard::pop_1st_bit(&mut all_excl_same_col);
-            encode_quite_or_capture(board, from_sq, to_sq, move_list);
+            encode_quite_or_capture(pos.board(), from_sq, to_sq, move_list);
         }
     }
 }
 
 // generates moves for King and Knight
-fn generate_non_sliding_piece_moves(
-    occ_masks: &OccupancyMasks,
-    board: &Board,
-    side_to_move: Colour,
-    move_list: &mut MoveList,
-) {
-    let (king, knight) = if side_to_move == Colour::White {
+fn generate_non_sliding_piece_moves(pos: &Position, move_list: &mut MoveList) {
+    let (king, knight) = if pos.side_to_move() == Colour::White {
         (Piece::WhiteKing, Piece::WhiteKnight)
     } else {
         (Piece::BlackKing, Piece::BlackKnight)
     };
 
     let opposite_side = king.colour().flip_side();
-    let opp_occ_sq_bb = board.get_colour_bb(opposite_side);
+    let opp_occ_sq_bb = pos.board().get_colour_bb(opposite_side);
 
     // knight
-    let mut pce_bb = board.get_piece_bitboard(knight);
+    let mut pce_bb = pos.board().get_piece_bitboard(knight);
     while pce_bb != 0 {
         let sq = bitboard::pop_1st_bit(&mut pce_bb);
-        let occ_mask = occ_masks.get_occupancy_mask_knight(sq);
+        let occ_mask = pos.occupancy_masks().get_occupancy_mask_knight(sq);
 
         // generate capture moves
         // ----------------------
@@ -456,15 +449,15 @@ fn generate_non_sliding_piece_moves(
         encode_multiple_capture_moves(&mut capt_bb, sq, move_list);
 
         // generate quiet moves
-        let unoccupied_squares_bb = !board.get_bitboard();
+        let unoccupied_squares_bb = !pos.board().get_bitboard();
         let mut quiet_move_bb = unoccupied_squares_bb & occ_mask;
         encode_multiple_quiet_moves(&mut quiet_move_bb, sq, move_list);
     }
 
     // king
-    pce_bb = board.get_piece_bitboard(king);
+    pce_bb = pos.board().get_piece_bitboard(king);
     let sq = bitboard::pop_1st_bit(&mut pce_bb);
-    let occ_mask = occ_masks.get_occupancy_mask_king(sq);
+    let occ_mask = pos.occupancy_masks().get_occupancy_mask_king(sq);
 
     // generate capture moves
     // ----------------------
@@ -474,7 +467,7 @@ fn generate_non_sliding_piece_moves(
     encode_multiple_capture_moves(&mut capt_bb, sq, move_list);
 
     // generate quiet moves
-    let unoccupied_squares_bb = !board.get_bitboard();
+    let unoccupied_squares_bb = !pos.board().get_bitboard();
     let mut quiet_move_bb = unoccupied_squares_bb & occ_mask;
     encode_multiple_quiet_moves(&mut quiet_move_bb, sq, move_list);
 }

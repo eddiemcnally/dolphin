@@ -7,6 +7,7 @@ use crate::mov::MoveType;
 use crate::occupancy_masks::OccupancyMasks;
 use crate::piece::Colour;
 use crate::piece::Piece;
+use crate::position_history::GameState;
 use crate::position_history::PositionHistory;
 use crate::square::Square;
 use crate::zobrist_keys::ZobristKeys;
@@ -232,15 +233,17 @@ impl<'a> Position<'a> {
             None
         };
 
-        self.position_history.push(
-            &self.board,
+        let state = GameState::new(
             self.position_hash(),
             mv,
             self.fifty_move_cntr,
             self.en_pass_sq,
             self.castle_perm,
+            piece,
             capt_piece,
         );
+
+        self.position_history.push(&state);
 
         self.move_cntr.half_move += 1;
         self.move_cntr.full_move += 1;
@@ -276,19 +279,125 @@ impl<'a> Position<'a> {
     }
 
     pub fn take_move(&mut self) {
+        self.flip_side_to_move();
+
         self.move_cntr.half_move -= 1;
         self.move_cntr.full_move -= 1;
 
-        self.flip_side_to_move();
+        let state = self.position_history.pop();
+        self.position_hash = state.position_hash();
+        self.fifty_move_cntr = state.fifty_move_cntr();
+        self.en_pass_sq = state.en_pass_sq();
+        self.castle_perm = state.castle_permissions();
+        let mv = state.mov();
+        let piece = state.piece_being_moved();
+        let capt_pce = state.captured_piece();
 
-        let (board, hash, _mv, fifty_move_cntr, en_pass_sq, cast_perms, _capt_pce) =
-            self.position_history.pop();
+        let mt = mv.get_move_type();
 
-        self.board = board;
-        self.position_hash = hash;
-        self.fifty_move_cntr = fifty_move_cntr;
-        self.en_pass_sq = en_pass_sq;
-        self.castle_perm = cast_perms;
+        match mt {
+            MoveType::Quiet => self.reverse_quiet_move(mv, piece),
+            MoveType::DoublePawn => self.reverse_quiet_move(mv, piece),
+            MoveType::Capture => self.reverse_capture_move(mv, piece, capt_pce),
+            MoveType::KingCastle | MoveType::QueenCastle => {
+                self.reverse_castle_move(mv, self.side_to_move())
+            }
+
+            MoveType::EnPassant => self.reverse_en_passant_move(mv, self.side_to_move()),
+            MoveType::PromoteKnightQuiet
+            | MoveType::PromoteBishopQuiet
+            | MoveType::PromoteRookQuiet
+            | MoveType::PromoteQueenQuiet
+            | MoveType::PromoteKnightCapture
+            | MoveType::PromoteBishopCapture
+            | MoveType::PromoteRookCapture
+            | MoveType::PromoteQueenCapture => self.reverse_promotion_move(mv, piece, capt_pce),
+        }
+    }
+
+    fn reverse_quiet_move(&mut self, mv: Mov, piece: Piece) {
+        let from_sq = mv.decode_from_square();
+        let to_sq = mv.decode_to_square();
+
+        // revert the move
+        self.board.move_piece(to_sq, from_sq, piece);
+    }
+
+    fn reverse_capture_move(&mut self, mv: Mov, pce: Piece, capture_pce: Option<Piece>) {
+        let from_sq = mv.decode_from_square();
+        let to_sq = mv.decode_to_square();
+
+        // revert move
+        self.board.move_piece(to_sq, from_sq, pce);
+        // add back the captured piece
+        self.board.add_piece(capture_pce.unwrap(), to_sq);
+    }
+
+    fn reverse_promotion_move(&mut self, mv: Mov, pce: Piece, capture_pce: Option<Piece>) {
+        debug_assert!(mv.is_promote(), "reverse_promotion_move, invalid move type");
+
+        let from_sq = mv.decode_from_square();
+        let to_sq = mv.decode_to_square();
+
+        // remove promoted piece
+        self.board.remove_from_sq(to_sq);
+        // put the moved piece back to it's original square
+        self.board.add_piece(pce, from_sq);
+
+        if capture_pce.is_some() {
+            self.board.add_piece(capture_pce.unwrap(), to_sq);
+        }
+    }
+
+    fn reverse_en_passant_move(&mut self, mv: Mov, side_move: Colour) {
+        let from_sq = mv.decode_from_square();
+        let to_sq = mv.decode_to_square();
+
+        match side_move {
+            Colour::White => {
+                self.board.move_piece(to_sq, from_sq, Piece::WhitePawn);
+
+                let capt_sq = to_sq.square_minus_1_rank();
+                self.board.add_piece(Piece::BlackPawn, capt_sq.unwrap());
+            }
+            Colour::Black => {
+                self.board.move_piece(to_sq, from_sq, Piece::BlackPawn);
+
+                let capt_sq = to_sq.square_plus_1_rank();
+                self.board.add_piece(Piece::WhitePawn, capt_sq.unwrap());
+            }
+        }
+    }
+
+    fn reverse_castle_move(&mut self, mv: Mov, side_move: Colour) {
+        match side_move {
+            Colour::White => {
+                if mv.is_king_castle() {
+                    self.board
+                        .move_piece(Square::g1, Square::e1, Piece::WhiteKing);
+                    self.board
+                        .move_piece(Square::f1, Square::h1, Piece::WhiteRook);
+                } else {
+                    self.board
+                        .move_piece(Square::c1, Square::e1, Piece::WhiteKing);
+                    self.board
+                        .move_piece(Square::d1, Square::a1, Piece::WhiteRook);
+                }
+            }
+            Colour::Black => {
+                if mv.is_king_castle() {
+                    self.board
+                        .move_piece(Square::g8, Square::e8, Piece::BlackKing);
+                    self.board
+                        .move_piece(Square::f8, Square::h8, Piece::BlackRook);
+                } else {
+                    self.board
+                        .move_piece(Square::c8, Square::e8, Piece::BlackKing);
+                    self.board
+                        .move_piece(Square::d8, Square::a8, Piece::BlackRook);
+                }
+            }
+        }
     }
 
     fn get_move_legality(&self, mv: Mov) -> MoveLegality {
@@ -370,25 +479,39 @@ impl<'a> Position<'a> {
         if pce.is_king() {
             match pce.colour() {
                 Colour::White => {
-                    castle_permissions::clear_white_king_and_queen(&mut self.castle_perm)
+                    self.castle_perm =
+                        castle_permissions::clear_white_king_and_queen(self.castle_perm)
                 }
                 Colour::Black => {
-                    castle_permissions::clear_black_king_and_queen(&mut self.castle_perm)
+                    self.castle_perm =
+                        castle_permissions::clear_black_king_and_queen(self.castle_perm)
                 }
             }
         } else if pce.is_rook() {
             match pce.colour() {
                 Colour::White => {
                     match from_sq {
-                        Square::a1 => castle_permissions::clear_queen_white(&mut self.castle_perm),
-                        Square::h1 => castle_permissions::clear_king_white(&mut self.castle_perm),
+                        Square::a1 => {
+                            self.castle_perm =
+                                castle_permissions::clear_queen_white(self.castle_perm);
+                        }
+                        Square::h1 => {
+                            self.castle_perm =
+                                castle_permissions::clear_king_white(self.castle_perm)
+                        }
                         _ => (),
                     };
                 }
                 Colour::Black => {
                     match from_sq {
-                        Square::a8 => castle_permissions::clear_queen_black(&mut self.castle_perm),
-                        Square::h8 => castle_permissions::clear_king_black(&mut self.castle_perm),
+                        Square::a8 => {
+                            self.castle_perm =
+                                castle_permissions::clear_queen_black(self.castle_perm)
+                        }
+                        Square::h8 => {
+                            self.castle_perm =
+                                castle_permissions::clear_king_black(self.castle_perm)
+                        }
                         _ => (),
                     };
                 }
@@ -519,7 +642,8 @@ fn do_castle_move(position: &mut Position, mv: Mov) {
 fn clear_castle_permissions_for_colour(position: &mut Position, col: Colour) {
     match col {
         Colour::White => {
-            castle_permissions::clear_white_king_and_queen(&mut position.castle_perm);
+            position.castle_perm =
+                castle_permissions::clear_white_king_and_queen(position.castle_perm);
             position.position_hash ^= position
                 .zobrist_keys
                 .castle_permission(CastlePermissionType::WhiteKing);
@@ -528,7 +652,8 @@ fn clear_castle_permissions_for_colour(position: &mut Position, col: Colour) {
                 .castle_permission(CastlePermissionType::WhiteQueen);
         }
         Colour::Black => {
-            castle_permissions::clear_black_king_and_queen(&mut position.castle_perm);
+            position.castle_perm =
+                castle_permissions::clear_black_king_and_queen(position.castle_perm);
             position.position_hash ^= position
                 .zobrist_keys
                 .castle_permission(CastlePermissionType::BlackKing);
