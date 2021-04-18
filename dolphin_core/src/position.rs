@@ -135,7 +135,6 @@ impl PartialEq for Position<'_> {
             println!("POS: 50-move counters are different");
             return false;
         }
-        // FIXME
         if self.position_hash != other.position_hash {
             println!("POS: position keys are different");
             return false;

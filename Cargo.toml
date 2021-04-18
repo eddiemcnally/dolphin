@@ -2,7 +2,7 @@
 
 members = [
     "dolphin_core",
-    # "dolphin_engine",
+    "dolphin_engine",
     "perft"
 ]
 

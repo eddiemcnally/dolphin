@@ -52,7 +52,7 @@ const MV_FLG_PROMOTE_QUEEN_CAPTURE: u16 = MV_FLG_PROMOTE_QUEEN | MV_FLG_CAPTURE;
 const MV_FLG_BIT_PROMOTE: u16 = 0x8000;
 
 #[repr(u16)]
-#[derive(TryFromPrimitive, Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(TryFromPrimitive, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum MoveType {
     Quiet = MV_FLG_QUIET,
     DoublePawn = MV_FLG_DOUBLE_PAWN,

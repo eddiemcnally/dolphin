@@ -9,6 +9,13 @@ pub enum CastlePermissionType {
     BlackQueen = 0x08,
 }
 
+pub static CASTLE_PERMISSION_TYPES: &[CastlePermissionType] = &[
+    CastlePermissionType::WhiteKing,
+    CastlePermissionType::WhiteQueen,
+    CastlePermissionType::BlackKing,
+    CastlePermissionType::BlackQueen,
+];
+
 pub const NUM_CASTLE_PERMS: usize = 4;
 
 pub const NO_CASTLE_PERMS_AVAIL: u8 = 0;

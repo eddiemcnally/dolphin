@@ -12,7 +12,6 @@ use std::option::Option;
 
 pub const NUM_SQUARES: usize = 64;
 
-#[derive(Copy, Clone)]
 pub struct Board {
     // piece bitboard, an entry for each piece type (enum Piece)
     piece_bb: [u64; piece::NUM_PIECES],
@@ -34,17 +33,6 @@ impl Default for Board {
         }
     }
 }
-// set up some frequently used array offsets
-const WQ_ARR_OFFSET: usize = Piece::WhiteQueen.to_offset();
-const WK_ARR_OFFSET: usize = Piece::WhiteKing.to_offset();
-const WR_ARR_OFFSET: usize = Piece::WhiteRook.to_offset();
-const BQ_ARR_OFFSET: usize = Piece::BlackQueen.to_offset();
-const BK_ARR_OFFSET: usize = Piece::BlackKing.to_offset();
-const BR_ARR_OFFSET: usize = Piece::BlackRook.to_offset();
-const WB_ARR_OFFSET: usize = Piece::WhiteBishop.to_offset();
-const BB_ARR_OFFSET: usize = Piece::BlackBishop.to_offset();
-const WHITE_ARR_OFFSET: usize = Colour::White.to_offset();
-const BLACK_ARR_OFFSET: usize = Colour::Black.to_offset();
 
 impl PartialEq for Board {
     fn eq(&self, other: &Self) -> bool {
@@ -162,8 +150,8 @@ impl Board {
 
     pub fn get_material(&self) -> (u32, u32) {
         (
-            self.material[WHITE_ARR_OFFSET],
-            self.material[BLACK_ARR_OFFSET],
+            self.material[Colour::White.to_offset()],
+            self.material[Colour::Black.to_offset()],
         )
     }
 
@@ -209,19 +197,19 @@ impl Board {
     }
 
     pub const fn get_white_rook_queen_bitboard(&self) -> u64 {
-        self.piece_bb[WR_ARR_OFFSET] | self.piece_bb[WQ_ARR_OFFSET]
+        self.piece_bb[Piece::WhiteRook.to_offset()] | self.piece_bb[Piece::WhiteQueen.to_offset()]
     }
 
     pub const fn get_black_rook_queen_bitboard(&self) -> u64 {
-        self.piece_bb[BR_ARR_OFFSET] | self.piece_bb[BQ_ARR_OFFSET]
+        self.piece_bb[Piece::BlackRook.to_offset()] | self.piece_bb[Piece::BlackQueen.to_offset()]
     }
 
     pub const fn get_white_bishop_queen_bitboard(&self) -> u64 {
-        self.piece_bb[WB_ARR_OFFSET] | self.piece_bb[WQ_ARR_OFFSET]
+        self.piece_bb[Piece::WhiteBishop.to_offset()] | self.piece_bb[Piece::WhiteQueen.to_offset()]
     }
 
     pub const fn get_black_bishop_queen_bitboard(&self) -> u64 {
-        self.piece_bb[BB_ARR_OFFSET] | self.piece_bb[BQ_ARR_OFFSET]
+        self.piece_bb[Piece::BlackBishop.to_offset()] | self.piece_bb[Piece::BlackQueen.to_offset()]
     }
 
     pub fn get_bitboard(&self) -> u64 {
@@ -230,8 +218,8 @@ impl Board {
 
     pub fn get_king_sq(&self, colour: Colour) -> Square {
         let mut king_bb = match colour {
-            Colour::White => self.piece_bb[WK_ARR_OFFSET],
-            Colour::Black => self.piece_bb[BK_ARR_OFFSET],
+            Colour::White => self.piece_bb[Piece::WhiteKing.to_offset()],
+            Colour::Black => self.piece_bb[Piece::BlackKing.to_offset()],
         };
         bitboard::pop_1st_bit(&mut king_bb)
     }
@@ -530,36 +518,6 @@ pub mod tests {
                 assert_eq!(retr_pce.is_some(), false);
             }
         }
-    }
-
-    #[test]
-    pub fn clone_board_as_expected() {
-        let mut map = HashMap::new();
-
-        map.insert(Square::a1, Piece::BlackKnight);
-        map.insert(Square::h8, Piece::WhiteKing);
-        map.insert(Square::d5, Piece::BlackQueen);
-        map.insert(Square::c3, Piece::WhitePawn);
-        map.insert(Square::a7, Piece::WhiteRook);
-
-        let mut parsed_fen: ParsedFen = Default::default();
-        parsed_fen.piece_positions = map;
-
-        let brd = Board::from_fen(&parsed_fen);
-
-        let cloned = brd.clone();
-
-        for sq in square::SQUARES {
-            let pce = cloned.get_piece_on_square(*sq);
-
-            if parsed_fen.piece_positions.contains_key(sq) {
-                assert!(pce.unwrap() == *parsed_fen.piece_positions.get(sq).unwrap());
-            } else {
-                assert!(pce.is_none());
-            }
-        }
-
-        assert_eq!(brd, cloned);
     }
 
     #[test]

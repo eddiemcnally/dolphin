@@ -1,4 +1,6 @@
 use crate::mov::Mov;
+use std::mem::MaybeUninit;
+use std::ptr::addr_of_mut;
 use std::vec::Vec;
 
 const MAX_MOVE_BUF_SZ: usize = 256;
@@ -12,11 +14,18 @@ pub struct MoveList {
 
 impl Default for MoveList {
     fn default() -> Self {
-        MoveList {
-            moves: [Mov::default(); MAX_MOVE_BUF_SZ],
-            count: 0,
-            iter_count: 0,
+        // optimisation - don't init the move list, except for the counters
+        let mut ml: MaybeUninit<MoveList> = MaybeUninit::uninit();
+
+        let ptr = ml.as_mut_ptr();
+        unsafe {
+            addr_of_mut!((*ptr).count).write(0);
         }
+        unsafe {
+            addr_of_mut!((*ptr).iter_count).write(0);
+        }
+
+        unsafe { ml.assume_init() }
     }
 }
 

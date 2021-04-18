@@ -30,6 +30,21 @@ pub enum Piece {
 pub const NUM_PIECES: usize = 12;
 pub const NUM_COLOURS: usize = 2;
 
+pub static PIECES: &[Piece] = &[
+    Piece::WhitePawn,
+    Piece::WhiteBishop,
+    Piece::WhiteKnight,
+    Piece::WhiteRook,
+    Piece::WhiteQueen,
+    Piece::WhiteKing,
+    Piece::BlackPawn,
+    Piece::BlackBishop,
+    Piece::BlackKnight,
+    Piece::BlackRook,
+    Piece::BlackQueen,
+    Piece::BlackKing,
+];
+
 // piece values from here:
 // https://www.chessprogramming.org/Simplified_Evaluation_Function
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
@@ -67,18 +82,18 @@ impl Piece {
 
     pub const fn colour(self) -> Colour {
         match self {
-            Piece::WhitePawn => Colour::White,
-            Piece::WhiteBishop => Colour::White,
-            Piece::WhiteKnight => Colour::White,
-            Piece::WhiteRook => Colour::White,
-            Piece::WhiteQueen => Colour::White,
-            Piece::WhiteKing => Colour::White,
-            Piece::BlackPawn => Colour::Black,
-            Piece::BlackBishop => Colour::Black,
-            Piece::BlackKnight => Colour::Black,
-            Piece::BlackRook => Colour::Black,
-            Piece::BlackQueen => Colour::Black,
-            Piece::BlackKing => Colour::Black,
+            Piece::WhitePawn
+            | Piece::WhiteBishop
+            | Piece::WhiteKnight
+            | Piece::WhiteRook
+            | Piece::WhiteQueen
+            | Piece::WhiteKing => Colour::White,
+            Piece::BlackPawn
+            | Piece::BlackBishop
+            | Piece::BlackKnight
+            | Piece::BlackRook
+            | Piece::BlackQueen
+            | Piece::BlackKing => Colour::Black,
         }
     }
 
@@ -193,32 +208,9 @@ impl fmt::Display for Colour {
 pub fn get_all_pieces() -> Vec<Piece> {
     let mut list: Vec<Piece> = Vec::new();
 
-    let mut pce: Piece;
-
-    pce = Piece::WhitePawn;
-    list.push(pce);
-    pce = Piece::WhiteKnight;
-    list.push(pce);
-    pce = Piece::WhiteBishop;
-    list.push(pce);
-    pce = Piece::WhiteRook;
-    list.push(pce);
-    pce = Piece::WhiteQueen;
-    list.push(pce);
-    pce = Piece::WhiteKing;
-    list.push(pce);
-    pce = Piece::BlackPawn;
-    list.push(pce);
-    pce = Piece::BlackKnight;
-    list.push(pce);
-    pce = Piece::BlackBishop;
-    list.push(pce);
-    pce = Piece::BlackRook;
-    list.push(pce);
-    pce = Piece::BlackQueen;
-    list.push(pce);
-    pce = Piece::BlackKing;
-    list.push(pce);
+    for p in PIECES {
+        list.push(*p);
+    }
 
     list
 }

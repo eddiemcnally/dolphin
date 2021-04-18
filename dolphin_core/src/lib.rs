@@ -15,4 +15,5 @@ pub mod piece;
 pub mod position;
 pub mod position_history;
 pub mod square;
+pub mod tt;
 pub mod zobrist_keys;

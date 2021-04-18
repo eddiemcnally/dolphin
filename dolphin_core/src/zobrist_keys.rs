@@ -82,3 +82,82 @@ fn init_en_passant_keys() -> [ZobristHash; NUM_SQUARES] {
 
     retval
 }
+
+#[cfg(test)]
+pub mod tests {
+    use super::ZobristHash;
+
+    #[test]
+    pub fn piece_square_hashes_all_different() {
+        let keys = super::ZobristKeys::new();
+        let mut v: Vec<ZobristHash> = Vec::new();
+
+        for pce in crate::piece::PIECES {
+            for sq in crate::square::SQUARES {
+                let hash = keys.piece_square(*pce, *sq);
+                v.push(hash);
+            }
+        }
+
+        let mut found_cnt;
+        for to_find in &v {
+            found_cnt = 0;
+            for hash in &v {
+                if to_find == hash {
+                    found_cnt += 1;
+                }
+            }
+            assert!(found_cnt == 1);
+        }
+    }
+
+    #[test]
+    pub fn en_passant_hashes_all_different() {
+        let keys = super::ZobristKeys::new();
+        let mut v: Vec<ZobristHash> = Vec::new();
+
+        for sq in crate::square::SQUARES {
+            let hash = keys.en_passant(*sq);
+            v.push(hash);
+        }
+
+        let mut found_cnt;
+        for to_find in &v {
+            found_cnt = 0;
+            for hash in &v {
+                if to_find == hash {
+                    found_cnt += 1;
+                }
+            }
+            assert!(found_cnt == 1);
+        }
+    }
+
+    #[test]
+    pub fn castle_permissions_hashes_all_different() {
+        let keys = super::ZobristKeys::new();
+        let mut v: Vec<ZobristHash> = Vec::new();
+
+        for perm in crate::castle_permissions::CASTLE_PERMISSION_TYPES {
+            let hash = keys.castle_permission(*perm);
+            v.push(hash);
+        }
+
+        let mut found_cnt;
+        for to_find in &v {
+            found_cnt = 0;
+            for hash in &v {
+                if to_find == hash {
+                    found_cnt += 1;
+                }
+            }
+            assert!(found_cnt == 1);
+        }
+    }
+
+    #[test]
+    pub fn side_hash_is_non_zero() {
+        let keys = super::ZobristKeys::new();
+        assert!(keys.side() != 0);
+    }
+}
