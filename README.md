@@ -14,12 +14,13 @@ Main features and current status:
 - FEN parser
 - move generation is coded and tested:
   - uses Hyperbola Quintessence for sliding piece attacks (see <https://www.chessprogramming.org/Hyperbola_Quintessence>)
-    - uses occupancy masks for other pieces
+  - uses occupancy masks for other pieces
 - make_move/take-move is coded and tested
 - perft results to depth=6 has been verified
 
 To Do:
 
 - Implement move evaluation
+- Implement search
 - UCI
 

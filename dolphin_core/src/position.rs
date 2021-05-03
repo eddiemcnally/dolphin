@@ -223,7 +223,7 @@ impl<'a> Position<'a> {
         let from_sq = mv.decode_from_square();
         let to_sq = mv.decode_to_square();
 
-        assert!(self.board().get_piece_on_square(from_sq).is_some());
+        debug_assert!(self.board().get_piece_on_square(from_sq).is_some());
         let piece = self.board().get_piece_on_square(from_sq).unwrap();
 
         let capt_piece = if mv.is_capture() && !mv.is_en_passant() {
@@ -268,7 +268,7 @@ impl<'a> Position<'a> {
         }
 
         self.update_en_passant_sq(mv);
-        self.update_castle_perms(mv, from_sq, piece);
+        self.update_castle_perms(mv, from_sq, to_sq, piece);
 
         let move_legality = self.get_move_legality(mv);
 
@@ -459,14 +459,9 @@ impl<'a> Position<'a> {
     }
 
     // remove castle permissions based on the move
-    fn update_castle_perms(&mut self, mv: Mov, from_sq: Square, pce: Piece) {
+    fn update_castle_perms(&mut self, mv: Mov, from_sq: Square, to_sq: Square, pce: Piece) {
         if !castle_permissions::has_castle_permission(self.castle_perm) {
-            // nothing to do
-            return;
-        }
-
-        if !pce.is_king() && !pce.is_rook() {
-            // nothing to do
+            // nothing to do, no castle permissions available
             return;
         }
 
@@ -475,6 +470,26 @@ impl<'a> Position<'a> {
             return;
         }
 
+        // check if rook has just been captured
+        if mv.is_capture() {
+            match to_sq {
+                Square::a1 => {
+                    self.castle_perm = castle_permissions::clear_queen_white(self.castle_perm)
+                }
+                Square::h1 => {
+                    self.castle_perm = castle_permissions::clear_king_white(self.castle_perm)
+                }
+                Square::a8 => {
+                    self.castle_perm = castle_permissions::clear_queen_black(self.castle_perm)
+                }
+                Square::h8 => {
+                    self.castle_perm = castle_permissions::clear_king_black(self.castle_perm)
+                }
+                _ => (),
+            }
+        }
+
+        // check if king or rook have moved
         if pce.is_king() {
             match pce.colour() {
                 Colour::White => {

@@ -85,6 +85,18 @@ pub struct Mov {
     mv: u16,
 }
 
+#[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
+pub struct MovPlusScore {
+    mov: Mov,
+    score: i32,
+}
+
+impl MovPlusScore {
+    pub fn new(mov: Mov, score: i32) -> MovPlusScore {
+        MovPlusScore { mov, score }
+    }
+}
+
 impl fmt::Debug for Mov {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();

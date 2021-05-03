@@ -1,7 +1,6 @@
 extern crate dolphin_core;
 
 use dolphin_core::move_gen;
-use dolphin_core::move_list::MoveList;
 use dolphin_core::position::MoveLegality;
 use dolphin_core::position::Position;
 
@@ -11,7 +10,7 @@ pub fn perft(depth: u8, position: &mut Position) -> u64 {
         return 1;
     }
 
-    let mut move_list = MoveList::default();
+    let mut move_list = move_gen::get_move_list();
     move_gen::generate_moves(position, &mut move_list);
 
     for mv in move_list {

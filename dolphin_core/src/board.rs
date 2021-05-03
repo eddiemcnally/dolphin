@@ -120,7 +120,9 @@ impl Board {
             "add_piece, square not empty. {:?}",
             sq
         );
-        self.set_bitboards_with_material(piece, sq);
+
+        self.set_bitboards(piece, sq);
+        self.material[piece.colour().to_offset()] += piece.value();
         self.pieces[sq.to_offset()] = Some(piece);
     }
 
@@ -131,16 +133,19 @@ impl Board {
             sq
         );
 
-        self.clear_bitboards_with_material(piece, sq);
+        self.clear_bitboards(piece, sq);
+        self.material[piece.colour().to_offset()] -= piece.value();
         self.pieces[sq.to_offset()] = None;
     }
 
     pub fn remove_from_sq(&mut self, sq: Square) {
+        debug_assert!(
+            self.is_sq_empty(sq),
+            "remove_from_sq, square not empty. {:?}",
+            sq
+        );
         let piece = self.get_piece_on_square(sq);
-        if piece.is_none() {
-            panic!("attempt to remove from square but square is empty");
-        }
-
+        debug_assert!(piece.is_some(), "Remove from square, no piece found");
         self.remove_piece(piece.unwrap(), sq);
     }
 
@@ -197,19 +202,31 @@ impl Board {
     }
 
     pub const fn get_white_rook_queen_bitboard(&self) -> u64 {
-        self.piece_bb[Piece::WhiteRook.to_offset()] | self.piece_bb[Piece::WhiteQueen.to_offset()]
+        const WR_OFF: usize = Piece::WhiteRook.to_offset();
+        const WQ_OFF: usize = Piece::WhiteQueen.to_offset();
+
+        self.piece_bb[WR_OFF] | self.piece_bb[WQ_OFF]
     }
 
     pub const fn get_black_rook_queen_bitboard(&self) -> u64 {
-        self.piece_bb[Piece::BlackRook.to_offset()] | self.piece_bb[Piece::BlackQueen.to_offset()]
+        const BR_OFF: usize = Piece::BlackRook.to_offset();
+        const BQ_OFF: usize = Piece::BlackQueen.to_offset();
+
+        self.piece_bb[BR_OFF] | self.piece_bb[BQ_OFF]
     }
 
     pub const fn get_white_bishop_queen_bitboard(&self) -> u64 {
-        self.piece_bb[Piece::WhiteBishop.to_offset()] | self.piece_bb[Piece::WhiteQueen.to_offset()]
+        const WB_OFF: usize = Piece::WhiteBishop.to_offset();
+        const WQ_OFF: usize = Piece::WhiteQueen.to_offset();
+
+        self.piece_bb[WB_OFF] | self.piece_bb[WQ_OFF]
     }
 
     pub const fn get_black_bishop_queen_bitboard(&self) -> u64 {
-        self.piece_bb[Piece::BlackBishop.to_offset()] | self.piece_bb[Piece::BlackQueen.to_offset()]
+        const BB_OFF: usize = Piece::BlackBishop.to_offset();
+        const BQ_OFF: usize = Piece::BlackQueen.to_offset();
+
+        self.piece_bb[BB_OFF] | self.piece_bb[BQ_OFF]
     }
 
     pub fn get_bitboard(&self) -> u64 {
@@ -222,16 +239,6 @@ impl Board {
             Colour::Black => self.piece_bb[Piece::BlackKing.to_offset()],
         };
         bitboard::pop_1st_bit(&mut king_bb)
-    }
-
-    fn set_bitboards_with_material(&mut self, piece: Piece, sq: Square) {
-        self.set_bitboards(piece, sq);
-        self.material[piece.colour().to_offset()] += piece.value();
-    }
-
-    fn clear_bitboards_with_material(&mut self, piece: Piece, sq: Square) {
-        self.clear_bitboards(piece, sq);
-        self.material[piece.colour().to_offset()] -= piece.value();
     }
 
     fn clear_bitboards(&mut self, piece: Piece, sq: Square) {

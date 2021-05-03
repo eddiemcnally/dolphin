@@ -27,7 +27,7 @@ impl GameState {
         piece_being_moved: Piece,
         capt_piece: Option<Piece>,
     ) -> GameState {
-        let state = GameState {
+        GameState {
             position_hash,
             mov,
             fifty_move_cntr,
@@ -35,8 +35,7 @@ impl GameState {
             castle_perm,
             piece_being_moved,
             capt_piece,
-        };
-        return state;
+        }
     }
 
     pub fn position_hash(&self) -> ZobristHash {

@@ -1,17 +1,12 @@
-use num_enum::{IntoPrimitive, TryFromPrimitive};
-use std::convert::TryFrom;
 use std::fmt;
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy, TryFromPrimitive, IntoPrimitive)]
-#[repr(u8)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
 pub enum Colour {
     White,
     Black,
 }
 
-// Array offsets for each piece
-#[derive(Eq, PartialEq, TryFromPrimitive, IntoPrimitive, Copy, Clone)]
-#[repr(u8)]
+#[derive(Eq, PartialEq, Copy, Clone)]
 pub enum Piece {
     WhitePawn,
     WhiteBishop,
@@ -60,14 +55,6 @@ enum PieceValue {
 impl Piece {
     pub const fn to_offset(&self) -> usize {
         return *self as usize;
-    }
-
-    pub fn from_offset(offset: u8) -> Piece {
-        let pce = Piece::try_from(offset);
-        match pce {
-            Ok(pce) => return pce,
-            _ => panic!("Invalid piece offset {}.", offset),
-        }
     }
 
     pub fn is_king(self) -> bool {

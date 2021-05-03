@@ -86,6 +86,7 @@ fn init_en_passant_keys() -> [ZobristHash; NUM_SQUARES] {
 #[cfg(test)]
 pub mod tests {
     use super::ZobristHash;
+    use crate::castle_permissions::CastlePermissionType;
 
     #[test]
     pub fn piece_square_hashes_all_different() {
@@ -135,10 +136,17 @@ pub mod tests {
 
     #[test]
     pub fn castle_permissions_hashes_all_different() {
+        let castle_types = [
+            CastlePermissionType::WhiteKing,
+            CastlePermissionType::WhiteQueen,
+            CastlePermissionType::BlackKing,
+            CastlePermissionType::BlackQueen,
+        ];
+
         let keys = super::ZobristKeys::new();
         let mut v: Vec<ZobristHash> = Vec::new();
 
-        for perm in crate::castle_permissions::CASTLE_PERMISSION_TYPES {
+        for perm in castle_types.iter() {
             let hash = keys.castle_permission(*perm);
             v.push(hash);
         }

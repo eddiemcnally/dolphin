@@ -11,7 +11,7 @@ pub const RANK_7_BB: u64 = 0x00FF_0000_0000_0000;
 const RANK_MASK: u64 = 0x0000_0000_0000_00ff;
 const FILE_MASK: u64 = 0x0101_0101_0101_0101;
 
-// bitboards for squares between castle squares
+// bitboards for squares between castle squares (eg White King side = f1 and g1)
 pub const CASTLE_MASK_WK: u64 = 0x0000_0000_0000_0060;
 pub const CASTLE_MASK_WQ: u64 = 0x0000_0000_0000_000E;
 pub const CASTLE_MASK_BK: u64 = 0x6000_0000_0000_0000;
