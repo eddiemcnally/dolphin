@@ -19,8 +19,9 @@ pub fn is_set(bb: u64, sq: Square) -> bool {
     (bb & mask) != 0
 }
 
-pub fn count_bits(bb: u64) -> u8 {
-    bb.count_ones() as u8
+pub fn is_clear(bb: u64, sq: Square) -> bool {
+    let mask = to_mask(sq);
+    (bb & mask) == 0
 }
 
 pub fn pop_1st_bit(bb: &mut u64) -> Square {

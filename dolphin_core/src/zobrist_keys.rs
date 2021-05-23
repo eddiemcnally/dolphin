@@ -15,18 +15,18 @@ pub struct ZobristKeys {
 }
 
 impl ZobristKeys {
-    pub fn new() -> ZobristKeys {
+    pub fn new() -> Box<ZobristKeys> {
         let piece_keys = init_piece_keys();
         let side_key = rand::random::<ZobristHash>();
         let castle_keys = init_castle_keys();
         let en_passant_sq_keys = init_en_passant_keys();
 
-        ZobristKeys {
+        Box::new(ZobristKeys {
             piece_keys,
             side_key,
             castle_keys,
             en_passant_sq_keys,
-        }
+        })
     }
 
     pub const fn side(&self) -> ZobristHash {

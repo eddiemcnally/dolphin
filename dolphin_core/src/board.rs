@@ -19,8 +19,10 @@ pub struct Board {
     colour_bb: [u64; piece::NUM_COLOURS],
     // material value
     material: [u32; piece::NUM_COLOURS],
-    // pieces on sqaures
+    // pieces on squares
     pieces: [Option<Piece>; square::NUM_SQUARES],
+    // king squares
+    kings: [Square; piece::NUM_COLOURS],
 }
 
 impl Default for Board {
@@ -30,6 +32,7 @@ impl Default for Board {
             colour_bb: [0; piece::NUM_COLOURS],
             material: [0; piece::NUM_COLOURS],
             pieces: [None; square::NUM_SQUARES],
+            kings: [Square::e1, Square::e8],
         }
     }
 }
@@ -56,6 +59,10 @@ impl PartialEq for Board {
             }
             if self.material[i] != other.material[i] {
                 println!("BOARD: material values are different");
+                return false;
+            }
+            if self.kings[i] != other.kings[i] {
+                println!("BOARD: kings squares are different");
                 return false;
             }
         }
@@ -121,9 +128,14 @@ impl Board {
             sq
         );
 
-        self.set_bitboards(piece, sq);
-        self.material[piece.colour().to_offset()] += piece.value();
+        let colour = piece.colour();
+        self.set_bitboards(piece, colour, sq);
+        self.material[colour.to_offset()] += piece.value();
         self.pieces[sq.to_offset()] = Some(piece);
+
+        if piece.is_king() {
+            self.kings[colour.to_offset()] = sq;
+        }
     }
 
     pub fn remove_piece(&mut self, piece: Piece, sq: Square) {
@@ -132,9 +144,10 @@ impl Board {
             "remove_piece, square is empty. {:?}",
             sq
         );
+        let colour = piece.colour();
 
-        self.clear_bitboards(piece, sq);
-        self.material[piece.colour().to_offset()] -= piece.value();
+        self.clear_bitboards(piece, colour, sq);
+        self.material[colour.to_offset()] -= piece.value();
         self.pieces[sq.to_offset()] = None;
     }
 
@@ -182,11 +195,16 @@ impl Board {
             to_sq
         );
 
-        self.clear_bitboards(piece, from_sq);
+        let colour = piece.colour();
+        self.clear_bitboards(piece, colour, from_sq);
         self.pieces[from_sq.to_offset()] = None;
 
-        self.set_bitboards(piece, to_sq);
+        self.set_bitboards(piece, colour, to_sq);
         self.pieces[to_sq.to_offset()] = Some(piece);
+
+        if piece.is_king() {
+            self.kings[colour.to_offset()] = to_sq;
+        }
     }
 
     pub fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
@@ -234,24 +252,25 @@ impl Board {
     }
 
     pub fn get_king_sq(&self, colour: Colour) -> Square {
-        let mut king_bb = match colour {
-            Colour::White => self.piece_bb[Piece::WhiteKing.to_offset()],
-            Colour::Black => self.piece_bb[Piece::BlackKing.to_offset()],
-        };
-        bitboard::pop_1st_bit(&mut king_bb)
+        self.kings[colour.to_offset()]
     }
 
-    fn clear_bitboards(&mut self, piece: Piece, sq: Square) {
-        self.piece_bb[piece.to_offset()] =
-            bitboard::clear_bit(self.piece_bb[piece.to_offset()], sq);
-        self.colour_bb[piece.colour().to_offset()] =
-            bitboard::clear_bit(self.colour_bb[piece.colour().to_offset()], sq);
+    #[inline(always)]
+    fn clear_bitboards(&mut self, piece: Piece, colour: Colour, sq: Square) {
+        let pce_off = piece.to_offset();
+        let col_off = colour.to_offset();
+
+        self.piece_bb[pce_off] = bitboard::clear_bit(self.piece_bb[pce_off], sq);
+        self.colour_bb[col_off] = bitboard::clear_bit(self.colour_bb[col_off], sq);
     }
 
-    fn set_bitboards(&mut self, pce: Piece, sq: Square) {
-        self.piece_bb[pce.to_offset()] = bitboard::set_bit(self.piece_bb[pce.to_offset()], sq);
-        self.colour_bb[pce.colour().to_offset()] =
-            bitboard::set_bit(self.colour_bb[pce.colour().to_offset()], sq);
+    #[inline(always)]
+    fn set_bitboards(&mut self, piece: Piece, colour: Colour, sq: Square) {
+        let pce_off = piece.to_offset();
+        let col_off = colour.to_offset();
+
+        self.piece_bb[pce_off] = bitboard::set_bit(self.piece_bb[pce_off], sq);
+        self.colour_bb[col_off] = bitboard::set_bit(self.colour_bb[col_off], sq);
     }
 }
 

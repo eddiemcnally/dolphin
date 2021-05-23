@@ -9,6 +9,7 @@ pub mod evaluate;
 pub mod fen;
 pub mod mov;
 pub mod move_gen;
+pub mod move_list;
 pub mod occupancy_masks;
 pub mod piece;
 pub mod position;

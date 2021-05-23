@@ -66,6 +66,12 @@ impl Piece {
     pub fn is_pawn(self) -> bool {
         self == Piece::WhitePawn || self == Piece::BlackPawn
     }
+    pub fn is_bishop(self) -> bool {
+        self == Piece::WhiteBishop || self == Piece::BlackBishop
+    }
+    pub fn is_queen(self) -> bool {
+        self == Piece::WhiteQueen || self == Piece::BlackQueen
+    }
 
     pub const fn colour(self) -> Colour {
         match self {

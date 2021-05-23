@@ -9,7 +9,6 @@ use crate::piece::Piece;
 
 #[rustfmt::skip]
 static PAWN_SQ_VALUE: [i8; board::NUM_SQUARES] = [
-
     0,      0,      0,      0,      0,      0,      0,      0,
     5,      10,     10,     -20,    -20,    10,     10,     5, 
     5,      -5,     -10,    0,      0,      -10,    -5,     5, 
@@ -18,7 +17,6 @@ static PAWN_SQ_VALUE: [i8; board::NUM_SQUARES] = [
     10,     10,     20,     30,     30,     20,     10,     10, 
     50,     50,     50,     50,     50,     50,     50,     50, 
     0,      0,      0,      0,      0,      0,      0,      0, 
-
 ];
 
 #[rustfmt::skip]
@@ -93,18 +91,6 @@ static KING_SQ_ENDGAME_VALUE: [i8; board::NUM_SQUARES] = [
     -50,    -40,    -30,    -20,    -20,    -30,    -40,    -50, 
 ];
 
-#[rustfmt::skip]
-static MIRROR_VALUE: [i8; board::NUM_SQUARES] = [
-    56,     57,     58,     59,     60,     61,     62,     63, 
-    48,     49,     50,     51,     52,     53,     54,     55, 
-    40,     41,     42,     43,     44,     45,     46,     47,
-    32,     33,     34,     35,     36,     37,     38,     39, 
-    24,     25,     26,     27,     28,     29,     30,     31, 
-    16,     17,     18,     19,     20,     21,     22,     23,
-    8,      9,      10,     11,     12,     13,     14,     15, 
-    0,      1,      2,      3,      4,      5,      6,      7,
-];
-
 pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
     let material = board.get_material();
 
@@ -112,71 +98,36 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
     let mut score = (material.0.wrapping_sub(material.1)) as i32;
 
     // piece positions
-    score = score + evaluate_piece_positions(board);
+    let mut board_bb = board.get_bitboard();
+    while board_bb != 0 {
+        let sq = bitboard::pop_1st_bit(&mut board_bb);
+        let pce = board.get_piece_on_square(sq);
+
+        let sq_offset = sq.to_offset();
+
+        score += match pce.unwrap() {
+            Piece::WhitePawn => PAWN_SQ_VALUE[sq_offset] as i32,
+            Piece::WhiteBishop => BISHOP_SQ_VALUE[sq_offset] as i32,
+            Piece::WhiteKnight => KNIGHT_SQ_VALUE[sq_offset] as i32,
+            Piece::WhiteRook => ROOK_SQ_VALUE[sq_offset] as i32,
+            Piece::WhiteQueen => QUEEN_SQ_VALUE[sq_offset] as i32,
+            Piece::WhiteKing => KING_SQ_VALUE[sq_offset] as i32,
+
+            // black scores are negative, offsets are reversed/mirrored
+            Piece::BlackPawn => -PAWN_SQ_VALUE[63 - sq_offset] as i32,
+            Piece::BlackBishop => -BISHOP_SQ_VALUE[63 - sq_offset] as i32,
+            Piece::BlackKnight => -KNIGHT_SQ_VALUE[63 - sq_offset] as i32,
+            Piece::BlackRook => -ROOK_SQ_VALUE[63 - sq_offset] as i32,
+            Piece::BlackQueen => -QUEEN_SQ_VALUE[63 - sq_offset] as i32,
+            Piece::BlackKing => -KING_SQ_VALUE[63 - sq_offset] as i32,
+        }
+    }
 
     if side_to_move == Colour::White {
         score
     } else {
         -score
     }
-}
-
-fn evaluate_piece_positions(board: &Board) -> i32 {
-    // set up bitboards needed
-    let white_pawn_bb = board.get_piece_bitboard(Piece::WhitePawn);
-    let white_knight_bb = board.get_piece_bitboard(Piece::WhiteKnight);
-    let white_bishop_bb = board.get_piece_bitboard(Piece::WhiteBishop);
-    let white_rook_bb = board.get_piece_bitboard(Piece::WhiteRook);
-    let white_queen_bb = board.get_piece_bitboard(Piece::WhiteQueen);
-    let white_king_bb = board.get_piece_bitboard(Piece::WhiteKing);
-
-    let black_pawn_bb = board.get_piece_bitboard(Piece::BlackPawn);
-    let black_knight_bb = board.get_piece_bitboard(Piece::BlackKnight);
-    let black_bishop_bb = board.get_piece_bitboard(Piece::BlackBishop);
-    let black_rook_bb = board.get_piece_bitboard(Piece::BlackRook);
-    let black_queen_bb = board.get_piece_bitboard(Piece::BlackQueen);
-    let black_king_bb = board.get_piece_bitboard(Piece::BlackKing);
-
-    let mut score: i32 = 0;
-
-    // evaluate piece locations
-    score += eval_white_piece_on_square(white_pawn_bb, &PAWN_SQ_VALUE);
-    score += eval_white_piece_on_square(white_bishop_bb, &BISHOP_SQ_VALUE);
-    score += eval_white_piece_on_square(white_knight_bb, &KNIGHT_SQ_VALUE);
-    score += eval_white_piece_on_square(white_rook_bb, &ROOK_SQ_VALUE);
-    score += eval_white_piece_on_square(white_queen_bb, &QUEEN_SQ_VALUE);
-    score += eval_white_piece_on_square(white_king_bb, &KING_SQ_VALUE);
-
-    score -= eval_black_piece_on_square(black_pawn_bb, &PAWN_SQ_VALUE);
-    score -= eval_black_piece_on_square(black_bishop_bb, &BISHOP_SQ_VALUE);
-    score -= eval_black_piece_on_square(black_knight_bb, &KNIGHT_SQ_VALUE);
-    score -= eval_black_piece_on_square(black_rook_bb, &ROOK_SQ_VALUE);
-    score -= eval_black_piece_on_square(black_queen_bb, &QUEEN_SQ_VALUE);
-    score -= eval_black_piece_on_square(black_king_bb, &KING_SQ_VALUE);
-
-    return score;
-}
-
-fn eval_white_piece_on_square(pce_bb: u64, values: &[i8]) -> i32 {
-    let mut score: i32 = 0;
-    let mut bb = pce_bb;
-
-    while bb != 0 {
-        let square = bitboard::pop_1st_bit(&mut bb);
-        score += values[square.to_offset()] as i32;
-    }
-    score
-}
-
-fn eval_black_piece_on_square(pce_bb: u64, values: &[i8]) -> i32 {
-    let mut score: i32 = 0;
-    let mut bb = pce_bb;
-
-    while bb != 0 {
-        let square = bitboard::pop_1st_bit(&mut bb);
-        score += values[MIRROR_VALUE[square.to_offset()] as usize] as i32;
-    }
-    score
 }
 
 #[cfg(test)]

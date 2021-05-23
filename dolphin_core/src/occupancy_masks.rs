@@ -20,38 +20,46 @@ pub const CASTLE_MASK_BQ: u64 = 0x0E00_0000_0000_0000;
 const FILE_A_BB: u64 = FILE_MASK;
 const FILE_H_BB: u64 = FILE_A_BB << 7;
 
+#[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
+pub struct DiagonalAntidiagonal {
+    diag_mask: u64,
+    anti_diag_mask: u64,
+}
+impl DiagonalAntidiagonal {
+    pub fn get_diag_mask(&self) -> u64 {
+        self.diag_mask
+    }
+    pub fn get_anti_diag_mask(&self) -> u64 {
+        self.anti_diag_mask
+    }
+}
+
 pub struct OccupancyMasks {
     knight: [u64; board::NUM_SQUARES],
-    diagonal: [u64; board::NUM_SQUARES],
-    anti_diagonal: [u64; board::NUM_SQUARES],
+    diagonal: [DiagonalAntidiagonal; board::NUM_SQUARES],
     bishop: [u64; board::NUM_SQUARES],
-    rook: [u64; board::NUM_SQUARES],
     queen: [u64; board::NUM_SQUARES],
     king: [u64; board::NUM_SQUARES],
     in_between: [[u64; board::NUM_SQUARES]; board::NUM_SQUARES],
 }
 
 impl OccupancyMasks {
-    pub fn new() -> OccupancyMasks {
+    pub fn new() -> Box<OccupancyMasks> {
         let knight = populate_knight_occupancy_mask_array();
         let diagonal = populate_diagonal_mask_array();
-        let anti_diagonal = populate_antidiagonal_mask_array();
-        let bishop = populate_bishop_mask_array();
-        let rook = populate_rook_mask_array();
-        let queen = populate_queen_mask_array();
+        let bishop = populate_bishop_mask_array(&diagonal);
+        let queen = populate_queen_mask_array(&diagonal);
         let king = populate_king_mask_array();
         let in_between = populate_intervening_bitboard_array();
 
-        OccupancyMasks {
+        Box::new(OccupancyMasks {
             knight,
             diagonal,
-            anti_diagonal,
             bishop,
-            rook,
             queen,
             king,
             in_between,
-        }
+        })
     }
 
     pub fn get_occupancy_mask_bishop(&self, sq: Square) -> u64 {
@@ -63,7 +71,10 @@ impl OccupancyMasks {
     }
 
     pub fn get_occupancy_mask_rook(&self, sq: Square) -> u64 {
-        *self.rook.get(sq.to_offset()).unwrap()
+        let mut bb = get_horizontal_move_mask(sq) | get_vertical_move_mask(sq);
+        // remove current square
+        bb = bitboard::clear_bit(bb, sq);
+        bb
     }
 
     pub fn get_occupancy_mask_queen(&self, sq: Square) -> u64 {
@@ -78,39 +89,31 @@ impl OccupancyMasks {
         self.in_between[sq1.to_offset()][sq2.to_offset()]
     }
 
-    pub fn get_vertical_move_mask(&self, sq: Square) -> u64 {
-        return get_vertical_move_mask(sq);
-    }
-
-    pub fn get_horizontal_move_mask(&self, sq: Square) -> u64 {
-        return get_horizontal_move_mask(sq);
-    }
-
-    pub fn get_diagonal_move_mask(&self, sq: Square) -> u64 {
-        *self.diagonal.get(sq.to_offset()).unwrap()
-    }
-    pub fn get_anti_diagonal_move_mask(&self, sq: Square) -> u64 {
-        *self.anti_diagonal.get(sq.to_offset()).unwrap()
+    #[inline(always)]
+    pub fn get_horizontal_mask(&self, sq: Square) -> u64 {
+        get_horizontal_move_mask(sq)
     }
 
     #[inline(always)]
-    const fn north_east(&self, bb: u64) -> u64 {
-        (bb & !FILE_H_BB) << 9
+    pub fn get_vertical_mask(&self, sq: Square) -> u64 {
+        get_vertical_move_mask(sq)
     }
 
-    #[inline(always)]
-    const fn south_east(&self, bb: u64) -> u64 {
-        (bb & !FILE_H_BB) >> 7
+    pub fn get_diag_antidiag_mask(&self, sq: Square) -> &DiagonalAntidiagonal {
+        self.diagonal.get(sq.to_offset()).unwrap()
     }
 
-    #[inline(always)]
-    const fn north_west(&self, bb: u64) -> u64 {
-        (bb & !FILE_A_BB) << 7
+    pub fn get_occ_mask_white_pawns_double_move_mask(&self, sq: Square) -> u64 {
+        let mut bb = sq.get_square_as_bb();
+        bb = self.north(bb);
+        bb |= self.north(bb);
+        bb
     }
-
-    #[inline(always)]
-    const fn south_west(&self, bb: u64) -> u64 {
-        (bb & !FILE_A_BB) >> 9
+    pub fn get_occ_mask_black_pawns_double_move_mask(&self, sq: Square) -> u64 {
+        let mut bb = sq.get_square_as_bb();
+        bb = self.south(bb);
+        bb |= self.south(bb);
+        bb
     }
 
     pub fn get_occ_mask_white_pawns_attacking_sq(&self, sq: Square) -> u64 {
@@ -136,6 +139,45 @@ impl OccupancyMasks {
     pub fn get_occ_mask_black_pawn_attack_squares(&self, pawn_sq: Square) -> u64 {
         let bb = pawn_sq.get_square_as_bb();
         self.south_east(bb) | self.south_west(bb)
+    }
+
+    #[inline(always)]
+    const fn north_east(&self, bb: u64) -> u64 {
+        (bb & !FILE_H_BB) << 9
+    }
+
+    #[inline(always)]
+    const fn south_east(&self, bb: u64) -> u64 {
+        (bb & !FILE_H_BB) >> 7
+    }
+
+    #[inline(always)]
+    const fn south(&self, bb: u64) -> u64 {
+        bb >> 8
+    }
+
+    #[inline(always)]
+    const fn north(&self, bb: u64) -> u64 {
+        bb << 8
+    }
+
+    #[inline(always)]
+    const fn east(&self, bb: u64) -> u64 {
+        bb >> 1
+    }
+    #[inline(always)]
+    const fn west(&self, bb: u64) -> u64 {
+        bb << 1
+    }
+
+    #[inline(always)]
+    const fn north_west(&self, bb: u64) -> u64 {
+        (bb & !FILE_A_BB) << 7
+    }
+
+    #[inline(always)]
+    const fn south_west(&self, bb: u64) -> u64 {
+        (bb & !FILE_A_BB) >> 9
     }
 }
 
@@ -283,8 +325,9 @@ fn populate_king_mask_array() -> [u64; board::NUM_SQUARES] {
     retval
 }
 
-fn populate_diagonal_mask_array() -> [u64; board::NUM_SQUARES] {
-    let mut retval: [u64; board::NUM_SQUARES] = [0; board::NUM_SQUARES];
+fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; board::NUM_SQUARES] {
+    let mut retval: [DiagonalAntidiagonal; board::NUM_SQUARES] =
+        [DiagonalAntidiagonal::default(); board::NUM_SQUARES];
 
     for sq in square::SQUARES.iter() {
         let mut bb: u64 = 0;
@@ -327,18 +370,10 @@ fn populate_diagonal_mask_array() -> [u64; board::NUM_SQUARES] {
         // remove current square
         bb = bitboard::clear_bit(bb, *sq);
 
-        retval[sq.to_offset()] = bb;
+        retval[sq.to_offset()].diag_mask = bb;
     }
 
-    retval
-}
-
-fn populate_antidiagonal_mask_array() -> [u64; board::NUM_SQUARES] {
-    let mut retval: [u64; board::NUM_SQUARES] = [0; board::NUM_SQUARES];
-
-    let squares = square::SQUARES;
-
-    for sq in squares {
+    for sq in square::SQUARES.iter() {
         let mut bb: u64 = 0;
 
         let mut rank = sq.rank();
@@ -378,19 +413,20 @@ fn populate_antidiagonal_mask_array() -> [u64; board::NUM_SQUARES] {
         // remove current square
         bb = bitboard::clear_bit(bb, *sq);
 
-        retval[sq.to_offset()] = bb;
+        retval[sq.to_offset()].anti_diag_mask = bb;
     }
+
     retval
 }
 
-fn populate_bishop_mask_array() -> [u64; board::NUM_SQUARES] {
+fn populate_bishop_mask_array(
+    diag_masks: &[DiagonalAntidiagonal; board::NUM_SQUARES],
+) -> [u64; board::NUM_SQUARES] {
     let mut retval: [u64; board::NUM_SQUARES] = [0; board::NUM_SQUARES];
     let squares = square::SQUARES;
 
-    let diag_masks = populate_diagonal_mask_array();
-    let anti_diag_masks = populate_antidiagonal_mask_array();
     for sq in squares {
-        let mut bb = diag_masks[*sq as usize] | anti_diag_masks[*sq as usize];
+        let mut bb = diag_masks[*sq as usize].diag_mask | diag_masks[*sq as usize].anti_diag_mask;
 
         // remove current square
         bb = bitboard::clear_bit(bb, *sq);
@@ -400,33 +436,17 @@ fn populate_bishop_mask_array() -> [u64; board::NUM_SQUARES] {
     retval
 }
 
-fn populate_rook_mask_array() -> [u64; board::NUM_SQUARES] {
+fn populate_queen_mask_array(
+    diag_masks: &[DiagonalAntidiagonal; board::NUM_SQUARES],
+) -> [u64; board::NUM_SQUARES] {
     let mut retval: [u64; board::NUM_SQUARES] = [0; board::NUM_SQUARES];
     let squares = square::SQUARES;
-
-    for sq in squares {
-        let mut bb = get_horizontal_move_mask(*sq) | get_vertical_move_mask(*sq);
-
-        // remove current square
-        bb = bitboard::clear_bit(bb, *sq);
-
-        retval[sq.to_offset()] = bb;
-    }
-    retval
-}
-
-fn populate_queen_mask_array() -> [u64; board::NUM_SQUARES] {
-    let mut retval: [u64; board::NUM_SQUARES] = [0; board::NUM_SQUARES];
-    let squares = square::SQUARES;
-
-    let diag_masks = populate_diagonal_mask_array();
-    let anti_diag_masks = populate_antidiagonal_mask_array();
 
     for sq in squares {
         let mut bb = get_horizontal_move_mask(*sq)
             | get_vertical_move_mask(*sq)
-            | diag_masks.get(*sq as usize).unwrap()
-            | anti_diag_masks.get(*sq as usize).unwrap();
+            | diag_masks[*sq as usize].diag_mask
+            | diag_masks[*sq as usize].anti_diag_mask;
 
         // remove current square
         bb = bitboard::clear_bit(bb, *sq);
@@ -475,19 +495,95 @@ fn populate_intervening_bitboard_array() -> [[u64; board::NUM_SQUARES]; board::N
 pub mod tests {
     use super::OccupancyMasks;
     use crate::bitboard;
-
     use crate::square::Square;
 
     #[test]
-    pub fn diagonal_occupancy_masks() {
+    pub fn white_double_first_move_mask() {
         let masks = OccupancyMasks::new();
 
-        let bb = masks.get_diagonal_move_mask(Square::c1);
+        let mut bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::a2);
+        assert!(bitboard::is_set(bb, Square::a3));
+        assert!(bitboard::is_set(bb, Square::a4));
+        assert!(bitboard::is_clear(bb, Square::a2));
 
-        assert!(bitboard::is_set(bb, Square::d2));
+        bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::b2);
+        assert!(bitboard::is_set(bb, Square::b3));
+        assert!(bitboard::is_set(bb, Square::b4));
+        assert!(bitboard::is_clear(bb, Square::b2));
+
+        bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::c2);
+        assert!(bitboard::is_set(bb, Square::c3));
+        assert!(bitboard::is_set(bb, Square::c4));
+        assert!(bitboard::is_clear(bb, Square::c2));
+
+        bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::d2);
+        assert!(bitboard::is_set(bb, Square::d3));
+        assert!(bitboard::is_set(bb, Square::d4));
+        assert!(bitboard::is_clear(bb, Square::d2));
+
+        bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::e2);
         assert!(bitboard::is_set(bb, Square::e3));
+        assert!(bitboard::is_set(bb, Square::e4));
+        assert!(bitboard::is_clear(bb, Square::e2));
+
+        bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::f2);
+        assert!(bitboard::is_set(bb, Square::f3));
         assert!(bitboard::is_set(bb, Square::f4));
+        assert!(bitboard::is_clear(bb, Square::f2));
+
+        bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::g2);
+        assert!(bitboard::is_set(bb, Square::g3));
+        assert!(bitboard::is_set(bb, Square::g4));
+        assert!(bitboard::is_clear(bb, Square::g2));
+
+        bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::h2);
+        assert!(bitboard::is_set(bb, Square::h3));
+        assert!(bitboard::is_set(bb, Square::h4));
+        assert!(bitboard::is_clear(bb, Square::h2));
+    }
+
+    #[test]
+    pub fn black_double_first_move_mask() {
+        let masks = OccupancyMasks::new();
+
+        let mut bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::a7);
+        assert!(bitboard::is_set(bb, Square::a6));
+        assert!(bitboard::is_set(bb, Square::a5));
+        assert!(bitboard::is_clear(bb, Square::a7));
+
+        bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::b7);
+        assert!(bitboard::is_set(bb, Square::b6));
+        assert!(bitboard::is_set(bb, Square::b5));
+        assert!(bitboard::is_clear(bb, Square::b7));
+
+        bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::c7);
+        assert!(bitboard::is_set(bb, Square::c6));
+        assert!(bitboard::is_set(bb, Square::c5));
+        assert!(bitboard::is_clear(bb, Square::c7));
+
+        bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::d7);
+        assert!(bitboard::is_set(bb, Square::d6));
+        assert!(bitboard::is_set(bb, Square::d5));
+        assert!(bitboard::is_clear(bb, Square::d7));
+
+        bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::e7);
+        assert!(bitboard::is_set(bb, Square::e6));
+        assert!(bitboard::is_set(bb, Square::e5));
+        assert!(bitboard::is_clear(bb, Square::e7));
+
+        bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::f7);
+        assert!(bitboard::is_set(bb, Square::f6));
+        assert!(bitboard::is_set(bb, Square::f5));
+        assert!(bitboard::is_clear(bb, Square::f7));
+
+        bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::g7);
+        assert!(bitboard::is_set(bb, Square::g6));
         assert!(bitboard::is_set(bb, Square::g5));
+        assert!(bitboard::is_clear(bb, Square::g7));
+
+        bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::h7);
         assert!(bitboard::is_set(bb, Square::h6));
+        assert!(bitboard::is_set(bb, Square::h5));
+        assert!(bitboard::is_clear(bb, Square::h7));
     }
 }

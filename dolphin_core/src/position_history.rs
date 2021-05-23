@@ -182,11 +182,11 @@ impl PositionHistory {
     const MAX_MOVE_HISTORY: usize = 1024;
 
     // new
-    pub fn new() -> PositionHistory {
-        PositionHistory {
+    pub fn new() -> Box<PositionHistory> {
+        Box::new(PositionHistory {
             count: 0,
             history: [GameState::default(); PositionHistory::MAX_MOVE_HISTORY],
-        }
+        })
     }
 
     // push

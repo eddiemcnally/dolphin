@@ -3,6 +3,7 @@ extern crate dolphin_core;
 extern crate num_enum;
 
 use dolphin_core::fen;
+use dolphin_core::move_gen::MoveGenerator;
 use dolphin_core::occupancy_masks::OccupancyMasks;
 use dolphin_core::piece::Piece;
 use dolphin_core::position::Position;
@@ -42,9 +43,10 @@ fn process_row(row: &epd_parser::EpdRow, depth: u8) {
     let occ_masks = OccupancyMasks::new();
 
     let mut position = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+    let mov_generator = MoveGenerator::new();
 
     let now = Instant::now();
-    let num_moves = perft_runner::perft(depth, &mut position);
+    let num_moves = perft_runner::perft(depth, &mut position, &mov_generator);
     let elapsed_in_secs = now.elapsed().as_secs_f64();
     let nodes_per_sec = (num_moves as f64 / elapsed_in_secs) as u64;
 

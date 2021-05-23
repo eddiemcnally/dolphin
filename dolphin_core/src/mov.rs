@@ -1,3 +1,4 @@
+use crate::move_list::MoveList;
 use crate::piece::Colour;
 use crate::piece::Piece;
 use crate::square::Square;
@@ -237,7 +238,6 @@ impl Mov {
     /// Encodes a White King-side castle move
     ///
     pub const fn encode_move_castle_kingside_white() -> Mov {
-        // todo: this can be determined at compile time, so fix this
         let mut mov = Mov::encode_move_quiet(Square::e1, Square::g1);
         mov.mv |= MV_FLG_KING_CASTLE;
         mov
@@ -399,7 +399,7 @@ impl Mov {
     }
 }
 
-pub fn print_move_list(move_list: &[Mov]) {
+pub fn print_move_list(move_list: &MoveList) {
     for mov in move_list.iter() {
         mov.print_move();
     }

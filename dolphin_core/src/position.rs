@@ -79,7 +79,7 @@ pub struct Position<'a> {
     fifty_move_cntr: u8,
     position_hash: ZobristHash,
     zobrist_keys: &'a ZobristKeys,
-    position_history: PositionHistory,
+    position_history: Box<PositionHistory>,
     occ_masks: &'a OccupancyMasks,
 }
 
@@ -301,7 +301,6 @@ impl<'a> Position<'a> {
             MoveType::KingCastle | MoveType::QueenCastle => {
                 self.reverse_castle_move(mv, self.side_to_move())
             }
-
             MoveType::EnPassant => self.reverse_en_passant_move(mv, self.side_to_move()),
             MoveType::PromoteKnightQuiet
             | MoveType::PromoteBishopQuiet
@@ -491,7 +490,7 @@ impl<'a> Position<'a> {
 
         // check if king or rook have moved
         if pce.is_king() {
-            match pce.colour() {
+            match self.side_to_move() {
                 Colour::White => {
                     self.castle_perm =
                         castle_permissions::clear_white_king_and_queen(self.castle_perm)
@@ -502,7 +501,7 @@ impl<'a> Position<'a> {
                 }
             }
         } else if pce.is_rook() {
-            match pce.colour() {
+            match self.side_to_move() {
                 Colour::White => {
                     match from_sq {
                         Square::a1 => {

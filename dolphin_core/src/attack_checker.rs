@@ -44,10 +44,10 @@ pub fn is_castle_squares_attacked(
         Colour::White => {
             let pawn_bb = board.get_piece_bitboard(Piece::WhitePawn);
             for sq in sq_array.iter() {
-                if pawn_bb != 0 && is_attacked_by_pawn_white(occ_masks, pawn_bb, *sq) {
+                if check_non_pawn_pieces_attacking(occ_masks, Colour::White, board, *sq) {
                     return true;
                 }
-                if check_non_pawn_pieces_attacking(occ_masks, Colour::White, board, *sq) {
+                if pawn_bb != 0 && is_attacked_by_pawn_white(occ_masks, pawn_bb, *sq) {
                     return true;
                 }
             }
@@ -55,10 +55,10 @@ pub fn is_castle_squares_attacked(
         Colour::Black => {
             let pawn_bb = board.get_piece_bitboard(Piece::BlackPawn);
             for sq in sq_array.iter() {
-                if pawn_bb != 0 && is_attacked_by_pawn_black(occ_masks, pawn_bb, *sq) {
+                if check_non_pawn_pieces_attacking(occ_masks, Colour::Black, board, *sq) {
                     return true;
                 }
-                if check_non_pawn_pieces_attacking(occ_masks, Colour::Black, board, *sq) {
+                if pawn_bb != 0 && is_attacked_by_pawn_black(occ_masks, pawn_bb, *sq) {
                     return true;
                 }
             }
@@ -172,9 +172,10 @@ fn is_diagonally_attacked(
     while attack_pce_bb != 0 {
         let pce_sq = bitboard::pop_1st_bit(&mut attack_pce_bb);
 
+        // diagonal mask will also wrk for queen
         let diagonal_bb = occ_masks.get_occupancy_mask_bishop(pce_sq);
         if bitboard::is_set(diagonal_bb, attack_sq) {
-            // potentially attacking, sharing a diagonal
+            // potentially attacking....ie, sharing a diagonal
             let blocking_pces = occ_masks.get_inbetween_squares(pce_sq, attack_sq);
             if blocking_pces & all_pce_bb == 0 {
                 // no blocking pieces, attacked
