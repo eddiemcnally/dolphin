@@ -143,6 +143,11 @@ impl Piece {
     }
 }
 
+impl Default for Piece {
+    fn default() -> Piece {
+        Piece::WhitePawn
+    }
+}
 impl fmt::Debug for Piece {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();

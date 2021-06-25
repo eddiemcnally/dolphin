@@ -7,7 +7,6 @@ use crate::mov::MoveType;
 use crate::occupancy_masks::OccupancyMasks;
 use crate::piece::Colour;
 use crate::piece::Piece;
-use crate::position_history::GameState;
 use crate::position_history::PositionHistory;
 use crate::square::Square;
 use crate::zobrist_keys::ZobristKeys;
@@ -20,6 +19,14 @@ pub struct MoveCounter {
     full_move: u16,
 }
 
+impl Default for MoveCounter {
+    fn default() -> Self {
+        MoveCounter {
+            half_move: 0,
+            full_move: 0,
+        }
+    }
+}
 impl fmt::Debug for MoveCounter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
@@ -72,15 +79,45 @@ static CASTLE_SQUARES_QUEEN_BLACK: [Square; 3] = [Square::c8, Square::d8, Square
 
 pub struct Position<'a> {
     board: Board,
+    position_history: Box<PositionHistory>,
+    occ_masks: &'a OccupancyMasks,
+    zobrist_keys: &'a ZobristKeys,
+    game_state: GameState,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub struct GameState {
     side_to_move: Colour,
     en_pass_sq: Option<Square>,
     castle_perm: CastlePermission,
     move_cntr: MoveCounter,
     fifty_move_cntr: u8,
     position_hash: ZobristHash,
-    zobrist_keys: &'a ZobristKeys,
-    position_history: Box<PositionHistory>,
-    occ_masks: &'a OccupancyMasks,
+}
+
+impl Default for GameState {
+    fn default() -> Self {
+        GameState {
+            side_to_move: Colour::White,
+            position_hash: 0,
+            move_cntr: MoveCounter::default(),
+            fifty_move_cntr: 0,
+            en_pass_sq: None,
+            castle_perm: castle_permissions::NO_CASTLE_PERMS_AVAIL,
+        }
+    }
+}
+
+impl GameState {
+    pub fn new() -> GameState {
+        GameState::default()
+    }
+}
+
+impl fmt::Display for GameState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
+    }
 }
 
 impl<'a> fmt::Debug for Position<'_> {
@@ -88,15 +125,21 @@ impl<'a> fmt::Debug for Position<'_> {
         let mut debug_str = String::new();
 
         debug_str.push_str(&format!("Board : {}\n", self.board()));
-        debug_str.push_str(&format!("SideToMove : {}\n", self.side_to_move()));
-        if self.en_pass_sq.is_none() {
+        debug_str.push_str(&format!("SideToMove : {}\n", self.game_state.side_to_move));
+        if self.game_state.en_pass_sq.is_none() {
             debug_str.push_str(&"En pass Sq : -\n".to_string());
         } else {
-            debug_str.push_str(&format!("En pass Sq : {}\n", self.en_pass_sq.unwrap()));
+            debug_str.push_str(&format!(
+                "En pass Sq : {}\n",
+                self.game_state.en_pass_sq.unwrap()
+            ));
         }
 
-        debug_str.push_str(&format!("Move Cntr : {}\n", self.move_cntr));
-        debug_str.push_str(&format!("50 Move Cntr : {}\n", self.fifty_move_cntr));
+        debug_str.push_str(&format!("Move Cntr : {}\n", self.game_state.move_cntr));
+        debug_str.push_str(&format!(
+            "50 Move Cntr : {}\n",
+            self.game_state.fifty_move_cntr
+        ));
 
         debug_str.push_str(&format!("Position Hist: {}\n", self.position_history));
 
@@ -116,26 +159,26 @@ impl PartialEq for Position<'_> {
             return false;
         }
 
-        if self.en_pass_sq != other.en_pass_sq {
+        if self.game_state.en_pass_sq != other.game_state.en_pass_sq {
             println!("POS: en passant squares are different");
             return false;
         }
 
-        if self.castle_perm != other.castle_perm {
+        if self.game_state.castle_perm != other.game_state.castle_perm {
             println!("POS: castle permissions are different");
             return false;
         }
 
-        if self.move_cntr != other.move_cntr {
+        if self.game_state.move_cntr != other.game_state.move_cntr {
             println!("POS: move counters are different");
             return false;
         }
 
-        if self.fifty_move_cntr != other.fifty_move_cntr {
+        if self.game_state.fifty_move_cntr != other.game_state.fifty_move_cntr {
             println!("POS: 50-move counters are different");
             return false;
         }
-        if self.position_hash != other.position_hash {
+        if self.game_state.position_hash != other.game_state.position_hash {
             println!("POS: position keys are different");
             return false;
         }
@@ -147,6 +190,7 @@ impl PartialEq for Position<'_> {
         true
     }
 }
+
 impl<'a> Position<'a> {
     pub fn new(
         zobrist_keys: &'a ZobristKeys,
@@ -158,16 +202,17 @@ impl<'a> Position<'a> {
             full_move: parsed_fen.full_move_cnt,
         };
 
+        let mut game_state = GameState::default();
+        game_state.side_to_move = parsed_fen.side_to_move;
+        game_state.en_pass_sq = parsed_fen.en_pass_sq;
+        game_state.castle_perm = parsed_fen.castle_perm;
+        game_state.move_cntr = mv_cntr;
+
         let mut pos = Position {
             board: Board::from_fen(&parsed_fen),
-            side_to_move: parsed_fen.side_to_move,
-            en_pass_sq: parsed_fen.en_pass_sq,
-            castle_perm: parsed_fen.castle_perm,
-            move_cntr: mv_cntr,
-            fifty_move_cntr: 0,
+            game_state,
             position_history: PositionHistory::new(),
             occ_masks: occupancy_masks,
-            position_hash: 0,
             zobrist_keys,
         };
 
@@ -183,7 +228,7 @@ impl<'a> Position<'a> {
     }
 
     pub fn side_to_move(&self) -> Colour {
-        self.side_to_move
+        self.game_state.side_to_move
     }
 
     pub fn board(&self) -> &Board {
@@ -191,19 +236,19 @@ impl<'a> Position<'a> {
     }
 
     pub fn en_passant_square(&self) -> Option<Square> {
-        self.en_pass_sq
+        self.game_state.en_pass_sq
     }
 
     pub fn castle_permissions(&self) -> CastlePermission {
-        self.castle_perm
+        self.game_state.castle_perm
     }
 
     pub fn move_counter(&self) -> &MoveCounter {
-        &self.move_cntr
+        &self.game_state.move_cntr
     }
 
     pub fn position_hash(&self) -> ZobristHash {
-        self.position_hash
+        self.game_state.position_hash
     }
 
     pub fn occupancy_masks(&self) -> &'a OccupancyMasks {
@@ -211,11 +256,11 @@ impl<'a> Position<'a> {
     }
 
     pub fn flip_side_to_move(&mut self) {
-        match self.side_to_move {
-            Colour::White => self.side_to_move = Colour::Black,
-            Colour::Black => self.side_to_move = Colour::White,
+        match self.game_state.side_to_move {
+            Colour::White => self.game_state.side_to_move = Colour::Black,
+            Colour::Black => self.game_state.side_to_move = Colour::White,
         };
-        self.position_hash ^= self.zobrist_keys.side();
+        self.game_state.position_hash ^= self.zobrist_keys.side();
     }
 
     pub fn make_move(&mut self, mv: Mov) -> MoveLegality {
@@ -232,20 +277,11 @@ impl<'a> Position<'a> {
             None
         };
 
-        let state = GameState::new(
-            self.position_hash(),
-            mv,
-            self.fifty_move_cntr,
-            self.en_pass_sq,
-            self.castle_perm,
-            piece,
-            capt_piece,
-        );
+        self.position_history
+            .push(&self.game_state, mv, piece, capt_piece);
 
-        self.position_history.push(&state);
-
-        self.move_cntr.half_move += 1;
-        self.move_cntr.full_move += 1;
+        self.game_state.move_cntr.half_move += 1;
+        self.game_state.move_cntr.full_move += 1;
 
         handle_50_move_rule(self, mv, piece);
 
@@ -280,17 +316,9 @@ impl<'a> Position<'a> {
     pub fn take_move(&mut self) {
         self.flip_side_to_move();
 
-        self.move_cntr.half_move -= 1;
-        self.move_cntr.full_move -= 1;
+        let (game_state, mv, piece, capt_pce) = self.position_history.pop();
 
-        let state = self.position_history.pop();
-        self.position_hash = state.position_hash();
-        self.fifty_move_cntr = state.fifty_move_cntr();
-        self.en_pass_sq = state.en_pass_sq();
-        self.castle_perm = state.castle_permissions();
-        let mv = state.mov();
-        let piece = state.piece_being_moved();
-        let capt_pce = state.captured_piece();
+        self.game_state = game_state;
 
         let mt = mv.get_move_type();
 
@@ -400,8 +428,8 @@ impl<'a> Position<'a> {
 
     fn get_move_legality(&self, mv: Mov) -> MoveLegality {
         // check if move results in king being in check
-        let king_sq = self.board().get_king_sq(self.side_to_move);
-        let attacking_side = self.side_to_move.flip_side();
+        let king_sq = self.board().get_king_sq(self.game_state.side_to_move);
+        let attacking_side = self.game_state.side_to_move.flip_side();
 
         if attack_checker::is_king_sq_attacked(
             &self.occ_masks,
@@ -414,7 +442,8 @@ impl<'a> Position<'a> {
 
         // check castle through attacked squares (or king was in check before the castle move)
         if mv.is_castle() {
-            let squares_to_check = self.get_castle_squares_to_check(mv, self.side_to_move);
+            let squares_to_check =
+                self.get_castle_squares_to_check(mv, self.game_state.side_to_move);
             let is_invalid_castle = attack_checker::is_castle_squares_attacked(
                 &self.occ_masks,
                 self.board(),
@@ -449,17 +478,19 @@ impl<'a> Position<'a> {
 
     fn update_en_passant_sq(&mut self, mv: Mov) {
         // clear en passant
-        if self.en_pass_sq.is_some() {
+        if self.game_state.en_pass_sq.is_some() {
             if mv.is_double_pawn() == false {
-                self.position_hash ^= self.zobrist_keys.en_passant(self.en_pass_sq.unwrap());
-                self.en_pass_sq = None;
+                self.game_state.position_hash ^= self
+                    .zobrist_keys
+                    .en_passant(self.game_state.en_pass_sq.unwrap());
+                self.game_state.en_pass_sq = None;
             }
         }
     }
 
     // remove castle permissions based on the move
     fn update_castle_perms(&mut self, mv: Mov, from_sq: Square, to_sq: Square, pce: Piece) {
-        if !castle_permissions::has_castle_permission(self.castle_perm) {
+        if !castle_permissions::has_castle_permission(self.game_state.castle_perm) {
             // nothing to do, no castle permissions available
             return;
         }
@@ -473,16 +504,20 @@ impl<'a> Position<'a> {
         if mv.is_capture() {
             match to_sq {
                 Square::a1 => {
-                    self.castle_perm = castle_permissions::clear_queen_white(self.castle_perm)
+                    self.game_state.castle_perm =
+                        castle_permissions::clear_queen_white(self.game_state.castle_perm)
                 }
                 Square::h1 => {
-                    self.castle_perm = castle_permissions::clear_king_white(self.castle_perm)
+                    self.game_state.castle_perm =
+                        castle_permissions::clear_king_white(self.game_state.castle_perm)
                 }
                 Square::a8 => {
-                    self.castle_perm = castle_permissions::clear_queen_black(self.castle_perm)
+                    self.game_state.castle_perm =
+                        castle_permissions::clear_queen_black(self.game_state.castle_perm)
                 }
                 Square::h8 => {
-                    self.castle_perm = castle_permissions::clear_king_black(self.castle_perm)
+                    self.game_state.castle_perm =
+                        castle_permissions::clear_king_black(self.game_state.castle_perm)
                 }
                 _ => (),
             }
@@ -492,12 +527,12 @@ impl<'a> Position<'a> {
         if pce.is_king() {
             match self.side_to_move() {
                 Colour::White => {
-                    self.castle_perm =
-                        castle_permissions::clear_white_king_and_queen(self.castle_perm)
+                    self.game_state.castle_perm =
+                        castle_permissions::clear_white_king_and_queen(self.game_state.castle_perm)
                 }
                 Colour::Black => {
-                    self.castle_perm =
-                        castle_permissions::clear_black_king_and_queen(self.castle_perm)
+                    self.game_state.castle_perm =
+                        castle_permissions::clear_black_king_and_queen(self.game_state.castle_perm)
                 }
             }
         } else if pce.is_rook() {
@@ -505,12 +540,12 @@ impl<'a> Position<'a> {
                 Colour::White => {
                     match from_sq {
                         Square::a1 => {
-                            self.castle_perm =
-                                castle_permissions::clear_queen_white(self.castle_perm);
+                            self.game_state.castle_perm =
+                                castle_permissions::clear_queen_white(self.game_state.castle_perm);
                         }
                         Square::h1 => {
-                            self.castle_perm =
-                                castle_permissions::clear_king_white(self.castle_perm)
+                            self.game_state.castle_perm =
+                                castle_permissions::clear_king_white(self.game_state.castle_perm)
                         }
                         _ => (),
                     };
@@ -518,12 +553,12 @@ impl<'a> Position<'a> {
                 Colour::Black => {
                     match from_sq {
                         Square::a8 => {
-                            self.castle_perm =
-                                castle_permissions::clear_queen_black(self.castle_perm)
+                            self.game_state.castle_perm =
+                                castle_permissions::clear_queen_black(self.game_state.castle_perm)
                         }
                         Square::h8 => {
-                            self.castle_perm =
-                                castle_permissions::clear_king_black(self.castle_perm)
+                            self.game_state.castle_perm =
+                                castle_permissions::clear_king_black(self.game_state.castle_perm)
                         }
                         _ => (),
                     };
@@ -536,37 +571,37 @@ impl<'a> Position<'a> {
 fn generate_hash_from_fen(position: &mut Position, parsed_fen: &ParsedFen) {
     let positions = parsed_fen.piece_positions.iter();
     for (sq, pce) in positions {
-        position.position_hash ^= position.zobrist_keys.piece_square(*pce, *sq);
+        position.game_state.position_hash ^= position.zobrist_keys.piece_square(*pce, *sq);
     }
 
-    position.position_hash ^= position.zobrist_keys.side();
+    position.game_state.position_hash ^= position.zobrist_keys.side();
 
     let cp = parsed_fen.castle_perm;
 
     if castle_permissions::is_black_king_set(cp) {
-        position.position_hash ^= position
+        position.game_state.position_hash ^= position
             .zobrist_keys
             .castle_permission(CastlePermissionType::BlackKing);
     }
     if castle_permissions::is_white_king_set(cp) {
-        position.position_hash ^= position
+        position.game_state.position_hash ^= position
             .zobrist_keys
             .castle_permission(CastlePermissionType::WhiteKing);
     }
     if castle_permissions::is_black_queen_set(cp) {
-        position.position_hash ^= position
+        position.game_state.position_hash ^= position
             .zobrist_keys
             .castle_permission(CastlePermissionType::BlackQueen);
     }
     if castle_permissions::is_white_queen_set(cp) {
-        position.position_hash ^= position
+        position.game_state.position_hash ^= position
             .zobrist_keys
             .castle_permission(CastlePermissionType::WhiteQueen);
     }
 
     let enp = parsed_fen.en_pass_sq;
     if let Some(_enp) = enp {
-        position.position_hash ^= position.zobrist_keys.en_passant(enp.unwrap());
+        position.game_state.position_hash ^= position.zobrist_keys.en_passant(enp.unwrap());
     }
 }
 
@@ -580,25 +615,25 @@ fn find_en_passant_sq(from_sq: Square, col: Colour) -> Option<Square> {
 
 fn remove_piece_from_board(position: &mut Position, pce: Piece, sq: Square) {
     position.board.remove_piece(pce, sq);
-    position.position_hash ^= position.zobrist_keys.piece_square(pce, sq);
+    position.game_state.position_hash ^= position.zobrist_keys.piece_square(pce, sq);
 }
 
 fn add_piece_to_board(position: &mut Position, pce: Piece, sq: Square) {
     position.board.add_piece(pce, sq);
-    position.position_hash ^= position.zobrist_keys.piece_square(pce, sq);
+    position.game_state.position_hash ^= position.zobrist_keys.piece_square(pce, sq);
 }
 
 fn move_piece_on_board(position: &mut Position, pce: Piece, from_sq: Square, to_sq: Square) {
-    position.position_hash ^= position.zobrist_keys.piece_square(pce, from_sq);
-    position.position_hash ^= position.zobrist_keys.piece_square(pce, to_sq);
+    position.game_state.position_hash ^= position.zobrist_keys.piece_square(pce, from_sq);
+    position.game_state.position_hash ^= position.zobrist_keys.piece_square(pce, to_sq);
     position.board.move_piece(from_sq, to_sq, pce);
 }
 
 fn handle_50_move_rule(position: &mut Position, mv: Mov, pce_to_move: Piece) {
     if mv.is_capture() || pce_to_move.is_pawn() {
-        position.fifty_move_cntr = 0;
+        position.game_state.fifty_move_cntr = 0;
     } else {
-        position.fifty_move_cntr += 1;
+        position.game_state.fifty_move_cntr += 1;
     }
 }
 
@@ -655,22 +690,22 @@ fn do_castle_move(position: &mut Position, mv: Mov) {
 fn clear_castle_permissions_for_colour(position: &mut Position, col: Colour) {
     match col {
         Colour::White => {
-            position.castle_perm =
-                castle_permissions::clear_white_king_and_queen(position.castle_perm);
-            position.position_hash ^= position
+            position.game_state.castle_perm =
+                castle_permissions::clear_white_king_and_queen(position.game_state.castle_perm);
+            position.game_state.position_hash ^= position
                 .zobrist_keys
                 .castle_permission(CastlePermissionType::WhiteKing);
-            position.position_hash ^= position
+            position.game_state.position_hash ^= position
                 .zobrist_keys
                 .castle_permission(CastlePermissionType::WhiteQueen);
         }
         Colour::Black => {
-            position.castle_perm =
-                castle_permissions::clear_black_king_and_queen(position.castle_perm);
-            position.position_hash ^= position
+            position.game_state.castle_perm =
+                castle_permissions::clear_black_king_and_queen(position.game_state.castle_perm);
+            position.game_state.position_hash ^= position
                 .zobrist_keys
                 .castle_permission(CastlePermissionType::BlackKing);
-            position.position_hash ^= position
+            position.game_state.position_hash ^= position
                 .zobrist_keys
                 .castle_permission(CastlePermissionType::BlackQueen);
         }
@@ -683,15 +718,15 @@ fn do_double_pawn_move(position: &mut Position, piece: Piece, from_sq: Square, t
     let s = find_en_passant_sq(from_sq, position.side_to_move());
     match s {
         Some(_) => {
-            position.en_pass_sq = s;
-            position.position_hash ^= position.zobrist_keys.en_passant(s.unwrap());
+            position.game_state.en_pass_sq = s;
+            position.game_state.position_hash ^= position.zobrist_keys.en_passant(s.unwrap());
         }
         None => panic!("Unable to find en passant square"),
     }
 }
 
 fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
-    let (capt_sq, pawn, capt_pawn) = match position.side_to_move {
+    let (capt_sq, pawn, capt_pawn) = match position.game_state.side_to_move {
         Colour::White => (
             to_sq.square_minus_1_rank(),
             Piece::WhitePawn,
@@ -763,7 +798,7 @@ mod tests {
 
         let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
 
-        let before_hash = pos.position_hash;
+        let before_hash = pos.game_state.position_hash;
 
         let mv = Mov::encode_move_quiet(Square::e5, Square::e6);
 
@@ -782,7 +817,7 @@ mod tests {
             Square::e6,
             Piece::WhitePawn
         ));
-        assert_ne!(before_hash, pos.position_hash);
+        assert_ne!(before_hash, pos.game_state.position_hash);
     }
     #[test]
     pub fn make_move_history_updated() {
@@ -811,11 +846,11 @@ mod tests {
         let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
 
         // initially correct side
-        assert_eq!(pos.side_to_move, Colour::White);
+        assert_eq!(pos.game_state.side_to_move, Colour::White);
         let mv = Mov::encode_move_quiet(Square::e5, Square::e6);
         pos.make_move(mv);
 
-        assert_eq!(pos.side_to_move, Colour::Black);
+        assert_eq!(pos.game_state.side_to_move, Colour::Black);
     }
 
     #[test]
@@ -828,12 +863,12 @@ mod tests {
         let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
 
         // set to some value
-        pos.fifty_move_cntr = 21;
+        pos.game_state.fifty_move_cntr = 21;
 
         let mv = Mov::encode_move_capture(Square::b5, Square::c6);
         pos.make_move(mv);
 
-        assert_eq!(0, pos.fifty_move_cntr);
+        assert_eq!(0, pos.game_state.fifty_move_cntr);
     }
 
     #[test]
@@ -849,12 +884,12 @@ mod tests {
         assert_eq!(pce_to_move, Piece::WhitePawn);
 
         // set to some value
-        pos.fifty_move_cntr = 21;
+        pos.game_state.fifty_move_cntr = 21;
 
         let mv = Mov::encode_move_quiet(Square::e5, Square::e6);
         pos.make_move(mv);
 
-        assert_eq!(0, pos.fifty_move_cntr);
+        assert_eq!(0, pos.game_state.fifty_move_cntr);
     }
 
     #[test]
@@ -870,13 +905,13 @@ mod tests {
         assert_eq!(pce_to_move, Piece::WhiteBishop);
 
         // set to some value
-        pos.fifty_move_cntr = 21;
-        let expected_cntr_val = pos.fifty_move_cntr + 1;
+        pos.game_state.fifty_move_cntr = 21;
+        let expected_cntr_val = pos.game_state.fifty_move_cntr + 1;
 
         let mv = Mov::encode_move_quiet(Square::c4, Square::d5);
         pos.make_move(mv);
 
-        assert_eq!(expected_cntr_val, pos.fifty_move_cntr);
+        assert_eq!(expected_cntr_val, pos.game_state.fifty_move_cntr);
     }
 
     #[test]
@@ -892,17 +927,17 @@ mod tests {
         assert_eq!(pce_to_move, Piece::WhiteBishop);
 
         // set to some value
-        pos.move_cntr.half_move = 21;
-        pos.move_cntr.full_move = 32;
+        pos.game_state.move_cntr.half_move = 21;
+        pos.game_state.move_cntr.full_move = 32;
 
-        let expected_half_move = pos.move_cntr.half_move + 1;
-        let expected_full_move = pos.move_cntr.full_move + 1;
+        let expected_half_move = pos.game_state.move_cntr.half_move + 1;
+        let expected_full_move = pos.game_state.move_cntr.full_move + 1;
 
         let mv = Mov::encode_move_quiet(Square::c4, Square::d5);
         pos.make_move(mv);
 
-        assert_eq!(expected_half_move, pos.move_cntr.half_move);
-        assert_eq!(expected_full_move, pos.move_cntr.full_move);
+        assert_eq!(expected_half_move, pos.game_state.move_cntr.half_move);
+        assert_eq!(expected_full_move, pos.game_state.move_cntr.full_move);
     }
 
     #[test]
@@ -924,7 +959,7 @@ mod tests {
         let mv = Mov::encode_move_double_pawn_first(Square::f2, Square::f4);
         pos.make_move(mv);
 
-        assert_eq!(pos.en_pass_sq.unwrap(), Square::f3);
+        assert_eq!(pos.game_state.en_pass_sq.unwrap(), Square::f3);
 
         assert!(is_piece_on_square_as_expected(
             &pos,
@@ -954,7 +989,7 @@ mod tests {
         let mv = Mov::encode_move_double_pawn_first(Square::d7, Square::d5);
         pos.make_move(mv);
 
-        assert_eq!(pos.en_pass_sq, Some(Square::d6));
+        assert_eq!(pos.game_state.en_pass_sq, Some(Square::d6));
 
         assert!(is_piece_on_square_as_expected(
             &pos,
