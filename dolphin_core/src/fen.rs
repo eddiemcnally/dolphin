@@ -10,7 +10,7 @@ use crate::square::Square;
 
 #[derive(Default)]
 pub struct ParsedFen {
-    pub piece_positions: HashMap<Square, Piece>,
+    pub piece_positions: HashMap<Square, &'static Piece>,
     pub side_to_move: Colour,
     pub castle_perm: CastlePermission,
     pub en_pass_sq: Option<Square>,
@@ -53,9 +53,9 @@ pub fn get_position(fen: &str) -> ParsedFen {
 }
 
 /// takes the list of ranks (starting at rank 8)
-pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, Piece> {
+pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, &'static Piece> {
     let ranks: Vec<_> = pieces.split('/').collect();
-    let mut retval: HashMap<Square, Piece> = HashMap::new();
+    let mut retval: HashMap<Square, &'static Piece> = HashMap::new();
     for (rank, pieces) in ranks.iter().rev().enumerate() {
         let mut file: u8 = 0;
 
@@ -145,8 +145,8 @@ mod tests {
     use super::FEN_HALF_MOVE;
     use super::FEN_SIDE_TO_MOVE;
     use crate::castle_permissions;
+    use crate::piece;
     use crate::piece::Colour;
-    use crate::piece::Piece;
     use crate::square::Square;
 
     #[test]
@@ -158,45 +158,45 @@ mod tests {
 
         assert_eq!(sq_pce.len(), 32);
 
-        assert_eq!(sq_pce[&Square::a1], Piece::WhitePawn);
-        assert_eq!(sq_pce[&Square::d1], Piece::BlackQueen);
-        assert_eq!(sq_pce[&Square::h1], Piece::BlackKnight);
+        assert_eq!(sq_pce[&Square::a1], &piece::WHITE_PAWN);
+        assert_eq!(sq_pce[&Square::d1], &piece::BLACK_QUEEN);
+        assert_eq!(sq_pce[&Square::h1], &piece::BLACK_KNIGHT);
 
-        assert_eq!(sq_pce[&Square::a2], Piece::WhitePawn);
-        assert_eq!(sq_pce[&Square::c2], Piece::BlackRook);
-        assert_eq!(sq_pce[&Square::e2], Piece::BlackRook);
-        assert_eq!(sq_pce[&Square::f2], Piece::WhitePawn);
-        assert_eq!(sq_pce[&Square::h2], Piece::WhitePawn);
+        assert_eq!(sq_pce[&Square::a2], &piece::WHITE_PAWN);
+        assert_eq!(sq_pce[&Square::c2], &piece::BLACK_ROOK);
+        assert_eq!(sq_pce[&Square::e2], &piece::BLACK_ROOK);
+        assert_eq!(sq_pce[&Square::f2], &piece::WHITE_PAWN);
+        assert_eq!(sq_pce[&Square::h2], &piece::WHITE_PAWN);
 
-        assert_eq!(sq_pce[&Square::a3], Piece::BlackPawn);
-        assert_eq!(sq_pce[&Square::b3], Piece::WhitePawn);
-        assert_eq!(sq_pce[&Square::c3], Piece::WhiteRook);
-        assert_eq!(sq_pce[&Square::e3], Piece::WhiteKnight);
-        assert_eq!(sq_pce[&Square::f3], Piece::BlackPawn);
+        assert_eq!(sq_pce[&Square::a3], &piece::BLACK_PAWN);
+        assert_eq!(sq_pce[&Square::b3], &piece::WHITE_PAWN);
+        assert_eq!(sq_pce[&Square::c3], &piece::WHITE_ROOK);
+        assert_eq!(sq_pce[&Square::e3], &piece::WHITE_KNIGHT);
+        assert_eq!(sq_pce[&Square::f3], &piece::BLACK_PAWN);
 
-        assert_eq!(sq_pce[&Square::b4], Piece::WhiteRook);
-        assert_eq!(sq_pce[&Square::c4], Piece::WhiteBishop);
-        assert_eq!(sq_pce[&Square::f4], Piece::WhitePawn);
+        assert_eq!(sq_pce[&Square::b4], &piece::WHITE_ROOK);
+        assert_eq!(sq_pce[&Square::c4], &piece::WHITE_BISHOP);
+        assert_eq!(sq_pce[&Square::f4], &piece::WHITE_PAWN);
 
-        assert_eq!(sq_pce[&Square::b5], Piece::WhiteBishop);
-        assert_eq!(sq_pce[&Square::e5], Piece::WhitePawn);
-        assert_eq!(sq_pce[&Square::g5], Piece::WhiteKing);
+        assert_eq!(sq_pce[&Square::b5], &piece::WHITE_BISHOP);
+        assert_eq!(sq_pce[&Square::e5], &piece::WHITE_PAWN);
+        assert_eq!(sq_pce[&Square::g5], &piece::WHITE_KING);
 
-        assert_eq!(sq_pce[&Square::a6], Piece::WhiteKnight);
-        assert_eq!(sq_pce[&Square::c6], Piece::BlackPawn);
-        assert_eq!(sq_pce[&Square::h6], Piece::BlackPawn);
+        assert_eq!(sq_pce[&Square::a6], &piece::WHITE_KNIGHT);
+        assert_eq!(sq_pce[&Square::c6], &piece::BLACK_PAWN);
+        assert_eq!(sq_pce[&Square::h6], &piece::BLACK_PAWN);
 
-        assert_eq!(sq_pce[&Square::b7], Piece::WhitePawn);
-        assert_eq!(sq_pce[&Square::c7], Piece::BlackPawn);
-        assert_eq!(sq_pce[&Square::d7], Piece::BlackPawn);
-        assert_eq!(sq_pce[&Square::e7], Piece::WhiteQueen);
-        assert_eq!(sq_pce[&Square::f7], Piece::BlackPawn);
-        assert_eq!(sq_pce[&Square::g7], Piece::BlackBishop);
+        assert_eq!(sq_pce[&Square::b7], &piece::WHITE_PAWN);
+        assert_eq!(sq_pce[&Square::c7], &piece::BLACK_PAWN);
+        assert_eq!(sq_pce[&Square::d7], &piece::BLACK_PAWN);
+        assert_eq!(sq_pce[&Square::e7], &piece::WHITE_QUEEN);
+        assert_eq!(sq_pce[&Square::f7], &piece::BLACK_PAWN);
+        assert_eq!(sq_pce[&Square::g7], &piece::BLACK_BISHOP);
 
-        assert_eq!(sq_pce[&Square::b8], Piece::BlackKnight);
-        assert_eq!(sq_pce[&Square::d8], Piece::BlackKing);
-        assert_eq!(sq_pce[&Square::g8], Piece::BlackBishop);
-        assert_eq!(sq_pce[&Square::h8], Piece::BlackPawn);
+        assert_eq!(sq_pce[&Square::b8], &piece::BLACK_KNIGHT);
+        assert_eq!(sq_pce[&Square::d8], &piece::BLACK_KING);
+        assert_eq!(sq_pce[&Square::g8], &piece::BLACK_BISHOP);
+        assert_eq!(sq_pce[&Square::h8], &piece::BLACK_PAWN);
     }
 
     #[test]
@@ -206,7 +206,7 @@ mod tests {
         let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
 
         let pce = sq_pce[&Square::h1];
-        assert_eq!(pce, Piece::BlackKing);
+        assert_eq!(pce, &piece::BLACK_KING);
     }
 
     #[test]
@@ -216,7 +216,7 @@ mod tests {
         let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
 
         let pce = sq_pce[&Square::h8];
-        assert_eq!(pce, Piece::BlackKing);
+        assert_eq!(pce, &piece::BLACK_KING);
     }
 
     #[test]
@@ -226,7 +226,7 @@ mod tests {
         let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
 
         let pce = sq_pce[&Square::a1];
-        assert_eq!(pce, Piece::BlackKing);
+        assert_eq!(pce, &piece::BLACK_KING);
     }
 
     #[test]
@@ -236,7 +236,7 @@ mod tests {
         let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
 
         let pce = sq_pce[&Square::a8];
-        assert_eq!(pce, Piece::BlackKing);
+        assert_eq!(pce, &piece::BLACK_KING);
     }
 
     #[test]

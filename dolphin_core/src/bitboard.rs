@@ -1,6 +1,5 @@
-use std::ops::Shl;
-
 use crate::square::Square;
+use std::ops::Shl;
 
 const BIT_0: u64 = 0x01;
 
@@ -48,7 +47,7 @@ pub fn print_hex(bb: u64) {
 }
 
 pub fn to_mask(sq: Square) -> u64 {
-    BIT_0.shl(sq.to_offset())
+    BIT_0.shl(sq.offset())
 }
 
 #[cfg(test)]

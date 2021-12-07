@@ -1,4 +1,5 @@
 use crate::move_list::MoveList;
+use crate::piece;
 use crate::piece::Colour;
 use crate::piece::Piece;
 use crate::square::Square;
@@ -49,26 +50,26 @@ const MV_FLG_PROMOTE_KNIGHT_CAPTURE: u16 = MV_FLG_PROMOTE_KNIGHT | MV_FLG_CAPTUR
 const MV_FLG_PROMOTE_BISHOP_CAPTURE: u16 = MV_FLG_PROMOTE_BISHOP | MV_FLG_CAPTURE;
 const MV_FLG_PROMOTE_ROOK_CAPTURE: u16 = MV_FLG_PROMOTE_ROOK | MV_FLG_CAPTURE;
 const MV_FLG_PROMOTE_QUEEN_CAPTURE: u16 = MV_FLG_PROMOTE_QUEEN | MV_FLG_CAPTURE;
-
 const MV_FLG_BIT_PROMOTE: u16 = 0x8000;
 
 #[repr(u16)]
 #[derive(TryFromPrimitive, Clone, Copy, Debug, Eq, PartialEq)]
+#[rustfmt::skip]
 pub enum MoveType {
-    Quiet = MV_FLG_QUIET,
-    DoublePawn = MV_FLG_DOUBLE_PAWN,
-    KingCastle = MV_FLG_KING_CASTLE,
-    QueenCastle = MV_FLG_QUEEN_CASTLE,
-    Capture = MV_FLG_CAPTURE,
-    EnPassant = MV_FLG_EN_PASS,
-    PromoteKnightQuiet = MV_FLG_PROMOTE_KNIGHT,
-    PromoteBishopQuiet = MV_FLG_PROMOTE_BISHOP,
-    PromoteRookQuiet = MV_FLG_PROMOTE_ROOK,
-    PromoteQueenQuiet = MV_FLG_PROMOTE_QUEEN,
-    PromoteKnightCapture = MV_FLG_PROMOTE_KNIGHT_CAPTURE,
-    PromoteBishopCapture = MV_FLG_PROMOTE_BISHOP_CAPTURE,
-    PromoteRookCapture = MV_FLG_PROMOTE_ROOK_CAPTURE,
-    PromoteQueenCapture = MV_FLG_PROMOTE_QUEEN_CAPTURE,
+    Quiet                   = MV_FLG_QUIET,
+    DoublePawn              = MV_FLG_DOUBLE_PAWN,
+    KingCastle              = MV_FLG_KING_CASTLE,
+    QueenCastle             = MV_FLG_QUEEN_CASTLE,
+    Capture                 = MV_FLG_CAPTURE,
+    EnPassant               = MV_FLG_EN_PASS,
+    PromoteKnightQuiet      = MV_FLG_PROMOTE_KNIGHT,
+    PromoteBishopQuiet      = MV_FLG_PROMOTE_BISHOP,
+    PromoteRookQuiet        = MV_FLG_PROMOTE_ROOK,
+    PromoteQueenQuiet       = MV_FLG_PROMOTE_QUEEN,
+    PromoteKnightCapture    = MV_FLG_PROMOTE_KNIGHT_CAPTURE,
+    PromoteBishopCapture    = MV_FLG_PROMOTE_BISHOP_CAPTURE,
+    PromoteRookCapture      = MV_FLG_PROMOTE_ROOK_CAPTURE,
+    PromoteQueenCapture     = MV_FLG_PROMOTE_QUEEN_CAPTURE,
 }
 
 impl MoveType {
@@ -160,7 +161,7 @@ impl Mov {
     pub fn encode_move_with_promotion(
         from_sq: Square,
         to_sq: Square,
-        promotion_piece: Piece,
+        promotion_piece: &'static Piece,
     ) -> Mov {
         debug_assert!(
             from_sq != to_sq,
@@ -171,10 +172,10 @@ impl Mov {
         let mut mov = Mov::encode_move_quiet(from_sq, to_sq);
 
         let mask = match promotion_piece {
-            Piece::WhiteKnight | Piece::BlackKnight => MV_FLG_PROMOTE_KNIGHT,
-            Piece::WhiteBishop | Piece::BlackBishop => MV_FLG_PROMOTE_BISHOP,
-            Piece::WhiteRook | Piece::BlackRook => MV_FLG_PROMOTE_ROOK,
-            Piece::WhiteQueen | Piece::BlackQueen => MV_FLG_PROMOTE_QUEEN,
+            &piece::WHITE_KNIGHT | &piece::BLACK_KNIGHT => MV_FLG_PROMOTE_KNIGHT,
+            &piece::WHITE_BISHOP | &piece::BLACK_BISHOP => MV_FLG_PROMOTE_BISHOP,
+            &piece::WHITE_ROOK | &piece::BLACK_ROOK => MV_FLG_PROMOTE_ROOK,
+            &piece::WHITE_QUEEN | &piece::BLACK_QUEEN => MV_FLG_PROMOTE_QUEEN,
             _ => panic!("Invalid promotion type"),
         };
         mov.mv |= mask;
@@ -184,7 +185,7 @@ impl Mov {
     pub fn encode_move_with_promotion_capture(
         from_sq: Square,
         to_sq: Square,
-        promotion_piece: Piece,
+        promotion_piece: &'static Piece,
     ) -> Mov {
         debug_assert!(
             from_sq != to_sq,
@@ -286,22 +287,22 @@ impl Mov {
         Square::from_num(sq as u8).unwrap()
     }
 
-    pub fn decode_promotion_piece(self, colour: Colour) -> Piece {
+    pub fn decode_promotion_piece(self, colour: Colour) -> &'static Piece {
         let flags = self.mv & MASK_FLAGS;
 
         match colour {
             Colour::White => match flags {
-                MV_FLG_PROMOTE_KNIGHT_CAPTURE | MV_FLG_PROMOTE_KNIGHT => Piece::WhiteKnight,
-                MV_FLG_PROMOTE_BISHOP_CAPTURE | MV_FLG_PROMOTE_BISHOP => Piece::WhiteBishop,
-                MV_FLG_PROMOTE_QUEEN_CAPTURE | MV_FLG_PROMOTE_QUEEN => Piece::WhiteQueen,
-                MV_FLG_PROMOTE_ROOK_CAPTURE | MV_FLG_PROMOTE_ROOK => Piece::WhiteRook,
+                MV_FLG_PROMOTE_KNIGHT_CAPTURE | MV_FLG_PROMOTE_KNIGHT => &piece::WHITE_KNIGHT,
+                MV_FLG_PROMOTE_BISHOP_CAPTURE | MV_FLG_PROMOTE_BISHOP => &piece::WHITE_BISHOP,
+                MV_FLG_PROMOTE_QUEEN_CAPTURE | MV_FLG_PROMOTE_QUEEN => &piece::WHITE_QUEEN,
+                MV_FLG_PROMOTE_ROOK_CAPTURE | MV_FLG_PROMOTE_ROOK => &piece::WHITE_ROOK,
                 _ => panic!("Invalid promotion piece"),
             },
             Colour::Black => match flags {
-                MV_FLG_PROMOTE_KNIGHT_CAPTURE | MV_FLG_PROMOTE_KNIGHT => Piece::BlackKnight,
-                MV_FLG_PROMOTE_BISHOP_CAPTURE | MV_FLG_PROMOTE_BISHOP => Piece::BlackBishop,
-                MV_FLG_PROMOTE_QUEEN_CAPTURE | MV_FLG_PROMOTE_QUEEN => Piece::BlackQueen,
-                MV_FLG_PROMOTE_ROOK_CAPTURE | MV_FLG_PROMOTE_ROOK => Piece::BlackRook,
+                MV_FLG_PROMOTE_KNIGHT_CAPTURE | MV_FLG_PROMOTE_KNIGHT => &piece::BLACK_KNIGHT,
+                MV_FLG_PROMOTE_BISHOP_CAPTURE | MV_FLG_PROMOTE_BISHOP => &piece::BLACK_BISHOP,
+                MV_FLG_PROMOTE_QUEEN_CAPTURE | MV_FLG_PROMOTE_QUEEN => &piece::BLACK_QUEEN,
+                MV_FLG_PROMOTE_ROOK_CAPTURE | MV_FLG_PROMOTE_ROOK => &piece::BLACK_ROOK,
                 _ => panic!("Invalid promotion piece"),
             },
         }
@@ -408,7 +409,7 @@ pub fn print_move_list(move_list: &MoveList) {
 #[cfg(test)]
 pub mod tests {
     use crate::mov::Mov;
-    use crate::piece::Piece;
+    use crate::piece;
     use crate::square;
     use crate::square::Square;
 
@@ -572,14 +573,14 @@ pub mod tests {
     #[test]
     pub fn encode_decode_promotion_move_non_capture() {
         let target_promotions = [
-            Piece::WhiteBishop,
-            Piece::WhiteKnight,
-            Piece::WhiteRook,
-            Piece::WhiteQueen,
-            Piece::BlackBishop,
-            Piece::BlackKnight,
-            Piece::BlackRook,
-            Piece::BlackQueen,
+            &piece::WHITE_BISHOP,
+            &piece::WHITE_KNIGHT,
+            &piece::WHITE_ROOK,
+            &piece::WHITE_QUEEN,
+            &piece::BLACK_BISHOP,
+            &piece::BLACK_KNIGHT,
+            &piece::BLACK_ROOK,
+            &piece::BLACK_QUEEN,
         ];
 
         for from_sq in square::SQUARES {
@@ -589,7 +590,7 @@ pub mod tests {
                 }
 
                 for pce in target_promotions.iter() {
-                    let mv = Mov::encode_move_with_promotion(*from_sq, *to_sq, *pce);
+                    let mv = Mov::encode_move_with_promotion(*from_sq, *to_sq, pce);
 
                     assert_eq!(mv.is_promote(), true);
                     assert_eq!(mv.is_capture(), false);
@@ -611,14 +612,14 @@ pub mod tests {
     #[test]
     pub fn encode_decode_promotion_move_capture() {
         let target_promotions = [
-            Piece::WhiteBishop,
-            Piece::WhiteKnight,
-            Piece::WhiteRook,
-            Piece::WhiteQueen,
-            Piece::BlackBishop,
-            Piece::BlackKnight,
-            Piece::BlackRook,
-            Piece::BlackQueen,
+            &piece::WHITE_BISHOP,
+            &piece::WHITE_KNIGHT,
+            &piece::WHITE_ROOK,
+            &piece::WHITE_QUEEN,
+            &piece::BLACK_BISHOP,
+            &piece::BLACK_KNIGHT,
+            &piece::BLACK_ROOK,
+            &piece::BLACK_QUEEN,
         ];
 
         for from_sq in square::SQUARES {
@@ -628,7 +629,7 @@ pub mod tests {
                 }
 
                 for pce in target_promotions.iter() {
-                    let mv = Mov::encode_move_with_promotion_capture(*from_sq, *to_sq, *pce);
+                    let mv = Mov::encode_move_with_promotion_capture(*from_sq, *to_sq, pce);
 
                     assert_eq!(mv.is_promote(), true);
                     assert_eq!(mv.is_capture(), true);

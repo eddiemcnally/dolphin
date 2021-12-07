@@ -2,13 +2,13 @@ extern crate rand;
 
 use crate::castle_permissions;
 use crate::castle_permissions::{CastlePermissionType, NUM_CASTLE_PERMS};
-use crate::piece::{Piece, NUM_PIECES};
+use crate::piece::{Piece, NUM_PIECE_TYPES};
 use crate::square::{Square, NUM_SQUARES};
 
 pub type ZobristHash = u64;
 
 pub struct ZobristKeys {
-    piece_keys: [[ZobristHash; NUM_PIECES]; NUM_SQUARES],
+    piece_keys: [[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES],
     side_key: ZobristHash,
     castle_keys: [ZobristHash; NUM_CASTLE_PERMS],
     en_passant_sq_keys: [ZobristHash; NUM_SQUARES],
@@ -33,14 +33,14 @@ impl ZobristKeys {
         self.side_key
     }
 
-    pub const fn piece_square(&self, piece: Piece, square: Square) -> ZobristHash {
-        let pce_offset = piece.to_offset();
-        let sq_offset = square.to_offset();
+    pub const fn piece_square(&self, piece: &'static Piece, square: Square) -> ZobristHash {
+        let pce_offset = piece.offset();
+        let sq_offset = square.offset();
         self.piece_keys[sq_offset][pce_offset]
     }
 
     pub const fn en_passant(&self, square: Square) -> ZobristHash {
-        let sq_offset = square.to_offset();
+        let sq_offset = square.offset();
         self.en_passant_sq_keys[sq_offset]
     }
 
@@ -50,10 +50,10 @@ impl ZobristKeys {
     }
 }
 
-fn init_piece_keys() -> [[ZobristHash; NUM_PIECES]; NUM_SQUARES] {
-    let mut retval = [[0u64; NUM_PIECES]; NUM_SQUARES];
+fn init_piece_keys() -> [[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES] {
+    let mut retval = [[0u64; NUM_PIECE_TYPES]; NUM_SQUARES];
     for p in 0..NUM_SQUARES {
-        for c in 0..NUM_PIECES {
+        for c in 0..NUM_PIECE_TYPES {
             let seed = rand::random::<u64>();
             retval[p][c] = seed;
         }
@@ -93,9 +93,9 @@ pub mod tests {
         let keys = super::ZobristKeys::new();
         let mut v: Vec<ZobristHash> = Vec::new();
 
-        for pce in crate::piece::PIECES {
+        for pce in crate::piece::ALL_PIECES {
             for sq in crate::square::SQUARES {
-                let hash = keys.piece_square(*pce, *sq);
+                let hash = keys.piece_square(pce, *sq);
                 v.push(hash);
             }
         }

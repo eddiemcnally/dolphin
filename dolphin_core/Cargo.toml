@@ -6,11 +6,11 @@ edition = "2018"
 
 
 [dependencies]
-rand = "0.8.3"
-typenum = "1.12.0"
-num_enum = "0.5.1"
+rand = "0.8.4"
+typenum = "1.14.0"
+num_enum = "0.5.4"
 core_affinity = "0.5.10"
-num-traits = "0.2.13"
+num-traits = "0.2.14"
 
 
 

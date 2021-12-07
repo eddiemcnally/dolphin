@@ -3,12 +3,12 @@ use crate::piece::Piece;
 use crate::position::GameState;
 use std::fmt;
 
-#[derive(Default, Eq, PartialEq, Clone, Copy)]
+#[derive(Default, Eq, PartialEq, Copy, Clone)]
 struct Item {
     game_state: GameState,
     mov: Mov,
-    pce_moved: Piece,
-    pce_captured: Option<Piece>,
+    pce_moved: &'static Piece,
+    pce_captured: Option<&'static Piece>,
 }
 
 pub struct PositionHistory {
@@ -94,10 +94,10 @@ impl PositionHistory {
     // push
     pub fn push(
         &mut self,
-        game_state: &GameState,
+        game_state: GameState,
         mv: Mov,
-        piece: Piece,
-        capt_piece: Option<Piece>,
+        piece: &'static Piece,
+        capt_piece: Option<&'static Piece>,
     ) {
         debug_assert!(
             self.count <= (PositionHistory::MAX_MOVE_HISTORY - 1) as u16,
@@ -106,7 +106,7 @@ impl PositionHistory {
         );
 
         let item = Item {
-            game_state: *game_state,
+            game_state: game_state,
             mov: mv,
             pce_moved: piece,
             pce_captured: capt_piece,
@@ -116,13 +116,17 @@ impl PositionHistory {
         self.count += 1;
     }
 
-    pub fn pop(&mut self) -> (GameState, Mov, Piece, Option<Piece>) {
+    pub fn pop(&mut self) -> (GameState, Mov, &'static Piece, Option<&'static Piece>) {
         debug_assert!(self.count > 0, "attempt to pop, len = 0");
 
         self.count -= 1;
 
-        let item = self.history[self.count as usize];
-        (item.game_state, item.mov, item.pce_moved, item.pce_captured)
+        (
+            self.history[self.count as usize].game_state,
+            self.history[self.count as usize].mov,
+            self.history[self.count as usize].pce_moved,
+            self.history[self.count as usize].pce_captured,
+        )
     }
 
     pub fn len(&self) -> usize {

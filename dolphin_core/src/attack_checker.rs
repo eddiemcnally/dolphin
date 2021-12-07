@@ -1,8 +1,8 @@
 use crate::bitboard;
 use crate::board::Board;
 use crate::occupancy_masks::OccupancyMasks;
+use crate::piece;
 use crate::piece::Colour;
-use crate::piece::Piece;
 use crate::square::Square;
 
 pub fn is_king_sq_attacked(
@@ -13,7 +13,7 @@ pub fn is_king_sq_attacked(
 ) -> bool {
     match attacking_side {
         Colour::White => {
-            let pawn_bb = board.get_piece_bitboard(Piece::WhitePawn);
+            let pawn_bb = board.get_piece_bitboard(&piece::WHITE_PAWN);
             if pawn_bb != 0 && is_attacked_by_pawn_white(occ_masks, pawn_bb, sq) {
                 return true;
             }
@@ -22,7 +22,7 @@ pub fn is_king_sq_attacked(
             }
         }
         Colour::Black => {
-            let pawn_bb = board.get_piece_bitboard(Piece::BlackPawn);
+            let pawn_bb = board.get_piece_bitboard(&piece::BLACK_PAWN);
             if pawn_bb != 0 && is_attacked_by_pawn_black(occ_masks, pawn_bb, sq) {
                 return true;
             }
@@ -42,7 +42,7 @@ pub fn is_castle_squares_attacked(
 ) -> bool {
     match attacking_side {
         Colour::White => {
-            let pawn_bb = board.get_piece_bitboard(Piece::WhitePawn);
+            let pawn_bb = board.get_piece_bitboard(&piece::WHITE_PAWN);
             for sq in sq_array.iter() {
                 if check_non_pawn_pieces_attacking(occ_masks, Colour::White, board, *sq) {
                     return true;
@@ -53,7 +53,7 @@ pub fn is_castle_squares_attacked(
             }
         }
         Colour::Black => {
-            let pawn_bb = board.get_piece_bitboard(Piece::BlackPawn);
+            let pawn_bb = board.get_piece_bitboard(&piece::BLACK_PAWN);
             for sq in sq_array.iter() {
                 if check_non_pawn_pieces_attacking(occ_masks, Colour::Black, board, *sq) {
                     return true;
@@ -75,7 +75,7 @@ fn check_non_pawn_pieces_attacking(
     sq: Square,
 ) -> bool {
     if side == Colour::White {
-        let knight_bb = board.get_piece_bitboard(Piece::WhiteKnight);
+        let knight_bb = board.get_piece_bitboard(&piece::WHITE_KNIGHT);
         if knight_bb != 0 && is_knight_attacking(occ_masks, knight_bb, sq) {
             return true;
         }
@@ -93,12 +93,12 @@ fn check_non_pawn_pieces_attacking(
             return true;
         }
 
-        let king_bb = board.get_piece_bitboard(Piece::WhiteKing);
+        let king_bb = board.get_piece_bitboard(&piece::WHITE_KING);
         if is_attacked_by_king(occ_masks, king_bb, sq) {
             return true;
         }
     } else {
-        let knight_bb = board.get_piece_bitboard(Piece::BlackKnight);
+        let knight_bb = board.get_piece_bitboard(&piece::BLACK_KNIGHT);
         if knight_bb != 0 && is_knight_attacking(occ_masks, knight_bb, sq) {
             return true;
         }
@@ -116,7 +116,7 @@ fn check_non_pawn_pieces_attacking(
             return true;
         }
 
-        let king_bb = board.get_piece_bitboard(Piece::BlackKing);
+        let king_bb = board.get_piece_bitboard(&piece::BLACK_KING);
         if is_attacked_by_king(occ_masks, king_bb, sq) {
             return true;
         }
@@ -146,6 +146,16 @@ fn is_horizontal_or_vertical_attacking(
 ) -> bool {
     let mut pce_bb = attack_pce_bb;
 
+    // do a quick check to see if any piece is sharing a rank and file
+    // with the square
+    let vert_occ_masks = occ_masks.get_vertical_mask(attack_sq);
+    let horiz_occ_masks = occ_masks.get_horizontal_mask(attack_sq);
+    let horiz_vert_sq_mask = vert_occ_masks | horiz_occ_masks;
+    if attack_pce_bb & horiz_vert_sq_mask == 0 {
+        // no diagonals shared
+        return false;
+    }
+
     while pce_bb != 0 {
         let pce_sq = bitboard::pop_1st_bit(&mut pce_bb);
 
@@ -169,10 +179,19 @@ fn is_diagonally_attacked(
 ) -> bool {
     let mut attack_pce_bb = diag_bb;
 
+    // do a quick check to see if any piece is sharing a diagonal with
+    // the square
+    let diag_occ_masks = occ_masks.get_diag_antidiag_mask(attack_sq);
+    let sq_mask = diag_occ_masks.get_anti_diag_mask() | diag_occ_masks.get_diag_mask();
+    if sq_mask & diag_bb == 0 {
+        // no diagonals shared
+        return false;
+    }
+
     while attack_pce_bb != 0 {
         let pce_sq = bitboard::pop_1st_bit(&mut attack_pce_bb);
 
-        // diagonal mask will also wrk for queen
+        // diagonal mask will also work for queen
         let diagonal_bb = occ_masks.get_occupancy_mask_bishop(pce_sq);
         if bitboard::is_set(diagonal_bb, attack_sq) {
             // potentially attacking....ie, sharing a diagonal

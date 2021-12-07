@@ -3,7 +3,6 @@ use crate::fen::ParsedFen;
 use crate::piece;
 use crate::piece::Colour;
 use crate::piece::Piece;
-use crate::square;
 use crate::square::File;
 use crate::square::Rank;
 use crate::square::Square;
@@ -12,62 +11,26 @@ use std::option::Option;
 
 pub const NUM_SQUARES: usize = 64;
 
+#[derive(Eq, PartialEq)]
 pub struct Board {
     // piece bitboard, an entry for each piece type (enum Piece)
-    piece_bb: [u64; piece::NUM_PIECES],
+    piece_bb: [u64; piece::NUM_PIECE_TYPES],
     // bitboard for each Colour
     colour_bb: [u64; piece::NUM_COLOURS],
     // material value
     material: [u32; piece::NUM_COLOURS],
     // pieces on squares
-    pieces: [Option<Piece>; square::NUM_SQUARES],
-    // king squares
-    kings: [Square; piece::NUM_COLOURS],
+    pieces: [Option<&'static Piece>; NUM_SQUARES],
 }
 
 impl Default for Board {
     fn default() -> Self {
         Board {
-            piece_bb: [0; piece::NUM_PIECES],
+            piece_bb: [0; piece::NUM_PIECE_TYPES],
             colour_bb: [0; piece::NUM_COLOURS],
             material: [0; piece::NUM_COLOURS],
-            pieces: [None; square::NUM_SQUARES],
-            kings: [Square::e1, Square::e8],
+            pieces: [None; NUM_SQUARES],
         }
-    }
-}
-
-impl PartialEq for Board {
-    fn eq(&self, other: &Self) -> bool {
-        for i in 0..piece::NUM_PIECES {
-            if self.piece_bb[i] != other.piece_bb[i] {
-                println!("BOARD: piece_bb are different");
-                return false;
-            }
-        }
-
-        for i in 0..piece::NUM_PIECES {
-            if self.pieces[i] != other.pieces[i] {
-                println!("BOARD: pieces are different");
-                return false;
-            }
-        }
-        for i in 0..piece::NUM_COLOURS as usize {
-            if self.colour_bb[i] != other.colour_bb[i] {
-                println!("BOARD: colour_bb are different");
-                return false;
-            }
-            if self.material[i] != other.material[i] {
-                println!("BOARD: material values are different");
-                return false;
-            }
-            if self.kings[i] != other.kings[i] {
-                println!("BOARD: kings squares are different");
-                return false;
-            }
-        }
-
-        true
     }
 }
 
@@ -83,10 +46,11 @@ impl fmt::Debug for Board {
             for f in File::iterator() {
                 let sq = Square::get_square(*r, *f);
 
-                let pce = self.get_piece_on_square(sq);
+                let pce = &mut None;
+                self.get_piece_on_square(sq, pce);
                 match pce {
                     Some(pce) => {
-                        debug_str.push_str(&pce.to_label().to_string());
+                        debug_str.push_str(&pce.label().to_string());
                         debug_str.push_str("\t");
                     }
                     _ => debug_str.push_str(".\t"),
@@ -121,24 +85,19 @@ impl Board {
         brd
     }
 
-    pub fn add_piece(&mut self, piece: Piece, sq: Square) {
+    pub fn add_piece(&mut self, piece: &'static Piece, sq: Square) {
         debug_assert!(
             self.is_sq_empty(sq),
             "add_piece, square not empty. {:?}",
             sq
         );
 
-        let colour = piece.colour();
-        self.set_bitboards(piece, colour, sq);
-        self.material[colour.to_offset()] += piece.value();
-        self.pieces[sq.to_offset()] = Some(piece);
-
-        if piece.is_king() {
-            self.kings[colour.to_offset()] = sq;
-        }
+        self.set_bitboards(piece, sq);
+        self.material[piece.colour().offset()] += piece.value();
+        self.pieces[sq.offset()] = Some(piece);
     }
 
-    pub fn remove_piece(&mut self, piece: Piece, sq: Square) {
+    pub fn remove_piece(&mut self, piece: &'static Piece, sq: Square) {
         debug_assert!(
             !self.is_sq_empty(sq),
             "remove_piece, square is empty. {:?}",
@@ -146,9 +105,9 @@ impl Board {
         );
         let colour = piece.colour();
 
-        self.clear_bitboards(piece, colour, sq);
-        self.material[colour.to_offset()] -= piece.value();
-        self.pieces[sq.to_offset()] = None;
+        self.clear_bitboards(piece, sq);
+        self.material[colour.offset()] -= piece.value();
+        self.pieces[sq.offset()] = None;
     }
 
     pub fn remove_from_sq(&mut self, sq: Square) {
@@ -157,23 +116,25 @@ impl Board {
             "remove_from_sq, square not empty. {:?}",
             sq
         );
-        let piece = self.get_piece_on_square(sq);
-        debug_assert!(piece.is_some(), "Remove from square, no piece found");
-        self.remove_piece(piece.unwrap(), sq);
+
+        let pce = &mut None;
+        self.get_piece_on_square(sq, pce);
+
+        self.remove_piece(pce.unwrap(), sq);
     }
 
     pub fn get_colour_bb(&self, colour: Colour) -> u64 {
-        self.colour_bb[colour.to_offset()]
+        self.colour_bb[colour.offset()]
     }
 
     pub fn get_material(&self) -> (u32, u32) {
         (
-            self.material[Colour::White.to_offset()],
-            self.material[Colour::Black.to_offset()],
+            self.material[Colour::White.offset()],
+            self.material[Colour::Black.offset()],
         )
     }
 
-    pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece) {
+    pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: &'static Piece) {
         debug_assert!(
             !self.is_sq_empty(from_sq),
             "move piece, from square is empty. {:?}",
@@ -186,65 +147,50 @@ impl Board {
             from_sq
         );
 
-        debug_assert!(
-            self.get_piece_on_square(from_sq) == Some(piece),
-            "move piece, piece on from_sq not as expected. Expected: {:?}, found: {:?}, from_sq: {:?}, to_sq: {:?}",
-            piece,
-            self.get_piece_on_square(from_sq),
-            from_sq,
-            to_sq
-        );
+        self.clear_bitboards(piece, from_sq);
+        self.pieces[from_sq.offset()] = None;
 
-        let colour = piece.colour();
-        self.clear_bitboards(piece, colour, from_sq);
-        self.pieces[from_sq.to_offset()] = None;
-
-        self.set_bitboards(piece, colour, to_sq);
-        self.pieces[to_sq.to_offset()] = Some(piece);
-
-        if piece.is_king() {
-            self.kings[colour.to_offset()] = to_sq;
-        }
+        self.set_bitboards(piece, to_sq);
+        self.pieces[to_sq.offset()] = Some(piece);
     }
 
-    pub fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
-        self.pieces[sq.to_offset()]
+    pub fn get_piece_on_square(&self, sq: Square, pce: &mut Option<&'static Piece>) {
+        *pce = self.pieces[sq.offset()];
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
-        self.pieces[sq.to_offset()] == None
+        let board_bb = self.get_bitboard();
+        bitboard::is_clear(board_bb, sq)
     }
 
-    pub const fn get_piece_bitboard(&self, piece: Piece) -> u64 {
-        self.piece_bb[piece.to_offset()]
+    pub fn get_piece_bitboard(&self, piece: &Piece) -> u64 {
+        self.piece_bb[piece.offset()]
     }
 
-    pub const fn get_white_rook_queen_bitboard(&self) -> u64 {
-        const WR_OFF: usize = Piece::WhiteRook.to_offset();
-        const WQ_OFF: usize = Piece::WhiteQueen.to_offset();
-
-        self.piece_bb[WR_OFF] | self.piece_bb[WQ_OFF]
+    pub fn get_white_rook_queen_bitboard(&self) -> u64 {
+        let wr_off = piece::WHITE_ROOK.offset();
+        let wq_off = piece::WHITE_QUEEN.offset();
+        self.piece_bb[wr_off] | self.piece_bb[wq_off]
     }
 
-    pub const fn get_black_rook_queen_bitboard(&self) -> u64 {
-        const BR_OFF: usize = Piece::BlackRook.to_offset();
-        const BQ_OFF: usize = Piece::BlackQueen.to_offset();
-
-        self.piece_bb[BR_OFF] | self.piece_bb[BQ_OFF]
+    pub fn get_black_rook_queen_bitboard(&self) -> u64 {
+        let br_off = piece::BLACK_ROOK.offset();
+        let bq_off = piece::BLACK_QUEEN.offset();
+        self.piece_bb[br_off] | self.piece_bb[bq_off]
     }
 
-    pub const fn get_white_bishop_queen_bitboard(&self) -> u64 {
-        const WB_OFF: usize = Piece::WhiteBishop.to_offset();
-        const WQ_OFF: usize = Piece::WhiteQueen.to_offset();
+    pub fn get_white_bishop_queen_bitboard(&self) -> u64 {
+        let wb_off = piece::WHITE_BISHOP.offset();
+        let wq_off = piece::WHITE_QUEEN.offset();
 
-        self.piece_bb[WB_OFF] | self.piece_bb[WQ_OFF]
+        self.piece_bb[wb_off] | self.piece_bb[wq_off]
     }
 
-    pub const fn get_black_bishop_queen_bitboard(&self) -> u64 {
-        const BB_OFF: usize = Piece::BlackBishop.to_offset();
-        const BQ_OFF: usize = Piece::BlackQueen.to_offset();
+    pub fn get_black_bishop_queen_bitboard(&self) -> u64 {
+        let bb_off = piece::BLACK_BISHOP.offset();
+        let bq_off = piece::BLACK_QUEEN.offset();
 
-        self.piece_bb[BB_OFF] | self.piece_bb[BQ_OFF]
+        self.piece_bb[bb_off] | self.piece_bb[bq_off]
     }
 
     pub fn get_bitboard(&self) -> u64 {
@@ -252,22 +198,26 @@ impl Board {
     }
 
     pub fn get_king_sq(&self, colour: Colour) -> Square {
-        self.kings[colour.to_offset()]
+        let king = match colour {
+            Colour::White => &piece::WHITE_KING,
+            Colour::Black => &piece::BLACK_KING,
+        };
+
+        let mut king_bb = self.piece_bb[king.offset()];
+        bitboard::pop_1st_bit(&mut king_bb)
     }
 
-    #[inline(always)]
-    fn clear_bitboards(&mut self, piece: Piece, colour: Colour, sq: Square) {
-        let pce_off = piece.to_offset();
-        let col_off = colour.to_offset();
+    fn clear_bitboards(&mut self, piece: &'static Piece, sq: Square) {
+        let pce_off = piece.offset();
+        let col_off = piece.colour().offset();
 
         self.piece_bb[pce_off] = bitboard::clear_bit(self.piece_bb[pce_off], sq);
         self.colour_bb[col_off] = bitboard::clear_bit(self.colour_bb[col_off], sq);
     }
 
-    #[inline(always)]
-    fn set_bitboards(&mut self, piece: Piece, colour: Colour, sq: Square) {
-        let pce_off = piece.to_offset();
-        let col_off = colour.to_offset();
+    fn set_bitboards(&mut self, piece: &'static Piece, sq: Square) {
+        let pce_off = piece.offset();
+        let col_off = piece.colour().offset();
 
         self.piece_bb[pce_off] = bitboard::set_bit(self.piece_bb[pce_off], sq);
         self.colour_bb[col_off] = bitboard::set_bit(self.colour_bb[col_off], sq);
@@ -281,43 +231,42 @@ pub mod tests {
     use crate::fen::get_position;
     use crate::fen::ParsedFen;
     use crate::piece;
-    use crate::piece::Piece;
     use crate::square;
     use crate::square::Square;
     use std::collections::HashMap;
 
     #[test]
     pub fn add_piece_king_square_as_expected() {
-        let kings = [Piece::WhiteKing, Piece::BlackKing];
+        let kings = [&piece::WHITE_KING, &piece::BLACK_KING];
 
         for pce in kings.iter() {
             let mut board = Board::new();
             for sq in square::SQUARES {
-                let king = *pce;
-                board.add_piece(king, *sq);
+                let king = pce;
+                board.add_piece(&king, *sq);
 
                 let colour = king.colour();
                 assert_eq!(board.get_king_sq(colour), *sq);
 
                 // remove so state is restored.
-                board.remove_piece(king, *sq);
+                board.remove_piece(&king, *sq);
             }
         }
     }
 
     #[test]
     pub fn add_remove_piece_square_state_as_expected() {
-        let pce = Piece::WhiteKnight;
+        let pce = &piece::WHITE_KNIGHT;
         let mut board = Board::new();
 
         let map = square::SQUARES.iter();
         for square in map {
             assert!(board.is_sq_empty(*square) == true);
 
-            board.add_piece(pce, *square);
+            board.add_piece(&pce, *square);
             assert!(board.is_sq_empty(*square) == false);
 
-            board.remove_piece(pce, *square);
+            board.remove_piece(&pce, *square);
             assert!(board.is_sq_empty(*square) == true);
         }
     }
@@ -326,16 +275,16 @@ pub mod tests {
     pub fn add_remove_white_pieces_material_as_expected() {
         let mut board = Board::new();
 
-        let pce1 = Piece::WhiteBishop;
-        let pce2 = Piece::WhiteQueen;
+        let pce1 = &piece::WHITE_BISHOP;
+        let pce2 = &piece::WHITE_QUEEN;
 
-        board.add_piece(pce1, Square::a1);
-        board.add_piece(pce2, Square::d3);
+        board.add_piece(&pce1, Square::a1);
+        board.add_piece(&pce2, Square::d3);
         let material_after_add = (pce1.value() + pce2.value(), 0);
 
         assert_eq!(material_after_add, board.get_material());
 
-        board.remove_piece(pce1, Square::a1);
+        board.remove_piece(&pce1, Square::a1);
 
         let material_after_remove = (pce2.value(), 0);
 
@@ -346,16 +295,16 @@ pub mod tests {
     pub fn add_remove_black_pieces_material_as_expected() {
         let mut board = Board::new();
 
-        let pce1 = Piece::BlackBishop;
-        let pce2 = Piece::BlackQueen;
+        let pce1 = &piece::BLACK_BISHOP;
+        let pce2 = &piece::BLACK_QUEEN;
 
-        board.add_piece(pce1, Square::a1);
-        board.add_piece(pce2, Square::d3);
+        board.add_piece(&pce1, Square::a1);
+        board.add_piece(&pce2, Square::d3);
         let material_after_add = (0, pce1.value() + pce2.value());
 
         assert_eq!(material_after_add, board.get_material());
 
-        board.remove_piece(pce1, Square::a1);
+        board.remove_piece(&pce1, Square::a1);
 
         let material_after_remove = (0, pce2.value());
 
@@ -364,19 +313,19 @@ pub mod tests {
 
     #[test]
     pub fn move_white_piece_material_unchanged() {
-        let pce = Piece::WhiteKnight;
+        let pce = &piece::WHITE_KNIGHT;
         let from_sq = Square::d4;
         let to_sq = Square::c6;
 
         let mut board = Board::new();
 
-        board.add_piece(pce, from_sq);
+        board.add_piece(&pce, from_sq);
         let start_material = board.get_material();
 
         assert_eq!(start_material.0, pce.value());
         assert_eq!(start_material.1, 0);
 
-        board.move_piece(from_sq, to_sq, pce);
+        board.move_piece(from_sq, to_sq, &pce);
         let end_material = board.get_material();
 
         assert_eq!(start_material, end_material);
@@ -384,18 +333,18 @@ pub mod tests {
 
     #[test]
     pub fn move_black_piece_material_unchanged() {
-        let pce = Piece::BlackKnight;
+        let pce = &piece::BLACK_KNIGHT;
         let from_sq = Square::d4;
         let to_sq = Square::c6;
 
         let mut board = Board::new();
 
-        board.add_piece(pce, Square::d4);
+        board.add_piece(&pce, Square::d4);
         let start_material = board.get_material();
 
         assert_eq!(start_material.1, pce.value());
 
-        board.move_piece(from_sq, to_sq, pce);
+        board.move_piece(from_sq, to_sq, &pce);
         let end_material = board.get_material();
 
         assert_eq!(start_material, end_material);
@@ -403,7 +352,7 @@ pub mod tests {
 
     #[test]
     pub fn move_piece_square_state_as_expected() {
-        let pce = Piece::WhiteKnight;
+        let pce = &piece::BLACK_KNIGHT;
         let mut board = Board::new();
 
         for from_sq in square::SQUARES.iter() {
@@ -414,44 +363,46 @@ pub mod tests {
 
                 assert!(board.is_sq_empty(*from_sq) == true);
                 assert!(board.is_sq_empty(*to_sq) == true);
-                assert!(board.pieces[from_sq.to_offset()] == None);
-                assert!(board.pieces[to_sq.to_offset()] == None);
+                assert!(board.pieces[from_sq.offset()] == None);
+                assert!(board.pieces[to_sq.offset()] == None);
 
-                board.add_piece(pce, *from_sq);
+                board.add_piece(&pce, *from_sq);
                 assert!(board.is_sq_empty(*from_sq) == false);
                 assert!(board.is_sq_empty(*to_sq) == true);
-                assert!(board.pieces[from_sq.to_offset()] == Some(pce));
-                assert!(board.pieces[to_sq.to_offset()] == None);
+                assert!(board.pieces[from_sq.offset()] == Some(&pce));
+                assert!(board.pieces[to_sq.offset()] == None);
 
-                board.move_piece(*from_sq, *to_sq, pce);
+                board.move_piece(*from_sq, *to_sq, &pce);
                 assert!(board.is_sq_empty(*from_sq) == true);
                 assert!(board.is_sq_empty(*to_sq) == false);
-                assert!(board.pieces[to_sq.to_offset()] == Some(pce));
-                assert!(board.pieces[from_sq.to_offset()] == None);
+                assert!(board.pieces[to_sq.offset()] == Some(&pce));
+                assert!(board.pieces[from_sq.offset()] == None);
 
                 // clean up
-                board.remove_piece(pce, *to_sq);
+                board.remove_piece(&pce, *to_sq);
             }
         }
     }
 
     #[test]
     pub fn get_piece_on_square_as_expected() {
-        let pce = Piece::WhiteKnight;
+        let pce = &piece::WHITE_KNIGHT;
         let mut board = Board::new();
 
         for square in square::SQUARES {
             assert!(board.is_sq_empty(*square) == true);
 
-            board.add_piece(pce, *square);
+            board.add_piece(&pce, *square);
             assert!(board.is_sq_empty(*square) == false);
 
-            let retr_pce: Option<Piece> = board.get_piece_on_square(*square);
+            let retr_pce = &mut None;
+            board.get_piece_on_square(*square, retr_pce);
+
             assert_eq!(retr_pce.is_some(), true);
             assert_eq!(retr_pce.unwrap(), pce);
 
             // clean up
-            board.remove_piece(pce, *square);
+            board.remove_piece(&pce, *square);
         }
     }
 
@@ -459,7 +410,7 @@ pub mod tests {
     pub fn get_bitboard_value_as_expected() {
         let mut board = Board::new();
 
-        for pce in piece::get_all_pieces() {
+        for pce in piece::ALL_PIECES {
             for square in square::SQUARES {
                 board.add_piece(pce, *square);
                 let bb = board.get_piece_bitboard(pce);
@@ -478,9 +429,10 @@ pub mod tests {
         let parsed_fen = get_position(fen);
 
         let brd = Board::from_fen(&parsed_fen);
+        let pce = &mut None;
+        brd.get_piece_on_square(Square::a1, pce);
 
-        let pce = brd.get_piece_on_square(Square::a1).unwrap();
-        assert!(pce == Piece::BlackKing);
+        assert!(*pce.unwrap() == piece::BLACK_KING);
     }
 
     #[test]
@@ -490,8 +442,10 @@ pub mod tests {
 
         let brd = Board::from_fen(&parsed_fen);
 
-        let pce = brd.get_piece_on_square(Square::a8).unwrap();
-        assert!(pce == Piece::BlackKing);
+        let pce = &mut None;
+        brd.get_piece_on_square(Square::a8, pce);
+
+        assert!(*pce.unwrap() == piece::BLACK_KING);
     }
 
     #[test]
@@ -501,8 +455,10 @@ pub mod tests {
 
         let brd = Board::from_fen(&parsed_fen);
 
-        let pce = brd.get_piece_on_square(Square::h1).unwrap();
-        assert!(pce == Piece::BlackKing);
+        let pce = &mut None;
+        brd.get_piece_on_square(Square::h1, pce);
+
+        assert!(*pce.unwrap() == piece::BLACK_KING);
     }
 
     #[test]
@@ -512,19 +468,21 @@ pub mod tests {
 
         let brd = Board::from_fen(&parsed_fen);
 
-        let pce = brd.get_piece_on_square(Square::h8).unwrap();
-        assert!(pce == Piece::BlackKing);
+        let pce = &mut None;
+        brd.get_piece_on_square(Square::h8, pce);
+
+        assert!(*pce.unwrap() == piece::BLACK_KING);
     }
 
     #[test]
     pub fn build_board_from_parsed_fen() {
         let mut map = HashMap::new();
 
-        map.insert(Square::a1, Piece::BlackKnight);
-        map.insert(Square::h8, Piece::WhiteKing);
-        map.insert(Square::d5, Piece::BlackQueen);
-        map.insert(Square::c3, Piece::WhitePawn);
-        map.insert(Square::a7, Piece::WhiteRook);
+        map.insert(Square::a1, &piece::BLACK_KNIGHT);
+        map.insert(Square::h8, &piece::WHITE_KING);
+        map.insert(Square::d5, &piece::BLACK_QUEEN);
+        map.insert(Square::c3, &piece::WHITE_PAWN);
+        map.insert(Square::a7, &piece::WHITE_ROOK);
 
         let mut parsed_fen: ParsedFen = Default::default();
         parsed_fen.piece_positions = map;
@@ -534,13 +492,17 @@ pub mod tests {
         for sq in square::SQUARES {
             if parsed_fen.piece_positions.contains_key(sq) {
                 // should contain piece
-                let brd_pce = brd.get_piece_on_square(*sq).unwrap();
+                let brd_pce = &mut None;
+                brd.get_piece_on_square(*sq, brd_pce);
+
                 let map_pce = parsed_fen.piece_positions.get(sq).unwrap();
 
-                assert_eq!(brd_pce, *map_pce);
+                assert_eq!(brd_pce.unwrap(), *map_pce);
             } else {
                 // shouldn't contain a piece
-                let retr_pce: Option<Piece> = brd.get_piece_on_square(*sq);
+                let retr_pce = &mut None;
+                brd.get_piece_on_square(*sq, retr_pce);
+
                 assert_eq!(retr_pce.is_some(), false);
             }
         }
@@ -550,11 +512,11 @@ pub mod tests {
     pub fn board_equality_as_expected() {
         let mut map = HashMap::new();
 
-        map.insert(Square::a1, Piece::BlackKnight);
-        map.insert(Square::h8, Piece::WhiteKing);
-        map.insert(Square::d5, Piece::BlackQueen);
-        map.insert(Square::c3, Piece::WhitePawn);
-        map.insert(Square::a7, Piece::WhiteRook);
+        map.insert(Square::a1, &piece::BLACK_KNIGHT);
+        map.insert(Square::h8, &piece::WHITE_KING);
+        map.insert(Square::d5, &piece::BLACK_QUEEN);
+        map.insert(Square::c3, &piece::WHITE_PAWN);
+        map.insert(Square::a7, &piece::WHITE_ROOK);
 
         let mut parsed_fen: ParsedFen = Default::default();
         parsed_fen.piece_positions = map;

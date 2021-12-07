@@ -46,7 +46,7 @@ impl fmt::Debug for Square {
 }
 
 #[rustfmt::skip]
-pub static SQUARES: &[Square] = &[
+pub const SQUARES: &[Square] = &[
     Square::a1, Square::b1, Square::c1, Square::d1, Square::e1, Square::f1, Square::g1, Square::h1, 
     Square::a2, Square::b2, Square::c2, Square::d2, Square::e2, Square::f2, Square::g2, Square::h2, 
     Square::a3, Square::b3, Square::c3, Square::d3, Square::e3, Square::f3, Square::g3, Square::h3, 
@@ -114,7 +114,7 @@ impl Square {
     }
 
     pub fn get_square_as_bb(self) -> u64 {
-        0x01u64 << (self.to_offset())
+        0x01u64 << (self.offset())
     }
 
     pub fn get_from_string(square_str: &str) -> Option<Square> {
@@ -146,7 +146,7 @@ impl Square {
         self.file_as_u8() == other.file_as_u8()
     }
 
-    pub const fn to_offset(self) -> usize {
+    pub const fn offset(self) -> usize {
         self as usize
     }
 

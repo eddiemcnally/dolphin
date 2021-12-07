@@ -5,7 +5,7 @@ extern crate num_enum;
 use dolphin_core::fen;
 use dolphin_core::move_gen::MoveGenerator;
 use dolphin_core::occupancy_masks::OccupancyMasks;
-use dolphin_core::piece::Piece;
+use dolphin_core::piece;
 use dolphin_core::position::Position;
 use dolphin_core::zobrist_keys::ZobristKeys;
 use std::time::Instant;
@@ -14,7 +14,7 @@ mod epd_parser;
 mod perft_runner;
 
 fn main() {
-    let x = Piece::BlackKing;
+    let x = piece::BLACK_KING;
 
     print!("val {}", x);
     // Pin current thread to a core

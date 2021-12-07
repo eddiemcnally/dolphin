@@ -63,11 +63,11 @@ impl OccupancyMasks {
     }
 
     pub fn get_occupancy_mask_bishop(&self, sq: Square) -> u64 {
-        *self.bishop.get(sq.to_offset()).unwrap()
+        *self.bishop.get(sq.offset()).unwrap()
     }
 
     pub fn get_occupancy_mask_knight(&self, sq: Square) -> u64 {
-        *self.knight.get(sq.to_offset()).unwrap()
+        *self.knight.get(sq.offset()).unwrap()
     }
 
     pub fn get_occupancy_mask_rook(&self, sq: Square) -> u64 {
@@ -78,15 +78,15 @@ impl OccupancyMasks {
     }
 
     pub fn get_occupancy_mask_queen(&self, sq: Square) -> u64 {
-        *self.queen.get(sq.to_offset()).unwrap()
+        *self.queen.get(sq.offset()).unwrap()
     }
 
     pub fn get_occupancy_mask_king(&self, sq: Square) -> u64 {
-        *self.king.get(sq.to_offset()).unwrap()
+        *self.king.get(sq.offset()).unwrap()
     }
 
     pub fn get_inbetween_squares(&self, sq1: Square, sq2: Square) -> u64 {
-        self.in_between[sq1.to_offset()][sq2.to_offset()]
+        self.in_between[sq1.offset()][sq2.offset()]
     }
 
     #[inline(always)]
@@ -100,7 +100,7 @@ impl OccupancyMasks {
     }
 
     pub fn get_diag_antidiag_mask(&self, sq: Square) -> &DiagonalAntidiagonal {
-        self.diagonal.get(sq.to_offset()).unwrap()
+        self.diagonal.get(sq.offset()).unwrap()
     }
 
     pub fn get_occ_mask_white_pawns_double_move_mask(&self, sq: Square) -> u64 {
@@ -255,7 +255,7 @@ fn populate_knight_occupancy_mask_array() -> [u64; board::NUM_SQUARES] {
             bb = bitboard::set_bit(bb, derived_sq);
         }
 
-        retval[sq.to_offset()] = bb;
+        retval[sq.offset()] = bb;
     }
     retval
 }
@@ -320,7 +320,7 @@ fn populate_king_mask_array() -> [u64; board::NUM_SQUARES] {
             bb = bitboard::set_bit(bb, derived_sq);
         }
 
-        retval[sq.to_offset()] = bb;
+        retval[sq.offset()] = bb;
     }
     retval
 }
@@ -370,7 +370,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; board::NUM_SQUARES] 
         // remove current square
         bb = bitboard::clear_bit(bb, *sq);
 
-        retval[sq.to_offset()].diag_mask = bb;
+        retval[sq.offset()].diag_mask = bb;
     }
 
     for sq in square::SQUARES.iter() {
@@ -413,7 +413,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; board::NUM_SQUARES] 
         // remove current square
         bb = bitboard::clear_bit(bb, *sq);
 
-        retval[sq.to_offset()].anti_diag_mask = bb;
+        retval[sq.offset()].anti_diag_mask = bb;
     }
 
     retval
@@ -431,7 +431,7 @@ fn populate_bishop_mask_array(
         // remove current square
         bb = bitboard::clear_bit(bb, *sq);
 
-        retval[sq.to_offset()] = bb;
+        retval[sq.offset()] = bb;
     }
     retval
 }
@@ -451,7 +451,7 @@ fn populate_queen_mask_array(
         // remove current square
         bb = bitboard::clear_bit(bb, *sq);
 
-        retval[sq.to_offset()] = bb;
+        retval[sq.offset()] = bb;
     }
     retval
 }
@@ -484,7 +484,7 @@ fn populate_intervening_bitboard_array() -> [[u64; board::NUM_SQUARES]; board::N
             line = line.wrapping_mul(btwn & (btwn.wrapping_neg())); /* mul acts like shift by smaller square */
             let val = line & btwn; /* return the bits on that line in-between */
 
-            retval[sq1.to_offset()][sq2.to_offset()] = val;
+            retval[sq1.offset()][sq2.offset()] = val;
         }
     }
 

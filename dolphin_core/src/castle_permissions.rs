@@ -2,11 +2,12 @@ pub type CastlePermission = u8;
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[rustfmt::skip]
 pub enum CastlePermissionType {
-    WhiteKing = 0x01,
-    WhiteQueen = 0x02,
-    BlackKing = 0x04,
-    BlackQueen = 0x08,
+    WhiteKing   = 0x01,
+    WhiteQueen  = 0x01 << 1,
+    BlackKing   = 0x01 << 2,
+    BlackQueen  = 0x01 << 3,
 }
 
 pub const NUM_CASTLE_PERMS: usize = 4;
