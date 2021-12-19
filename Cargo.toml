@@ -8,7 +8,7 @@ members = [
 
 
 [profile.release]
-lto = "fat"
+lto = "true"
 codegen-units = 1
 debug = false
 opt-level = 3

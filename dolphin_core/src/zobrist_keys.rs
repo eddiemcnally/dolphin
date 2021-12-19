@@ -52,11 +52,9 @@ impl ZobristKeys {
 
 fn init_piece_keys() -> [[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES] {
     let mut retval = [[0u64; NUM_PIECE_TYPES]; NUM_SQUARES];
-    for p in 0..NUM_SQUARES {
-        for c in 0..NUM_PIECE_TYPES {
-            let seed = rand::random::<u64>();
-            retval[p][c] = seed;
-        }
+
+    for element in retval.iter_mut().flat_map(|r| r.iter_mut()) {
+        *element = rand::random::<u64>();
     }
     retval
 }
@@ -64,9 +62,9 @@ fn init_piece_keys() -> [[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES] {
 fn init_castle_keys() -> [ZobristHash; NUM_CASTLE_PERMS] {
     let mut retval = [0u64; NUM_CASTLE_PERMS];
 
-    for p in 0..NUM_CASTLE_PERMS {
+    for item in retval.iter_mut().take(NUM_CASTLE_PERMS) {
         let seed = rand::random::<u64>();
-        retval[p] = seed;
+        *item = seed;
     }
 
     retval
@@ -75,9 +73,9 @@ fn init_castle_keys() -> [ZobristHash; NUM_CASTLE_PERMS] {
 fn init_en_passant_keys() -> [ZobristHash; NUM_SQUARES] {
     let mut retval = [0u64; NUM_SQUARES];
 
-    for p in 0..NUM_SQUARES {
+    for item in retval.iter_mut().take(NUM_SQUARES) {
         let seed = rand::random::<u64>();
-        retval[p] = seed;
+        *item = seed;
     }
 
     retval

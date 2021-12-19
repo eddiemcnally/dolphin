@@ -51,13 +51,13 @@ impl fmt::Debug for Board {
                 match pce {
                     Some(pce) => {
                         debug_str.push_str(&pce.label().to_string());
-                        debug_str.push_str("\t");
+                        debug_str.push('\t');
                     }
                     _ => debug_str.push_str(".\t"),
                 }
             }
 
-            debug_str.push_str("\n");
+            debug_str.push('\n');
         }
         debug_str.push_str("\n\tA\tB\tC\tD\tE\tF\tG\tH\n\n");
         write!(f, "{}", debug_str)

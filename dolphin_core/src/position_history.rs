@@ -106,7 +106,7 @@ impl PositionHistory {
         );
 
         let item = Item {
-            game_state: game_state,
+            game_state,
             mov: mv,
             pce_moved: piece,
             pce_captured: capt_piece,
@@ -131,5 +131,8 @@ impl PositionHistory {
 
     pub fn len(&self) -> usize {
         self.count as usize
+    }
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }

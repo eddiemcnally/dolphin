@@ -19,37 +19,37 @@ pub fn has_castle_permission(perm: CastlePermission) -> bool {
 }
 
 pub fn set_black_king(perm: CastlePermission) -> CastlePermission {
-    return (perm as u8 | CastlePermissionType::BlackKing as u8) as CastlePermission;
+    (perm as u8 | CastlePermissionType::BlackKing as u8) as CastlePermission
 }
 
 pub fn set_white_king(perm: CastlePermission) -> CastlePermission {
-    return (perm as u8 | CastlePermissionType::WhiteKing as u8) as CastlePermission;
+    (perm as u8 | CastlePermissionType::WhiteKing as u8) as CastlePermission
 }
 
 pub fn clear_white_king_and_queen(perm: CastlePermission) -> CastlePermission {
     let mut tp: CastlePermission = perm;
     tp &= !(CastlePermissionType::WhiteKing as u8);
     tp &= !(CastlePermissionType::WhiteQueen as u8);
-    return tp;
+    tp
 }
 
 pub fn clear_black_king_and_queen(perm: CastlePermission) -> CastlePermission {
     let mut tp: CastlePermission = perm;
     tp &= !(CastlePermissionType::BlackKing as u8);
     tp &= !(CastlePermissionType::BlackQueen as u8);
-    return tp;
+    tp
 }
 
 pub fn clear_king_black(perm: CastlePermission) -> CastlePermission {
     let mut tp: CastlePermission = perm;
     tp &= !(CastlePermissionType::BlackKing as u8);
-    return tp;
+    tp
 }
 
 pub fn clear_king_white(perm: CastlePermission) -> CastlePermission {
     let mut tp: CastlePermission = perm;
     tp &= !(CastlePermissionType::WhiteKing as u8);
-    return tp;
+    tp
 }
 
 pub fn is_white_king_set(perm: CastlePermission) -> bool {
@@ -63,13 +63,13 @@ pub fn is_black_king_set(perm: CastlePermission) -> bool {
 pub fn set_white_queen(perm: CastlePermission) -> CastlePermission {
     let mut tp: CastlePermission = perm;
     tp |= CastlePermissionType::WhiteQueen as u8;
-    return tp;
+    tp
 }
 
 pub fn set_black_queen(perm: CastlePermission) -> CastlePermission {
     let mut tp: CastlePermission = perm;
     tp |= CastlePermissionType::BlackQueen as u8;
-    return tp;
+    tp
 }
 
 pub fn has_white_castle_permission(perm: CastlePermission) -> bool {
@@ -83,13 +83,13 @@ pub fn has_black_castle_permission(perm: CastlePermission) -> bool {
 pub fn clear_queen_black(perm: CastlePermission) -> CastlePermission {
     let mut tp: CastlePermission = perm;
     tp &= !(CastlePermissionType::BlackQueen as u8);
-    return tp;
+    tp
 }
 
 pub fn clear_queen_white(perm: CastlePermission) -> CastlePermission {
     let mut tp: CastlePermission = perm;
     tp &= !(CastlePermissionType::WhiteQueen as u8);
-    return tp;
+    tp
 }
 
 pub fn is_white_queen_set(perm: CastlePermission) -> bool {

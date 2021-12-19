@@ -10,28 +10,19 @@ use crate::tt::TransType;
 use core::cmp::max;
 use core::cmp::min;
 
-#[derive(Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Default, Clone, Copy, Eq, PartialEq, Hash)]
 struct Stats {
     enabled: bool,
     found_in_tt: u32,
     num_illegal_moves: u32,
 }
 
-impl Default for Stats {
-    fn default() -> Self {
-        Stats {
-            enabled: false,
-            found_in_tt: 0,
-            num_illegal_moves: 0,
-        }
-    }
-}
 impl Stats {
     fn new(enable_stats: bool) -> Self {
-        let mut stats = Stats::default();
-        stats.enabled = enable_stats;
-
-        return stats;
+        Stats {
+            enabled: enable_stats,
+            ..Default::default()
+        }
     }
 }
 
@@ -89,7 +80,7 @@ impl Search {
             }
         }
 
-        return best_move_plus_score;
+        best_move_plus_score
     }
 
     fn alpha_beta(
@@ -104,11 +95,12 @@ impl Search {
 
         let hash = pos.position_hash();
 
-        let t: Option<(TransType, u8, i32)> = self.tt.get(hash);
-        if t.is_some() {
-            let tt_type = t.unwrap().0;
-            let cached_depth = t.unwrap().1;
-            let cached_score = t.unwrap().2;
+        if let Some(t) = self.tt.get(hash) {
+            // let t: Option<(TransType, u8, i32)> = self.tt.get(hash);
+            // if t.is_some() {
+            let tt_type = t.0;
+            let cached_depth = t.1;
+            let cached_score = t.2;
 
             if cached_depth >= depth {
                 match tt_type {
@@ -156,7 +148,7 @@ impl Search {
 
         self.tt.add(tt_type, depth, score, hash);
 
-        return alpha;
+        alpha
     }
 
     fn quiesence(&mut self, _pos: &mut Position, _depth: u8, _alpha: i32, _beta: i32) -> i32 {
@@ -185,7 +177,7 @@ impl Search {
 
         //     }
         // }
-        return 0;
+        0
     }
 
     //     int Quiesce( int alpha, int beta ) {

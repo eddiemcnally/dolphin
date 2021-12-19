@@ -69,14 +69,14 @@ pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, &'static Piece> 
                     // not a number, so it's a piece
                     let piece = Piece::from_char(c);
 
-                    let r = Rank::from_num(rank as u8);
-                    let f = File::from_num(file as u8);
+                    if let Some(r) = Rank::from_num(rank as u8) {
+                        if let Some(f) = File::from_num(file as u8) {
+                            //                    if r.is_some() && f.is_some() {
+                            let sq: Square = Square::get_square(r, f);
+                            file += 1;
 
-                    if r.is_some() && f.is_some() {
-                        let sq: Square = Square::get_square(r.unwrap(), f.unwrap());
-                        file += 1;
-
-                        retval.insert(sq, piece);
+                            retval.insert(sq, piece);
+                        }
                     } else {
                         panic!("Invalid rank or file");
                     }

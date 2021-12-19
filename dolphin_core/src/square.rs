@@ -2,6 +2,7 @@ use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 use std::fmt;
 use std::slice::Iter;
+use Square::a1;
 
 pub const NUM_SQUARES: usize = 64;
 
@@ -22,7 +23,7 @@ pub enum Square {
 
 impl Default for Square {
     fn default() -> Square {
-        Square::a1
+        a1
     }
 }
 impl fmt::Display for Square {
@@ -118,14 +119,13 @@ impl Square {
     }
 
     pub fn get_from_string(square_str: &str) -> Option<Square> {
-        let f = square_str.chars().nth(0).unwrap();
+        let f = square_str.chars().next().unwrap();
         let r = square_str.chars().nth(1).unwrap();
 
-        let file = File::from_char(f);
-        let rank = Rank::from_char(r);
-
-        if file.is_some() && rank.is_some() {
-            return Some(Square::get_square(rank.unwrap(), file.unwrap()));
+        if let Some(file) = File::from_char(f) {
+            if let Some(rank) = Rank::from_char(r) {
+                return Some(Square::get_square(rank, file));
+            }
         }
         None
     }
@@ -133,8 +133,8 @@ impl Square {
     pub fn from_num(num: u8) -> Option<Square> {
         let sq = Square::try_from(num);
         match sq {
-            Ok(pce) => return Some(pce),
-            _ => return None,
+            Ok(pce) => Some(pce),
+            _ => None,
         }
     }
 
@@ -313,8 +313,8 @@ impl File {
     pub fn from_num(num: u8) -> Option<File> {
         let file = File::try_from(num);
         match file {
-            Ok(file) => return Some(file),
-            _ => return None,
+            Ok(file) => Some(file),
+            _ => None,
         }
     }
 

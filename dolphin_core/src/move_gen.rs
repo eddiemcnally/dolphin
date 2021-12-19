@@ -19,6 +19,12 @@ struct PawnBitsMaps {
     promo_bb: u64,
 }
 
+impl Default for MoveGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MoveGenerator {
     pub fn new() -> MoveGenerator {
         MoveGenerator {}
@@ -50,12 +56,10 @@ impl MoveGenerator {
 
         if position.side_to_move() == Colour::White {
             if castle_permissions::has_white_castle_permission(position.castle_permissions()) {
-                self.generate_white_castle_moves(&position, move_list);
+                self.generate_white_castle_moves(position, move_list);
             }
-        } else {
-            if castle_permissions::has_black_castle_permission(position.castle_permissions()) {
-                self.generate_black_castle_moves(&position, move_list);
-            }
+        } else if castle_permissions::has_black_castle_permission(position.castle_permissions()) {
+            self.generate_black_castle_moves(position, move_list);
         }
     }
 

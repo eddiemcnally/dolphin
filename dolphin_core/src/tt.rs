@@ -33,7 +33,7 @@ impl Default for TransEntry {
     }
 }
 
-#[derive(Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Default, Clone, Copy, Eq, PartialEq, Hash)]
 struct Stats {
     enabled: bool,
     num_collisions: u32,
@@ -43,25 +43,13 @@ struct Stats {
     num_trans_type_upper: u32,
     num_trans_type_lower: u32,
 }
-impl Default for Stats {
-    fn default() -> Self {
-        Stats {
-            num_collisions: 0,
-            num_used: 0,
-            enabled: false,
-            num_misses: 0,
-            num_trans_type_exact: 0,
-            num_trans_type_upper: 0,
-            num_trans_type_lower: 0,
-        }
-    }
-}
+
 impl Stats {
     fn new(enable_stats: bool) -> Self {
-        let mut stats = Stats::default();
-        stats.enabled = enable_stats;
-
-        return stats;
+        Stats {
+            enabled: enable_stats,
+            ..Default::default()
+        }
     }
 }
 
@@ -102,25 +90,23 @@ impl TransTable {
             in_use: true,
         };
 
-        if self.stats.enabled {
-            if self.entries[offset].in_use == true {
-                self.stats.num_collisions += 1;
-            }
+        if self.stats.enabled && self.entries[offset].in_use {
+            self.stats.num_collisions += 1;
         }
         self.entries[offset] = tte;
     }
 
     pub fn get(&mut self, hash: ZobristHash) -> Option<(TransType, u8, i32)> {
         let offset = self.convert_hash_to_offset(hash, self.capacity);
-        if self.entries[offset].in_use == true {
+        if self.entries[offset].in_use {
             let tte = self.entries[offset];
             let t = (tte.trans_type, tte.depth, tte.score);
-            return Some(t);
+            Some(t)
         } else {
             if self.stats.enabled {
                 self.stats.num_misses += 1;
             }
-            return None;
+            None
         }
     }
 
@@ -175,7 +161,7 @@ impl TransTable {
 
     #[inline]
     fn convert_hash_to_offset(&self, hash: ZobristHash, capacity: usize) -> usize {
-        return (hash % capacity as u64) as usize;
+        (hash % capacity as u64) as usize
     }
 }
 

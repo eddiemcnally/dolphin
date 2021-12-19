@@ -14,20 +14,12 @@ use crate::zobrist_keys::ZobristKeys;
 use crate::{attack_checker, zobrist_keys::ZobristHash};
 use std::fmt;
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy)]
+#[derive(Default, Eq, PartialEq, Hash, Clone, Copy)]
 pub struct MoveCounter {
     half_move: u16,
     full_move: u16,
 }
 
-impl Default for MoveCounter {
-    fn default() -> Self {
-        MoveCounter {
-            half_move: 0,
-            full_move: 0,
-        }
-    }
-}
 impl fmt::Debug for MoveCounter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
@@ -70,13 +62,13 @@ impl fmt::Debug for MoveLegality {
     }
 }
 
-static CASTLE_SQUARES_KING_WHITE: [Square; 3] = [Square::e1, Square::f1, Square::g1];
+const CASTLE_SQUARES_KING_WHITE: [Square; 3] = [Square::e1, Square::f1, Square::g1];
 
-static CASTLE_SQUARES_QUEEN_WHITE: [Square; 3] = [Square::c1, Square::d1, Square::e1];
+const CASTLE_SQUARES_QUEEN_WHITE: [Square; 3] = [Square::c1, Square::d1, Square::e1];
 
-static CASTLE_SQUARES_KING_BLACK: [Square; 3] = [Square::e8, Square::f8, Square::g8];
+const CASTLE_SQUARES_KING_BLACK: [Square; 3] = [Square::e8, Square::f8, Square::g8];
 
-static CASTLE_SQUARES_QUEEN_BLACK: [Square; 3] = [Square::c8, Square::d8, Square::e8];
+const CASTLE_SQUARES_QUEEN_BLACK: [Square; 3] = [Square::c8, Square::d8, Square::e8];
 
 pub struct Position<'a> {
     board: Board,
@@ -203,11 +195,13 @@ impl<'a> Position<'a> {
             full_move: parsed_fen.full_move_cnt,
         };
 
-        let mut game_state = GameState::default();
-        game_state.side_to_move = parsed_fen.side_to_move;
-        game_state.en_pass_sq = parsed_fen.en_pass_sq;
-        game_state.castle_perm = parsed_fen.castle_perm;
-        game_state.move_cntr = mv_cntr;
+        let game_state = GameState {
+            side_to_move: parsed_fen.side_to_move,
+            en_pass_sq: parsed_fen.en_pass_sq,
+            castle_perm: parsed_fen.castle_perm,
+            move_cntr: mv_cntr,
+            ..Default::default()
+        };
 
         let mut pos = Position {
             board: Board::from_fen(&parsed_fen),
@@ -277,7 +271,7 @@ impl<'a> Position<'a> {
             self.board.get_piece_on_square(to_sq, capt_pce);
         }
         self.position_history
-            .push(self.game_state.clone(), mv, piece.unwrap(), *capt_pce);
+            .push(self.game_state, mv, piece.unwrap(), *capt_pce);
 
         self.game_state.move_cntr.half_move += 1;
         self.game_state.move_cntr.full_move += 1;
@@ -306,8 +300,11 @@ impl<'a> Position<'a> {
             }
         }
 
+        // update some states based on the move
         self.update_en_passant_sq(mv);
-        self.update_castle_perms(mv, from_sq, to_sq, piece.unwrap());
+        if castle_permissions::has_castle_permission(self.game_state.castle_perm) {
+            self.update_castle_perms(mv, from_sq, to_sq, piece.unwrap());
+        }
 
         let move_legality = self.get_move_legality(mv);
 
@@ -383,7 +380,7 @@ impl<'a> Position<'a> {
         // put the moved piece back to it's original square
         self.board.add_piece(pce, from_sq);
 
-        if capture_pce.is_some() {
+        if let Some(..) = capture_pce {
             self.board.add_piece(capture_pce.unwrap(), to_sq);
         }
     }
@@ -444,12 +441,7 @@ impl<'a> Position<'a> {
         let king_sq = self.board().get_king_sq(self.game_state.side_to_move);
         let attacking_side = self.game_state.side_to_move.flip_side();
 
-        if attack_checker::is_king_sq_attacked(
-            &self.occ_masks,
-            self.board(),
-            king_sq,
-            attacking_side,
-        ) {
+        if attack_checker::is_sq_attacked(self.occ_masks, self.board(), king_sq, attacking_side) {
             return MoveLegality::Illegal;
         }
 
@@ -458,7 +450,7 @@ impl<'a> Position<'a> {
             let squares_to_check =
                 self.get_castle_squares_to_check(mv, self.game_state.side_to_move);
             let is_invalid_castle = attack_checker::is_castle_squares_attacked(
-                &self.occ_masks,
+                self.occ_masks,
                 self.board(),
                 squares_to_check,
                 attacking_side,
@@ -491,13 +483,11 @@ impl<'a> Position<'a> {
 
     fn update_en_passant_sq(&mut self, mv: Mov) {
         // clear en passant
-        if self.game_state.en_pass_sq.is_some() {
-            if mv.is_double_pawn() == false {
-                self.game_state.position_hash ^= self
-                    .zobrist_keys
-                    .en_passant(self.game_state.en_pass_sq.unwrap());
-                self.game_state.en_pass_sq = None;
-            }
+        if self.game_state.en_pass_sq.is_some() && !mv.is_double_pawn() {
+            self.game_state.position_hash ^= self
+                .zobrist_keys
+                .en_passant(self.game_state.en_pass_sq.unwrap());
+            self.game_state.en_pass_sq = None;
         }
     }
 
@@ -509,11 +499,6 @@ impl<'a> Position<'a> {
         to_sq: Square,
         pce: &'static Piece,
     ) {
-        if !castle_permissions::has_castle_permission(self.game_state.castle_perm) {
-            // nothing to do, no castle permissions available
-            return;
-        }
-
         if mv.is_castle() {
             // permissions already adjusted
             return;

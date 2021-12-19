@@ -76,7 +76,7 @@ impl MoveType {
     pub fn from_num(num: u16) -> MoveType {
         let mvt = MoveType::try_from(num);
         match mvt {
-            Ok(mvt) => return mvt,
+            Ok(mvt) => mvt,
             _ => panic!("Invalid piece offset {}.", num),
         }
     }

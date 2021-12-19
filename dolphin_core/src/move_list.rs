@@ -7,6 +7,12 @@ pub struct MoveList {
     count: usize,
 }
 
+impl Default for MoveList {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MoveList {
     pub fn new() -> Self {
         MoveList {
@@ -33,8 +39,11 @@ impl MoveList {
         self.count
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
     pub fn iter(&self) -> std::slice::Iter<'_, Mov> {
-        self.ml[0..self.count].into_iter()
+        self.ml[0..self.count].iter()
     }
 }
 
