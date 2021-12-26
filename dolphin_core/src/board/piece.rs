@@ -1,10 +1,5 @@
+use crate::board::colour::Colour;
 use std::fmt;
-
-#[derive(Eq, PartialEq, Hash, Clone, Copy)]
-pub enum Colour {
-    White,
-    Black,
-}
 
 #[derive(Eq, PartialEq)]
 pub struct Piece {
@@ -30,6 +25,24 @@ pub enum PieceType {
     BlackRook,
     BlackQueen,
     BlackKing,
+}
+impl fmt::Debug for PieceType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PieceType::WhitePawn => write!(f, "WhitePawn"),
+            PieceType::WhiteBishop => write!(f, "WhiteBishop"),
+            PieceType::WhiteKnight => write!(f, "WhiteKnight"),
+            PieceType::WhiteRook => write!(f, "WhiteRook"),
+            PieceType::WhiteQueen => write!(f, "WhiteQueen"),
+            PieceType::WhiteKing => write!(f, "WhiteKing"),
+            PieceType::BlackPawn => write!(f, "BlackPawn"),
+            PieceType::BlackBishop => write!(f, "BlackBishop"),
+            PieceType::BlackKnight => write!(f, "BlackKnight"),
+            PieceType::BlackRook => write!(f, "BlackRook"),
+            PieceType::BlackQueen => write!(f, "BlackQueen"),
+            PieceType::BlackKing => write!(f, "BlackKing"),
+        }
+    }
 }
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
@@ -214,18 +227,18 @@ impl Piece {
 
 pub const NUM_PIECES: usize = 32;
 pub const NUM_PIECE_TYPES: usize = 12;
-pub const NUM_COLOURS: usize = 2;
 
 // piece values from here:
 // https://www.chessprogramming.org/Simplified_Evaluation_Function
+#[rustfmt::skip]
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 enum PieceValue {
-    Pawn = 100,
-    Knight = 320,
-    Bishop = 330,
-    Rook = 500,
-    Queen = 900,
-    King = 20000,
+    Pawn    = 100,
+    Knight  = 320,
+    Bishop  = 330,
+    Rook    = 500,
+    Queen   = 900,
+    King    = 20000,
 }
 
 impl fmt::Debug for Piece {
@@ -256,77 +269,15 @@ impl Default for &Piece {
     }
 }
 
-impl Colour {
-    pub const fn flip_side(self) -> Colour {
-        match self {
-            Colour::White => Colour::Black,
-            Colour::Black => Colour::White,
-        }
-    }
-    pub const fn offset(self) -> usize {
-        self as usize
-    }
-    pub fn is_white(self) -> bool {
-        self == Colour::White
-    }
-    pub fn is_black(self) -> bool {
-        self == Colour::Black
-    }
-}
-
-impl Default for Colour {
-    fn default() -> Colour {
-        Colour::White
-    }
-}
-
-impl fmt::Debug for Colour {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Colour::White => write!(f, "White"),
-            Colour::Black => write!(f, "Black"),
-        }
-    }
-}
-
-impl fmt::Display for Colour {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(&self, f)
-    }
-}
-
 #[cfg(test)]
 pub mod tests {
-    use super::Colour;
-    use crate::piece;
-    use crate::piece::PieceType;
+    use crate::board::colour::Colour;
+    use crate::board::piece;
+    use crate::board::piece::PieceType;
+    use crate::board::piece::PieceValue;
 
     #[test]
-    pub fn flip_side_as_expected() {
-        let c = Colour::default();
-        assert!(c == Colour::White);
-
-        let f = c.flip_side();
-        assert!(f == Colour::Black);
-
-        let o = f.flip_side();
-        assert!(o == Colour::White);
-    }
-
-    #[test]
-    pub fn default_colour() {
-        let c = Colour::default();
-        assert!(c == Colour::White);
-    }
-
-    #[test]
-    pub fn piece_colour_flipped() {
-        let pce = piece::WHITE_PAWN;
-        assert!(pce.colour().flip_side() == Colour::Black);
-    }
-
-    #[test]
-    pub fn colour_as_expected() {
+    pub fn piece_colour_as_expected() {
         let mut pce = piece::WHITE_PAWN;
         assert_eq!(Colour::White, pce.colour());
         pce = piece::WHITE_BISHOP;
@@ -355,7 +306,7 @@ pub mod tests {
     }
 
     #[test]
-    pub fn offset_as_expected() {
+    pub fn piece_offset_as_expected() {
         let mut pce = piece::WHITE_PAWN;
         assert_eq!(pce.offset(), PieceType::WhitePawn as usize);
         pce = piece::WHITE_BISHOP;
@@ -381,5 +332,90 @@ pub mod tests {
         assert_eq!(pce.offset(), PieceType::BlackQueen as usize);
         pce = piece::BLACK_KING;
         assert_eq!(pce.offset(), PieceType::BlackKing as usize);
+    }
+
+    #[test]
+    pub fn piece_value_as_expected() {
+        let mut pce = piece::WHITE_PAWN;
+        assert_eq!(pce.value(), PieceValue::Pawn as u32);
+        pce = piece::WHITE_BISHOP;
+        assert_eq!(pce.value(), PieceValue::Bishop as u32);
+        pce = piece::WHITE_KNIGHT;
+        assert_eq!(pce.value(), PieceValue::Knight as u32);
+        pce = piece::WHITE_ROOK;
+        assert_eq!(pce.value(), PieceValue::Rook as u32);
+        pce = piece::WHITE_QUEEN;
+        assert_eq!(pce.value(), PieceValue::Queen as u32);
+        pce = piece::WHITE_KING;
+        assert_eq!(pce.value(), PieceValue::King as u32);
+
+        pce = piece::BLACK_PAWN;
+        assert_eq!(pce.value(), PieceValue::Pawn as u32);
+        pce = piece::BLACK_BISHOP;
+        assert_eq!(pce.value(), PieceValue::Bishop as u32);
+        pce = piece::BLACK_KNIGHT;
+        assert_eq!(pce.value(), PieceValue::Knight as u32);
+        pce = piece::BLACK_ROOK;
+        assert_eq!(pce.value(), PieceValue::Rook as u32);
+        pce = piece::BLACK_QUEEN;
+        assert_eq!(pce.value(), PieceValue::Queen as u32);
+        pce = piece::BLACK_KING;
+        assert_eq!(pce.value(), PieceValue::King as u32);
+    }
+
+    #[test]
+    pub fn piece_type_as_expected() {
+        let mut pce = piece::WHITE_PAWN;
+        assert_eq!(pce.piece_type(), PieceType::WhitePawn);
+        pce = piece::WHITE_BISHOP;
+        assert_eq!(pce.piece_type(), PieceType::WhiteBishop);
+        pce = piece::WHITE_KNIGHT;
+        assert_eq!(pce.piece_type(), PieceType::WhiteKnight);
+        pce = piece::WHITE_ROOK;
+        assert_eq!(pce.piece_type(), PieceType::WhiteRook);
+        pce = piece::WHITE_QUEEN;
+        assert_eq!(pce.piece_type(), PieceType::WhiteQueen);
+        pce = piece::WHITE_KING;
+        assert_eq!(pce.piece_type(), PieceType::WhiteKing);
+
+        pce = piece::BLACK_PAWN;
+        assert_eq!(pce.piece_type(), PieceType::BlackPawn);
+        pce = piece::BLACK_BISHOP;
+        assert_eq!(pce.piece_type(), PieceType::BlackBishop);
+        pce = piece::BLACK_KNIGHT;
+        assert_eq!(pce.piece_type(), PieceType::BlackKnight);
+        pce = piece::BLACK_ROOK;
+        assert_eq!(pce.piece_type(), PieceType::BlackRook);
+        pce = piece::BLACK_QUEEN;
+        assert_eq!(pce.piece_type(), PieceType::BlackQueen);
+        pce = piece::BLACK_KING;
+        assert_eq!(pce.piece_type(), PieceType::BlackKing);
+    }
+
+    #[test]
+    pub fn piece_is_king() {
+        let mut pce = piece::WHITE_KING;
+        assert_eq!(pce.is_king(), true);
+
+        pce = piece::BLACK_KING;
+        assert_eq!(pce.is_king(), true);
+    }
+
+    #[test]
+    pub fn piece_is_rook() {
+        let mut pce = piece::WHITE_ROOK;
+        assert_eq!(pce.is_rook(), true);
+
+        pce = piece::BLACK_ROOK;
+        assert_eq!(pce.is_rook(), true);
+    }
+
+    #[test]
+    pub fn piece_is_pawn() {
+        let mut pce = piece::WHITE_PAWN;
+        assert_eq!(pce.is_pawn(), true);
+
+        pce = piece::BLACK_PAWN;
+        assert_eq!(pce.is_pawn(), true);
     }
 }

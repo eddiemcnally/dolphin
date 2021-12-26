@@ -2,12 +2,12 @@ extern crate core_affinity;
 extern crate dolphin_core;
 extern crate num_enum;
 
-use dolphin_core::fen;
-use dolphin_core::move_gen::MoveGenerator;
-use dolphin_core::occupancy_masks::OccupancyMasks;
-use dolphin_core::piece;
-use dolphin_core::position::Position;
-use dolphin_core::zobrist_keys::ZobristKeys;
+use dolphin_core::board::occupancy_masks::OccupancyMasks;
+use dolphin_core::board::piece;
+use dolphin_core::io::fen;
+use dolphin_core::moves::move_gen::MoveGenerator;
+use dolphin_core::position::game_position::Position;
+use dolphin_core::position::zobrist_keys::ZobristKeys;
 use std::time::Instant;
 
 mod epd_parser;
@@ -38,15 +38,24 @@ fn process_row(row: &epd_parser::EpdRow, depth: u8) {
     let fen = &row.fen;
 
     let expected_moves = &row.depth_map[&depth];
-    let parsed_fen = fen::get_position(&fen);
+    let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) = fen::decompose_fen(fen);
+
     let zobrist_keys = ZobristKeys::new();
     let occ_masks = OccupancyMasks::new();
 
-    let mut position = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+    let mut pos = Position::new(
+        board,
+        castle_permissions,
+        move_cntr,
+        en_pass_sq,
+        side_to_move,
+        &zobrist_keys,
+        &&occ_masks,
+    );
     let mov_generator = MoveGenerator::new();
 
     let now = Instant::now();
-    let num_moves = perft_runner::perft(depth, &mut position, &mov_generator);
+    let num_moves = perft_runner::perft(depth, &mut pos, &mov_generator);
     let elapsed_in_secs = now.elapsed().as_secs_f64();
     let nodes_per_sec = (num_moves as f64 / elapsed_in_secs) as u64;
 

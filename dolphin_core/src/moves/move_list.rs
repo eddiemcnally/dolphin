@@ -1,4 +1,4 @@
-use crate::mov::Mov;
+use crate::moves::mov::Mov;
 
 const MOVE_LIST_LEN: usize = 96;
 
@@ -49,9 +49,9 @@ impl MoveList {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::mov::Mov;
-    use crate::move_list::MoveList;
-    use crate::square::Square;
+    use crate::board::square::Square;
+    use crate::moves::mov::Mov;
+    use crate::moves::move_list::MoveList;
 
     #[test]
     pub fn init_size_is_zero() {

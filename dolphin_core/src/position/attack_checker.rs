@@ -1,9 +1,9 @@
-use crate::bitboard;
-use crate::board::Board;
-use crate::occupancy_masks::OccupancyMasks;
-use crate::piece;
-use crate::piece::Colour;
-use crate::square::Square;
+use crate::board::bitboard;
+use crate::board::colour::Colour;
+use crate::board::game_board::Board;
+use crate::board::occupancy_masks::OccupancyMasks;
+use crate::board::piece;
+use crate::board::square::Square;
 
 pub fn is_sq_attacked(
     occ_masks: &OccupancyMasks,
@@ -234,22 +234,32 @@ fn is_attacked_by_pawn_black(
 
 #[cfg(test)]
 pub mod tests {
-    use crate::attack_checker;
-    use crate::fen;
-    use crate::occupancy_masks::OccupancyMasks;
-    use crate::piece::Colour;
-    use crate::position::Position;
-    use crate::square::Square;
-    use crate::zobrist_keys::ZobristKeys;
+    use crate::board::colour::Colour;
+    use crate::board::occupancy_masks::OccupancyMasks;
+    use crate::board::square::Square;
+    use crate::io::fen;
+    use crate::position::attack_checker;
+    use crate::position::game_position::Position;
+    use crate::position::zobrist_keys::ZobristKeys;
 
     #[test]
     pub fn is_attacked_by_white_pawn() {
         let fen = "8/8/8/1p2kPp1/7P/4K3/8/8 w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -260,11 +270,21 @@ pub mod tests {
     #[test]
     pub fn is_attacked_by_black_pawn() {
         let fen = "8/8/8/1p2kPp1/7P/4K3/8/8 b - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -275,11 +295,21 @@ pub mod tests {
     #[test]
     pub fn is_attacked_by_white_bishop() {
         let fen = "8/2B5/8/1p2kPp1/7P/4K3/8/8 w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -290,11 +320,21 @@ pub mod tests {
     #[test]
     pub fn is_attacked_by_black_bishop() {
         let fen = "8/8/8/1p2kPp1/7P/4K3/8/2b5 b - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -305,11 +345,21 @@ pub mod tests {
     #[test]
     pub fn is_attacked_by_white_knight() {
         let fen = "8/8/8/1p2kPp1/2N4P/4K3/8/8 w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -320,11 +370,21 @@ pub mod tests {
     #[test]
     pub fn is_attacked_by_black_knight() {
         let fen = "8/8/8/1p2kPp1/7P/4K3/2n5/8 b - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -335,11 +395,21 @@ pub mod tests {
     #[test]
     pub fn is_attacked_by_white_rook() {
         let fen = "4R3/8/8/1p2kPp1/7P/4K3/8/8 w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -350,11 +420,21 @@ pub mod tests {
     #[test]
     pub fn is_attacked_by_black_rook() {
         let fen = "8/8/8/1p2kPp1/7P/4K3/8/4r3 b - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -365,11 +445,21 @@ pub mod tests {
     #[test]
     pub fn is_attacked_by_white_queen() {
         let fen = "8/8/8/1p2kPp1/7P/4K3/8/Q7 w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -380,11 +470,21 @@ pub mod tests {
     #[test]
     pub fn is_attacked_by_black_queen() {
         let fen = "8/8/8/1p2kPp1/7P/q3K3/8/8 b - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -395,11 +495,21 @@ pub mod tests {
     #[test]
     pub fn is_attacked_by_white_king() {
         let fen = "8/8/8/1p2kPp1/1K5P/8/8/8 w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -410,11 +520,21 @@ pub mod tests {
     #[test]
     pub fn is_attacked_by_black_king() {
         let fen = "8/8/8/1p2kPp1/7P/3K4/8/8 b - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -427,11 +547,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::e1];
 
         let fen = "rn2kbnr/pp1p1ppp/8/2p5/4q3/2P5/PP1P2PP/RNBQK2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -449,11 +579,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::f1];
 
         let fen = "rn2kbnr/pp1p1ppp/8/2p5/2q5/2P5/PP1P2PP/RNBQK2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -471,11 +611,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::g1];
 
         let fen = "rn2kbnr/pp1p1ppp/8/2p5/3q4/2P5/PP1P2PP/RNBQK2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -493,11 +643,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::e1];
 
         let fen = "rn2kbnr/pp1p1ppp/8/2p5/3P3q/2P5/PP4PP/R3K2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -515,11 +675,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::d1];
 
         let fen = "rn2kbnr/pp1p1ppp/8/2p5/3P2q1/2P5/PP4PP/R3K2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -537,11 +707,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::c1];
 
         let fen = "rn2kbnr/pp1p1ppp/8/2p5/3P1q2/2P5/PP4PP/R3K2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -559,11 +739,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::b1];
 
         let fen = "rnq1kbnr/pp1p1ppp/8/2p5/3Pb3/2P5/PP4PP/R3K2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -581,11 +771,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::e8];
 
         let fen = "r3k2r/pp4pp/2p5/7B/8/2P5/PP1P2PP/RNB1K2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -603,11 +803,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::f8];
 
         let fen = "r3k2r/pp4pp/8/2B5/8/2P5/PP1P2PP/RNB1K2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -625,11 +835,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::g8];
 
         let fen = "r3k2r/pp4pp/8/3B4/8/2P5/PP1P2PP/RN2K2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -647,11 +867,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::e8];
 
         let fen = "r3k2r/pp4pp/8/7B/8/2P5/PP1P2PP/RN2K2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -669,11 +899,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::d8];
 
         let fen = "r3k2r/pp4pp/8/6B1/8/2P5/PP1P2PP/RN2K2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -691,11 +931,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::c8];
 
         let fen = "r3k2r/pp4pp/8/5B2/8/2P5/PP1P2PP/RN2K2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,
@@ -713,11 +963,21 @@ pub mod tests {
         const SQUARE_TO_CHECK: [Square; 1] = [Square::b8];
 
         let fen = "r3k2r/pp4pp/8/4B3/8/2P5/PP1P2PP/RN2K2R b KQkq - 0 2";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(
             true,

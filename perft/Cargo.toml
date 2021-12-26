@@ -9,6 +9,6 @@ edition = "2018"
 [dependencies]
 dolphin_core = { path = "../dolphin_core" }
 typenum = "1.14.0"
-num_enum = "0.5.4"
+num_enum = "0.5.5"
 core_affinity = "0.5.10"
 

@@ -1,41 +1,20 @@
-use crate::board::Board;
-use crate::castle_permissions;
-use crate::castle_permissions::{CastlePermission, CastlePermissionType};
-use crate::fen::ParsedFen;
-use crate::mov::Mov;
-use crate::mov::MoveType;
-use crate::occupancy_masks::OccupancyMasks;
-use crate::piece;
-use crate::piece::Colour;
-use crate::piece::Piece;
-use crate::position_history::PositionHistory;
-use crate::square::Square;
-use crate::zobrist_keys::ZobristKeys;
-use crate::{attack_checker, zobrist_keys::ZobristHash};
+use crate::board::bitboard;
+use crate::board::colour::Colour;
+use crate::board::game_board::Board;
+use crate::board::occupancy_masks::OccupancyMasks;
+use crate::board::piece;
+use crate::board::piece::Piece;
+use crate::board::square::Square;
+use crate::moves::mov::Mov;
+use crate::moves::mov::MoveType;
+use crate::position::attack_checker;
+use crate::position::castle_permissions;
+use crate::position::castle_permissions::{CastlePermission, CastlePermissionType};
+use crate::position::move_counter::MoveCounter;
+use crate::position::position_history::PositionHistory;
+use crate::position::zobrist_keys::ZobristHash;
+use crate::position::zobrist_keys::ZobristKeys;
 use std::fmt;
-
-#[derive(Default, Eq, PartialEq, Hash, Clone, Copy)]
-pub struct MoveCounter {
-    half_move: u16,
-    full_move: u16,
-}
-
-impl fmt::Debug for MoveCounter {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut debug_str = String::new();
-
-        debug_str.push_str(&format!("HalfMove : {}, ", self.half_move));
-        debug_str.push_str(&format!("FullMove : {} ", self.full_move));
-
-        write!(f, "{}", debug_str)
-    }
-}
-
-impl fmt::Display for MoveCounter {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(&self, f)
-    }
-}
 
 // something to avoid bugs with bool states
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
@@ -70,6 +49,7 @@ const CASTLE_SQUARES_KING_BLACK: [Square; 3] = [Square::e8, Square::f8, Square::
 
 const CASTLE_SQUARES_QUEEN_BLACK: [Square; 3] = [Square::c8, Square::d8, Square::e8];
 
+#[derive(Eq, Clone)]
 pub struct Position<'a> {
     board: Board,
     position_history: Box<PositionHistory>,
@@ -186,32 +166,67 @@ impl PartialEq for Position<'_> {
 
 impl<'a> Position<'a> {
     pub fn new(
+        board: Board,
+        castle_permissions: CastlePermission,
+        move_counter: MoveCounter,
+        en_passant_sq: Option<Square>,
+        side_to_move: Colour,
         zobrist_keys: &'a ZobristKeys,
         occupancy_masks: &'a OccupancyMasks,
-        parsed_fen: ParsedFen,
     ) -> Position<'a> {
-        let mv_cntr = MoveCounter {
-            half_move: parsed_fen.half_move_cnt,
-            full_move: parsed_fen.full_move_cnt,
-        };
-
         let game_state = GameState {
-            side_to_move: parsed_fen.side_to_move,
-            en_pass_sq: parsed_fen.en_pass_sq,
-            castle_perm: parsed_fen.castle_perm,
-            move_cntr: mv_cntr,
+            side_to_move,
+            en_pass_sq: en_passant_sq,
+            castle_perm: castle_permissions,
+            move_cntr: move_counter,
             ..Default::default()
         };
 
         let mut pos = Position {
-            board: Board::from_fen(&parsed_fen),
+            board,
             game_state,
             position_history: PositionHistory::new(),
             occ_masks: occupancy_masks,
             zobrist_keys,
         };
 
-        generate_hash_from_fen(&mut pos, &parsed_fen);
+        // generate position hash
+        let mut pce_bb = pos.board.get_bitboard();
+        while pce_bb != 0 {
+            let sq = bitboard::pop_1st_bit(&mut pce_bb);
+
+            let pce = &mut None;
+            pos.board().get_piece_on_square(sq, pce);
+
+            pos.game_state.position_hash ^= pos.zobrist_keys.piece_square(pce.unwrap(), sq);
+        }
+
+        pos.game_state.position_hash ^= pos.zobrist_keys.side();
+
+        if castle_permissions::is_black_king_set(castle_permissions) {
+            pos.game_state.position_hash ^= pos
+                .zobrist_keys
+                .castle_permission(CastlePermissionType::BlackKing);
+        }
+        if castle_permissions::is_white_king_set(castle_permissions) {
+            pos.game_state.position_hash ^= pos
+                .zobrist_keys
+                .castle_permission(CastlePermissionType::WhiteKing);
+        }
+        if castle_permissions::is_black_queen_set(castle_permissions) {
+            pos.game_state.position_hash ^= pos
+                .zobrist_keys
+                .castle_permission(CastlePermissionType::BlackQueen);
+        }
+        if castle_permissions::is_white_queen_set(castle_permissions) {
+            pos.game_state.position_hash ^= pos
+                .zobrist_keys
+                .castle_permission(CastlePermissionType::WhiteQueen);
+        }
+
+        if let Some(_enp) = en_passant_sq {
+            pos.game_state.position_hash ^= pos.zobrist_keys.en_passant(en_passant_sq.unwrap());
+        }
 
         // validate position
         let bk_bb = pos.board().get_piece_bitboard(&piece::BLACK_KING);
@@ -273,8 +288,8 @@ impl<'a> Position<'a> {
         self.position_history
             .push(self.game_state, mv, piece.unwrap(), *capt_pce);
 
-        self.game_state.move_cntr.half_move += 1;
-        self.game_state.move_cntr.full_move += 1;
+        self.game_state.move_cntr.incr_half_move();
+        self.game_state.move_cntr.incr_full_move();
 
         handle_50_move_rule(self, mv, piece.unwrap());
 
@@ -572,43 +587,6 @@ impl<'a> Position<'a> {
     }
 }
 
-fn generate_hash_from_fen(position: &mut Position, parsed_fen: &ParsedFen) {
-    let positions = parsed_fen.piece_positions.iter();
-    for (sq, pce) in positions {
-        position.game_state.position_hash ^= position.zobrist_keys.piece_square(*pce, *sq);
-    }
-
-    position.game_state.position_hash ^= position.zobrist_keys.side();
-
-    let cp = parsed_fen.castle_perm;
-
-    if castle_permissions::is_black_king_set(cp) {
-        position.game_state.position_hash ^= position
-            .zobrist_keys
-            .castle_permission(CastlePermissionType::BlackKing);
-    }
-    if castle_permissions::is_white_king_set(cp) {
-        position.game_state.position_hash ^= position
-            .zobrist_keys
-            .castle_permission(CastlePermissionType::WhiteKing);
-    }
-    if castle_permissions::is_black_queen_set(cp) {
-        position.game_state.position_hash ^= position
-            .zobrist_keys
-            .castle_permission(CastlePermissionType::BlackQueen);
-    }
-    if castle_permissions::is_white_queen_set(cp) {
-        position.game_state.position_hash ^= position
-            .zobrist_keys
-            .castle_permission(CastlePermissionType::WhiteQueen);
-    }
-
-    let enp = parsed_fen.en_pass_sq;
-    if let Some(_enp) = enp {
-        position.game_state.position_hash ^= position.zobrist_keys.en_passant(enp.unwrap());
-    }
-}
-
 fn find_en_passant_sq(from_sq: Square, col: Colour) -> Option<Square> {
     // use the *from_sq* to find the en passant sq
     match col {
@@ -794,26 +772,37 @@ fn do_capture_move(
 
 #[cfg(test)]
 mod tests {
-    use crate::castle_permissions;
-    use crate::fen;
-    use crate::mov::Mov;
-    use crate::occupancy_masks::OccupancyMasks;
-    use crate::piece;
-    use crate::piece::Colour;
-    use crate::piece::Piece;
-    use crate::position::MoveLegality;
-    use crate::position::Position;
-    use crate::square::Square;
-    use crate::zobrist_keys::ZobristKeys;
+    use crate::board::colour::Colour;
+    use crate::board::occupancy_masks::OccupancyMasks;
+    use crate::board::piece;
+    use crate::board::piece::Piece;
+    use crate::board::square::Square;
+    use crate::io::fen;
+    use crate::moves::mov::Mov;
+    use crate::position::castle_permissions;
+    use crate::position::game_position::MoveLegality;
+    use crate::position::game_position::Position;
+    use crate::position::zobrist_keys::ZobristKeys;
 
     #[test]
     pub fn make_move_quiet_piece_moved_hash_changed() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         let before_hash = pos.game_state.position_hash;
 
@@ -839,10 +828,21 @@ mod tests {
     #[test]
     pub fn make_move_history_updated() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
-        let occ_masks = OccupancyMasks::new();
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let occ_masks = OccupancyMasks::new();
+
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         // initially no history
         assert_eq!(pos.position_history.len(), 0);
@@ -856,11 +856,21 @@ mod tests {
     #[test]
     pub fn make_move_side_flipped() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         // initially correct side
         assert_eq!(pos.game_state.side_to_move, Colour::White);
@@ -873,11 +883,21 @@ mod tests {
     #[test]
     pub fn make_move_fifty_move_cntr_reset_on_capture_move() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         // set to some value
         pos.game_state.fifty_move_cntr = 21;
@@ -891,11 +911,21 @@ mod tests {
     #[test]
     pub fn make_move_fifty_move_cntr_reset_on_pawn_move() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         let pce_to_move = &mut None;
         pos.board.get_piece_on_square(Square::e5, pce_to_move);
@@ -914,11 +944,21 @@ mod tests {
     #[test]
     pub fn make_move_fifty_move_cntr_incremented_on_non_pawn_and_non_capture_move() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         let pce_to_move = &mut None;
         pos.board.get_piece_on_square(Square::c4, pce_to_move);
@@ -937,40 +977,56 @@ mod tests {
 
     #[test]
     pub fn make_move_half_move_cntr_incremented() {
-        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 21 32";
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         let pce_to_move = &mut None;
         pos.board.get_piece_on_square(Square::c4, pce_to_move);
 
         assert_eq!(*pce_to_move.unwrap(), piece::WHITE_BISHOP);
 
-        // set to some value
-        pos.game_state.move_cntr.half_move = 21;
-        pos.game_state.move_cntr.full_move = 32;
-
-        let expected_half_move = pos.game_state.move_cntr.half_move + 1;
-        let expected_full_move = pos.game_state.move_cntr.full_move + 1;
+        let expected_half_move = pos.game_state.move_cntr.half_move() + 1;
+        let expected_full_move = pos.game_state.move_cntr.full_move() + 1;
 
         let mv = Mov::encode_move_quiet(Square::c4, Square::d5);
         pos.make_move(mv);
 
-        assert_eq!(expected_half_move, pos.game_state.move_cntr.half_move);
-        assert_eq!(expected_full_move, pos.game_state.move_cntr.full_move);
+        assert_eq!(expected_half_move, pos.game_state.move_cntr.half_move());
+        assert_eq!(expected_full_move, pos.game_state.move_cntr.full_move());
     }
 
     #[test]
     pub fn make_move_double_pawn_move_en_passant_square_set_white_moves() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2PPK1/1RB5/pPR1N2p/P1r1rP1P/P2q3n w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert!(is_piece_on_square_as_expected(
             &pos,
@@ -996,11 +1052,21 @@ mod tests {
     #[test]
     pub fn make_move_double_pawn_move_en_passant_square_set_black_moves() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2PPK1/1RB5/pPR1N2p/P1r1rP1P/P2q3n b - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert!(is_piece_on_square_as_expected(
             &pos,
@@ -1026,11 +1092,21 @@ mod tests {
     #[test]
     pub fn make_move_king_side_castle_white() {
         let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R w KQkq - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert!(castle_permissions::is_white_king_set(
             pos.castle_permissions()
@@ -1069,11 +1145,21 @@ mod tests {
     #[test]
     pub fn make_move_king_side_castle_black() {
         let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R b KQkq - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert!(castle_permissions::is_black_king_set(
             pos.castle_permissions()
@@ -1112,11 +1198,21 @@ mod tests {
     #[test]
     pub fn make_move_queen_side_castle_white() {
         let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R w KQkq - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert!(castle_permissions::is_white_queen_set(
             pos.castle_permissions()
@@ -1154,11 +1250,21 @@ mod tests {
     #[test]
     pub fn make_move_queen_side_castle_black() {
         let fen = "r3k2r/pppq1ppp/2np1n2/4pb2/1bB1P1Q1/2NPB3/PPP1NPPP/R3K2R b KQkq - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert!(castle_permissions::is_black_queen_set(
             pos.castle_permissions()
@@ -1197,11 +1303,21 @@ mod tests {
     #[test]
     pub fn make_move_en_passant_black() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/pPBP1P2/2R1NpP1/2r1r2P/R2q3n b - b3 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(pos.en_passant_square(), Some(Square::b3));
         let mv = Mov::encode_move_en_passant(Square::a4, Square::b3);
@@ -1231,11 +1347,21 @@ mod tests {
     #[test]
     pub fn make_move_en_passant_white() {
         let fen = "1n1k2bp/2p2pb1/1p5p/1B1pP1K1/pPBP1P2/N1R1NpPQ/P1r1r2P/R2q3n w - d6 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert_eq!(pos.en_passant_square(), Some(Square::d6));
         let mv = Mov::encode_move_en_passant(Square::e5, Square::d6);
@@ -1273,11 +1399,21 @@ mod tests {
 
         for target in target_prom_pce {
             let fen = "kn3b1p/2p1Pp2/1p5p/1B1pb1K1/pPBP1P2/N1R1NpPQ/P1r1r2P/R2q3n w - - 0 1";
-            let parsed_fen = fen::get_position(&fen);
+            let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+                fen::decompose_fen(fen);
+
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
 
-            let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+            let mut pos = Position::new(
+                board,
+                castle_permissions,
+                move_cntr,
+                en_pass_sq,
+                side_to_move,
+                &zobrist_keys,
+                &&occ_masks,
+            );
 
             // check pre-conditions
             assert!(is_piece_on_square_as_expected(
@@ -1305,11 +1441,21 @@ mod tests {
 
         for target in target_prom_pce {
             let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/2R5 b - - 0 1";
-            let parsed_fen = fen::get_position(&fen);
+            let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+                fen::decompose_fen(fen);
+
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
 
-            let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+            let mut pos = Position::new(
+                board,
+                castle_permissions,
+                move_cntr,
+                en_pass_sq,
+                side_to_move,
+                &zobrist_keys,
+                &&occ_masks,
+            );
 
             // check pre-conditions
             assert!(is_piece_on_square_as_expected(
@@ -1337,12 +1483,21 @@ mod tests {
 
         for target in target_prom_pce {
             let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/R7 b - - 0 1";
-            let parsed_fen = fen::get_position(&fen);
+            let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+                fen::decompose_fen(fen);
+
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
 
-            let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
-
+            let mut pos = Position::new(
+                board,
+                castle_permissions,
+                move_cntr,
+                en_pass_sq,
+                side_to_move,
+                &zobrist_keys,
+                &&occ_masks,
+            );
             // check pre-conditions
             assert!(is_sq_empty(&pos, Square::d1));
 
@@ -1363,13 +1518,23 @@ mod tests {
             &piece::WHITE_ROOK,
         ];
 
+        let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/R7 w - - 0 1";
         for target in target_prom_pce {
-            let fen = "3b2KN/PP1P4/1Bb1p3/rk5P/5RP1/4p3/3ppnBp/R7 w - - 0 1";
-            let parsed_fen = fen::get_position(&fen);
+            let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+                fen::decompose_fen(fen);
+
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
 
-            let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+            let mut pos = Position::new(
+                board,
+                castle_permissions,
+                move_cntr,
+                en_pass_sq,
+                side_to_move,
+                &zobrist_keys,
+                &&occ_masks,
+            );
 
             // check pre-conditions
             assert!(is_sq_empty(&pos, Square::b8));
@@ -1397,11 +1562,21 @@ mod tests {
         ];
 
         for fen in fens {
-            let parsed_fen = fen::get_position(&fen);
+            let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+                fen::decompose_fen(&fen);
+
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
 
-            let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+            let mut pos = Position::new(
+                board,
+                castle_permissions,
+                move_cntr,
+                en_pass_sq,
+                side_to_move,
+                &zobrist_keys,
+                &&occ_masks,
+            );
 
             let mv = Mov::encode_move_castle_kingside_white();
 
@@ -1427,11 +1602,21 @@ mod tests {
 
         for fen in fens {
             println!(" FEN **** : {}", fen);
-            let parsed_fen = fen::get_position(&fen);
+            let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+                fen::decompose_fen(&fen);
+
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
 
-            let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+            let mut pos = Position::new(
+                board,
+                castle_permissions,
+                move_cntr,
+                en_pass_sq,
+                side_to_move,
+                &zobrist_keys,
+                &&occ_masks,
+            );
 
             let mv = Mov::encode_move_castle_queenside_white();
 
@@ -1454,11 +1639,21 @@ mod tests {
         ];
 
         for fen in fens {
-            let parsed_fen = fen::get_position(&fen);
+            let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+                fen::decompose_fen(&fen);
+
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
 
-            let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+            let mut pos = Position::new(
+                board,
+                castle_permissions,
+                move_cntr,
+                en_pass_sq,
+                side_to_move,
+                &zobrist_keys,
+                &&occ_masks,
+            );
 
             let mv = Mov::encode_move_castle_kingside_black();
 
@@ -1481,11 +1676,21 @@ mod tests {
         ];
 
         for fen in fens {
-            let parsed_fen = fen::get_position(&fen);
+            let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+                fen::decompose_fen(&fen);
+
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
 
-            let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+            let mut pos = Position::new(
+                board,
+                castle_permissions,
+                move_cntr,
+                en_pass_sq,
+                side_to_move,
+                &zobrist_keys,
+                &&occ_masks,
+            );
 
             let mv = Mov::encode_move_castle_queenside_black();
 
@@ -1498,11 +1703,21 @@ mod tests {
     pub fn make_move_white_king_moved_castle_permissions_cleared() {
         let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQ - 0 1";
 
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert!(castle_permissions::is_white_king_set(pos.castle_permissions()) == true);
         assert!(castle_permissions::is_white_queen_set(pos.castle_permissions()) == true);
@@ -1520,11 +1735,21 @@ mod tests {
     pub fn make_move_white_kings_rook_moved_castle_permissions_cleared() {
         let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQ - 0 1";
 
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert!(castle_permissions::is_white_king_set(pos.castle_permissions()) == true);
         assert!(castle_permissions::is_white_queen_set(pos.castle_permissions()) == true);
@@ -1542,11 +1767,21 @@ mod tests {
     pub fn make_move_white_queens_rook_moved_castle_permissions_cleared() {
         let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQ - 0 1";
 
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert!(castle_permissions::is_white_king_set(pos.castle_permissions()) == true);
         assert!(castle_permissions::is_white_queen_set(pos.castle_permissions()) == true);
@@ -1564,11 +1799,21 @@ mod tests {
     pub fn make_move_black_king_moved_castle_permissions_cleared() {
         let fen = "r3k2r/8/8/8/8/8/8/R3K2R b kq - 0 1";
 
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert!(castle_permissions::is_black_king_set(pos.castle_permissions()) == true);
         assert!(castle_permissions::is_black_queen_set(pos.castle_permissions()) == true);
@@ -1586,11 +1831,21 @@ mod tests {
     pub fn make_move_black_kings_rook_moved_castle_permissions_cleared() {
         let fen = "r3k2r/8/8/8/8/8/8/R3K2R b kq - 0 1";
 
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert!(castle_permissions::is_black_king_set(pos.castle_permissions()) == true);
         assert!(castle_permissions::is_black_queen_set(pos.castle_permissions()) == true);
@@ -1608,11 +1863,21 @@ mod tests {
     pub fn make_move_black_queens_rook_moved_castle_permissions_cleared() {
         let fen = "r3k2r/8/8/8/8/8/8/R3K2R b kq - 0 1";
 
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         assert!(castle_permissions::is_black_king_set(pos.castle_permissions()) == true);
         assert!(castle_permissions::is_black_queen_set(pos.castle_permissions()) == true);
@@ -1637,23 +1902,46 @@ mod tests {
         ml.push(Mov::encode_move_quiet(Square::b5, Square::b6));
         ml.push(Mov::encode_move_double_pawn_first(Square::c2, Square::c4));
 
-        let parsed_fen = fen::get_position(&fen);
-        let zobrist_keys = ZobristKeys::new();
-        let occ_masks = OccupancyMasks::new();
+        let (board1, move_cntr1, castle_permissions1, side_to_move1, en_pass_sq1) =
+            fen::decompose_fen(fen);
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let zobrist_keys1 = ZobristKeys::new();
+        let occ_masks1 = OccupancyMasks::new();
 
-        let parsed_fen_orig = fen::get_position(&fen);
-        let pos_orig = Position::new(&zobrist_keys, &occ_masks, parsed_fen_orig);
+        let mut pos1 = Position::new(
+            board1,
+            castle_permissions1,
+            move_cntr1,
+            en_pass_sq1,
+            side_to_move1,
+            &zobrist_keys1,
+            &&occ_masks1,
+        );
+
+        let (board2, move_cntr2, castle_permissions2, side_to_move2, en_pass_sq2) =
+            fen::decompose_fen(fen);
+
+        let occ_masks2 = OccupancyMasks::new();
+
+        // note : use the same Zobrist keys - else the position equlaty will fail
+        let pos2 = Position::new(
+            board2,
+            castle_permissions2,
+            move_cntr2,
+            en_pass_sq2,
+            side_to_move2,
+            &zobrist_keys1,
+            &&occ_masks2,
+        );
 
         for mv in ml {
             println!("move: {}", mv);
-            pos.make_move(mv);
-            assert_ne!(pos_orig, pos);
+            pos1.make_move(mv);
+            assert_ne!(pos1, pos2);
 
-            pos.take_move();
+            pos1.take_move();
 
-            assert!(pos_orig == pos);
+            assert_eq!(pos1, pos2);
         }
     }
 
@@ -1668,21 +1956,48 @@ mod tests {
         ml.push(Mov::encode_move_quiet(Square::f7, Square::f6));
         ml.push(Mov::encode_move_double_pawn_first(Square::f7, Square::f6));
 
-        let parsed_fen = fen::get_position(&fen);
-        let zobrist_keys = ZobristKeys::new();
-        let occ_masks = OccupancyMasks::new();
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let (board1, move_cntr1, castle_permissions1, side_to_move1, en_pass_sq1) =
+            fen::decompose_fen(fen);
 
-        let parsed_fen_orig = fen::get_position(&fen);
-        let pos_orig = Position::new(&zobrist_keys, &occ_masks, parsed_fen_orig);
+        let zobrist_keys1 = ZobristKeys::new();
+        let occ_masks1 = OccupancyMasks::new();
+
+        let mut pos1 = Position::new(
+            board1,
+            castle_permissions1,
+            move_cntr1,
+            en_pass_sq1,
+            side_to_move1,
+            &zobrist_keys1,
+            &&occ_masks1,
+        );
+
+        let (board2, move_cntr2, castle_permissions2, side_to_move2, en_pass_sq2) =
+            fen::decompose_fen(fen);
+
+        let occ_masks2 = OccupancyMasks::new();
+
+        // note : use the same Zobrist keys - else the position equlaty will fail
+        let pos2 = Position::new(
+            board2,
+            castle_permissions2,
+            move_cntr2,
+            en_pass_sq2,
+            side_to_move2,
+            &zobrist_keys1,
+            &&occ_masks2,
+        );
+
+        // initial states are the same
+        assert_eq!(pos1, pos2);
 
         for mv in ml {
-            pos.make_move(mv);
-            assert_ne!(pos_orig, pos);
+            pos1.make_move(mv);
+            assert_ne!(pos1, pos2);
 
-            pos.take_move();
+            pos1.take_move();
 
-            assert!(pos_orig == pos);
+            assert_eq!(pos1, pos2);
         }
     }
 
@@ -1690,11 +2005,21 @@ mod tests {
     pub fn make_move_hash_updated_white_double_pawn_move() {
         let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
         let init_hash = pos.position_hash();
 
         let mut expected_hash =
@@ -1714,11 +2039,21 @@ mod tests {
     pub fn make_move_hash_updated_black_double_pawn_move() {
         let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1";
 
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
         let init_hash = pos.position_hash();
 
         let mut expected_hash =
@@ -1738,11 +2073,21 @@ mod tests {
     pub fn make_move_hash_updated_white_quiet_move() {
         let fen = "r1bqkbnr/pp1n1p1p/2pp4/4p1p1/1P1P4/5PP1/P1P1PN1P/RNBQKB1R w KQkq - 0 1";
 
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
         let init_hash = pos.position_hash();
 
         let mut expected_hash =
@@ -1760,11 +2105,21 @@ mod tests {
     #[test]
     pub fn make_move_hash_updated_black_quiet_move() {
         let fen = "r1bqkbnr/pp1n1p1p/2pp4/4p1p1/1P1P4/5PP1/P1P1PN1P/RNBQKB1R b KQkq - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
         let init_hash = pos.position_hash();
 
         let mut expected_hash =
@@ -1782,11 +2137,21 @@ mod tests {
     #[test]
     pub fn make_move_hash_updated_black_en_passant_move() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/pPBP1P2/2R1NpP1/2r1r2P/R2q3n b - b3 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
         let init_hash = pos.position_hash();
 
         // remove white pawn on b4
@@ -1809,11 +2174,21 @@ mod tests {
     #[test]
     pub fn make_move_hash_updated_white_en_passant() {
         let fen = "1n1k2bp/2p2pb1/1p5p/1B1pP1K1/pPBP1P2/N1R1NpPQ/P1r1r2P/R2q3n w - d6 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let mut pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
         let init_hash = pos.position_hash();
 
         // remove black pawn

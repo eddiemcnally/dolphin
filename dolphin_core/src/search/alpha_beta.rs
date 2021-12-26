@@ -1,12 +1,11 @@
-use crate::evaluate;
-use crate::mov::Mov;
-use crate::mov::MovPlusScore;
-use crate::move_gen::MoveGenerator;
-use crate::move_list::MoveList;
-use crate::position::MoveLegality;
-use crate::position::Position;
-use crate::tt::TransTable;
-use crate::tt::TransType;
+use crate::moves::mov::Mov;
+use crate::moves::move_gen::MoveGenerator;
+use crate::moves::move_list::MoveList;
+use crate::position::game_position::MoveLegality;
+use crate::position::game_position::Position;
+use crate::search::evaluate;
+use crate::search::tt::TransTable;
+use crate::search::tt::TransType;
 use core::cmp::max;
 use core::cmp::min;
 
@@ -17,40 +16,20 @@ struct Stats {
     num_illegal_moves: u32,
 }
 
-impl Stats {
-    fn new(enable_stats: bool) -> Self {
-        Stats {
-            enabled: enable_stats,
-            ..Default::default()
-        }
-    }
-}
-
 pub struct Search {
-    stats: Stats,
     tt: TransTable,
     max_depth: u8,
 }
 
-const POS_INFINITE: i32 = i32::MAX;
-const NEG_INFINITE: i32 = i32::MIN;
-const MAX_DEPTH: u8 = 6;
-
 impl Search {
-    pub fn new(enable_stats: bool, tt_capacity: usize, max_depth: u8) -> Self {
+    pub fn new(tt_capacity: usize, max_depth: u8) -> Self {
         Search {
-            stats: Stats::new(enable_stats),
-            tt: TransTable::new(tt_capacity, enable_stats),
+            tt: TransTable::new(tt_capacity),
             max_depth,
         }
     }
 
-    pub fn start_search(
-        &mut self,
-        pos: &mut Position,
-        alpha_start: i32,
-        beta_start: i32,
-    ) -> MovPlusScore {
+    pub fn start_search(&mut self, pos: &mut Position, alpha_start: i32, beta_start: i32) -> Mov {
         let mut alpha = alpha_start;
         let beta = beta_start;
         let mut move_list = MoveList::new();
@@ -62,9 +41,8 @@ impl Search {
 
         // }
 
-        let mut best_move_plus_score = MovPlusScore::default();
-
         move_gen.generate_moves(pos, &mut move_list);
+        let mut best_move = Mov::default();
 
         for mv in move_list.iter() {
             let mut score = 0;
@@ -76,11 +54,13 @@ impl Search {
 
             if score > alpha {
                 alpha = score;
-                best_move_plus_score = MovPlusScore::new(*mv, score);
+
+                best_move = *mv;
+                best_move.set_score(score);
             }
         }
 
-        best_move_plus_score
+        best_move
     }
 
     fn alpha_beta(
@@ -149,59 +129,5 @@ impl Search {
         self.tt.add(tt_type, depth, score, hash);
 
         alpha
-    }
-
-    fn quiesence(&mut self, _pos: &mut Position, _depth: u8, _alpha: i32, _beta: i32) -> i32 {
-        // let original_alpha = alpha;
-
-        // if pos.move_counter().
-
-        // let stand_pat = evaluate::evaluate_board(pos.board(), pos.side_to_move());
-
-        // if stand_pat >= beta{
-        //     return beta;
-        // }
-
-        // if original_alpha < stand_pat{
-        //     alpha = stand_pat;
-        // }
-
-        // let mut move_list: Vec<Mov> = Vec::new();
-        // move_gen::generate_moves(pos, &move_list);
-
-        // for mv in move_list{
-        //     if mv.is_capture(){
-        //         pos.make_move(mv);
-
-        //         let score = -self.quiesence(pos, depth, alpha, beta)
-
-        //     }
-        // }
-        0
-    }
-
-    //     int Quiesce( int alpha, int beta ) {
-    //     int stand_pat = Evaluate();
-    //     if( stand_pat >= beta )
-    //         return beta;
-    //     if( alpha < stand_pat )
-    //         alpha = stand_pat;
-
-    //     until( every_capture_has_been_examined )  {
-    //         MakeCapture();
-    //         score = -Quiesce( -beta, -alpha );
-    //         TakeBackMove();
-
-    //         if( score >= beta )
-    //             return beta;
-    //         if( score > alpha )
-    //            alpha = score;
-    //     }
-    //     return alpha;
-    // }
-
-    // TODO
-    fn sort_move_list(_move_list: &mut Vec<Mov>) {
-        //move_list.sort_by(|a, b| b.age.cmp(&a.age));
     }
 }

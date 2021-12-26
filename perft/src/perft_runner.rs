@@ -1,8 +1,8 @@
 extern crate dolphin_core;
-use dolphin_core::move_gen::MoveGenerator;
-use dolphin_core::move_list::MoveList;
-use dolphin_core::position::MoveLegality;
-use dolphin_core::position::Position;
+use dolphin_core::moves::move_gen::MoveGenerator;
+use dolphin_core::moves::move_list::MoveList;
+use dolphin_core::position::game_position::MoveLegality;
+use dolphin_core::position::game_position::Position;
 
 pub fn perft(depth: u8, position: &mut Position, move_generator: &MoveGenerator) -> u64 {
     let mut nodes = 0;
@@ -15,67 +15,11 @@ pub fn perft(depth: u8, position: &mut Position, move_generator: &MoveGenerator)
     move_generator.generate_moves(position, &mut move_list);
 
     for mv in move_list.iter() {
-        // println!("Level {:?}, Making move: {:?}", depth, mv);
-
-        // if mv.decode_from_square() == Square::b7 && mv.decode_to_square() == Square::b5 {
-        //     println!(
-        //         "******* Level {:?}, Making move: {:?}, Board pre-move : {:?}",
-        //         depth,
-        //         mv,
-        //         position.board()
-        //     );
-        // } else {
-        //     println!(
-        //         "Level {:?}, Making move: {:?}, Board pre-move : {:?}",
-        //         depth,
-        //         mv,
-        //         position.board()
-        //     );
-        // }
-
         let move_legality = position.make_move(*mv);
-
-        // if mv.decode_from_square() == Square::b7 && mv.decode_to_square() == Square::b5 {
-        //     println!(
-        //         "******* Level {:?}, Make move: {:?}, Legality : {:?}, Board post-move : {:?}",
-        //         depth,
-        //         mv,
-        //         move_legality,
-        //         position.board()
-        //     );
-        // } else {
-        //     println!(
-        //         "Level {:?}, Make move: {:?}, Legality : {:?}, Board post-move : {:?}",
-        //         depth,
-        //         mv,
-        //         move_legality,
-        //         position.board()
-        //     );
-        // }
 
         if move_legality == MoveLegality::Legal {
             nodes += perft(depth - 1, position, move_generator);
         }
-
-        // if mv.decode_from_square() == Square::b7 && mv.decode_to_square() == Square::b5 {
-        //     println!(
-        //         "******* Level {:?}, TAKE move: {:?}, Legality : {:?}, Board pre take move : {:?}",
-        //         depth,
-        //         mv,
-        //         move_legality,
-        //         position.board()
-        //     );
-        // } else {
-        //     println!(
-        //         "Level {:?}, TAKE move: {:?}, Legality : {:?}, Board pre take move : {:?}",
-        //         depth,
-        //         mv,
-        //         move_legality,
-        //         position.board()
-        //     );
-        // }
-
-        //println!("Level {:?}, Taking move: {:?}", depth, mv);
 
         position.take_move();
     }
@@ -88,11 +32,11 @@ pub fn perft(depth: u8, position: &mut Position, move_generator: &MoveGenerator)
 pub mod tests {
 
     use crate::perft_runner;
-    use dolphin_core::fen;
-    use dolphin_core::move_gen::MoveGenerator;
-    use dolphin_core::occupancy_masks::OccupancyMasks;
-    use dolphin_core::position::Position;
-    use dolphin_core::zobrist_keys::ZobristKeys;
+    use dolphin_core::board::occupancy_masks::OccupancyMasks;
+    use dolphin_core::io::fen;
+    use dolphin_core::moves::move_gen::MoveGenerator;
+    use dolphin_core::position::game_position::Position;
+    use dolphin_core::position::zobrist_keys::ZobristKeys;
 
     #[test]
     pub fn sample_perft_1() {
@@ -102,13 +46,24 @@ pub mod tests {
         // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ;D1 20 ;D2 400 ;D3 8902 ;D4 197281 ;D5 4865609 ;D6 119060324
 
         let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
         let mov_generator = MoveGenerator::new();
-        let mut position = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
 
-        let num_moves = perft_runner::perft(depth, &mut position, &mov_generator);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
+
+        let num_moves = perft_runner::perft(depth, &mut pos, &mov_generator);
 
         assert_eq!(num_moves, expected_move_count);
     }
@@ -121,13 +76,24 @@ pub mod tests {
         // 8/8/3k4/3p4/8/3P4/3K4/8 w - - 0 1 ;D1 8 ;D2 61 ;D3 411 ;D4 3213 ;D5 21637 ;D6 158065
 
         let fen = "8/8/3k4/3p4/8/3P4/3K4/8 w - - 0 1 ";
-        let parsed_fen = fen::get_position(&fen);
+        let mov_generator = MoveGenerator::new();
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
-        let mov_generator = MoveGenerator::new();
-        let mut position = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
 
-        let num_moves = perft_runner::perft(depth, &mut position, &mov_generator);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
+
+        let num_moves = perft_runner::perft(depth, &mut pos, &mov_generator);
 
         assert_eq!(num_moves, expected_move_count);
     }
@@ -140,13 +106,24 @@ pub mod tests {
         // B6b/8/8/8/2K5/4k3/8/b6B w - - 0 1 ;D1 17 ;D2 278 ;D3 4607 ;D4 76778 ;D5 1320507 ;D6 22823890
 
         let fen = "B6b/8/8/8/2K5/4k3/8/b6B w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let mov_generator = MoveGenerator::new();
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
-        let mov_generator = MoveGenerator::new();
-        let mut position = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
 
-        let num_moves = perft_runner::perft(depth, &mut position, &mov_generator);
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
+
+        let num_moves = perft_runner::perft(depth, &mut pos, &mov_generator);
 
         assert_eq!(num_moves, expected_move_count);
     }

@@ -1,4 +1,4 @@
-use crate::zobrist_keys::ZobristHash;
+use crate::position::zobrist_keys::ZobristHash;
 use std::boxed::Box;
 use std::fmt;
 
@@ -44,19 +44,9 @@ struct Stats {
     num_trans_type_lower: u32,
 }
 
-impl Stats {
-    fn new(enable_stats: bool) -> Self {
-        Stats {
-            enabled: enable_stats,
-            ..Default::default()
-        }
-    }
-}
-
 pub struct TransTable {
     entries: Box<[TransEntry]>,
     capacity: usize,
-    stats: Stats,
 }
 
 impl Default for TransTable {
@@ -64,19 +54,17 @@ impl Default for TransTable {
         Self {
             entries: Box::new([TransEntry::default(); 1]),
             capacity: 1,
-            stats: Stats::default(),
         }
     }
 }
 
 impl TransTable {
-    pub fn new(capacity: usize, enable_stats: bool) -> Self {
+    pub fn new(capacity: usize) -> Self {
         let array = vec![TransEntry::default(); capacity].into_boxed_slice();
 
         TransTable {
             entries: array,
             capacity,
-            stats: Stats::new(enable_stats),
         }
     }
 
@@ -90,9 +78,6 @@ impl TransTable {
             in_use: true,
         };
 
-        if self.stats.enabled && self.entries[offset].in_use {
-            self.stats.num_collisions += 1;
-        }
         self.entries[offset] = tte;
     }
 
@@ -101,21 +86,11 @@ impl TransTable {
         if self.entries[offset].in_use {
             let tte = self.entries[offset];
             let t = (tte.trans_type, tte.depth, tte.score);
-            Some(t)
-        } else {
-            if self.stats.enabled {
-                self.stats.num_misses += 1;
-            }
-            None
+            return Some(t);
         }
+        None
     }
 
-    pub fn get_num_collisions(&self) -> u32 {
-        self.stats.num_collisions
-    }
-    pub fn get_num_misses(&self) -> u32 {
-        self.stats.num_misses
-    }
     pub fn get_num_used(&self) -> u32 {
         self.entries.iter().filter(|n| n.in_use).count() as u32
     }
@@ -136,29 +111,6 @@ impl TransTable {
             .count() as u32
     }
 
-    pub fn display_stats(&self) {
-        let percent_used = self.stats.num_used.checked_div(self.capacity as u32);
-        println!(
-            "TT Stats: \
-            Capacity : {:?}, \
-            Num Used : {:?}, \
-            % used : {:?}, \
-            Num Misses : {:?}, \
-            Num Collisions : {:?}, \
-            Num EXACT Types : {:?}, \
-            Num UPPER Types : {:?}, \
-            Num LOWER Types : {:?}",
-            self.capacity,
-            self.stats.num_used,
-            percent_used,
-            self.stats.num_misses,
-            self.stats.num_collisions,
-            self.stats.num_trans_type_exact,
-            self.stats.num_trans_type_upper,
-            self.stats.num_trans_type_lower
-        );
-    }
-
     #[inline]
     fn convert_hash_to_offset(&self, hash: ZobristHash, capacity: usize) -> usize {
         (hash % capacity as u64) as usize
@@ -169,7 +121,7 @@ impl TransTable {
 pub mod tests {
     use super::TransTable;
     use super::TransType;
-    use crate::zobrist_keys::ZobristHash;
+    use crate::position::zobrist_keys::ZobristHash;
 
     #[test]
     pub fn add_and_get_multiple_no_collisions_verify_contents_as_expected() {
@@ -177,7 +129,7 @@ pub mod tests {
         const DEPTH: u8 = 5;
         const TT_ENTRY_TYPE: TransType = TransType::Upper;
 
-        let mut tt = TransTable::new(NUM_TO_TEST, true);
+        let mut tt = TransTable::new(NUM_TO_TEST);
         // add to TT
         for i in 0..NUM_TO_TEST {
             let score = i as i32;
@@ -187,7 +139,6 @@ pub mod tests {
             tt.add(trans_type, depth, score, i as ZobristHash);
         }
         assert!(tt.get_num_used() == NUM_TO_TEST as u32);
-        assert!(tt.get_num_collisions() == 0);
 
         // retrieve and verify
         for i in 0..NUM_TO_TEST {
@@ -212,7 +163,7 @@ pub mod tests {
         const DEPTH: u8 = 5;
         const TT_ENTRY_TYPE: TransType = TransType::Upper;
 
-        let mut tt = TransTable::new(TT_SIZE, true);
+        let mut tt = TransTable::new(TT_SIZE);
         // add to TT
         for i in 0..NUM_TO_TEST {
             let score = i as i32;
@@ -222,7 +173,6 @@ pub mod tests {
             tt.add(trans_type, depth, score, i as ZobristHash);
         }
         assert!(tt.get_num_used() == TT_SIZE as u32);
-        assert!(tt.get_num_collisions() == EXPECTED_NUM_COLLISIONS as u32);
 
         // elements upo to EXPECTED_NUM_COLLISIONS are overwritten
         for i in EXPECTED_NUM_COLLISIONS..NUM_TO_TEST {

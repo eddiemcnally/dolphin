@@ -1,4 +1,4 @@
-use crate::square::Square;
+use crate::board::square::Square;
 use std::ops::Shl;
 
 const BIT_0: u64 = 0x01;
@@ -27,7 +27,7 @@ pub fn pop_1st_bit(bb: &mut u64) -> Square {
     debug_assert!(*bb != 0, "bitboard is already zero");
 
     let bit_being_cleared = bb.trailing_zeros();
-    let sq_clear = Square::from_num(bit_being_cleared as u8).unwrap();
+    let sq_clear = Square::from_num(bit_being_cleared as u64).unwrap();
 
     *bb = clear_bit(*bb, sq_clear);
     sq_clear
@@ -45,16 +45,15 @@ pub fn display_squares(bb: u64) {
 pub fn print_hex(bb: u64) {
     println!("{:#064X}", bb);
 }
-
 pub fn to_mask(sq: Square) -> u64 {
     BIT_0.shl(sq.offset())
 }
 
 #[cfg(test)]
 pub mod tests {
-    use crate::bitboard;
-    use crate::square;
-    use crate::square::Square;
+    use crate::board::bitboard;
+    use crate::board::square;
+    use crate::board::square::Square;
     use std::u64;
 
     #[test]

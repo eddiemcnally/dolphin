@@ -1,23 +1,15 @@
-use std::collections::HashMap;
+use crate::board::colour::Colour;
+use crate::board::file::File;
+use crate::board::game_board::Board;
+use crate::board::piece::Piece;
+use crate::board::rank::Rank;
+use crate::board::square::Square;
+use crate::position::castle_permissions;
+use crate::position::castle_permissions::CastlePermission;
 
-use crate::castle_permissions;
-use crate::castle_permissions::CastlePermission;
-use crate::piece::Colour;
-use crate::piece::Piece;
-use crate::square::File;
-use crate::square::Rank;
-use crate::square::Square;
+use crate::position::move_counter::MoveCounter;
 
-#[derive(Default)]
-pub struct ParsedFen {
-    pub piece_positions: HashMap<Square, &'static Piece>,
-    pub side_to_move: Colour,
-    pub castle_perm: CastlePermission,
-    pub en_pass_sq: Option<Square>,
-    pub half_move_cnt: u16,
-    pub full_move_cnt: u16,
-}
-
+// FEN fields
 // [0] = piece positions
 // [1] = side to move
 // [2] = castle permissions
@@ -32,50 +24,60 @@ const FEN_EN_PASSANT: usize = 3;
 const FEN_HALF_MOVE: usize = 4;
 const FEN_FULL_MOVE: usize = 5;
 
-/// parses a FEN string and populates the given board
+/// Parses a FEN string and returns populated structs
 ///
 /// Sample FEN:
 ///      rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2
 ///
-pub fn get_position(fen: &str) -> ParsedFen {
-    let mut retval: ParsedFen = Default::default();
-
+///
+pub fn decompose_fen(fen: &str) -> (Board, MoveCounter, CastlePermission, Colour, Option<Square>) {
+    // split FEN into fields
     let piece_pos: Vec<&str> = fen.split(' ').collect();
 
-    retval.piece_positions = extract_piece_locations(piece_pos[FEN_BOARD]);
-    retval.side_to_move = get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
-    retval.castle_perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
-    retval.en_pass_sq = get_en_passant_sq(piece_pos[FEN_EN_PASSANT]);
-    retval.half_move_cnt = get_half_move_clock(piece_pos[FEN_HALF_MOVE]);
-    retval.full_move_cnt = get_full_move_number(piece_pos[FEN_FULL_MOVE]);
+    let board = extract_board_from_fen(piece_pos[FEN_BOARD]);
+    let move_cntr = MoveCounter::new(
+        get_half_move_clock(piece_pos[FEN_HALF_MOVE]),
+        get_full_move_number(piece_pos[FEN_FULL_MOVE]),
+    );
+    let side_to_move = get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
 
-    retval
+    let castle_permissions = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
+    let en_pass_sq = get_en_passant_sq(piece_pos[FEN_EN_PASSANT]);
+
+    (
+        board,
+        move_cntr,
+        castle_permissions,
+        side_to_move,
+        en_pass_sq,
+    )
 }
 
 /// takes the list of ranks (starting at rank 8)
-pub fn extract_piece_locations(pieces: &str) -> HashMap<Square, &'static Piece> {
+fn extract_board_from_fen(pieces: &str) -> Board {
     let ranks: Vec<_> = pieces.split('/').collect();
-    let mut retval: HashMap<Square, &'static Piece> = HashMap::new();
+    let mut retval: Board = Board::new();
+
     for (rank, pieces) in ranks.iter().rev().enumerate() {
-        let mut file: u8 = 0;
+        let mut file = 0;
 
         for c in pieces.chars() {
             match c.to_digit(10) {
                 Some(n) => {
                     // it's a number, so incr the file
-                    file += n as u8;
+                    file += n;
                 }
                 None => {
                     // not a number, so it's a piece
                     let piece = Piece::from_char(c);
 
-                    if let Some(r) = Rank::from_num(rank as u8) {
-                        if let Some(f) = File::from_num(file as u8) {
+                    if let Some(r) = Rank::from_num(rank as u64) {
+                        if let Some(f) = File::from_num(file as u64) {
                             //                    if r.is_some() && f.is_some() {
                             let sq: Square = Square::get_square(r, f);
                             file += 1;
 
-                            retval.insert(sq, piece);
+                            retval.add_piece(piece, sq);
                         }
                     } else {
                         panic!("Invalid rank or file");
@@ -132,7 +134,7 @@ fn get_castle_permissions(castleperm: &str) -> CastlePermission {
 
 #[cfg(test)]
 mod tests {
-    use super::extract_piece_locations;
+    use super::extract_board_from_fen;
     use super::get_castle_permissions;
     use super::get_en_passant_sq;
     use super::get_full_move_number;
@@ -144,99 +146,60 @@ mod tests {
     use super::FEN_FULL_MOVE;
     use super::FEN_HALF_MOVE;
     use super::FEN_SIDE_TO_MOVE;
-    use crate::castle_permissions;
-    use crate::piece;
-    use crate::piece::Colour;
-    use crate::square::Square;
+    use crate::board::colour::Colour;
+    use crate::board::piece;
+    use crate::board::square::Square;
+    use crate::position::castle_permissions;
+    use std::collections::HashMap;
 
     #[test]
-    pub fn piece_positions() {
+    pub fn test_board_extraction() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
 
-        let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
+        // set up expected pieces and squares
 
-        assert_eq!(sq_pce.len(), 32);
+        let mut map = HashMap::new();
+        map.insert(Square::a1, &piece::WHITE_PAWN);
+        map.insert(Square::d1, &piece::BLACK_QUEEN);
+        map.insert(Square::h1, &piece::BLACK_KNIGHT);
+        map.insert(Square::a2, &piece::WHITE_PAWN);
+        map.insert(Square::c2, &piece::BLACK_ROOK);
+        map.insert(Square::e2, &piece::BLACK_ROOK);
+        map.insert(Square::f2, &piece::WHITE_PAWN);
+        map.insert(Square::h2, &piece::WHITE_PAWN);
+        map.insert(Square::a3, &piece::BLACK_PAWN);
+        map.insert(Square::b3, &piece::WHITE_PAWN);
+        map.insert(Square::c3, &piece::WHITE_ROOK);
+        map.insert(Square::e3, &piece::WHITE_KNIGHT);
+        map.insert(Square::f3, &piece::BLACK_PAWN);
+        map.insert(Square::b4, &piece::WHITE_ROOK);
+        map.insert(Square::c4, &piece::WHITE_BISHOP);
+        map.insert(Square::f4, &piece::WHITE_PAWN);
+        map.insert(Square::b5, &piece::WHITE_BISHOP);
+        map.insert(Square::e5, &piece::WHITE_PAWN);
+        map.insert(Square::g5, &piece::WHITE_KING);
+        map.insert(Square::a6, &piece::WHITE_KNIGHT);
+        map.insert(Square::c6, &piece::BLACK_PAWN);
+        map.insert(Square::h6, &piece::BLACK_PAWN);
+        map.insert(Square::b7, &piece::WHITE_PAWN);
+        map.insert(Square::c7, &piece::BLACK_PAWN);
+        map.insert(Square::d7, &piece::BLACK_PAWN);
+        map.insert(Square::e7, &piece::WHITE_QUEEN);
+        map.insert(Square::f7, &piece::BLACK_PAWN);
+        map.insert(Square::g7, &piece::BLACK_BISHOP);
+        map.insert(Square::b8, &piece::BLACK_KNIGHT);
+        map.insert(Square::d8, &piece::BLACK_KING);
+        map.insert(Square::g8, &piece::BLACK_BISHOP);
+        map.insert(Square::h8, &piece::BLACK_PAWN);
 
-        assert_eq!(sq_pce[&Square::a1], &piece::WHITE_PAWN);
-        assert_eq!(sq_pce[&Square::d1], &piece::BLACK_QUEEN);
-        assert_eq!(sq_pce[&Square::h1], &piece::BLACK_KNIGHT);
+        let board = extract_board_from_fen(piece_pos[FEN_BOARD]);
 
-        assert_eq!(sq_pce[&Square::a2], &piece::WHITE_PAWN);
-        assert_eq!(sq_pce[&Square::c2], &piece::BLACK_ROOK);
-        assert_eq!(sq_pce[&Square::e2], &piece::BLACK_ROOK);
-        assert_eq!(sq_pce[&Square::f2], &piece::WHITE_PAWN);
-        assert_eq!(sq_pce[&Square::h2], &piece::WHITE_PAWN);
-
-        assert_eq!(sq_pce[&Square::a3], &piece::BLACK_PAWN);
-        assert_eq!(sq_pce[&Square::b3], &piece::WHITE_PAWN);
-        assert_eq!(sq_pce[&Square::c3], &piece::WHITE_ROOK);
-        assert_eq!(sq_pce[&Square::e3], &piece::WHITE_KNIGHT);
-        assert_eq!(sq_pce[&Square::f3], &piece::BLACK_PAWN);
-
-        assert_eq!(sq_pce[&Square::b4], &piece::WHITE_ROOK);
-        assert_eq!(sq_pce[&Square::c4], &piece::WHITE_BISHOP);
-        assert_eq!(sq_pce[&Square::f4], &piece::WHITE_PAWN);
-
-        assert_eq!(sq_pce[&Square::b5], &piece::WHITE_BISHOP);
-        assert_eq!(sq_pce[&Square::e5], &piece::WHITE_PAWN);
-        assert_eq!(sq_pce[&Square::g5], &piece::WHITE_KING);
-
-        assert_eq!(sq_pce[&Square::a6], &piece::WHITE_KNIGHT);
-        assert_eq!(sq_pce[&Square::c6], &piece::BLACK_PAWN);
-        assert_eq!(sq_pce[&Square::h6], &piece::BLACK_PAWN);
-
-        assert_eq!(sq_pce[&Square::b7], &piece::WHITE_PAWN);
-        assert_eq!(sq_pce[&Square::c7], &piece::BLACK_PAWN);
-        assert_eq!(sq_pce[&Square::d7], &piece::BLACK_PAWN);
-        assert_eq!(sq_pce[&Square::e7], &piece::WHITE_QUEEN);
-        assert_eq!(sq_pce[&Square::f7], &piece::BLACK_PAWN);
-        assert_eq!(sq_pce[&Square::g7], &piece::BLACK_BISHOP);
-
-        assert_eq!(sq_pce[&Square::b8], &piece::BLACK_KNIGHT);
-        assert_eq!(sq_pce[&Square::d8], &piece::BLACK_KING);
-        assert_eq!(sq_pce[&Square::g8], &piece::BLACK_BISHOP);
-        assert_eq!(sq_pce[&Square::h8], &piece::BLACK_PAWN);
-    }
-
-    #[test]
-    pub fn pieces_edge_squares_h1() {
-        let fen = "8/8/8/8/8/8/6N1/5N1k w - - 0 1";
-        let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
-
-        let pce = sq_pce[&Square::h1];
-        assert_eq!(pce, &piece::BLACK_KING);
-    }
-
-    #[test]
-    pub fn pieces_edge_squares_h8() {
-        let fen = "7k/8/8/8/8/8/6N1/5N2 w - - 0 1";
-        let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
-
-        let pce = sq_pce[&Square::h8];
-        assert_eq!(pce, &piece::BLACK_KING);
-    }
-
-    #[test]
-    pub fn pieces_edge_squares_a1() {
-        let fen = "8/8/8/8/8/8/6N1/k4N2 w - - 0 1";
-        let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
-
-        let pce = sq_pce[&Square::a1];
-        assert_eq!(pce, &piece::BLACK_KING);
-    }
-
-    #[test]
-    pub fn pieces_edge_squares_a8() {
-        let fen = "k7/8/8/8/8/8/6N1/5N2 w - - 0 1";
-        let piece_pos: Vec<&str> = fen.split(' ').collect();
-        let sq_pce = extract_piece_locations(piece_pos[FEN_BOARD]);
-
-        let pce = sq_pce[&Square::a8];
-        assert_eq!(pce, &piece::BLACK_KING);
+        for (square, piece) in &map {
+            let pce = &mut None;
+            board.get_piece_on_square(*square, pce);
+            assert_eq!(pce.unwrap(), *piece);
+        }
     }
 
     #[test]

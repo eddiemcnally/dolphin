@@ -1,9 +1,9 @@
-use crate::bitboard;
-use crate::board;
-use crate::square;
-use crate::square::File;
-use crate::square::Rank;
-use crate::square::Square;
+use crate::board::bitboard;
+use crate::board::file::File;
+use crate::board::game_board;
+use crate::board::rank::Rank;
+use crate::board::square;
+use crate::board::square::Square;
 
 use std::ops::Shl;
 
@@ -37,13 +37,27 @@ impl DiagonalAntidiagonal {
     }
 }
 
+impl Default for OccupancyMasks {
+    fn default() -> Self {
+        OccupancyMasks {
+            knight: [0; game_board::NUM_SQUARES],
+            diagonal: [DiagonalAntidiagonal::default(); game_board::NUM_SQUARES],
+            bishop: [0; game_board::NUM_SQUARES],
+            queen: [0; game_board::NUM_SQUARES],
+            king: [0; game_board::NUM_SQUARES],
+            in_between: [[0; game_board::NUM_SQUARES]; game_board::NUM_SQUARES],
+        }
+    }
+}
+
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
 pub struct OccupancyMasks {
-    knight: [u64; board::NUM_SQUARES],
-    diagonal: [DiagonalAntidiagonal; board::NUM_SQUARES],
-    bishop: [u64; board::NUM_SQUARES],
-    queen: [u64; board::NUM_SQUARES],
-    king: [u64; board::NUM_SQUARES],
-    in_between: [[u64; board::NUM_SQUARES]; board::NUM_SQUARES],
+    knight: [u64; game_board::NUM_SQUARES],
+    diagonal: [DiagonalAntidiagonal; game_board::NUM_SQUARES],
+    bishop: [u64; game_board::NUM_SQUARES],
+    queen: [u64; game_board::NUM_SQUARES],
+    king: [u64; game_board::NUM_SQUARES],
+    in_between: [[u64; game_board::NUM_SQUARES]; game_board::NUM_SQUARES],
 }
 
 impl OccupancyMasks {
@@ -74,10 +88,7 @@ impl OccupancyMasks {
     }
 
     pub fn get_occupancy_mask_rook(&self, sq: Square) -> u64 {
-        let mut bb = get_horizontal_move_mask(sq) | get_vertical_move_mask(sq);
-        // remove current square
-        bb = bitboard::clear_bit(bb, sq);
-        bb
+        get_horizontal_move_mask(sq) | get_vertical_move_mask(sq)
     }
 
     pub fn get_occupancy_mask_queen(&self, sq: Square) -> u64 {
@@ -92,12 +103,10 @@ impl OccupancyMasks {
         self.in_between[sq1.offset()][sq2.offset()]
     }
 
-    #[inline(always)]
     pub fn get_horizontal_mask(&self, sq: Square) -> u64 {
         get_horizontal_move_mask(sq)
     }
 
-    #[inline(always)]
     pub fn get_vertical_mask(&self, sq: Square) -> u64 {
         get_vertical_move_mask(sq)
     }
@@ -144,59 +153,43 @@ impl OccupancyMasks {
         self.south_east(bb) | self.south_west(bb)
     }
 
-    #[inline(always)]
     const fn north_east(&self, bb: u64) -> u64 {
         (bb & !FILE_H_BB) << 9
     }
 
-    #[inline(always)]
     const fn south_east(&self, bb: u64) -> u64 {
         (bb & !FILE_H_BB) >> 7
     }
 
-    #[inline(always)]
     const fn south(&self, bb: u64) -> u64 {
         bb >> 8
     }
 
-    #[inline(always)]
     const fn north(&self, bb: u64) -> u64 {
         bb << 8
     }
 
-    #[inline(always)]
-    const fn east(&self, bb: u64) -> u64 {
-        bb >> 1
-    }
-    #[inline(always)]
-    const fn west(&self, bb: u64) -> u64 {
-        bb << 1
-    }
-
-    #[inline(always)]
     const fn north_west(&self, bb: u64) -> u64 {
         (bb & !FILE_A_BB) << 7
     }
 
-    #[inline(always)]
     const fn south_west(&self, bb: u64) -> u64 {
         (bb & !FILE_A_BB) >> 9
     }
 }
 
-#[inline(always)]
 fn get_vertical_move_mask(sq: Square) -> u64 {
     let file = sq.file();
     FILE_MASK << (file as u8)
 }
-#[inline(always)]
+
 fn get_horizontal_move_mask(sq: Square) -> u64 {
     let rank = sq.rank();
     RANK_MASK << ((rank as u8) << 3)
 }
 
-fn populate_knight_occupancy_mask_array() -> [u64; board::NUM_SQUARES] {
-    let mut retval: [u64; board::NUM_SQUARES] = [0; board::NUM_SQUARES];
+fn populate_knight_occupancy_mask_array() -> [u64; game_board::NUM_SQUARES] {
+    let mut retval: [u64; game_board::NUM_SQUARES] = [0; game_board::NUM_SQUARES];
 
     let squares = square::SQUARES;
 
@@ -253,8 +246,8 @@ fn set_bb_if_sq_valid(rank: Option<Rank>, file: Option<File>, bb: &mut u64) {
     }
 }
 
-fn populate_king_mask_array() -> [u64; board::NUM_SQUARES] {
-    let mut retval: [u64; board::NUM_SQUARES] = [0; board::NUM_SQUARES];
+fn populate_king_mask_array() -> [u64; game_board::NUM_SQUARES] {
+    let mut retval: [u64; game_board::NUM_SQUARES] = [0; game_board::NUM_SQUARES];
 
     let squares = square::SQUARES;
 
@@ -302,9 +295,9 @@ fn is_valid_rank_and_file(rank: Option<Rank>, file: Option<File>) -> bool {
     rank.is_some() && file.is_some()
 }
 
-fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; board::NUM_SQUARES] {
-    let mut retval: [DiagonalAntidiagonal; board::NUM_SQUARES] =
-        [DiagonalAntidiagonal::default(); board::NUM_SQUARES];
+fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; game_board::NUM_SQUARES] {
+    let mut retval: [DiagonalAntidiagonal; game_board::NUM_SQUARES] =
+        [DiagonalAntidiagonal::default(); game_board::NUM_SQUARES];
 
     for sq in square::SQUARES.iter() {
         let mut bb: u64 = 0;
@@ -411,9 +404,9 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; board::NUM_SQUARES] 
 }
 
 fn populate_bishop_mask_array(
-    diag_masks: &[DiagonalAntidiagonal; board::NUM_SQUARES],
-) -> [u64; board::NUM_SQUARES] {
-    let mut retval: [u64; board::NUM_SQUARES] = [0; board::NUM_SQUARES];
+    diag_masks: &[DiagonalAntidiagonal; game_board::NUM_SQUARES],
+) -> [u64; game_board::NUM_SQUARES] {
+    let mut retval: [u64; game_board::NUM_SQUARES] = [0; game_board::NUM_SQUARES];
     let squares = square::SQUARES;
 
     for sq in squares {
@@ -428,9 +421,9 @@ fn populate_bishop_mask_array(
 }
 
 fn populate_queen_mask_array(
-    diag_masks: &[DiagonalAntidiagonal; board::NUM_SQUARES],
-) -> [u64; board::NUM_SQUARES] {
-    let mut retval: [u64; board::NUM_SQUARES] = [0; board::NUM_SQUARES];
+    diag_masks: &[DiagonalAntidiagonal; game_board::NUM_SQUARES],
+) -> [u64; game_board::NUM_SQUARES] {
+    let mut retval: [u64; game_board::NUM_SQUARES] = [0; game_board::NUM_SQUARES];
     let squares = square::SQUARES;
 
     for sq in squares {
@@ -453,13 +446,14 @@ fn populate_queen_mask_array(
 // The code is taken from :
 // https://www.chessprogramming.org/Square_Attacked_By
 //
-fn populate_intervening_bitboard_array() -> [[u64; board::NUM_SQUARES]; board::NUM_SQUARES] {
+fn populate_intervening_bitboard_array() -> [[u64; game_board::NUM_SQUARES]; game_board::NUM_SQUARES]
+{
     const M1: u64 = 0xffff_ffff_ffff_ffff;
     const A2A7: u64 = 0x0001_0101_0101_0100;
     const B2G7: u64 = 0x0040_2010_0804_0200;
     const H1B7: u64 = 0x0002_0408_1020_4080;
 
-    let mut retval = [[0; board::NUM_SQUARES]; board::NUM_SQUARES];
+    let mut retval = [[0; game_board::NUM_SQUARES]; game_board::NUM_SQUARES];
 
     let squares = square::SQUARES;
 
@@ -485,8 +479,8 @@ fn populate_intervening_bitboard_array() -> [[u64; board::NUM_SQUARES]; board::N
 #[cfg(test)]
 pub mod tests {
     use super::OccupancyMasks;
-    use crate::bitboard;
-    use crate::square::Square;
+    use crate::board::bitboard;
+    use crate::board::square::Square;
 
     #[test]
     pub fn white_double_first_move_mask() {

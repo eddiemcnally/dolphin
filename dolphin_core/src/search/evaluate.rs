@@ -1,14 +1,14 @@
 // Values for piece square arrays are taken from
 // https://www.chessprogramming.org/Simplified_Evaluation_Function
 
-use crate::bitboard;
-use crate::board;
-use crate::board::Board;
-use crate::piece::Colour;
-use crate::piece::PieceType;
+use crate::board::bitboard;
+use crate::board::colour::Colour;
+use crate::board::game_board;
+use crate::board::game_board::Board;
+use crate::board::piece::PieceType;
 
 #[rustfmt::skip]
-const PAWN_SQ_VALUE: [i8; board::NUM_SQUARES] = [
+const PAWN_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
     0,      0,      0,      0,      0,      0,      0,      0,
     5,      10,     10,     -20,    -20,    10,     10,     5, 
     5,      -5,     -10,    0,      0,      -10,    -5,     5, 
@@ -20,7 +20,7 @@ const PAWN_SQ_VALUE: [i8; board::NUM_SQUARES] = [
 ];
 
 #[rustfmt::skip]
-const KNIGHT_SQ_VALUE: [i8; board::NUM_SQUARES] = [
+const KNIGHT_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
     -50,    -40,    -30,    -30,    -30,    -30,    -40,    -50,
     -40,    -20,    0,      5,      5,      0,      -20,    -40, 
     -30,    5,      10,     15,     15,     10,     5,      -30, 
@@ -32,7 +32,7 @@ const KNIGHT_SQ_VALUE: [i8; board::NUM_SQUARES] = [
 ];
 
 #[rustfmt::skip]
-const BISHOP_SQ_VALUE: [i8; board::NUM_SQUARES] = [
+const BISHOP_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
     -20,    -10,    -10,    -10,    -10,    -10,    -10,    -20,
     -10,    5,      0,      0,      0,      0,      5,      -10, 
     -10,    10,     10,     10,     10,     10,     10,     -10, 
@@ -44,7 +44,7 @@ const BISHOP_SQ_VALUE: [i8; board::NUM_SQUARES] = [
 ];
 
 #[rustfmt::skip]
-const ROOK_SQ_VALUE: [i8; board::NUM_SQUARES] = [
+const ROOK_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
     0,      0,      0,      5,      5,      0,      0,      0,
     -5,     0,      0,      0,      0,      0,      0,      -5, 
     -5,     0,      0,      0,      0,      0,      0,      -5, 
@@ -56,7 +56,7 @@ const ROOK_SQ_VALUE: [i8; board::NUM_SQUARES] = [
 ];
 
 #[rustfmt::skip]
-const QUEEN_SQ_VALUE: [i8; board::NUM_SQUARES] = [
+const QUEEN_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
     -20,    -10,    -10,    -5,     -5,     -10,    -10,    -20,
     -10,    0,      5,      0,      0,      0,      0,      -10, 
     -10,    5,      5,      5,      5,      5,      0,      -10, 
@@ -68,7 +68,7 @@ const QUEEN_SQ_VALUE: [i8; board::NUM_SQUARES] = [
 ];
 
 #[rustfmt::skip]
-const KING_SQ_VALUE: [i8; board::NUM_SQUARES] = [
+const KING_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
     20,     30,     10,     0,      0,      10,     30,     20,
     20,     20,     0,      0,      0,      0,      20,     20, 
     -10,    -20,    -20,    -20,    -20,    -20,    -20,    -10, 
@@ -79,23 +79,11 @@ const KING_SQ_VALUE: [i8; board::NUM_SQUARES] = [
     -30,    -40,    -40,    -50,    -50,    -40,    -40,    -30, 
 ];
 
-#[rustfmt::skip]
-const KING_SQ_ENDGAME_VALUE: [i8; board::NUM_SQUARES] = [
-    -50,    -30,    -30,    -30,    -30,    -30,    -30,    -50,
-    -30,    -30,    0,      0,      0,      0,      -30,    -30, 
-    -30,    -10,    20,     30,     30,     20,     -10,    -30, 
-    -30,    -10,    30,     40,     40,     30,     -10,    -30, 
-    -30,    -10,    30,     40,     40,     30,     -10,    -30, 
-    -30,    -10,    20,     30,     30,     20,     -10,    -30, 
-    -30,    -20,    -10,    0,      0,      -10,    -20,    -30, 
-    -50,    -40,    -30,    -20,    -20,    -30,    -40,    -50, 
-];
-
 pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
     let material = board.get_material();
 
     // material
-    let mut score = (material.0.wrapping_sub(material.1)) as i32;
+    let mut score = material.get_net_material();
 
     // piece positions
     let mut board_bb = board.get_bitboard();
@@ -115,7 +103,9 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
             PieceType::WhiteRook => ROOK_SQ_VALUE[sq_offset] as i32,
             PieceType::WhiteQueen => QUEEN_SQ_VALUE[sq_offset] as i32,
             PieceType::WhiteKing => KING_SQ_VALUE[sq_offset] as i32,
-            // note: black values are negative
+            //
+            // note: black values are negative, and array offsets are mirrored
+            //
             PieceType::BlackPawn => -PAWN_SQ_VALUE[63 - sq_offset] as i32,
             PieceType::BlackBishop => -BISHOP_SQ_VALUE[63 - sq_offset] as i32,
             PieceType::BlackKnight => -KNIGHT_SQ_VALUE[63 - sq_offset] as i32,
@@ -134,20 +124,30 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::fen;
-    use crate::occupancy_masks::OccupancyMasks;
-    use crate::piece::Colour;
-    use crate::position::Position;
-    use crate::zobrist_keys::ZobristKeys;
+    use crate::board::colour::Colour;
+    use crate::board::occupancy_masks::OccupancyMasks;
+    use crate::io::fen;
+    use crate::position::game_position::Position;
+    use crate::position::zobrist_keys::ZobristKeys;
 
     #[test]
     pub fn evaluate_sample_white_position() {
         let fen = "k7/8/1P3B2/P6P/3Q4/1N6/3K4/7R w - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         let score = super::evaluate_board(pos.board(), Colour::White);
         assert_eq!(score, 2365);
@@ -188,11 +188,21 @@ mod tests {
     #[test]
     pub fn evaluate_sample_black_position() {
         let fen = "1k6/1pp3q1/5b2/1n6/7p/8/3K4/8 b - - 0 1";
-        let parsed_fen = fen::get_position(&fen);
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
 
-        let pos = Position::new(&zobrist_keys, &occ_masks, parsed_fen);
+        let pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &&occ_masks,
+        );
 
         let score = super::evaluate_board(pos.board(), Colour::White);
         assert_eq!(score, -1915);

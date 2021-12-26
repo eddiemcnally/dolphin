@@ -1,12 +1,13 @@
 extern crate rand;
 
-use crate::castle_permissions;
-use crate::castle_permissions::{CastlePermissionType, NUM_CASTLE_PERMS};
-use crate::piece::{Piece, NUM_PIECE_TYPES};
-use crate::square::{Square, NUM_SQUARES};
+use crate::board::piece::{Piece, NUM_PIECE_TYPES};
+use crate::board::square::{Square, NUM_SQUARES};
+use crate::position::castle_permissions;
+use crate::position::castle_permissions::{CastlePermissionType, NUM_CASTLE_PERMS};
 
 pub type ZobristHash = u64;
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct ZobristKeys {
     piece_keys: [[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES],
     side_key: ZobristHash,
@@ -84,15 +85,15 @@ fn init_en_passant_keys() -> [ZobristHash; NUM_SQUARES] {
 #[cfg(test)]
 pub mod tests {
     use super::ZobristHash;
-    use crate::castle_permissions::CastlePermissionType;
+    use crate::position::castle_permissions::CastlePermissionType;
 
     #[test]
     pub fn piece_square_hashes_all_different() {
         let keys = super::ZobristKeys::new();
         let mut v: Vec<ZobristHash> = Vec::new();
 
-        for pce in crate::piece::ALL_PIECES {
-            for sq in crate::square::SQUARES {
+        for pce in crate::board::piece::ALL_PIECES {
+            for sq in crate::board::square::SQUARES {
                 let hash = keys.piece_square(pce, *sq);
                 v.push(hash);
             }
@@ -115,7 +116,7 @@ pub mod tests {
         let keys = super::ZobristKeys::new();
         let mut v: Vec<ZobristHash> = Vec::new();
 
-        for sq in crate::square::SQUARES {
+        for sq in crate::board::square::SQUARES {
             let hash = keys.en_passant(*sq);
             v.push(hash);
         }

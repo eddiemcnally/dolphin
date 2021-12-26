@@ -1,6 +1,6 @@
-use crate::mov::Mov;
-use crate::piece::Piece;
-use crate::position::GameState;
+use crate::board::piece::Piece;
+use crate::moves::mov::Mov;
+use crate::position::game_position::GameState;
 use std::fmt;
 
 #[derive(Default, Eq, PartialEq, Copy, Clone)]
@@ -11,9 +11,19 @@ struct Item {
     pce_captured: Option<&'static Piece>,
 }
 
+#[derive(Eq, Copy, Clone)]
 pub struct PositionHistory {
     count: u16,
     history: [Item; PositionHistory::MAX_MOVE_HISTORY],
+}
+
+impl Default for PositionHistory {
+    fn default() -> Self {
+        PositionHistory {
+            count: 0,
+            history: [Item::default(); PositionHistory::MAX_MOVE_HISTORY],
+        }
+    }
 }
 
 impl PartialEq for PositionHistory {

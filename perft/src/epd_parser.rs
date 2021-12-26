@@ -33,8 +33,8 @@ pub fn extract_row(row: String) -> EpdRow {
     let fen = v[0].trim();
     let mut map: HashMap<u8, u64> = HashMap::new();
 
-    for elem in 1..7 {
-        let (depth, count) = extract_ply_and_count(v[elem].to_string());
+    for elem in v.iter().take(7).skip(1) {
+        let (depth, count) = extract_ply_and_count(elem.to_string());
 
         map.insert(depth, count);
     }
