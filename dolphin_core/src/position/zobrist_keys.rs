@@ -1,4 +1,6 @@
-extern crate rand;
+use rand::RngCore;
+use rand_xoshiro::rand_core::SeedableRng;
+use rand_xoshiro::Xoshiro256PlusPlus;
 
 use crate::board::piece::{Piece, NUM_PIECE_TYPES};
 use crate::board::square::{Square, NUM_SQUARES};
@@ -15,19 +17,34 @@ pub struct ZobristKeys {
     en_passant_sq_keys: [ZobristHash; NUM_SQUARES],
 }
 
+impl Default for ZobristKeys {
+    fn default() -> Self {
+        ZobristKeys {
+            piece_keys: [[0; NUM_PIECE_TYPES]; NUM_SQUARES],
+            side_key: 0,
+            castle_keys: [0; NUM_CASTLE_PERMS],
+            en_passant_sq_keys: [0; NUM_SQUARES],
+        }
+    }
+}
+
 impl ZobristKeys {
     pub fn new() -> Box<ZobristKeys> {
-        let piece_keys = init_piece_keys();
-        let side_key = rand::random::<ZobristHash>();
-        let castle_keys = init_castle_keys();
-        let en_passant_sq_keys = init_en_passant_keys();
+        let mut rng = Xoshiro256PlusPlus::seed_from_u64(0);
 
-        Box::new(ZobristKeys {
+        let piece_keys = init_piece_keys(&mut rng);
+        let castle_keys = init_castle_keys(&mut rng);
+        let en_passant_sq_keys = init_en_passant_keys(&mut rng);
+        let side_key = rng.next_u64();
+
+        let keys = ZobristKeys {
             piece_keys,
-            side_key,
             castle_keys,
             en_passant_sq_keys,
-        })
+            side_key,
+        };
+
+        Box::new(keys)
     }
 
     pub const fn side(&self) -> ZobristHash {
@@ -51,45 +68,39 @@ impl ZobristKeys {
     }
 }
 
-fn init_piece_keys() -> [[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES] {
+fn init_piece_keys(rng: &mut Xoshiro256PlusPlus) -> [[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES] {
     let mut retval = [[0u64; NUM_PIECE_TYPES]; NUM_SQUARES];
-
     for element in retval.iter_mut().flat_map(|r| r.iter_mut()) {
-        *element = rand::random::<u64>();
+        *element = rng.next_u64();
     }
     retval
 }
-
-fn init_castle_keys() -> [ZobristHash; NUM_CASTLE_PERMS] {
+fn init_castle_keys(rng: &mut Xoshiro256PlusPlus) -> [ZobristHash; NUM_CASTLE_PERMS] {
     let mut retval = [0u64; NUM_CASTLE_PERMS];
-
     for item in retval.iter_mut().take(NUM_CASTLE_PERMS) {
-        let seed = rand::random::<u64>();
+        let seed = rng.next_u64();
         *item = seed;
     }
-
     retval
 }
-
-fn init_en_passant_keys() -> [ZobristHash; NUM_SQUARES] {
+fn init_en_passant_keys(rng: &mut Xoshiro256PlusPlus) -> [ZobristHash; NUM_SQUARES] {
     let mut retval = [0u64; NUM_SQUARES];
-
     for item in retval.iter_mut().take(NUM_SQUARES) {
-        let seed = rand::random::<u64>();
+        let seed = rng.next_u64();
         *item = seed;
     }
-
     retval
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::ZobristHash;
+    use super::ZobristKeys;
     use crate::position::castle_permissions::CastlePermissionType;
 
     #[test]
     pub fn piece_square_hashes_all_different() {
-        let keys = super::ZobristKeys::new();
+        let keys = ZobristKeys::new();
         let mut v: Vec<ZobristHash> = Vec::new();
 
         for pce in crate::board::piece::ALL_PIECES {
@@ -113,7 +124,7 @@ pub mod tests {
 
     #[test]
     pub fn en_passant_hashes_all_different() {
-        let keys = super::ZobristKeys::new();
+        let keys = ZobristKeys::new();
         let mut v: Vec<ZobristHash> = Vec::new();
 
         for sq in crate::board::square::SQUARES {
@@ -142,7 +153,7 @@ pub mod tests {
             CastlePermissionType::BlackQueen,
         ];
 
-        let keys = super::ZobristKeys::new();
+        let keys = ZobristKeys::new();
         let mut v: Vec<ZobristHash> = Vec::new();
 
         for perm in castle_types.iter() {
@@ -164,7 +175,26 @@ pub mod tests {
 
     #[test]
     pub fn side_hash_is_non_zero() {
-        let keys = super::ZobristKeys::new();
+        let keys = ZobristKeys::new();
         assert!(keys.side() != 0);
+    }
+
+    #[test]
+    pub fn ensure_prng_is_reproduceable() {
+        let keys1 = ZobristKeys::new();
+        let keys2 = ZobristKeys::new();
+
+        assert_eq!(keys1.side(), keys2.side());
+
+        for pce in crate::board::piece::ALL_PIECES {
+            for sq in crate::board::square::SQUARES {
+                assert_eq!(keys1.piece_square(pce, *sq), keys2.piece_square(pce, *sq));
+            }
+        }
+
+        assert_eq!(
+            keys1.castle_permission(CastlePermissionType::WhiteQueen),
+            keys2.castle_permission(CastlePermissionType::WhiteQueen)
+        );
     }
 }

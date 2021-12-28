@@ -232,13 +232,13 @@ pub mod tests {
             let mut board = Board::new();
             for sq in square::SQUARES {
                 let king = pce;
-                board.add_piece(&king, *sq);
+                board.add_piece(king, *sq);
 
                 let colour = king.colour();
                 assert_eq!(board.get_king_sq(colour), *sq);
 
                 // remove so state is restored.
-                board.remove_piece(&king, *sq);
+                board.remove_piece(king, *sq);
             }
         }
     }
@@ -250,13 +250,13 @@ pub mod tests {
 
         let map = square::SQUARES.iter();
         for square in map {
-            assert!(board.is_sq_empty(*square) == true);
+            assert!(board.is_sq_empty(*square));
 
-            board.add_piece(&pce, *square);
-            assert!(board.is_sq_empty(*square) == false);
+            board.add_piece(pce, *square);
+            assert!(!board.is_sq_empty(*square));
 
-            board.remove_piece(&pce, *square);
-            assert!(board.is_sq_empty(*square) == true);
+            board.remove_piece(pce, *square);
+            assert!(board.is_sq_empty(*square));
         }
     }
 
@@ -271,25 +271,25 @@ pub mod tests {
                     continue;
                 }
 
-                assert!(board.is_sq_empty(*from_sq) == true);
-                assert!(board.is_sq_empty(*to_sq) == true);
+                assert!(board.is_sq_empty(*from_sq));
+                assert!(board.is_sq_empty(*to_sq));
                 assert!(board.pieces[from_sq.offset()] == None);
                 assert!(board.pieces[to_sq.offset()] == None);
 
-                board.add_piece(&pce, *from_sq);
-                assert!(board.is_sq_empty(*from_sq) == false);
-                assert!(board.is_sq_empty(*to_sq) == true);
-                assert!(board.pieces[from_sq.offset()] == Some(&pce));
+                board.add_piece(pce, *from_sq);
+                assert!(!board.is_sq_empty(*from_sq));
+                assert!(board.is_sq_empty(*to_sq));
+                assert!(board.pieces[from_sq.offset()] == Some(pce));
                 assert!(board.pieces[to_sq.offset()] == None);
 
-                board.move_piece(*from_sq, *to_sq, &pce);
-                assert!(board.is_sq_empty(*from_sq) == true);
-                assert!(board.is_sq_empty(*to_sq) == false);
-                assert!(board.pieces[to_sq.offset()] == Some(&pce));
+                board.move_piece(*from_sq, *to_sq, pce);
+                assert!(board.is_sq_empty(*from_sq));
+                assert!(!board.is_sq_empty(*to_sq));
+                assert!(board.pieces[to_sq.offset()] == Some(pce));
                 assert!(board.pieces[from_sq.offset()] == None);
 
                 // clean up
-                board.remove_piece(&pce, *to_sq);
+                board.remove_piece(pce, *to_sq);
             }
         }
     }
@@ -300,19 +300,19 @@ pub mod tests {
         let mut board = Board::new();
 
         for square in square::SQUARES {
-            assert!(board.is_sq_empty(*square) == true);
+            assert!(board.is_sq_empty(*square));
 
-            board.add_piece(&pce, *square);
-            assert!(board.is_sq_empty(*square) == false);
+            board.add_piece(pce, *square);
+            assert!(!board.is_sq_empty(*square));
 
             let retr_pce = &mut None;
             board.get_piece_on_square(*square, retr_pce);
 
-            assert_eq!(retr_pce.is_some(), true);
+            assert!(retr_pce.is_some());
             assert_eq!(retr_pce.unwrap(), pce);
 
             // clean up
-            board.remove_piece(&pce, *square);
+            board.remove_piece(pce, *square);
         }
     }
 

@@ -67,13 +67,13 @@ pub mod tests {
         let pce1 = &piece::WHITE_BISHOP;
         let pce2 = &piece::WHITE_QUEEN;
 
-        board.add_piece(&pce1, Square::a1);
-        board.add_piece(&pce2, Square::d3);
+        board.add_piece(pce1, Square::a1);
+        board.add_piece(pce2, Square::d3);
         let material_after_add = Material::new(pce1.value() + pce2.value(), 0);
 
         assert_eq!(material_after_add, board.get_material());
 
-        board.remove_piece(&pce1, Square::a1);
+        board.remove_piece(pce1, Square::a1);
 
         let material_after_remove = pce2.value();
 
@@ -90,13 +90,13 @@ pub mod tests {
         let pce1 = &piece::BLACK_BISHOP;
         let pce2 = &piece::BLACK_QUEEN;
 
-        board.add_piece(&pce1, Square::a1);
-        board.add_piece(&pce2, Square::d3);
+        board.add_piece(pce1, Square::a1);
+        board.add_piece(pce2, Square::d3);
         let material_after_add = Material::new(0, pce1.value() + pce2.value());
 
         assert_eq!(material_after_add, board.get_material());
 
-        board.remove_piece(&pce1, Square::a1);
+        board.remove_piece(pce1, Square::a1);
 
         let material_after_remove = Material::new(0, pce2.value());
 
@@ -111,14 +111,14 @@ pub mod tests {
 
         let mut board = Board::new();
 
-        board.add_piece(&pce, from_sq);
+        board.add_piece(pce, from_sq);
         let start_material = board.get_material();
 
         let expected_start_material = Material::new(pce.value(), 0);
 
         assert_eq!(start_material, expected_start_material);
 
-        board.move_piece(from_sq, to_sq, &pce);
+        board.move_piece(from_sq, to_sq, pce);
         let end_material = board.get_material();
 
         assert_eq!(start_material, end_material);
@@ -132,14 +132,14 @@ pub mod tests {
 
         let mut board = Board::new();
 
-        board.add_piece(&pce, Square::d4);
+        board.add_piece(pce, Square::d4);
         let start_material = board.get_material();
 
         let expected_start_material = Material::new(0, pce.value());
 
         assert_eq!(start_material, expected_start_material);
 
-        board.move_piece(from_sq, to_sq, &pce);
+        board.move_piece(from_sq, to_sq, pce);
         let end_material = board.get_material();
 
         assert_eq!(start_material, end_material);

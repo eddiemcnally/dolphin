@@ -456,14 +456,14 @@ pub mod tests {
         assert_eq!(decoded_from_sq, Square::e1);
         assert_eq!(decoded_to_sq, Square::g1);
 
-        assert_eq!(mv.is_king_castle(), true);
-        assert_eq!(mv.is_castle(), true);
-        assert_eq!(mv.is_queen_castle(), false);
+        assert!(mv.is_king_castle());
+        assert!(mv.is_castle());
+        assert!(!mv.is_queen_castle());
 
-        assert_eq!(mv.is_quiet(), false);
-        assert_eq!(mv.is_capture(), false);
-        assert_eq!(mv.is_double_pawn(), false);
-        assert_eq!(mv.is_promote(), false);
+        assert!(!mv.is_quiet());
+        assert!(!mv.is_capture());
+        assert!(!mv.is_double_pawn());
+        assert!(!mv.is_promote());
     }
 
     #[test]
@@ -476,14 +476,14 @@ pub mod tests {
         assert_eq!(decoded_from_sq, Square::e1);
         assert_eq!(decoded_to_sq, Square::c1);
 
-        assert_eq!(mv.is_king_castle(), false);
-        assert_eq!(mv.is_castle(), true);
-        assert_eq!(mv.is_queen_castle(), true);
+        assert!(!mv.is_king_castle());
+        assert!(mv.is_castle());
+        assert!(mv.is_queen_castle());
 
-        assert_eq!(mv.is_quiet(), false);
-        assert_eq!(mv.is_capture(), false);
-        assert_eq!(mv.is_double_pawn(), false);
-        assert_eq!(mv.is_promote(), false);
+        assert!(!mv.is_quiet());
+        assert!(!mv.is_capture());
+        assert!(!mv.is_double_pawn());
+        assert!(!mv.is_promote());
     }
 
     #[test]
@@ -496,14 +496,14 @@ pub mod tests {
         assert_eq!(decoded_from_sq, Square::e8);
         assert_eq!(decoded_to_sq, Square::g8);
 
-        assert_eq!(mv.is_king_castle(), true);
-        assert_eq!(mv.is_castle(), true);
-        assert_eq!(mv.is_queen_castle(), false);
+        assert!(mv.is_king_castle());
+        assert!(mv.is_castle());
+        assert!(!mv.is_queen_castle());
 
-        assert_eq!(mv.is_quiet(), false);
-        assert_eq!(mv.is_capture(), false);
-        assert_eq!(mv.is_double_pawn(), false);
-        assert_eq!(mv.is_promote(), false);
+        assert!(!mv.is_quiet());
+        assert!(!mv.is_capture());
+        assert!(!mv.is_double_pawn());
+        assert!(!mv.is_promote());
     }
 
     #[test]
@@ -516,14 +516,14 @@ pub mod tests {
         assert_eq!(decoded_from_sq, Square::e8);
         assert_eq!(decoded_to_sq, Square::c8);
 
-        assert_eq!(mv.is_king_castle(), false);
-        assert_eq!(mv.is_castle(), true);
-        assert_eq!(mv.is_queen_castle(), true);
+        assert!(!mv.is_king_castle());
+        assert!(mv.is_castle());
+        assert!(mv.is_queen_castle());
 
-        assert_eq!(mv.is_quiet(), false);
-        assert_eq!(mv.is_capture(), false);
-        assert_eq!(mv.is_double_pawn(), false);
-        assert_eq!(mv.is_promote(), false);
+        assert!(!mv.is_quiet());
+        assert!(!mv.is_capture());
+        assert!(!mv.is_double_pawn());
+        assert!(!mv.is_promote());
     }
 
     #[test]
@@ -537,11 +537,11 @@ pub mod tests {
                 // encode
                 let mv = Mov::encode_move_quiet(*from_sq, *to_sq);
 
-                assert_eq!(mv.is_quiet(), true);
-                assert_eq!(mv.is_capture(), false);
-                assert_eq!(mv.is_castle(), false);
-                assert_eq!(mv.is_double_pawn(), false);
-                assert_eq!(mv.is_promote(), false);
+                assert!(mv.is_quiet());
+                assert!(!mv.is_capture());
+                assert!(!mv.is_castle());
+                assert!(!mv.is_double_pawn());
+                assert!(!mv.is_promote());
 
                 let decoded_from_sq = mv.decode_from_square();
                 let decoded_to_sq = mv.decode_to_square();
@@ -562,12 +562,12 @@ pub mod tests {
 
                 // encode
                 let mv = Mov::encode_move_double_pawn_first(*from_sq, *to_sq);
-                assert_eq!(mv.is_double_pawn(), true);
+                assert!(mv.is_double_pawn());
 
-                assert_eq!(mv.is_quiet(), false);
-                assert_eq!(mv.is_capture(), false);
-                assert_eq!(mv.is_castle(), false);
-                assert_eq!(mv.is_promote(), false);
+                assert!(!mv.is_quiet());
+                assert!(!mv.is_capture());
+                assert!(!mv.is_castle());
+                assert!(!mv.is_promote());
 
                 let decoded_from_sq = mv.decode_from_square();
                 let decoded_to_sq = mv.decode_to_square();
@@ -588,11 +588,11 @@ pub mod tests {
 
                 let mv = Mov::encode_move_en_passant(*from_sq, *to_sq);
 
-                assert_eq!(mv.is_en_passant(), true);
-                assert_eq!(mv.is_capture(), true);
-                assert_eq!(mv.is_castle(), false);
-                assert_eq!(mv.is_double_pawn(), false);
-                assert_eq!(mv.is_promote(), false);
+                assert!(mv.is_en_passant());
+                assert!(mv.is_capture());
+                assert!(!mv.is_castle());
+                assert!(!mv.is_double_pawn());
+                assert!(!mv.is_promote());
 
                 let decoded_from_sq = mv.decode_from_square();
                 let decoded_to_sq = mv.decode_to_square();
@@ -625,8 +625,8 @@ pub mod tests {
                 for pce in target_promotions.iter() {
                     let mv = Mov::encode_move_with_promotion(*from_sq, *to_sq, pce);
 
-                    assert_eq!(mv.is_promote(), true);
-                    assert_eq!(mv.is_capture(), false);
+                    assert!(mv.is_promote());
+                    assert!(!mv.is_capture());
 
                     let col = pce.colour();
                     let decoded_pce = mv.decode_promotion_piece(col);
@@ -664,8 +664,8 @@ pub mod tests {
                 for pce in target_promotions.iter() {
                     let mv = Mov::encode_move_with_promotion_capture(*from_sq, *to_sq, pce);
 
-                    assert_eq!(mv.is_promote(), true);
-                    assert_eq!(mv.is_capture(), true);
+                    assert!(mv.is_promote());
+                    assert!(mv.is_capture());
 
                     let col = pce.colour();
                     let decoded_piece = mv.decode_promotion_piece(col);

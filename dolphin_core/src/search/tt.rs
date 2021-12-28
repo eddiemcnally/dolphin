@@ -144,7 +144,7 @@ pub mod tests {
         for i in 0..NUM_TO_TEST {
             let tte: Option<(TransType, u8, i32)> = tt.get(i as ZobristHash);
 
-            assert!(tte.is_some() == true);
+            assert!(tte.is_some());
             let trans_type = tte.unwrap().0;
             let depth = tte.unwrap().1;
             let score = tte.unwrap().2;
@@ -178,7 +178,7 @@ pub mod tests {
         for i in EXPECTED_NUM_COLLISIONS..NUM_TO_TEST {
             let tte: Option<(TransType, u8, i32)> = tt.get(i as ZobristHash);
 
-            assert!(tte.is_some() == true);
+            assert!(tte.is_some());
             let trans_type = tte.unwrap().0;
             let depth = tte.unwrap().1;
             let score = tte.unwrap().2;

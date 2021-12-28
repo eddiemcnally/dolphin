@@ -220,7 +220,7 @@ pub mod tests {
             let sq = Square::get_from_string(&str);
             match sq {
                 Some(_) => assert_eq!(*square, sq.unwrap()),
-                None => assert!(false),
+                None => panic!("Unexpected square"),
             }
         }
     }

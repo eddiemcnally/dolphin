@@ -801,7 +801,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let before_hash = pos.game_state.position_hash;
@@ -817,7 +817,7 @@ mod tests {
 
         pos.make_move(mv);
 
-        assert_eq!(pos.board().is_sq_empty(Square::e5), true);
+        assert!(pos.board().is_sq_empty(Square::e5));
         assert!(is_piece_on_square_as_expected(
             &pos,
             Square::e6,
@@ -841,7 +841,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         // initially no history
@@ -869,7 +869,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         // initially correct side
@@ -896,7 +896,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         // set to some value
@@ -924,7 +924,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let pce_to_move = &mut None;
@@ -957,7 +957,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let pce_to_move = &mut None;
@@ -991,7 +991,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let pce_to_move = &mut None;
@@ -1025,7 +1025,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         assert!(is_piece_on_square_as_expected(
@@ -1065,7 +1065,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         assert!(is_piece_on_square_as_expected(
@@ -1105,7 +1105,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         assert!(castle_permissions::is_white_king_set(
@@ -1139,7 +1139,9 @@ mod tests {
             &piece::WHITE_ROOK
         ));
 
-        assert!(castle_permissions::is_white_king_set(pos.castle_permissions()) == false);
+        assert!(!castle_permissions::is_white_king_set(
+            pos.castle_permissions()
+        ));
     }
 
     #[test]
@@ -1158,7 +1160,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         assert!(castle_permissions::is_black_king_set(
@@ -1192,7 +1194,9 @@ mod tests {
             &piece::BLACK_ROOK
         ));
 
-        assert!(castle_permissions::is_black_king_set(pos.castle_permissions()) == false);
+        assert!(!castle_permissions::is_black_king_set(
+            pos.castle_permissions()
+        ));
     }
 
     #[test]
@@ -1211,7 +1215,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         assert!(castle_permissions::is_white_queen_set(
@@ -1244,7 +1248,9 @@ mod tests {
             Square::d1,
             &piece::WHITE_ROOK
         ));
-        assert!(castle_permissions::is_white_queen_set(pos.castle_permissions()) == false);
+        assert!(!castle_permissions::is_white_queen_set(
+            pos.castle_permissions()
+        ));
     }
 
     #[test]
@@ -1263,7 +1269,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         assert!(castle_permissions::is_black_queen_set(
@@ -1297,7 +1303,9 @@ mod tests {
             &piece::BLACK_ROOK
         ));
 
-        assert!(castle_permissions::is_black_queen_set(pos.castle_permissions()) == false);
+        assert!(!castle_permissions::is_black_queen_set(
+            pos.castle_permissions()
+        ));
     }
 
     #[test]
@@ -1316,7 +1324,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         assert_eq!(pos.en_passant_square(), Some(Square::b3));
@@ -1360,7 +1368,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         assert_eq!(pos.en_passant_square(), Some(Square::d6));
@@ -1412,7 +1420,7 @@ mod tests {
                 en_pass_sq,
                 side_to_move,
                 &zobrist_keys,
-                &&occ_masks,
+                &occ_masks,
             );
 
             // check pre-conditions
@@ -1422,11 +1430,11 @@ mod tests {
                 &piece::BLACK_BISHOP
             ));
 
-            let mv = Mov::encode_move_with_promotion_capture(Square::e7, Square::f8, &target);
+            let mv = Mov::encode_move_with_promotion_capture(Square::e7, Square::f8, target);
             pos.make_move(mv);
 
             assert!(is_sq_empty(&pos, Square::e7));
-            assert!(is_piece_on_square_as_expected(&pos, Square::f8, &target));
+            assert!(is_piece_on_square_as_expected(&pos, Square::f8, target));
         }
     }
 
@@ -1454,7 +1462,7 @@ mod tests {
                 en_pass_sq,
                 side_to_move,
                 &zobrist_keys,
-                &&occ_masks,
+                &occ_masks,
             );
 
             // check pre-conditions
@@ -1496,7 +1504,7 @@ mod tests {
                 en_pass_sq,
                 side_to_move,
                 &zobrist_keys,
-                &&occ_masks,
+                &occ_masks,
             );
             // check pre-conditions
             assert!(is_sq_empty(&pos, Square::d1));
@@ -1533,7 +1541,7 @@ mod tests {
                 en_pass_sq,
                 side_to_move,
                 &zobrist_keys,
-                &&occ_masks,
+                &occ_masks,
             );
 
             // check pre-conditions
@@ -1563,7 +1571,7 @@ mod tests {
 
         for fen in fens {
             let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
-                fen::decompose_fen(&fen);
+                fen::decompose_fen(fen);
 
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
@@ -1575,7 +1583,7 @@ mod tests {
                 en_pass_sq,
                 side_to_move,
                 &zobrist_keys,
-                &&occ_masks,
+                &occ_masks,
             );
 
             let mv = Mov::encode_move_castle_kingside_white();
@@ -1603,7 +1611,7 @@ mod tests {
         for fen in fens {
             println!(" FEN **** : {}", fen);
             let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
-                fen::decompose_fen(&fen);
+                fen::decompose_fen(fen);
 
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
@@ -1615,7 +1623,7 @@ mod tests {
                 en_pass_sq,
                 side_to_move,
                 &zobrist_keys,
-                &&occ_masks,
+                &occ_masks,
             );
 
             let mv = Mov::encode_move_castle_queenside_white();
@@ -1640,7 +1648,7 @@ mod tests {
 
         for fen in fens {
             let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
-                fen::decompose_fen(&fen);
+                fen::decompose_fen(fen);
 
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
@@ -1652,7 +1660,7 @@ mod tests {
                 en_pass_sq,
                 side_to_move,
                 &zobrist_keys,
-                &&occ_masks,
+                &occ_masks,
             );
 
             let mv = Mov::encode_move_castle_kingside_black();
@@ -1677,7 +1685,7 @@ mod tests {
 
         for fen in fens {
             let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
-                fen::decompose_fen(&fen);
+                fen::decompose_fen(fen);
 
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
@@ -1689,7 +1697,7 @@ mod tests {
                 en_pass_sq,
                 side_to_move,
                 &zobrist_keys,
-                &&occ_masks,
+                &occ_masks,
             );
 
             let mv = Mov::encode_move_castle_queenside_black();
@@ -1716,19 +1724,27 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert!(castle_permissions::is_white_king_set(pos.castle_permissions()) == true);
-        assert!(castle_permissions::is_white_queen_set(pos.castle_permissions()) == true);
+        assert!(castle_permissions::is_white_king_set(
+            pos.castle_permissions()
+        ));
+        assert!(castle_permissions::is_white_queen_set(
+            pos.castle_permissions()
+        ));
 
         let mv = Mov::encode_move_quiet(Square::e1, Square::e2);
 
         let move_legality = pos.make_move(mv);
         assert_eq!(move_legality, MoveLegality::Legal);
 
-        assert!(castle_permissions::is_white_king_set(pos.castle_permissions()) == false);
-        assert!(castle_permissions::is_white_queen_set(pos.castle_permissions()) == false);
+        assert!(!castle_permissions::is_white_king_set(
+            pos.castle_permissions()
+        ));
+        assert!(!castle_permissions::is_white_queen_set(
+            pos.castle_permissions()
+        ));
     }
 
     #[test]
@@ -1748,19 +1764,27 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert!(castle_permissions::is_white_king_set(pos.castle_permissions()) == true);
-        assert!(castle_permissions::is_white_queen_set(pos.castle_permissions()) == true);
+        assert!(castle_permissions::is_white_king_set(
+            pos.castle_permissions()
+        ));
+        assert!(castle_permissions::is_white_queen_set(
+            pos.castle_permissions()
+        ));
 
         let mv = Mov::encode_move_quiet(Square::h1, Square::g1);
 
         let move_legality = pos.make_move(mv);
         assert_eq!(move_legality, MoveLegality::Legal);
 
-        assert!(castle_permissions::is_white_king_set(pos.castle_permissions()) == false);
-        assert!(castle_permissions::is_white_queen_set(pos.castle_permissions()) == true);
+        assert!(!castle_permissions::is_white_king_set(
+            pos.castle_permissions()
+        ));
+        assert!(castle_permissions::is_white_queen_set(
+            pos.castle_permissions()
+        ));
     }
 
     #[test]
@@ -1780,19 +1804,27 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert!(castle_permissions::is_white_king_set(pos.castle_permissions()) == true);
-        assert!(castle_permissions::is_white_queen_set(pos.castle_permissions()) == true);
+        assert!(castle_permissions::is_white_king_set(
+            pos.castle_permissions()
+        ));
+        assert!(castle_permissions::is_white_queen_set(
+            pos.castle_permissions()
+        ));
 
         let mv = Mov::encode_move_quiet(Square::a1, Square::b1);
 
         let move_legality = pos.make_move(mv);
         assert_eq!(move_legality, MoveLegality::Legal);
 
-        assert!(castle_permissions::is_white_king_set(pos.castle_permissions()) == true);
-        assert!(castle_permissions::is_white_queen_set(pos.castle_permissions()) == false);
+        assert!(castle_permissions::is_white_king_set(
+            pos.castle_permissions()
+        ));
+        assert!(!castle_permissions::is_white_queen_set(
+            pos.castle_permissions()
+        ));
     }
 
     #[test]
@@ -1812,19 +1844,27 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert!(castle_permissions::is_black_king_set(pos.castle_permissions()) == true);
-        assert!(castle_permissions::is_black_queen_set(pos.castle_permissions()) == true);
+        assert!(castle_permissions::is_black_king_set(
+            pos.castle_permissions()
+        ));
+        assert!(castle_permissions::is_black_queen_set(
+            pos.castle_permissions()
+        ));
 
         let mv = Mov::encode_move_quiet(Square::e8, Square::e7);
 
         let move_legality = pos.make_move(mv);
         assert_eq!(move_legality, MoveLegality::Legal);
 
-        assert!(castle_permissions::is_black_king_set(pos.castle_permissions()) == false);
-        assert!(castle_permissions::is_black_queen_set(pos.castle_permissions()) == false);
+        assert!(!castle_permissions::is_black_king_set(
+            pos.castle_permissions()
+        ));
+        assert!(!castle_permissions::is_black_queen_set(
+            pos.castle_permissions()
+        ));
     }
 
     #[test]
@@ -1844,19 +1884,27 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert!(castle_permissions::is_black_king_set(pos.castle_permissions()) == true);
-        assert!(castle_permissions::is_black_queen_set(pos.castle_permissions()) == true);
+        assert!(castle_permissions::is_black_king_set(
+            pos.castle_permissions()
+        ));
+        assert!(castle_permissions::is_black_queen_set(
+            pos.castle_permissions()
+        ));
 
         let mv = Mov::encode_move_quiet(Square::h8, Square::g8);
 
         let move_legality = pos.make_move(mv);
         assert_eq!(move_legality, MoveLegality::Legal);
 
-        assert!(castle_permissions::is_black_king_set(pos.castle_permissions()) == false);
-        assert!(castle_permissions::is_black_queen_set(pos.castle_permissions()) == true);
+        assert!(!castle_permissions::is_black_king_set(
+            pos.castle_permissions()
+        ));
+        assert!(castle_permissions::is_black_queen_set(
+            pos.castle_permissions()
+        ));
     }
 
     #[test]
@@ -1876,31 +1924,40 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert!(castle_permissions::is_black_king_set(pos.castle_permissions()) == true);
-        assert!(castle_permissions::is_black_queen_set(pos.castle_permissions()) == true);
+        assert!(castle_permissions::is_black_king_set(
+            pos.castle_permissions()
+        ));
+        assert!(castle_permissions::is_black_queen_set(
+            pos.castle_permissions()
+        ));
 
         let mv = Mov::encode_move_quiet(Square::a8, Square::b8);
 
         let move_legality = pos.make_move(mv);
         assert_eq!(move_legality, MoveLegality::Legal);
 
-        assert!(castle_permissions::is_black_king_set(pos.castle_permissions()) == true);
-        assert!(castle_permissions::is_black_queen_set(pos.castle_permissions()) == false);
+        assert!(castle_permissions::is_black_king_set(
+            pos.castle_permissions()
+        ));
+        assert!(!castle_permissions::is_black_queen_set(
+            pos.castle_permissions()
+        ));
     }
 
     #[test]
     pub fn make_move_take_move_position_and_board_restored_white_to_move() {
         let fen = "1b1kN3/Qp1P2p1/q2P1Nn1/PP3r2/3rPnb1/1p1pp3/B1P1P2B/R3K2R w KQ - 5 8";
 
-        let mut ml = vec![];
-        ml.push(Mov::encode_move_castle_kingside_white());
-        ml.push(Mov::encode_move_castle_queenside_white());
-        ml.push(Mov::encode_move_capture(Square::e8, Square::g7));
-        ml.push(Mov::encode_move_quiet(Square::b5, Square::b6));
-        ml.push(Mov::encode_move_double_pawn_first(Square::c2, Square::c4));
+        let ml = vec![
+            Mov::encode_move_castle_kingside_white(),
+            Mov::encode_move_castle_queenside_white(),
+            Mov::encode_move_capture(Square::e8, Square::g7),
+            Mov::encode_move_quiet(Square::b5, Square::b6),
+            Mov::encode_move_double_pawn_first(Square::c2, Square::c4),
+        ];
 
         let (board1, move_cntr1, castle_permissions1, side_to_move1, en_pass_sq1) =
             fen::decompose_fen(fen);
@@ -1915,7 +1972,7 @@ mod tests {
             en_pass_sq1,
             side_to_move1,
             &zobrist_keys1,
-            &&occ_masks1,
+            &occ_masks1,
         );
 
         let (board2, move_cntr2, castle_permissions2, side_to_move2, en_pass_sq2) =
@@ -1931,7 +1988,7 @@ mod tests {
             en_pass_sq2,
             side_to_move2,
             &zobrist_keys1,
-            &&occ_masks2,
+            &occ_masks2,
         );
 
         for mv in ml {
@@ -1949,12 +2006,13 @@ mod tests {
     pub fn make_move_take_move_position_and_board_restored_black_to_move() {
         let fen = "r3k2r/1pb2p2/qQ1P2n1/PPPN2N1/4Pnb1/1p1pp3/B1P1P2B/R3K2R b kq - 3 11";
 
-        let mut ml = vec![];
-        ml.push(Mov::encode_move_castle_kingside_black());
-        ml.push(Mov::encode_move_castle_queenside_black());
-        ml.push(Mov::encode_move_capture(Square::c7, Square::b6));
-        ml.push(Mov::encode_move_quiet(Square::f7, Square::f6));
-        ml.push(Mov::encode_move_double_pawn_first(Square::f7, Square::f6));
+        let ml = vec![
+            Mov::encode_move_castle_kingside_black(),
+            Mov::encode_move_castle_queenside_black(),
+            Mov::encode_move_capture(Square::c7, Square::b6),
+            Mov::encode_move_quiet(Square::f7, Square::f6),
+            Mov::encode_move_double_pawn_first(Square::f7, Square::f6),
+        ];
 
         let (board1, move_cntr1, castle_permissions1, side_to_move1, en_pass_sq1) =
             fen::decompose_fen(fen);
@@ -1969,7 +2027,7 @@ mod tests {
             en_pass_sq1,
             side_to_move1,
             &zobrist_keys1,
-            &&occ_masks1,
+            &occ_masks1,
         );
 
         let (board2, move_cntr2, castle_permissions2, side_to_move2, en_pass_sq2) =
@@ -1985,7 +2043,7 @@ mod tests {
             en_pass_sq2,
             side_to_move2,
             &zobrist_keys1,
-            &&occ_masks2,
+            &occ_masks2,
         );
 
         // initial states are the same
@@ -2018,7 +2076,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
         let init_hash = pos.position_hash();
 
@@ -2052,7 +2110,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
         let init_hash = pos.position_hash();
 
@@ -2086,7 +2144,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
         let init_hash = pos.position_hash();
 
@@ -2118,7 +2176,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
         let init_hash = pos.position_hash();
 
@@ -2150,7 +2208,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
         let init_hash = pos.position_hash();
 
@@ -2187,7 +2245,7 @@ mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
         let init_hash = pos.position_hash();
 
@@ -2216,12 +2274,12 @@ mod tests {
             return false;
         }
 
-        return pce_on_board.unwrap() == pce;
+        pce_on_board.unwrap() == pce
     }
 
     fn is_sq_empty(pos: &Position, sq: Square) -> bool {
         let pce_on_board = &mut None;
         pos.board.get_piece_on_square(sq, pce_on_board);
-        return pce_on_board.is_none();
+        pce_on_board.is_none()
     }
 }

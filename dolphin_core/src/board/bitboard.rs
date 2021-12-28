@@ -73,7 +73,7 @@ pub mod tests {
             assert!(bitboard::is_set(bb, *sq));
 
             bb = bitboard::clear_bit(bb, *sq);
-            assert!(bitboard::is_set(bb, *sq) == false);
+            assert!(!bitboard::is_set(bb, *sq));
         }
     }
 
@@ -101,7 +101,7 @@ pub mod tests {
             let popped_sq = bitboard::pop_1st_bit(&mut temp_bb);
             assert_eq!(popped_sq, *sq);
 
-            bb = bb << 1;
+            bb <<= 1;
         }
     }
 }

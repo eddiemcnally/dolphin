@@ -1,6 +1,5 @@
 extern crate core_affinity;
 extern crate dolphin_core;
-extern crate num_enum;
 
 use dolphin_core::board::occupancy_masks::OccupancyMasks;
 use dolphin_core::board::piece;
@@ -50,7 +49,7 @@ fn process_row(row: &epd_parser::EpdRow, depth: u8) {
         en_pass_sq,
         side_to_move,
         &zobrist_keys,
-        &&occ_masks,
+        &occ_masks,
     );
     let mov_generator = MoveGenerator::new();
 

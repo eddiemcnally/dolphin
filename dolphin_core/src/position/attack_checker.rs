@@ -258,13 +258,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_sq_attacked(&occ_masks, pos.board(), Square::g5, Colour::White)
-        );
+        assert!(attack_checker::is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            Square::g5,
+            Colour::White
+        ));
     }
 
     #[test]
@@ -283,13 +285,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_sq_attacked(&occ_masks, pos.board(), Square::h4, Colour::Black)
-        );
+        assert!(attack_checker::is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            Square::h4,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -308,13 +312,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_sq_attacked(&occ_masks, pos.board(), Square::e5, Colour::White)
-        );
+        assert!(attack_checker::is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            Square::e5,
+            Colour::White
+        ));
     }
 
     #[test]
@@ -333,13 +339,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_sq_attacked(&occ_masks, pos.board(), Square::e3, Colour::Black)
-        );
+        assert!(attack_checker::is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            Square::e3,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -358,13 +366,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_sq_attacked(&occ_masks, pos.board(), Square::e5, Colour::White)
-        );
+        assert!(attack_checker::is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            Square::e5,
+            Colour::White
+        ));
     }
 
     #[test]
@@ -383,13 +393,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_sq_attacked(&occ_masks, pos.board(), Square::e3, Colour::Black)
-        );
+        assert!(attack_checker::is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            Square::e3,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -408,13 +420,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_sq_attacked(&occ_masks, pos.board(), Square::e5, Colour::White)
-        );
+        assert!(attack_checker::is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            Square::e5,
+            Colour::White
+        ));
     }
 
     #[test]
@@ -433,13 +447,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_sq_attacked(&occ_masks, pos.board(), Square::e3, Colour::Black)
-        );
+        assert!(attack_checker::is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            Square::e3,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -458,13 +474,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_sq_attacked(&occ_masks, pos.board(), Square::e5, Colour::White)
-        );
+        assert!(attack_checker::is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            Square::e5,
+            Colour::White
+        ));
     }
 
     #[test]
@@ -483,13 +501,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_sq_attacked(&occ_masks, pos.board(), Square::e3, Colour::Black)
-        );
+        assert!(attack_checker::is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            Square::e3,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -508,13 +528,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_sq_attacked(&occ_masks, pos.board(), Square::b5, Colour::White)
-        );
+        assert!(attack_checker::is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            Square::b5,
+            Colour::White
+        ));
     }
 
     #[test]
@@ -533,13 +555,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_sq_attacked(&occ_masks, pos.board(), Square::f5, Colour::Black)
-        );
+        assert!(attack_checker::is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            Square::f5,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -560,18 +584,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::Black
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -592,18 +613,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::Black
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -624,18 +642,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::Black
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -656,18 +671,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::Black
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -688,18 +700,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::Black
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -720,18 +729,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::Black
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -752,18 +758,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::Black
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::Black
+        ));
     }
 
     #[test]
@@ -784,18 +787,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::White
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::White
+        ));
     }
 
     #[test]
@@ -816,18 +816,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::White
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::White
+        ));
     }
 
     #[test]
@@ -848,18 +845,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::White
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::White
+        ));
     }
 
     #[test]
@@ -880,18 +874,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::White
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::White
+        ));
     }
 
     #[test]
@@ -912,18 +903,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::White
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::White
+        ));
     }
 
     #[test]
@@ -944,18 +932,15 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::White
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::White
+        ));
     }
 
     #[test]
@@ -976,17 +961,14 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
-        assert_eq!(
-            true,
-            attack_checker::is_castle_squares_attacked(
-                &occ_masks,
-                pos.board(),
-                &SQUARE_TO_CHECK,
-                Colour::White
-            )
-        );
+        assert!(attack_checker::is_castle_squares_attacked(
+            &occ_masks,
+            pos.board(),
+            &SQUARE_TO_CHECK,
+            Colour::White
+        ));
     }
 }

@@ -176,6 +176,6 @@ pub mod tests {
         map.insert(Rank::Rank6, '6');
         map.insert(Rank::Rank7, '7');
         map.insert(Rank::Rank8, '8');
-        return map;
+        map
     }
 }

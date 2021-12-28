@@ -155,6 +155,6 @@ pub mod tests {
         map.insert(File::FileF, 'f');
         map.insert(File::FileG, 'g');
         map.insert(File::FileH, 'h');
-        return map;
+        map
     }
 }

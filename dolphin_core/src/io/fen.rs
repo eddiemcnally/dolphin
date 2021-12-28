@@ -229,11 +229,11 @@ mod tests {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b K - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
-        assert!(castle_permissions::is_white_king_set(perm) == true);
-        assert!(castle_permissions::is_black_king_set(perm) == false);
-        assert!(castle_permissions::is_white_queen_set(perm) == false);
-        assert!(castle_permissions::is_black_queen_set(perm) == false);
-        assert!(castle_permissions::has_castle_permission(perm) == true);
+        assert!(castle_permissions::is_white_king_set(perm));
+        assert!(!castle_permissions::is_black_king_set(perm));
+        assert!(!castle_permissions::is_white_queen_set(perm));
+        assert!(!castle_permissions::is_black_queen_set(perm));
+        assert!(castle_permissions::has_castle_permission(perm));
     }
     #[test]
     pub fn castle_permissions_white_queenside() {
@@ -241,11 +241,11 @@ mod tests {
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
 
-        assert!(castle_permissions::is_white_king_set(perm) == false);
-        assert!(castle_permissions::is_black_king_set(perm) == false);
-        assert!(castle_permissions::is_white_queen_set(perm) == true);
-        assert!(castle_permissions::is_black_queen_set(perm) == false);
-        assert!(castle_permissions::has_castle_permission(perm) == true);
+        assert!(!castle_permissions::is_white_king_set(perm));
+        assert!(!castle_permissions::is_black_king_set(perm));
+        assert!(castle_permissions::is_white_queen_set(perm));
+        assert!(!castle_permissions::is_black_queen_set(perm));
+        assert!(castle_permissions::has_castle_permission(perm));
     }
     #[test]
     pub fn castle_permissions_black_kingside() {
@@ -253,11 +253,11 @@ mod tests {
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
 
-        assert!(castle_permissions::is_white_king_set(perm) == false);
-        assert!(castle_permissions::is_black_king_set(perm) == true);
-        assert!(castle_permissions::is_white_queen_set(perm) == false);
-        assert!(castle_permissions::is_black_queen_set(perm) == false);
-        assert!(castle_permissions::has_castle_permission(perm) == true);
+        assert!(!castle_permissions::is_white_king_set(perm));
+        assert!(castle_permissions::is_black_king_set(perm));
+        assert!(!castle_permissions::is_white_queen_set(perm));
+        assert!(!castle_permissions::is_black_queen_set(perm));
+        assert!(castle_permissions::has_castle_permission(perm));
     }
     #[test]
     pub fn castle_permissions_black_queenside() {
@@ -265,11 +265,11 @@ mod tests {
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
 
-        assert!(castle_permissions::is_white_king_set(perm) == false);
-        assert!(castle_permissions::is_black_king_set(perm) == false);
-        assert!(castle_permissions::is_white_queen_set(perm) == false);
-        assert!(castle_permissions::is_black_queen_set(perm) == true);
-        assert!(castle_permissions::has_castle_permission(perm) == true);
+        assert!(!castle_permissions::is_white_king_set(perm));
+        assert!(!castle_permissions::is_black_king_set(perm));
+        assert!(!castle_permissions::is_white_queen_set(perm));
+        assert!(castle_permissions::is_black_queen_set(perm));
+        assert!(castle_permissions::has_castle_permission(perm));
     }
 
     #[test]
@@ -277,7 +277,7 @@ mod tests {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b - - 0 1";
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
-        assert!(castle_permissions::has_castle_permission(perm) == false);
+        assert!(!castle_permissions::has_castle_permission(perm));
     }
 
     #[test]
@@ -286,11 +286,11 @@ mod tests {
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let perm = get_castle_permissions(piece_pos[FEN_CASTLE_PERMISSIONS]);
 
-        assert!(castle_permissions::is_white_king_set(perm) == true);
-        assert!(castle_permissions::is_black_king_set(perm) == true);
-        assert!(castle_permissions::is_white_queen_set(perm) == true);
-        assert!(castle_permissions::is_black_queen_set(perm) == false);
-        assert!(castle_permissions::has_castle_permission(perm) == true);
+        assert!(castle_permissions::is_white_king_set(perm));
+        assert!(castle_permissions::is_black_king_set(perm));
+        assert!(castle_permissions::is_white_queen_set(perm));
+        assert!(!castle_permissions::is_black_queen_set(perm));
+        assert!(castle_permissions::has_castle_permission(perm));
     }
 
     #[test]
@@ -344,6 +344,6 @@ mod tests {
         fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 0";
         piece_pos = fen.split(' ').collect();
         let no_enp_sq = get_en_passant_sq(piece_pos[FEN_EN_PASSANT]);
-        assert_eq!(no_enp_sq.is_some(), false);
+        assert!(!no_enp_sq.is_some());
     }
 }

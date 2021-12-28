@@ -60,7 +60,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let num_moves = perft_runner::perft(depth, &mut pos, &mov_generator);
@@ -90,7 +90,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let num_moves = perft_runner::perft(depth, &mut pos, &mov_generator);
@@ -120,7 +120,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let num_moves = perft_runner::perft(depth, &mut pos, &mov_generator);

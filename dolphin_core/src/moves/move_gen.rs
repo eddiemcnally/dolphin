@@ -567,7 +567,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -575,41 +575,41 @@ pub mod tests {
         move_gen.generate_moves(&pos, &mut move_list);
         // check the capture moves
         let mut mv = Mov::encode_move_capture(Square::e3, Square::d1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::e3, Square::c2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::a6, Square::b8);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::a6, Square::c7);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::g5, Square::h6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
 
         // check the quiet moves
         mv = Mov::encode_move_quiet(Square::a6, Square::c5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e3, Square::f1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e3, Square::g2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e3, Square::g4);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e3, Square::f5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e3, Square::d5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::g5, Square::g6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::g5, Square::f6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::g5, Square::f5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::g5, Square::g4);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::g5, Square::h4);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::g5, Square::h5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -628,7 +628,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
         let mut move_list = MoveList::new();
         let move_gen = MoveGenerator::new();
@@ -636,19 +636,19 @@ pub mod tests {
 
         // check the capture moves
         let mut mv = Mov::encode_move_capture(Square::h1, Square::f2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::d8, Square::e7);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::b8, Square::a6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
 
         // check the quiet moves
         mv = Mov::encode_move_quiet(Square::d8, Square::c8);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::d8, Square::e8);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::h1, Square::g3);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -667,7 +667,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
         let mut move_list = MoveList::new();
         let move_gen = MoveGenerator::new();
@@ -677,35 +677,35 @@ pub mod tests {
 
         // check the quiet moves
         let mut mv = Mov::encode_move_quiet(Square::c4, Square::b5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::c4, Square::d5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::c4, Square::e6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::c4, Square::d3);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e4, Square::d5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e4, Square::d3);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e4, Square::f5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e4, Square::g6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e4, Square::h7);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
 
         // check the capture moves
         mv = Mov::encode_move_capture(Square::e4, Square::c2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::e4, Square::f3);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::e4, Square::c6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::c4, Square::e2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::c4, Square::f7);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -724,7 +724,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -734,21 +734,21 @@ pub mod tests {
         //mov::print_move_list(&move_list);
         // check the quiet moves
         let mut mv = Mov::encode_move_quiet(Square::d4, Square::c5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::d4, Square::b6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::d4, Square::e5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::d4, Square::f6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
 
         // check the capture moves
         mv = Mov::encode_move_capture(Square::c8, Square::b7);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::d4, Square::c3);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::d4, Square::e3);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -767,7 +767,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -784,35 +784,35 @@ pub mod tests {
 
         // check the quiet moves
         let mut mv = Mov::encode_move_quiet(Square::b1, Square::c1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::b1, Square::d1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::b1, Square::e1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::b1, Square::f1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::b1, Square::b2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e2, Square::e1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e2, Square::e3);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e2, Square::e4);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e2, Square::d2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e2, Square::c2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e2, Square::b2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
 
         // check the capture moves
         mv = Mov::encode_move_capture(Square::b1, Square::a1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::e2, Square::f2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::e2, Square::a2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -832,7 +832,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -848,23 +848,23 @@ pub mod tests {
 
         // check the quiet moves
         let mut mv = Mov::encode_move_quiet(Square::b4, Square::a4);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::b4, Square::b5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::b4, Square::b6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::c3, Square::d3);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::c3, Square::e3);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::c3, Square::c2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::c3, Square::c1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
 
         // check the capture moves
         mv = Mov::encode_move_capture(Square::c3, Square::f3);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -883,7 +883,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -898,31 +898,31 @@ pub mod tests {
 
         // check the quiet moves
         let mut mv = Mov::encode_move_quiet(Square::e6, Square::e7);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e6, Square::e8);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e6, Square::d6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e6, Square::f6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e6, Square::g6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e6, Square::f5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::e6, Square::g4);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
 
         // check the capture moves
         mv = Mov::encode_move_capture(Square::e6, Square::c6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::e6, Square::h6);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::e6, Square::d7);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::e6, Square::f7);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::e6, Square::e5);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -941,7 +941,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -956,26 +956,26 @@ pub mod tests {
 
         // check the quiet moves
         let mut mv = Mov::encode_move_quiet(Square::g1, Square::f1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::g1, Square::e1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
 
         mv = Mov::encode_move_quiet(Square::g1, Square::d1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::g1, Square::c1);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::g1, Square::g2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::g1, Square::g3);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_quiet(Square::g1, Square::g4);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
 
         // check the capture moves
         mv = Mov::encode_move_capture(Square::g1, Square::f2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
         mv = Mov::encode_move_capture(Square::g1, Square::h2);
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -995,7 +995,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -1003,7 +1003,7 @@ pub mod tests {
         move_gen.generate_moves(&pos, &mut move_list);
 
         let mv = Mov::encode_move_castle_kingside_white();
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -1023,7 +1023,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -1031,7 +1031,7 @@ pub mod tests {
         move_gen.generate_moves(&pos, &mut move_list);
 
         let mv = Mov::encode_move_castle_queenside_white();
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -1050,7 +1050,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -1058,7 +1058,7 @@ pub mod tests {
         move_gen.generate_moves(&pos, &mut move_list);
 
         let mv = Mov::encode_move_castle_kingside_black();
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -1077,7 +1077,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let cp = pos.castle_permissions();
@@ -1088,7 +1088,7 @@ pub mod tests {
         move_gen.generate_moves(&pos, &mut move_list);
 
         let mv = Mov::encode_move_castle_queenside_black();
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -1108,7 +1108,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -1116,10 +1116,10 @@ pub mod tests {
         move_gen.generate_moves(&pos, &mut move_list);
 
         let mut mv = Mov::encode_move_castle_queenside_white();
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
 
         mv = Mov::encode_move_castle_kingside_white();
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
 
         // --- BLACK
         pos.flip_side_to_move();
@@ -1128,10 +1128,10 @@ pub mod tests {
         move_gen.generate_moves(&pos, &mut move_list);
 
         mv = Mov::encode_move_castle_queenside_black();
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
 
         mv = Mov::encode_move_castle_kingside_black();
-        assert!(move_list.contains(mv) == true);
+        assert!(move_list.contains(mv));
     }
 
     #[test]
@@ -1158,7 +1158,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -1249,7 +1249,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let move_gen = MoveGenerator::new();
@@ -1300,7 +1300,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -1343,7 +1343,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -1383,7 +1383,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -1419,7 +1419,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
         let mut move_list = MoveList::new();
         let move_gen = MoveGenerator::new();
@@ -1459,7 +1459,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();
@@ -1538,7 +1538,7 @@ pub mod tests {
             en_pass_sq,
             side_to_move,
             &zobrist_keys,
-            &&occ_masks,
+            &occ_masks,
         );
 
         let mut move_list = MoveList::new();

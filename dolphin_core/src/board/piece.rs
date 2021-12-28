@@ -395,27 +395,27 @@ pub mod tests {
     #[test]
     pub fn piece_is_king() {
         let mut pce = piece::WHITE_KING;
-        assert_eq!(pce.is_king(), true);
+        assert!(pce.is_king());
 
         pce = piece::BLACK_KING;
-        assert_eq!(pce.is_king(), true);
+        assert!(pce.is_king());
     }
 
     #[test]
     pub fn piece_is_rook() {
         let mut pce = piece::WHITE_ROOK;
-        assert_eq!(pce.is_rook(), true);
+        assert!(pce.is_rook());
 
         pce = piece::BLACK_ROOK;
-        assert_eq!(pce.is_rook(), true);
+        assert!(pce.is_rook());
     }
 
     #[test]
     pub fn piece_is_pawn() {
         let mut pce = piece::WHITE_PAWN;
-        assert_eq!(pce.is_pawn(), true);
+        assert!(pce.is_pawn());
 
         pce = piece::BLACK_PAWN;
-        assert_eq!(pce.is_pawn(), true);
+        assert!(pce.is_pawn());
     }
 }

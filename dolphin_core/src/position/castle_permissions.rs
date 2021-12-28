@@ -118,11 +118,11 @@ pub mod tests {
     pub fn default_castle_permissisons_none_set() {
         let cp = castle_permissions::NO_CASTLE_PERMS_AVAIL;
 
-        assert!(castle_permissions::is_white_king_set(cp) == false);
-        assert!(castle_permissions::is_black_king_set(cp) == false);
-        assert!(castle_permissions::is_white_queen_set(cp) == false);
-        assert!(castle_permissions::is_black_queen_set(cp) == false);
-        assert!(castle_permissions::has_castle_permission(cp) == false);
+        assert!(!castle_permissions::is_white_king_set(cp));
+        assert!(!castle_permissions::is_black_king_set(cp));
+        assert!(!castle_permissions::is_white_queen_set(cp));
+        assert!(!castle_permissions::is_black_queen_set(cp));
+        assert!(!castle_permissions::has_castle_permission(cp));
     }
 
     #[test]
@@ -138,14 +138,14 @@ pub mod tests {
         let mut cp = castle_permissions::NO_CASTLE_PERMS_AVAIL;
 
         // init condition
-        assert!(castle_permissions::has_castle_permission(cp) == false);
+        assert!(!castle_permissions::has_castle_permission(cp));
 
         cp = castle_permissions::set_white_king(cp);
-        assert!(castle_permissions::is_white_king_set(cp) == true);
-        assert!(castle_permissions::has_castle_permission(cp) == true);
-        assert!(castle_permissions::is_black_king_set(cp) == false);
-        assert!(castle_permissions::is_white_queen_set(cp) == false);
-        assert!(castle_permissions::is_black_queen_set(cp) == false);
+        assert!(castle_permissions::is_white_king_set(cp));
+        assert!(castle_permissions::has_castle_permission(cp));
+        assert!(!castle_permissions::is_black_king_set(cp));
+        assert!(!castle_permissions::is_white_queen_set(cp));
+        assert!(!castle_permissions::is_black_queen_set(cp));
     }
 
     #[test]
@@ -153,14 +153,14 @@ pub mod tests {
         let mut cp = castle_permissions::NO_CASTLE_PERMS_AVAIL;
 
         // init condition
-        assert!(castle_permissions::has_castle_permission(cp) == false);
+        assert!(!castle_permissions::has_castle_permission(cp));
 
         cp = castle_permissions::set_black_king(cp);
-        assert!(castle_permissions::is_black_king_set(cp) == true);
-        assert!(castle_permissions::has_castle_permission(cp) == true);
-        assert!(castle_permissions::is_white_king_set(cp) == false);
-        assert!(castle_permissions::is_white_queen_set(cp) == false);
-        assert!(castle_permissions::is_black_queen_set(cp) == false);
+        assert!(castle_permissions::is_black_king_set(cp));
+        assert!(castle_permissions::has_castle_permission(cp));
+        assert!(!castle_permissions::is_white_king_set(cp));
+        assert!(!castle_permissions::is_white_queen_set(cp));
+        assert!(!castle_permissions::is_black_queen_set(cp));
     }
 
     #[test]
@@ -168,14 +168,14 @@ pub mod tests {
         let mut cp = castle_permissions::NO_CASTLE_PERMS_AVAIL;
 
         // init condition
-        assert!(castle_permissions::has_castle_permission(cp) == false);
+        assert!(!castle_permissions::has_castle_permission(cp));
 
         cp = castle_permissions::set_white_queen(cp);
-        assert!(castle_permissions::is_white_queen_set(cp) == true);
-        assert!(castle_permissions::has_castle_permission(cp) == true);
-        assert!(castle_permissions::is_black_king_set(cp) == false);
-        assert!(castle_permissions::is_black_queen_set(cp) == false);
-        assert!(castle_permissions::is_black_king_set(cp) == false);
+        assert!(castle_permissions::is_white_queen_set(cp));
+        assert!(castle_permissions::has_castle_permission(cp));
+        assert!(!castle_permissions::is_black_king_set(cp));
+        assert!(!castle_permissions::is_black_queen_set(cp));
+        assert!(!castle_permissions::is_black_king_set(cp));
     }
 
     #[test]
@@ -183,13 +183,13 @@ pub mod tests {
         let mut cp = castle_permissions::NO_CASTLE_PERMS_AVAIL;
 
         // init condition
-        assert!(castle_permissions::has_castle_permission(cp) == false);
+        assert!(!castle_permissions::has_castle_permission(cp));
 
         cp = castle_permissions::set_black_queen(cp);
-        assert!(castle_permissions::is_black_queen_set(cp) == true);
-        assert!(castle_permissions::has_castle_permission(cp) == true);
-        assert!(castle_permissions::is_black_king_set(cp) == false);
-        assert!(castle_permissions::is_white_queen_set(cp) == false);
-        assert!(castle_permissions::is_black_king_set(cp) == false);
+        assert!(castle_permissions::is_black_queen_set(cp));
+        assert!(castle_permissions::has_castle_permission(cp));
+        assert!(!castle_permissions::is_black_king_set(cp));
+        assert!(!castle_permissions::is_white_queen_set(cp));
+        assert!(!castle_permissions::is_black_king_set(cp));
     }
 }
