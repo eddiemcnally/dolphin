@@ -1,88 +1,147 @@
-use crate::board::file::File;
-use crate::board::rank::Rank;
-use num_enum::TryFromPrimitive;
-use std::convert::TryFrom;
+use crate::board::file::*;
+use crate::board::rank::*;
 use std::fmt;
 
-use Square::a1;
+use super::types::ToInt;
 
 pub const NUM_SQUARES: usize = 64;
 
-#[allow(non_camel_case_types)]
-#[rustfmt::skip]
-#[derive(Clone, Copy, Eq, PartialEq, Hash, TryFromPrimitive)]
-#[repr(u64)]
-pub enum Square {
-    a1, b1, c1, d1, e1, f1, g1, h1,
-    a2, b2, c2, d2, e2, f2, g2, h2, 
-    a3, b3, c3, d3, e3, f3, g3, h3, 
-    a4, b4, c4, d4, e4, f4, g4, h4,
-    a5, b5, c5, d5, e5, f5, g5, h5,
-    a6, b6, c6, d6, e6, f6, g6, h6,
-    a7, b7, c7, d7, e7, f7, g7, h7,
-    a8, b8, c8, d8, e8, f8, g8, h8,
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
+pub struct Square(u8);
+
+pub const SQUARE_A1: Square = Square(0);
+pub const SQUARE_B1: Square = Square(1);
+pub const SQUARE_C1: Square = Square(2);
+pub const SQUARE_D1: Square = Square(3);
+pub const SQUARE_E1: Square = Square(4);
+pub const SQUARE_F1: Square = Square(5);
+pub const SQUARE_G1: Square = Square(6);
+pub const SQUARE_H1: Square = Square(7);
+
+pub const SQUARE_A2: Square = Square(8);
+pub const SQUARE_B2: Square = Square(9);
+pub const SQUARE_C2: Square = Square(10);
+pub const SQUARE_D2: Square = Square(11);
+pub const SQUARE_E2: Square = Square(12);
+pub const SQUARE_F2: Square = Square(13);
+pub const SQUARE_G2: Square = Square(14);
+pub const SQUARE_H2: Square = Square(15);
+
+pub const SQUARE_A3: Square = Square(16);
+pub const SQUARE_B3: Square = Square(17);
+pub const SQUARE_C3: Square = Square(18);
+pub const SQUARE_D3: Square = Square(19);
+pub const SQUARE_E3: Square = Square(20);
+pub const SQUARE_F3: Square = Square(21);
+pub const SQUARE_G3: Square = Square(22);
+pub const SQUARE_H3: Square = Square(23);
+
+pub const SQUARE_A4: Square = Square(24);
+pub const SQUARE_B4: Square = Square(25);
+pub const SQUARE_C4: Square = Square(26);
+pub const SQUARE_D4: Square = Square(27);
+pub const SQUARE_E4: Square = Square(28);
+pub const SQUARE_F4: Square = Square(29);
+pub const SQUARE_G4: Square = Square(30);
+pub const SQUARE_H4: Square = Square(31);
+
+pub const SQUARE_A5: Square = Square(32);
+pub const SQUARE_B5: Square = Square(33);
+pub const SQUARE_C5: Square = Square(34);
+pub const SQUARE_D5: Square = Square(35);
+pub const SQUARE_E5: Square = Square(36);
+pub const SQUARE_F5: Square = Square(37);
+pub const SQUARE_G5: Square = Square(38);
+pub const SQUARE_H5: Square = Square(39);
+
+pub const SQUARE_A6: Square = Square(40);
+pub const SQUARE_B6: Square = Square(41);
+pub const SQUARE_C6: Square = Square(42);
+pub const SQUARE_D6: Square = Square(43);
+pub const SQUARE_E6: Square = Square(44);
+pub const SQUARE_F6: Square = Square(45);
+pub const SQUARE_G6: Square = Square(46);
+pub const SQUARE_H6: Square = Square(47);
+
+pub const SQUARE_A7: Square = Square(48);
+pub const SQUARE_B7: Square = Square(49);
+pub const SQUARE_C7: Square = Square(50);
+pub const SQUARE_D7: Square = Square(51);
+pub const SQUARE_E7: Square = Square(52);
+pub const SQUARE_F7: Square = Square(53);
+pub const SQUARE_G7: Square = Square(54);
+pub const SQUARE_H7: Square = Square(55);
+
+pub const SQUARE_A8: Square = Square(56);
+pub const SQUARE_B8: Square = Square(57);
+pub const SQUARE_C8: Square = Square(58);
+pub const SQUARE_D8: Square = Square(59);
+pub const SQUARE_E8: Square = Square(60);
+pub const SQUARE_F8: Square = Square(61);
+pub const SQUARE_G8: Square = Square(62);
+pub const SQUARE_H8: Square = Square(63);
+
+impl ToInt for Square {
+    fn to_u8(&self) -> u8 {
+        self.0 as u8
+    }
+
+    fn to_usize(&self) -> usize {
+        self.0 as usize
+    }
 }
 
 impl Square {
+    pub fn new(num: u8) -> Option<Square> {
+        if num <= SQUARE_H8.0 {
+            return Some(Square(num));
+        }
+        None
+    }
+
     pub fn square_plus_1_rank(self) -> Option<Square> {
         match self.rank() {
-            Rank::Rank8 => None,
-            _ => {
-                let s = self as u64 + 8;
-                Square::from_num(s)
-            }
+            RANK_8 => None,
+            _ => Square::new(self.0 + 8),
         }
     }
 
     pub fn square_minus_1_rank(self) -> Option<Square> {
         match self.rank() {
-            Rank::Rank1 => None,
-            _ => {
-                let s = self as u64 - 8;
-                Square::from_num(s)
-            }
+            RANK_1 => None,
+            _ => Square::new(self.0 - 8),
         }
     }
 
     pub fn square_plus_2_ranks(self) -> Option<Square> {
         match self.rank() {
-            Rank::Rank7 => None,
-            Rank::Rank8 => None,
-            _ => {
-                let s = self as u64 + 16;
-                Square::from_num(s)
-            }
+            RANK_7 | RANK_8 => None,
+            _ => Square::new(self.0 + 16),
         }
     }
 
     pub fn square_minus_2_ranks(self) -> Option<Square> {
         match self.rank() {
-            Rank::Rank1 => None,
-            Rank::Rank2 => None,
-            _ => {
-                let s = self as u64 - 16;
-                Square::from_num(s)
-            }
+            RANK_1 | RANK_2 => None,
+            _ => Square::new(self.0 - 16),
         }
     }
 
     pub fn rank(self) -> Rank {
-        let rank_num = self.rank_as_u64();
-        Rank::from_num(rank_num).unwrap()
+        Rank::new(self.rank_as_u8()).unwrap()
     }
 
     pub fn file(self) -> File {
-        let file_num = self.file_as_u64();
-        File::from_num(file_num).unwrap()
+        File::new(self.file_as_u8()).unwrap()
     }
 
-    pub fn get_square(rank: Rank, file: File) -> Square {
-        let sq = (((rank as u64) << 3) + file as u64) as u64;
-        Square::from_num(sq).unwrap()
+    pub fn from_rank_file(rank: Rank, file: File) -> Square {
+        let sq = (rank.to_u8() << 3) + file.to_u8();
+        Square::new(sq).unwrap()
     }
 
-    pub const fn get_square_as_bb(self) -> u64 {
-        0x01u64 << (self.offset())
+    pub fn get_square_as_bb(self) -> u64 {
+        0x01u64 << (self.to_usize())
     }
 
     pub fn get_from_string(square_str: &str) -> Option<Square> {
@@ -91,43 +150,31 @@ impl Square {
 
         if let Some(file) = File::from_char(f) {
             if let Some(rank) = Rank::from_char(r) {
-                return Some(Square::get_square(rank, file));
+                return Some(Square::from_rank_file(rank, file));
             }
         }
         None
     }
 
-    pub fn from_num(num: u64) -> Option<Square> {
-        let sq = Square::try_from(num);
-        match sq {
-            Ok(pce) => Some(pce),
-            _ => None,
-        }
-    }
-
     pub const fn same_rank(self, other: Square) -> bool {
-        self.rank_as_u64() == other.rank_as_u64()
+        self.rank_as_u8() == other.rank_as_u8()
     }
 
     pub const fn same_file(self, other: Square) -> bool {
-        self.file_as_u64() == other.file_as_u64()
+        self.file_as_u8() == other.file_as_u8()
     }
 
-    pub const fn offset(self) -> usize {
-        self as usize
+    const fn rank_as_u8(self) -> u8 {
+        self.0 >> 3
     }
-
-    const fn rank_as_u64(self) -> u64 {
-        self as u64 >> 3
-    }
-    const fn file_as_u64(self) -> u64 {
-        (self as u64 % 8) as u64
+    const fn file_as_u8(self) -> u8 {
+        (self.0 % 8) as u8
     }
 }
 
 impl Default for Square {
     fn default() -> Square {
-        a1
+        SQUARE_A1
     }
 }
 impl fmt::Display for Square {
@@ -152,50 +199,51 @@ impl fmt::Debug for Square {
 
 #[rustfmt::skip]
 pub const SQUARES: &[Square] = &[
-    Square::a1, Square::b1, Square::c1, Square::d1, Square::e1, Square::f1, Square::g1, Square::h1, 
-    Square::a2, Square::b2, Square::c2, Square::d2, Square::e2, Square::f2, Square::g2, Square::h2, 
-    Square::a3, Square::b3, Square::c3, Square::d3, Square::e3, Square::f3, Square::g3, Square::h3, 
-    Square::a4, Square::b4, Square::c4, Square::d4, Square::e4, Square::f4, Square::g4, Square::h4, 
-    Square::a5, Square::b5, Square::c5, Square::d5, Square::e5, Square::f5, Square::g5, Square::h5, 
-    Square::a6, Square::b6, Square::c6, Square::d6, Square::e6, Square::f6, Square::g6, Square::h6, 
-    Square::a7, Square::b7, Square::c7, Square::d7, Square::e7, Square::f7, Square::g7, Square::h7, 
-    Square::a8, Square::b8, Square::c8, Square::d8, Square::e8, Square::f8, Square::g8, Square::h8,
+    SQUARE_A1, SQUARE_B1, SQUARE_C1, SQUARE_D1, SQUARE_E1, SQUARE_F1, SQUARE_G1, SQUARE_H1, 
+    SQUARE_A2, SQUARE_B2, SQUARE_C2, SQUARE_D2, SQUARE_E2, SQUARE_F2, SQUARE_G2, SQUARE_H2, 
+    SQUARE_A3, SQUARE_B3, SQUARE_C3, SQUARE_D3, SQUARE_E3, SQUARE_F3, SQUARE_G3, SQUARE_H3, 
+    SQUARE_A4, SQUARE_B4, SQUARE_C4, SQUARE_D4, SQUARE_E4, SQUARE_F4, SQUARE_G4, SQUARE_H4, 
+    SQUARE_A5, SQUARE_B5, SQUARE_C5, SQUARE_D5, SQUARE_E5, SQUARE_F5, SQUARE_G5, SQUARE_H5, 
+    SQUARE_A6, SQUARE_B6, SQUARE_C6, SQUARE_D6, SQUARE_E6, SQUARE_F6, SQUARE_G6, SQUARE_H6, 
+    SQUARE_A7, SQUARE_B7, SQUARE_C7, SQUARE_D7, SQUARE_E7, SQUARE_F7, SQUARE_G7, SQUARE_H7, 
+    SQUARE_A8, SQUARE_B8, SQUARE_C8, SQUARE_D8, SQUARE_E8, SQUARE_F8, SQUARE_G8, SQUARE_H8,
 ];
 
 #[cfg(test)]
 pub mod tests {
     use super::Square;
-    use crate::board::file::File;
-    use crate::board::rank::Rank;
+    use crate::board::file::*;
+    use crate::board::rank::*;
+    use crate::board::square::*;
 
     #[test]
     pub fn rank_from_square() {
-        assert!(Square::a1.rank() == Rank::Rank1);
-        assert!(Square::b2.rank() == Rank::Rank2);
-        assert!(Square::h3.rank() == Rank::Rank3);
-        assert!(Square::g4.rank() == Rank::Rank4);
-        assert!(Square::a5.rank() == Rank::Rank5);
-        assert!(Square::c6.rank() == Rank::Rank6);
-        assert!(Square::d7.rank() == Rank::Rank7);
-        assert!(Square::f8.rank() == Rank::Rank8);
+        assert!(SQUARE_A1.rank() == RANK_1);
+        assert!(SQUARE_B2.rank() == RANK_2);
+        assert!(SQUARE_H3.rank() == RANK_3);
+        assert!(SQUARE_G4.rank() == RANK_4);
+        assert!(SQUARE_A5.rank() == RANK_5);
+        assert!(SQUARE_C6.rank() == RANK_6);
+        assert!(SQUARE_D7.rank() == RANK_7);
+        assert!(SQUARE_F8.rank() == RANK_8);
     }
 
     #[test]
     pub fn file_from_square() {
-        assert!(Square::a1.file() == File::FileA);
-        assert!(Square::e5.file() == File::FileE);
-        assert!(Square::d4.file() == File::FileD);
+        assert!(SQUARE_A1.file() == FILE_A);
+        assert!(SQUARE_E5.file() == FILE_E);
+        assert!(SQUARE_D4.file() == FILE_D);
     }
 
     #[test]
     pub fn convert_square_to_uint() {
-        let sq: Square = Square::b1;
-        let num: u16 = sq as u16;
+        let sq: Square = SQUARE_B1;
+        let num = sq.to_usize();
 
         assert_eq!(num, 1);
 
-        let sq1: Square = Square::d7;
-        let num1: u16 = sq1 as u16;
+        let sq1: Square = SQUARE_D7;
+        let num1 = sq1.to_usize();
 
         assert_eq!(num1, 51);
     }
@@ -206,10 +254,10 @@ pub mod tests {
         for square in map {
             let rank = square.rank();
             let file = square.file();
-            let sq = Square::get_square(rank, file);
+            let sq = Square::from_rank_file(rank, file);
             assert_eq!(*square, sq);
         }
-        assert!(Square::get_square(Rank::Rank3, File::FileG) == Square::g3);
+        assert!(Square::from_rank_file(RANK_3, FILE_G) == SQUARE_G3);
     }
 
     #[test]
@@ -227,10 +275,19 @@ pub mod tests {
 
     #[test]
     pub fn square_from_rank_file() {
-        assert!(Square::get_square(Rank::Rank1, File::FileA) == Square::a1);
-        assert!(Square::get_square(Rank::Rank8, File::FileA) == Square::a8);
+        assert!(Square::from_rank_file(RANK_1, FILE_A) == SQUARE_A1);
+        assert!(Square::from_rank_file(RANK_8, FILE_A) == SQUARE_A8);
 
-        assert!(Square::get_square(Rank::Rank1, File::FileH) == Square::h1);
-        assert!(Square::get_square(Rank::Rank8, File::FileH) == Square::h8);
+        assert!(Square::from_rank_file(RANK_1, FILE_H) == SQUARE_H1);
+        assert!(Square::from_rank_file(RANK_8, FILE_H) == SQUARE_H8);
+    }
+
+    #[test]
+    pub fn square_values() {
+        let map = super::SQUARES;
+
+        for (i, square) in map.iter().enumerate() {
+            assert_eq!(square.0, i as u8);
+        }
     }
 }

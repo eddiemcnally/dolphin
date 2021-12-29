@@ -1,6 +1,8 @@
 use crate::board::colour::Colour;
 use std::fmt;
 
+use super::types::ToInt;
+
 #[derive(Eq, PartialEq)]
 pub struct Piece {
     array_offset: usize,
@@ -26,21 +28,23 @@ pub enum PieceType {
     BlackQueen,
     BlackKing,
 }
+
+#[rustfmt::skip]
 impl fmt::Debug for PieceType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PieceType::WhitePawn => write!(f, "WhitePawn"),
-            PieceType::WhiteBishop => write!(f, "WhiteBishop"),
-            PieceType::WhiteKnight => write!(f, "WhiteKnight"),
-            PieceType::WhiteRook => write!(f, "WhiteRook"),
-            PieceType::WhiteQueen => write!(f, "WhiteQueen"),
-            PieceType::WhiteKing => write!(f, "WhiteKing"),
-            PieceType::BlackPawn => write!(f, "BlackPawn"),
-            PieceType::BlackBishop => write!(f, "BlackBishop"),
-            PieceType::BlackKnight => write!(f, "BlackKnight"),
-            PieceType::BlackRook => write!(f, "BlackRook"),
-            PieceType::BlackQueen => write!(f, "BlackQueen"),
-            PieceType::BlackKing => write!(f, "BlackKing"),
+            PieceType::WhitePawn    => write!(f, "WhitePawn"),
+            PieceType::WhiteBishop  => write!(f, "WhiteBishop"),
+            PieceType::WhiteKnight  => write!(f, "WhiteKnight"),
+            PieceType::WhiteRook    => write!(f, "WhiteRook"),
+            PieceType::WhiteQueen   => write!(f, "WhiteQueen"),
+            PieceType::WhiteKing    => write!(f, "WhiteKing"),
+            PieceType::BlackPawn    => write!(f, "BlackPawn"),
+            PieceType::BlackBishop  => write!(f, "BlackBishop"),
+            PieceType::BlackKnight  => write!(f, "BlackKnight"),
+            PieceType::BlackRook    => write!(f, "BlackRook"),
+            PieceType::BlackQueen   => write!(f, "BlackQueen"),
+            PieceType::BlackKing    => write!(f, "BlackKing"),
         }
     }
 }
@@ -55,112 +59,124 @@ enum PieceRole {
     King,
 }
 
+#[rustfmt::skip]
 pub const WHITE_PAWN: Piece = Piece {
-    piece_type: PieceType::WhitePawn,
-    colour: Colour::White,
-    array_offset: PieceType::WhitePawn as usize,
-    label: 'P',
-    value: PieceValue::Pawn as u32,
-    role: PieceRole::Pawn,
+    piece_type:     PieceType::WhitePawn,
+    colour:         Colour::White,
+    array_offset:   PieceType::WhitePawn as usize,
+    label:          'P',
+    value:          PieceValue::Pawn as u32,
+    role:           PieceRole::Pawn,
 };
 
+#[rustfmt::skip]
 pub const WHITE_BISHOP: Piece = Piece {
-    piece_type: PieceType::WhiteBishop,
-    colour: Colour::White,
-    array_offset: PieceType::WhiteBishop as usize,
-    label: 'B',
-    value: PieceValue::Bishop as u32,
-    role: PieceRole::Bishop,
+    piece_type:     PieceType::WhiteBishop,
+    colour:         Colour::White,
+    array_offset:   PieceType::WhiteBishop as usize,
+    label:          'B',
+    value:          PieceValue::Bishop as u32,
+    role:           PieceRole::Bishop,
 };
 
+#[rustfmt::skip]
 pub const WHITE_KNIGHT: Piece = Piece {
-    piece_type: PieceType::WhiteKnight,
-    colour: Colour::White,
-    array_offset: PieceType::WhiteKnight as usize,
-    label: 'N',
-    value: PieceValue::Knight as u32,
-    role: PieceRole::Knight,
+    piece_type:     PieceType::WhiteKnight,
+    colour:         Colour::White,
+    array_offset:   PieceType::WhiteKnight as usize,
+    label:          'N',
+    value:          PieceValue::Knight as u32,
+    role:           PieceRole::Knight,
 };
 
+#[rustfmt::skip]
 pub const WHITE_ROOK: Piece = Piece {
-    piece_type: PieceType::WhiteRook,
-    colour: Colour::White,
-    array_offset: PieceType::WhiteRook as usize,
-    label: 'R',
-    value: PieceValue::Rook as u32,
-    role: PieceRole::Rook,
+    piece_type:     PieceType::WhiteRook,
+    colour:         Colour::White,
+    array_offset:   PieceType::WhiteRook as usize,
+    label:          'R',
+    value:          PieceValue::Rook as u32,
+    role:           PieceRole::Rook,
 };
 
+#[rustfmt::skip]
 pub const WHITE_QUEEN: Piece = Piece {
-    piece_type: PieceType::WhiteQueen,
-    colour: Colour::White,
-    array_offset: PieceType::WhiteQueen as usize,
-    label: 'Q',
-    value: PieceValue::Queen as u32,
-    role: PieceRole::Queen,
+    piece_type:     PieceType::WhiteQueen,
+    colour:         Colour::White,
+    array_offset:   PieceType::WhiteQueen as usize,
+    label:          'Q',
+    value:          PieceValue::Queen as u32,
+    role:           PieceRole::Queen,
 };
 
+#[rustfmt::skip]
 pub const WHITE_KING: Piece = Piece {
-    piece_type: PieceType::WhiteKing,
-    colour: Colour::White,
-    array_offset: PieceType::WhiteKing as usize,
-    label: 'K',
-    value: PieceValue::King as u32,
-    role: PieceRole::King,
+    piece_type:     PieceType::WhiteKing,
+    colour:         Colour::White,
+    array_offset:   PieceType::WhiteKing as usize,
+    label:          'K',
+    value:          PieceValue::King as u32,
+    role:           PieceRole::King,
 };
 
+#[rustfmt::skip]
 pub const BLACK_PAWN: Piece = Piece {
-    piece_type: PieceType::BlackPawn,
-    colour: Colour::Black,
-    array_offset: PieceType::BlackPawn as usize,
-    label: 'p',
-    value: PieceValue::Pawn as u32,
-    role: PieceRole::Pawn,
+    piece_type:     PieceType::BlackPawn,
+    colour:         Colour::Black,
+    array_offset:   PieceType::BlackPawn as usize,
+    label:          'p',
+    value:          PieceValue::Pawn as u32,
+    role:           PieceRole::Pawn,
 };
 
+#[rustfmt::skip]
 pub const BLACK_BISHOP: Piece = Piece {
-    piece_type: PieceType::BlackBishop,
-    colour: Colour::Black,
-    array_offset: PieceType::BlackBishop as usize,
-    label: 'b',
-    value: PieceValue::Bishop as u32,
-    role: PieceRole::Bishop,
+    piece_type:     PieceType::BlackBishop,
+    colour:         Colour::Black,
+    array_offset:   PieceType::BlackBishop as usize,
+    label:          'b',
+    value:          PieceValue::Bishop as u32,
+    role:           PieceRole::Bishop,
 };
 
+#[rustfmt::skip]
 pub const BLACK_KNIGHT: Piece = Piece {
-    piece_type: PieceType::BlackKnight,
-    colour: Colour::Black,
-    array_offset: PieceType::BlackKnight as usize,
-    label: 'n',
-    value: PieceValue::Knight as u32,
-    role: PieceRole::Knight,
+    piece_type:     PieceType::BlackKnight,
+    colour:         Colour::Black,
+    array_offset:   PieceType::BlackKnight as usize,
+    label:          'n',
+    value:          PieceValue::Knight as u32,
+    role:           PieceRole::Knight,
 };
 
+#[rustfmt::skip]
 pub const BLACK_ROOK: Piece = Piece {
-    piece_type: PieceType::BlackRook,
-    colour: Colour::Black,
-    array_offset: PieceType::BlackRook as usize,
-    label: 'r',
-    value: PieceValue::Rook as u32,
-    role: PieceRole::Rook,
+    piece_type:     PieceType::BlackRook,
+    colour:         Colour::Black,
+    array_offset:   PieceType::BlackRook as usize,
+    label:          'r',
+    value:          PieceValue::Rook as u32,
+    role:           PieceRole::Rook,
 };
 
+#[rustfmt::skip]
 pub const BLACK_QUEEN: Piece = Piece {
-    piece_type: PieceType::BlackQueen,
-    colour: Colour::Black,
-    array_offset: PieceType::BlackQueen as usize,
-    label: 'q',
-    value: PieceValue::Queen as u32,
-    role: PieceRole::Queen,
+    piece_type:     PieceType::BlackQueen,
+    colour:         Colour::Black,
+    array_offset:   PieceType::BlackQueen as usize,
+    label:          'q',
+    value:          PieceValue::Queen as u32,
+    role:           PieceRole::Queen,
 };
 
+#[rustfmt::skip]
 pub const BLACK_KING: Piece = Piece {
-    piece_type: PieceType::BlackKing,
-    colour: Colour::Black,
-    array_offset: PieceType::BlackKing as usize,
-    label: 'k',
-    value: PieceValue::King as u32,
-    role: PieceRole::King,
+    piece_type:     PieceType::BlackKing,
+    colour:         Colour::Black,
+    array_offset:   PieceType::BlackKing as usize,
+    label:          'k',
+    value:          PieceValue::King as u32,
+    role:           PieceRole::King,
 };
 
 #[rustfmt::skip]
@@ -178,6 +194,16 @@ pub const ALL_PIECES: &[Piece] = &[
     BLACK_QUEEN,
     BLACK_KING, 
 ];
+
+impl ToInt for Piece {
+    fn to_u8(&self) -> u8 {
+        self.array_offset as u8
+    }
+
+    fn to_usize(&self) -> usize {
+        self.array_offset as usize
+    }
+}
 
 impl Piece {
     pub const fn piece_type(&self) -> PieceType {
@@ -275,6 +301,7 @@ pub mod tests {
     use crate::board::piece;
     use crate::board::piece::PieceType;
     use crate::board::piece::PieceValue;
+    use crate::board::types::ToInt;
 
     #[test]
     pub fn piece_colour_as_expected() {
@@ -308,30 +335,30 @@ pub mod tests {
     #[test]
     pub fn piece_offset_as_expected() {
         let mut pce = piece::WHITE_PAWN;
-        assert_eq!(pce.offset(), PieceType::WhitePawn as usize);
+        assert_eq!(pce.to_usize(), PieceType::WhitePawn as usize);
         pce = piece::WHITE_BISHOP;
-        assert_eq!(pce.offset(), PieceType::WhiteBishop as usize);
+        assert_eq!(pce.to_usize(), PieceType::WhiteBishop as usize);
         pce = piece::WHITE_KNIGHT;
-        assert_eq!(pce.offset(), PieceType::WhiteKnight as usize);
+        assert_eq!(pce.to_usize(), PieceType::WhiteKnight as usize);
         pce = piece::WHITE_ROOK;
-        assert_eq!(pce.offset(), PieceType::WhiteRook as usize);
+        assert_eq!(pce.to_usize(), PieceType::WhiteRook as usize);
         pce = piece::WHITE_QUEEN;
-        assert_eq!(pce.offset(), PieceType::WhiteQueen as usize);
+        assert_eq!(pce.to_usize(), PieceType::WhiteQueen as usize);
         pce = piece::WHITE_KING;
-        assert_eq!(pce.offset(), PieceType::WhiteKing as usize);
+        assert_eq!(pce.to_usize(), PieceType::WhiteKing as usize);
 
         pce = piece::BLACK_PAWN;
-        assert_eq!(pce.offset(), PieceType::BlackPawn as usize);
+        assert_eq!(pce.to_usize(), PieceType::BlackPawn as usize);
         pce = piece::BLACK_BISHOP;
-        assert_eq!(pce.offset(), PieceType::BlackBishop as usize);
+        assert_eq!(pce.to_usize(), PieceType::BlackBishop as usize);
         pce = piece::BLACK_KNIGHT;
-        assert_eq!(pce.offset(), PieceType::BlackKnight as usize);
+        assert_eq!(pce.to_usize(), PieceType::BlackKnight as usize);
         pce = piece::BLACK_ROOK;
-        assert_eq!(pce.offset(), PieceType::BlackRook as usize);
+        assert_eq!(pce.to_usize(), PieceType::BlackRook as usize);
         pce = piece::BLACK_QUEEN;
-        assert_eq!(pce.offset(), PieceType::BlackQueen as usize);
+        assert_eq!(pce.to_usize(), PieceType::BlackQueen as usize);
         pce = piece::BLACK_KING;
-        assert_eq!(pce.offset(), PieceType::BlackKing as usize);
+        assert_eq!(pce.to_usize(), PieceType::BlackKing as usize);
     }
 
     #[test]

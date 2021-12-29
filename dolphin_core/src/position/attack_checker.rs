@@ -236,7 +236,7 @@ fn is_attacked_by_pawn_black(
 pub mod tests {
     use crate::board::colour::Colour;
     use crate::board::occupancy_masks::OccupancyMasks;
-    use crate::board::square::Square;
+    use crate::board::square::*;
     use crate::io::fen;
     use crate::position::attack_checker;
     use crate::position::game_position::Position;
@@ -264,7 +264,7 @@ pub mod tests {
         assert!(attack_checker::is_sq_attacked(
             &occ_masks,
             pos.board(),
-            Square::g5,
+            SQUARE_G5,
             Colour::White
         ));
     }
@@ -291,7 +291,7 @@ pub mod tests {
         assert!(attack_checker::is_sq_attacked(
             &occ_masks,
             pos.board(),
-            Square::h4,
+            SQUARE_H4,
             Colour::Black
         ));
     }
@@ -318,7 +318,7 @@ pub mod tests {
         assert!(attack_checker::is_sq_attacked(
             &occ_masks,
             pos.board(),
-            Square::e5,
+            SQUARE_E5,
             Colour::White
         ));
     }
@@ -345,7 +345,7 @@ pub mod tests {
         assert!(attack_checker::is_sq_attacked(
             &occ_masks,
             pos.board(),
-            Square::e3,
+            SQUARE_E3,
             Colour::Black
         ));
     }
@@ -372,7 +372,7 @@ pub mod tests {
         assert!(attack_checker::is_sq_attacked(
             &occ_masks,
             pos.board(),
-            Square::e5,
+            SQUARE_E5,
             Colour::White
         ));
     }
@@ -399,7 +399,7 @@ pub mod tests {
         assert!(attack_checker::is_sq_attacked(
             &occ_masks,
             pos.board(),
-            Square::e3,
+            SQUARE_E3,
             Colour::Black
         ));
     }
@@ -426,7 +426,7 @@ pub mod tests {
         assert!(attack_checker::is_sq_attacked(
             &occ_masks,
             pos.board(),
-            Square::e5,
+            SQUARE_E5,
             Colour::White
         ));
     }
@@ -453,7 +453,7 @@ pub mod tests {
         assert!(attack_checker::is_sq_attacked(
             &occ_masks,
             pos.board(),
-            Square::e3,
+            SQUARE_E3,
             Colour::Black
         ));
     }
@@ -480,7 +480,7 @@ pub mod tests {
         assert!(attack_checker::is_sq_attacked(
             &occ_masks,
             pos.board(),
-            Square::e5,
+            SQUARE_E5,
             Colour::White
         ));
     }
@@ -507,7 +507,7 @@ pub mod tests {
         assert!(attack_checker::is_sq_attacked(
             &occ_masks,
             pos.board(),
-            Square::e3,
+            SQUARE_E3,
             Colour::Black
         ));
     }
@@ -534,7 +534,7 @@ pub mod tests {
         assert!(attack_checker::is_sq_attacked(
             &occ_masks,
             pos.board(),
-            Square::b5,
+            SQUARE_B5,
             Colour::White
         ));
     }
@@ -561,14 +561,14 @@ pub mod tests {
         assert!(attack_checker::is_sq_attacked(
             &occ_masks,
             pos.board(),
-            Square::f5,
+            SQUARE_F5,
             Colour::Black
         ));
     }
 
     #[test]
     pub fn is_white_kingside_castle_sq_e1_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::e1];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_E1];
 
         let fen = "rn2kbnr/pp1p1ppp/8/2p5/4q3/2P5/PP1P2PP/RNBQK2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -597,7 +597,7 @@ pub mod tests {
 
     #[test]
     pub fn is_white_kingside_castle_sq_f1_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::f1];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_F1];
 
         let fen = "rn2kbnr/pp1p1ppp/8/2p5/2q5/2P5/PP1P2PP/RNBQK2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -626,7 +626,7 @@ pub mod tests {
 
     #[test]
     pub fn is_white_kingside_castle_sq_g1_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::g1];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_G1];
 
         let fen = "rn2kbnr/pp1p1ppp/8/2p5/3q4/2P5/PP1P2PP/RNBQK2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -655,7 +655,7 @@ pub mod tests {
 
     #[test]
     pub fn is_white_queenside_castle_sq_e1_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::e1];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_E1];
 
         let fen = "rn2kbnr/pp1p1ppp/8/2p5/3P3q/2P5/PP4PP/R3K2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -684,7 +684,7 @@ pub mod tests {
 
     #[test]
     pub fn is_white_queenside_castle_sq_d1_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::d1];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_D1];
 
         let fen = "rn2kbnr/pp1p1ppp/8/2p5/3P2q1/2P5/PP4PP/R3K2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -713,7 +713,7 @@ pub mod tests {
 
     #[test]
     pub fn is_white_queenside_castle_sq_c1_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::c1];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_C1];
 
         let fen = "rn2kbnr/pp1p1ppp/8/2p5/3P1q2/2P5/PP4PP/R3K2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -742,7 +742,7 @@ pub mod tests {
 
     #[test]
     pub fn is_white_queenside_castle_sq_b1_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::b1];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_B1];
 
         let fen = "rnq1kbnr/pp1p1ppp/8/2p5/3Pb3/2P5/PP4PP/R3K2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -771,7 +771,7 @@ pub mod tests {
 
     #[test]
     pub fn is_black_kingside_castle_sq_e8_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::e8];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_E8];
 
         let fen = "r3k2r/pp4pp/2p5/7B/8/2P5/PP1P2PP/RNB1K2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -800,7 +800,7 @@ pub mod tests {
 
     #[test]
     pub fn is_black_kingside_castle_sq_f8_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::f8];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_F8];
 
         let fen = "r3k2r/pp4pp/8/2B5/8/2P5/PP1P2PP/RNB1K2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -829,7 +829,7 @@ pub mod tests {
 
     #[test]
     pub fn is_black_kingside_castle_sq_g8_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::g8];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_G8];
 
         let fen = "r3k2r/pp4pp/8/3B4/8/2P5/PP1P2PP/RN2K2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -858,7 +858,7 @@ pub mod tests {
 
     #[test]
     pub fn is_black_queenside_castle_sq_e8_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::e8];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_E8];
 
         let fen = "r3k2r/pp4pp/8/7B/8/2P5/PP1P2PP/RN2K2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -887,7 +887,7 @@ pub mod tests {
 
     #[test]
     pub fn is_black_queenside_castle_sq_d8_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::d8];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_D8];
 
         let fen = "r3k2r/pp4pp/8/6B1/8/2P5/PP1P2PP/RN2K2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -916,7 +916,7 @@ pub mod tests {
 
     #[test]
     pub fn is_black_queenside_castle_sq_c8_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::c8];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_C8];
 
         let fen = "r3k2r/pp4pp/8/5B2/8/2P5/PP1P2PP/RN2K2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
@@ -945,7 +945,7 @@ pub mod tests {
 
     #[test]
     pub fn is_black_queenside_castle_sq_b8_attacked_() {
-        const SQUARE_TO_CHECK: [Square; 1] = [Square::b8];
+        const SQUARE_TO_CHECK: [Square; 1] = [SQUARE_B8];
 
         let fen = "r3k2r/pp4pp/8/4B3/8/2P5/PP1P2PP/RN2K2R b KQkq - 0 2";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =

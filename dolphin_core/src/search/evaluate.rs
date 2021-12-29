@@ -6,6 +6,7 @@ use crate::board::colour::Colour;
 use crate::board::game_board;
 use crate::board::game_board::Board;
 use crate::board::piece::PieceType;
+use crate::board::types::ToInt;
 
 #[rustfmt::skip]
 const PAWN_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
@@ -89,7 +90,7 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
     let mut board_bb = board.get_bitboard();
     while board_bb != 0 {
         let sq = bitboard::pop_1st_bit(&mut board_bb);
-        let sq_offset = sq.offset();
+        let sq_offset = sq.to_usize();
 
         let pce = &mut None;
         board.get_piece_on_square(sq, pce);

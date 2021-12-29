@@ -16,7 +16,6 @@ use crate::position::move_counter::MoveCounter;
 // [3] = en passant square (or '-' if no en passant)
 // [4] = half-move clock
 // [5] = full move number
-
 const FEN_BOARD: usize = 0;
 const FEN_SIDE_TO_MOVE: usize = 1;
 const FEN_CASTLE_PERMISSIONS: usize = 2;
@@ -71,10 +70,10 @@ fn extract_board_from_fen(pieces: &str) -> Board {
                     // not a number, so it's a piece
                     let piece = Piece::from_char(c);
 
-                    if let Some(r) = Rank::from_num(rank as u64) {
-                        if let Some(f) = File::from_num(file as u64) {
+                    if let Some(r) = Rank::new(rank as u8) {
+                        if let Some(f) = File::new(file as u8) {
                             //                    if r.is_some() && f.is_some() {
-                            let sq: Square = Square::get_square(r, f);
+                            let sq: Square = Square::from_rank_file(r, f);
                             file += 1;
 
                             retval.add_piece(piece, sq);
@@ -148,7 +147,7 @@ mod tests {
     use super::FEN_SIDE_TO_MOVE;
     use crate::board::colour::Colour;
     use crate::board::piece;
-    use crate::board::square::Square;
+    use crate::board::square::*;
     use crate::position::castle_permissions;
     use std::collections::HashMap;
 
@@ -160,38 +159,38 @@ mod tests {
         // set up expected pieces and squares
 
         let mut map = HashMap::new();
-        map.insert(Square::a1, &piece::WHITE_PAWN);
-        map.insert(Square::d1, &piece::BLACK_QUEEN);
-        map.insert(Square::h1, &piece::BLACK_KNIGHT);
-        map.insert(Square::a2, &piece::WHITE_PAWN);
-        map.insert(Square::c2, &piece::BLACK_ROOK);
-        map.insert(Square::e2, &piece::BLACK_ROOK);
-        map.insert(Square::f2, &piece::WHITE_PAWN);
-        map.insert(Square::h2, &piece::WHITE_PAWN);
-        map.insert(Square::a3, &piece::BLACK_PAWN);
-        map.insert(Square::b3, &piece::WHITE_PAWN);
-        map.insert(Square::c3, &piece::WHITE_ROOK);
-        map.insert(Square::e3, &piece::WHITE_KNIGHT);
-        map.insert(Square::f3, &piece::BLACK_PAWN);
-        map.insert(Square::b4, &piece::WHITE_ROOK);
-        map.insert(Square::c4, &piece::WHITE_BISHOP);
-        map.insert(Square::f4, &piece::WHITE_PAWN);
-        map.insert(Square::b5, &piece::WHITE_BISHOP);
-        map.insert(Square::e5, &piece::WHITE_PAWN);
-        map.insert(Square::g5, &piece::WHITE_KING);
-        map.insert(Square::a6, &piece::WHITE_KNIGHT);
-        map.insert(Square::c6, &piece::BLACK_PAWN);
-        map.insert(Square::h6, &piece::BLACK_PAWN);
-        map.insert(Square::b7, &piece::WHITE_PAWN);
-        map.insert(Square::c7, &piece::BLACK_PAWN);
-        map.insert(Square::d7, &piece::BLACK_PAWN);
-        map.insert(Square::e7, &piece::WHITE_QUEEN);
-        map.insert(Square::f7, &piece::BLACK_PAWN);
-        map.insert(Square::g7, &piece::BLACK_BISHOP);
-        map.insert(Square::b8, &piece::BLACK_KNIGHT);
-        map.insert(Square::d8, &piece::BLACK_KING);
-        map.insert(Square::g8, &piece::BLACK_BISHOP);
-        map.insert(Square::h8, &piece::BLACK_PAWN);
+        map.insert(SQUARE_A1, &piece::WHITE_PAWN);
+        map.insert(SQUARE_D1, &piece::BLACK_QUEEN);
+        map.insert(SQUARE_H1, &piece::BLACK_KNIGHT);
+        map.insert(SQUARE_A2, &piece::WHITE_PAWN);
+        map.insert(SQUARE_C2, &piece::BLACK_ROOK);
+        map.insert(SQUARE_E2, &piece::BLACK_ROOK);
+        map.insert(SQUARE_F2, &piece::WHITE_PAWN);
+        map.insert(SQUARE_H2, &piece::WHITE_PAWN);
+        map.insert(SQUARE_A3, &piece::BLACK_PAWN);
+        map.insert(SQUARE_B3, &piece::WHITE_PAWN);
+        map.insert(SQUARE_C3, &piece::WHITE_ROOK);
+        map.insert(SQUARE_E3, &piece::WHITE_KNIGHT);
+        map.insert(SQUARE_F3, &piece::BLACK_PAWN);
+        map.insert(SQUARE_B4, &piece::WHITE_ROOK);
+        map.insert(SQUARE_C4, &piece::WHITE_BISHOP);
+        map.insert(SQUARE_F4, &piece::WHITE_PAWN);
+        map.insert(SQUARE_B5, &piece::WHITE_BISHOP);
+        map.insert(SQUARE_E5, &piece::WHITE_PAWN);
+        map.insert(SQUARE_G5, &piece::WHITE_KING);
+        map.insert(SQUARE_A6, &piece::WHITE_KNIGHT);
+        map.insert(SQUARE_C6, &piece::BLACK_PAWN);
+        map.insert(SQUARE_H6, &piece::BLACK_PAWN);
+        map.insert(SQUARE_B7, &piece::WHITE_PAWN);
+        map.insert(SQUARE_C7, &piece::BLACK_PAWN);
+        map.insert(SQUARE_D7, &piece::BLACK_PAWN);
+        map.insert(SQUARE_E7, &piece::WHITE_QUEEN);
+        map.insert(SQUARE_F7, &piece::BLACK_PAWN);
+        map.insert(SQUARE_G7, &piece::BLACK_BISHOP);
+        map.insert(SQUARE_B8, &piece::BLACK_KNIGHT);
+        map.insert(SQUARE_D8, &piece::BLACK_KING);
+        map.insert(SQUARE_G8, &piece::BLACK_BISHOP);
+        map.insert(SQUARE_H8, &piece::BLACK_PAWN);
 
         let board = extract_board_from_fen(piece_pos[FEN_BOARD]);
 
@@ -334,12 +333,12 @@ mod tests {
         let mut fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q c6 0 0";
         let mut piece_pos: Vec<&str> = fen.split(' ').collect();
         let mut enp_sq = get_en_passant_sq(piece_pos[FEN_EN_PASSANT]).unwrap();
-        assert_eq!(enp_sq, Square::c6);
+        assert_eq!(enp_sq, SQUARE_C6);
 
         fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q c3 0 0";
         piece_pos = fen.split(' ').collect();
         enp_sq = get_en_passant_sq(piece_pos[FEN_EN_PASSANT]).unwrap();
-        assert_eq!(enp_sq, Square::c3);
+        assert_eq!(enp_sq, SQUARE_C3);
 
         fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 0";
         piece_pos = fen.split(' ').collect();

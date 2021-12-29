@@ -2,6 +2,8 @@ use crate::board::colour::Colour;
 use crate::board::piece;
 use crate::board::piece::Piece;
 use crate::board::square::Square;
+use crate::board::square::*;
+use crate::board::types::ToInt;
 use crate::moves::move_list::MoveList;
 use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
@@ -98,6 +100,7 @@ pub struct Mov {
     mv: u64,
 }
 
+#[rustfmt::skip]
 impl fmt::Debug for Mov {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
@@ -111,20 +114,20 @@ impl fmt::Debug for Mov {
         debug_str.push_str(&format!("{} ", to_sq.rank()));
 
         let mt = match self.get_move_type() {
-            MoveType::Quiet => "Quiet",
-            MoveType::DoublePawn => "DoubleFirstMove",
-            MoveType::KingCastle => "KingCastle",
-            MoveType::QueenCastle => "QueenCastle",
-            MoveType::Capture => "Capture",
-            MoveType::EnPassant => "EnPassant",
-            MoveType::PromoteKnightQuiet => "PromoteKnightQuiet",
-            MoveType::PromoteBishopQuiet => "PromoteBishopQuiet",
-            MoveType::PromoteRookQuiet => "PromoteRookQuiet",
-            MoveType::PromoteQueenQuiet => "PromoteQueenQuiet",
-            MoveType::PromoteKnightCapture => "PromoteKnightCapture",
-            MoveType::PromoteBishopCapture => "PromoteBishopCapture",
-            MoveType::PromoteRookCapture => "PromoteRookCapture",
-            MoveType::PromoteQueenCapture => "PromoteQueenCapture",
+            MoveType::Quiet         => "Quiet",
+            MoveType::DoublePawn    => "DoubleFirstMove",
+            MoveType::KingCastle    => "KingCastle",
+            MoveType::QueenCastle   => "QueenCastle",
+            MoveType::Capture       => "Capture",
+            MoveType::EnPassant     => "EnPassant",
+            MoveType::PromoteKnightQuiet    => "PromoteKnightQuiet",
+            MoveType::PromoteBishopQuiet    => "PromoteBishopQuiet",
+            MoveType::PromoteRookQuiet      => "PromoteRookQuiet",
+            MoveType::PromoteQueenQuiet     => "PromoteQueenQuiet",
+            MoveType::PromoteKnightCapture  => "PromoteKnightCapture",
+            MoveType::PromoteBishopCapture  => "PromoteBishopCapture",
+            MoveType::PromoteRookCapture    => "PromoteRookCapture",
+            MoveType::PromoteQueenCapture   => "PromoteQueenCapture",
         };
         debug_str.push_str(&format!(" : {}]", mt));
 
@@ -146,13 +149,13 @@ impl Mov {
     /// * `from_sq` - the from square
     /// * `to_sq`   - the to square
     ///
-    pub const fn encode_move_quiet(from_sq: Square, to_sq: Square) -> Mov {
-        let mv: u64 =
-            (from_sq as u16 & MASK_FROM_SQ | (to_sq as u16) << SHIFT_TO_SQ & MASK_TO_SQ) as u64;
+    pub fn encode_move_quiet(from_sq: Square, to_sq: Square) -> Mov {
+        let mv: u64 = (from_sq.to_u8() as u16 & MASK_FROM_SQ
+            | (to_sq.to_u8() as u16) << SHIFT_TO_SQ & MASK_TO_SQ) as u64;
         Mov { mv }
     }
 
-    pub const fn encode_move_capture(from_sq: Square, to_sq: Square) -> Mov {
+    pub fn encode_move_capture(from_sq: Square, to_sq: Square) -> Mov {
         let mut mov = Mov::encode_move_quiet(from_sq, to_sq);
         mov.mv = set_move_info(MV_FLG_CAPTURE, mov.mv);
         mov
@@ -238,32 +241,32 @@ impl Mov {
 
     /// Encodes a White King-side castle move
     ///
-    pub const fn encode_move_castle_kingside_white() -> Mov {
-        let mut mov = Mov::encode_move_quiet(Square::e1, Square::g1);
+    pub fn encode_move_castle_kingside_white() -> Mov {
+        let mut mov = Mov::encode_move_quiet(SQUARE_E1, SQUARE_G1);
         mov.mv = set_move_info(MV_FLG_KING_CASTLE, mov.mv);
         mov
     }
 
     /// Encodes a Black King-side castle move
     ///
-    pub const fn encode_move_castle_kingside_black() -> Mov {
-        let mut mov = Mov::encode_move_quiet(Square::e8, Square::g8);
+    pub fn encode_move_castle_kingside_black() -> Mov {
+        let mut mov = Mov::encode_move_quiet(SQUARE_E8, SQUARE_G8);
         mov.mv = set_move_info(MV_FLG_KING_CASTLE, mov.mv);
         mov
     }
 
     /// Encodes a White Queen-side castle move
     ///
-    pub const fn encode_move_castle_queenside_white() -> Mov {
-        let mut mov = Mov::encode_move_quiet(Square::e1, Square::c1);
+    pub fn encode_move_castle_queenside_white() -> Mov {
+        let mut mov = Mov::encode_move_quiet(SQUARE_E1, SQUARE_C1);
         mov.mv = set_move_info(MV_FLG_QUEEN_CASTLE, mov.mv);
         mov
     }
 
     /// Encodes a Black Queen-side castle move
     ///
-    pub const fn encode_move_castle_queenside_black() -> Mov {
-        let mut mov = Mov::encode_move_quiet(Square::e8, Square::c8);
+    pub fn encode_move_castle_queenside_black() -> Mov {
+        let mut mov = Mov::encode_move_quiet(SQUARE_E8, SQUARE_C8);
         mov.mv = set_move_info(MV_FLG_QUEEN_CASTLE, mov.mv);
         mov
     }
@@ -273,7 +276,7 @@ impl Mov {
     pub fn decode_from_square(self) -> Square {
         let info = extract_move_info(self.mv);
         let sq = (info & MASK_FROM_SQ).shr(SHIFT_FROM_SQ);
-        Square::from_num(sq as u64).unwrap()
+        Square::new(sq as u8).unwrap()
     }
 
     ///
@@ -286,7 +289,7 @@ impl Mov {
     pub fn decode_to_square(self) -> Square {
         let info = extract_move_info(self.mv);
         let sq = (info & MASK_TO_SQ).shr(SHIFT_TO_SQ);
-        Square::from_num(sq as u64).unwrap()
+        Square::new(sq as u8).unwrap()
     }
 
     pub fn decode_promotion_piece(self, colour: Colour) -> &'static Piece {
@@ -443,7 +446,7 @@ pub fn print_move_list(move_list: &MoveList) {
 pub mod tests {
     use crate::board::piece;
     use crate::board::square;
-    use crate::board::square::Square;
+    use crate::board::square::*;
     use crate::moves::mov::Mov;
 
     #[test]
@@ -453,8 +456,8 @@ pub mod tests {
         let decoded_from_sq = mv.decode_from_square();
         let decoded_to_sq = mv.decode_to_square();
 
-        assert_eq!(decoded_from_sq, Square::e1);
-        assert_eq!(decoded_to_sq, Square::g1);
+        assert_eq!(decoded_from_sq, SQUARE_E1);
+        assert_eq!(decoded_to_sq, SQUARE_G1);
 
         assert!(mv.is_king_castle());
         assert!(mv.is_castle());
@@ -473,8 +476,8 @@ pub mod tests {
         let decoded_from_sq = mv.decode_from_square();
         let decoded_to_sq = mv.decode_to_square();
 
-        assert_eq!(decoded_from_sq, Square::e1);
-        assert_eq!(decoded_to_sq, Square::c1);
+        assert_eq!(decoded_from_sq, SQUARE_E1);
+        assert_eq!(decoded_to_sq, SQUARE_C1);
 
         assert!(!mv.is_king_castle());
         assert!(mv.is_castle());
@@ -493,8 +496,8 @@ pub mod tests {
         let decoded_from_sq = mv.decode_from_square();
         let decoded_to_sq = mv.decode_to_square();
 
-        assert_eq!(decoded_from_sq, Square::e8);
-        assert_eq!(decoded_to_sq, Square::g8);
+        assert_eq!(decoded_from_sq, SQUARE_E8);
+        assert_eq!(decoded_to_sq, SQUARE_G8);
 
         assert!(mv.is_king_castle());
         assert!(mv.is_castle());
@@ -513,8 +516,8 @@ pub mod tests {
         let decoded_from_sq = mv.decode_from_square();
         let decoded_to_sq = mv.decode_to_square();
 
-        assert_eq!(decoded_from_sq, Square::e8);
-        assert_eq!(decoded_to_sq, Square::c8);
+        assert_eq!(decoded_from_sq, SQUARE_E8);
+        assert_eq!(decoded_to_sq, SQUARE_C8);
 
         assert!(!mv.is_king_castle());
         assert!(mv.is_castle());

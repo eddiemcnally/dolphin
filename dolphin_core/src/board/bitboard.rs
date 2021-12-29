@@ -1,6 +1,8 @@
 use crate::board::square::Square;
 use std::ops::Shl;
 
+use super::types::ToInt;
+
 const BIT_0: u64 = 0x01;
 
 pub fn set_bit(bb: u64, sq: Square) -> u64 {
@@ -27,7 +29,7 @@ pub fn pop_1st_bit(bb: &mut u64) -> Square {
     debug_assert!(*bb != 0, "bitboard is already zero");
 
     let bit_being_cleared = bb.trailing_zeros();
-    let sq_clear = Square::from_num(bit_being_cleared as u64).unwrap();
+    let sq_clear = Square::new(bit_being_cleared as u8).unwrap();
 
     *bb = clear_bit(*bb, sq_clear);
     sq_clear
@@ -45,22 +47,23 @@ pub fn display_squares(bb: u64) {
 pub fn print_hex(bb: u64) {
     println!("{:#064X}", bb);
 }
+
 pub fn to_mask(sq: Square) -> u64 {
-    BIT_0.shl(sq.offset())
+    BIT_0.shl(sq.to_u8())
 }
 
 #[cfg(test)]
 pub mod tests {
     use crate::board::bitboard;
     use crate::board::square;
-    use crate::board::square::Square;
+    use crate::board::square::*;
     use std::u64;
 
     #[test]
     pub fn set_msb_check_square_as_h8() {
         let mut bb: u64 = 0x8000000000000000;
         let sq = bitboard::pop_1st_bit(&mut bb);
-        assert_eq!(sq, Square::h8);
+        assert_eq!(sq, SQUARE_H8);
     }
 
     #[test]

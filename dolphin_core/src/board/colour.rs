@@ -1,5 +1,7 @@
 use std::fmt;
 
+use super::types::ToInt;
+
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub enum Colour {
     White,
@@ -8,6 +10,16 @@ pub enum Colour {
 
 pub const NUM_COLOURS: usize = 2;
 
+impl ToInt for Colour {
+    fn to_u8(&self) -> u8 {
+        *self as u8
+    }
+
+    fn to_usize(&self) -> usize {
+        *self as usize
+    }
+}
+
 impl Colour {
     pub const fn flip_side(self) -> Colour {
         match self {
@@ -15,9 +27,7 @@ impl Colour {
             Colour::Black => Colour::White,
         }
     }
-    pub const fn offset(self) -> usize {
-        self as usize
-    }
+
     pub fn is_white(self) -> bool {
         self == Colour::White
     }

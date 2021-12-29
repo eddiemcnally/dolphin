@@ -4,6 +4,7 @@ use rand_xoshiro::Xoshiro256PlusPlus;
 
 use crate::board::piece::{Piece, NUM_PIECE_TYPES};
 use crate::board::square::{Square, NUM_SQUARES};
+use crate::board::types::ToInt;
 use crate::position::castle_permissions;
 use crate::position::castle_permissions::{CastlePermissionType, NUM_CASTLE_PERMS};
 
@@ -51,14 +52,14 @@ impl ZobristKeys {
         self.side_key
     }
 
-    pub const fn piece_square(&self, piece: &'static Piece, square: Square) -> ZobristHash {
-        let pce_offset = piece.offset();
-        let sq_offset = square.offset();
+    pub fn piece_square(&self, piece: &'static Piece, square: Square) -> ZobristHash {
+        let pce_offset = piece.to_usize();
+        let sq_offset = square.to_usize();
         self.piece_keys[sq_offset][pce_offset]
     }
 
-    pub const fn en_passant(&self, square: Square) -> ZobristHash {
-        let sq_offset = square.offset();
+    pub fn en_passant(&self, square: Square) -> ZobristHash {
+        let sq_offset = square.to_usize();
         self.en_passant_sq_keys[sq_offset]
     }
 

@@ -49,7 +49,7 @@ impl MoveList {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::board::square::Square;
+    use crate::board::square::*;
     use crate::moves::mov::Mov;
     use crate::moves::move_list::MoveList;
 
@@ -74,11 +74,11 @@ pub mod tests {
     #[test]
     pub fn push_moves_contains_as_expected() {
         let mvs = [
-            Mov::encode_move_quiet(Square::h7, Square::h5),
-            Mov::encode_move_quiet(Square::b4, Square::c5),
-            Mov::encode_move_quiet(Square::a3, Square::a2),
-            Mov::encode_move_quiet(Square::d6, Square::e8),
-            Mov::encode_move_quiet(Square::b6, Square::b7),
+            Mov::encode_move_quiet(SQUARE_H7, SQUARE_H5),
+            Mov::encode_move_quiet(SQUARE_B4, SQUARE_C5),
+            Mov::encode_move_quiet(SQUARE_A3, SQUARE_A2),
+            Mov::encode_move_quiet(SQUARE_D6, SQUARE_E8),
+            Mov::encode_move_quiet(SQUARE_B6, SQUARE_B7),
         ];
 
         let mut ml = MoveList::new();
@@ -94,11 +94,11 @@ pub mod tests {
     #[test]
     pub fn push_moves_iterator_as_expected() {
         let mvs = [
-            Mov::encode_move_quiet(Square::h7, Square::h5),
-            Mov::encode_move_quiet(Square::b4, Square::c5),
-            Mov::encode_move_quiet(Square::a3, Square::a2),
-            Mov::encode_move_quiet(Square::d6, Square::e8),
-            Mov::encode_move_quiet(Square::b6, Square::b7),
+            Mov::encode_move_quiet(SQUARE_H7, SQUARE_H5),
+            Mov::encode_move_quiet(SQUARE_B4, SQUARE_C5),
+            Mov::encode_move_quiet(SQUARE_A3, SQUARE_A2),
+            Mov::encode_move_quiet(SQUARE_D6, SQUARE_E8),
+            Mov::encode_move_quiet(SQUARE_B6, SQUARE_B7),
         ];
 
         let mut ml = MoveList::new();
@@ -117,11 +117,11 @@ pub mod tests {
     #[test]
     pub fn push_moves_len_as_expected() {
         let mvs = [
-            Mov::encode_move_quiet(Square::h7, Square::h5),
-            Mov::encode_move_quiet(Square::b4, Square::c5),
-            Mov::encode_move_quiet(Square::a3, Square::a2),
-            Mov::encode_move_quiet(Square::d6, Square::e8),
-            Mov::encode_move_quiet(Square::b6, Square::b7),
+            Mov::encode_move_quiet(SQUARE_H7, SQUARE_H5),
+            Mov::encode_move_quiet(SQUARE_B4, SQUARE_C5),
+            Mov::encode_move_quiet(SQUARE_A3, SQUARE_A2),
+            Mov::encode_move_quiet(SQUARE_D6, SQUARE_E8),
+            Mov::encode_move_quiet(SQUARE_B6, SQUARE_B7),
         ];
 
         let mut ml = MoveList::new();
