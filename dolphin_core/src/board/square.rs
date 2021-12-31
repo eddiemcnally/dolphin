@@ -168,7 +168,8 @@ impl Square {
         self.0 >> 3
     }
     const fn file_as_u8(self) -> u8 {
-        (self.0 % 8) as u8
+        self.0 & 0x07
+        //(self.0 % 8) as u8
     }
 }
 

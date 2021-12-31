@@ -276,8 +276,8 @@ impl<'a> Position<'a> {
 
     pub fn make_move(&mut self, mv: Mov) -> MoveLegality {
         // set up some general variables
-        let from_sq = mv.decode_from_square();
-        let to_sq = mv.decode_to_square();
+        let from_sq = mv.from_square();
+        let to_sq = mv.to_square();
 
         let piece = &mut None;
         self.board().get_piece_on_square(from_sq, piece);
@@ -294,7 +294,7 @@ impl<'a> Position<'a> {
 
         handle_50_move_rule(self, mv, piece.unwrap());
 
-        let move_type = mv.get_move_type();
+        let move_type = mv.move_type();
 
         match move_type {
             MoveType::Quiet => move_piece_on_board(self, piece.unwrap(), from_sq, to_sq),
@@ -336,7 +336,7 @@ impl<'a> Position<'a> {
 
         self.game_state = gs;
 
-        let mt = mv.get_move_type();
+        let mt = mv.move_type();
 
         match mt {
             MoveType::Quiet => self.reverse_quiet_move(mv, piece),
@@ -358,8 +358,8 @@ impl<'a> Position<'a> {
     }
 
     fn reverse_quiet_move(&mut self, mv: Mov, piece: &'static Piece) {
-        let from_sq = mv.decode_from_square();
-        let to_sq = mv.decode_to_square();
+        let from_sq = mv.from_square();
+        let to_sq = mv.to_square();
 
         // revert the move
         self.board.move_piece(to_sq, from_sq, piece);
@@ -371,8 +371,8 @@ impl<'a> Position<'a> {
         pce: &'static Piece,
         capture_pce: Option<&'static Piece>,
     ) {
-        let from_sq = mv.decode_from_square();
-        let to_sq = mv.decode_to_square();
+        let from_sq = mv.from_square();
+        let to_sq = mv.to_square();
 
         // revert move
         self.board.move_piece(to_sq, from_sq, pce);
@@ -388,8 +388,8 @@ impl<'a> Position<'a> {
     ) {
         debug_assert!(mv.is_promote(), "reverse_promotion_move, invalid move type");
 
-        let from_sq = mv.decode_from_square();
-        let to_sq = mv.decode_to_square();
+        let from_sq = mv.from_square();
+        let to_sq = mv.to_square();
 
         // remove promoted piece
         self.board.remove_from_sq(to_sq);
@@ -402,8 +402,8 @@ impl<'a> Position<'a> {
     }
 
     fn reverse_en_passant_move(&mut self, mv: Mov, side_move: Colour) {
-        let from_sq = mv.decode_from_square();
-        let to_sq = mv.decode_to_square();
+        let from_sq = mv.from_square();
+        let to_sq = mv.to_square();
 
         match side_move {
             Colour::White => {

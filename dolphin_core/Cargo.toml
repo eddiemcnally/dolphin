@@ -9,10 +9,7 @@ edition = "2021"
 rand = "0.8.4"
 rand_seeder = "0.2.2"
 rand_xoshiro = "0.6.0"
-typenum = "1.15.0"
-num_enum = "0.5.5"
 core_affinity = "0.5.10"
-num-traits = "0.2.14"
 
 
 

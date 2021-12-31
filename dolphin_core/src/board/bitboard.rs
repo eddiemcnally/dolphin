@@ -1,7 +1,6 @@
+use super::types::ToInt;
 use crate::board::square::Square;
 use std::ops::Shl;
-
-use super::types::ToInt;
 
 const BIT_0: u64 = 0x01;
 

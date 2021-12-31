@@ -11,20 +11,6 @@ use crate::position::game_position::Position;
 
 pub struct MoveGenerator {}
 
-const WHITE_PROMO_PCES: [&Piece; 4] = [
-    &piece::WHITE_KNIGHT,
-    &piece::WHITE_BISHOP,
-    &piece::WHITE_ROOK,
-    &piece::WHITE_QUEEN,
-];
-
-const BLACK_PROMO_PCES: [&Piece; 4] = [
-    &piece::BLACK_KNIGHT,
-    &piece::BLACK_BISHOP,
-    &piece::BLACK_ROOK,
-    &piece::BLACK_QUEEN,
-];
-
 impl Default for MoveGenerator {
     fn default() -> Self {
         Self::new()
@@ -473,12 +459,22 @@ impl MoveGenerator {
     ) {
         match side_to_move {
             Colour::White => {
-                for pce in WHITE_PROMO_PCES {
+                for pce in [
+                    &piece::WHITE_KNIGHT,
+                    &piece::WHITE_BISHOP,
+                    &piece::WHITE_ROOK,
+                    &piece::WHITE_QUEEN,
+                ] {
                     move_list.push(Mov::encode_move_with_promotion(from_sq, to_sq, pce));
                 }
             }
             Colour::Black => {
-                for pce in BLACK_PROMO_PCES {
+                for pce in [
+                    &piece::BLACK_KNIGHT,
+                    &piece::BLACK_BISHOP,
+                    &piece::BLACK_ROOK,
+                    &piece::BLACK_QUEEN,
+                ] {
                     move_list.push(Mov::encode_move_with_promotion(from_sq, to_sq, pce));
                 }
             }
@@ -494,12 +490,22 @@ impl MoveGenerator {
     ) {
         match side_to_move {
             Colour::White => {
-                for pce in WHITE_PROMO_PCES {
+                for pce in [
+                    &piece::WHITE_KNIGHT,
+                    &piece::WHITE_BISHOP,
+                    &piece::WHITE_ROOK,
+                    &piece::WHITE_QUEEN,
+                ] {
                     move_list.push(Mov::encode_move_with_promotion_capture(from_sq, to_sq, pce));
                 }
             }
             Colour::Black => {
-                for pce in BLACK_PROMO_PCES {
+                for pce in [
+                    &piece::BLACK_KNIGHT,
+                    &piece::BLACK_BISHOP,
+                    &piece::BLACK_ROOK,
+                    &piece::BLACK_QUEEN,
+                ] {
                     move_list.push(Mov::encode_move_with_promotion_capture(from_sq, to_sq, pce));
                 }
             }

@@ -16,8 +16,8 @@ pub struct Piece {
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 pub enum PieceType {
     WhitePawn,
-    WhiteBishop,
     WhiteKnight,
+    WhiteBishop,
     WhiteRook,
     WhiteQueen,
     WhiteKing,
