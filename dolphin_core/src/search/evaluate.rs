@@ -1,7 +1,7 @@
 // Values for piece square arrays are taken from
 // https://www.chessprogramming.org/Simplified_Evaluation_Function
 
-use crate::board::bitboard;
+use crate::board::bitboard::SquareIterator;
 use crate::board::colour::Colour;
 use crate::board::game_board;
 use crate::board::game_board::Board;
@@ -87,9 +87,9 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
     let mut score = material.get_net_material();
 
     // piece positions
-    let mut board_bb = board.get_bitboard();
-    while board_bb != 0 {
-        let sq = bitboard::pop_1st_bit(&mut board_bb);
+    let board_bb = board.get_bitboard();
+    let iter = SquareIterator::new(board_bb);
+    for sq in iter {
         let sq_offset = sq.to_usize();
 
         let pce = &mut None;

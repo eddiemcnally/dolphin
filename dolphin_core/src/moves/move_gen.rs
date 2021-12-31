@@ -1,4 +1,5 @@
 use crate::board::bitboard;
+use crate::board::bitboard::SquareIterator;
 use crate::board::colour::Colour;
 use crate::board::occupancy_masks;
 use crate::board::piece;
@@ -34,8 +35,6 @@ impl MoveGenerator {
 
             self.generate_knight_moves(position, move_list, &piece::WHITE_KNIGHT);
 
-            self.generate_king_moves(position, move_list, &piece::WHITE_KING);
-
             if castle_permissions::has_white_castle_permission(position.castle_permissions()) {
                 self.generate_white_castle_moves(position, move_list);
             }
@@ -50,12 +49,12 @@ impl MoveGenerator {
 
             self.generate_knight_moves(position, move_list, &piece::BLACK_KNIGHT);
 
-            self.generate_king_moves(position, move_list, &piece::BLACK_KING);
-
             if castle_permissions::has_black_castle_permission(position.castle_permissions()) {
                 self.generate_black_castle_moves(position, move_list);
             }
         }
+
+        self.generate_king_moves(position, move_list);
     }
 
     fn generate_white_pawn_moves(&self, pos: &Position, move_list: &mut MoveList) {
@@ -69,10 +68,9 @@ impl MoveGenerator {
         // =================================================
         // Pawn quiet + capture, exclude possible promotions
         // =================================================
-        let mut excl_pawn_promo_bb = wp_bb & !occupancy_masks::RANK_7_BB;
-        while excl_pawn_promo_bb != 0 {
-            let from_sq = bitboard::pop_1st_bit(&mut excl_pawn_promo_bb);
-
+        let excl_pawn_promo_bb = wp_bb & !occupancy_masks::RANK_7_BB;
+        let iter = SquareIterator::new(excl_pawn_promo_bb);
+        for from_sq in iter {
             // quiet move
             let quiet_to_sq = from_sq.square_plus_1_rank();
             let capt_mask = pos
@@ -85,9 +83,9 @@ impl MoveGenerator {
             }
 
             // capture moves
-            let mut capt_bb = capt_mask & all_opposing_bb;
-            while capt_bb != 0 {
-                let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            let capt_bb = capt_mask & all_opposing_bb;
+            let iter = SquareIterator::new(capt_bb);
+            for to_sq in iter {
                 let mv = Mov::encode_move_capture(from_sq, to_sq);
                 move_list.push(mv);
             }
@@ -105,10 +103,9 @@ impl MoveGenerator {
         // ================
         // double pawn move
         // ================
-        let mut starting_pawn_bb = wp_bb & occupancy_masks::RANK_2_BB;
-        while starting_pawn_bb != 0 {
-            let from_sq = bitboard::pop_1st_bit(&mut starting_pawn_bb);
-
+        let starting_pawn_bb = wp_bb & occupancy_masks::RANK_2_BB;
+        let iter = SquareIterator::new(starting_pawn_bb);
+        for from_sq in iter {
             let double_first_move_sq_mask = pos
                 .occupancy_masks()
                 .get_occ_mask_white_pawns_double_move_mask(from_sq);
@@ -125,10 +122,9 @@ impl MoveGenerator {
         // =========
         // promotion
         // =========
-        let mut promo_bb = wp_bb & occupancy_masks::RANK_7_BB;
-        while promo_bb != 0 {
-            let from_sq = bitboard::pop_1st_bit(&mut promo_bb);
-
+        let promo_bb = wp_bb & occupancy_masks::RANK_7_BB;
+        let iter = SquareIterator::new(promo_bb);
+        for from_sq in iter {
             // quiet promotion + capture promotion
             let quiet_to_sq = from_sq.square_plus_1_rank();
             let capt_mask = pos
@@ -145,10 +141,9 @@ impl MoveGenerator {
                 );
             }
 
-            let mut capt_bb = capt_mask & all_opposing_bb;
-
-            while capt_bb != 0 {
-                let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            let capt_bb = capt_mask & all_opposing_bb;
+            let iter = SquareIterator::new(capt_bb);
+            for to_sq in iter {
                 self.encode_promotion_capture_moves(pos.side_to_move(), from_sq, to_sq, move_list);
             }
         }
@@ -165,10 +160,9 @@ impl MoveGenerator {
         // =================================================
         // Pawn quiet + capture, exclude possible promotions
         // =================================================
-        let mut excl_pawn_promo_bb = bp_bb & !occupancy_masks::RANK_2_BB;
-        while excl_pawn_promo_bb != 0 {
-            let from_sq = bitboard::pop_1st_bit(&mut excl_pawn_promo_bb);
-
+        let excl_pawn_promo_bb = bp_bb & !occupancy_masks::RANK_2_BB;
+        let iter = SquareIterator::new(excl_pawn_promo_bb);
+        for from_sq in iter {
             // quiet moves + capture move
             let quiet_to_sq = from_sq.square_minus_1_rank();
             let capt_mask = pos
@@ -180,9 +174,9 @@ impl MoveGenerator {
                 move_list.push(mv);
             }
 
-            let mut capt_bb = capt_mask & all_opposing_bb;
-            while capt_bb != 0 {
-                let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            let capt_bb = capt_mask & all_opposing_bb;
+            let iter = SquareIterator::new(capt_bb);
+            for to_sq in iter {
                 let mv = Mov::encode_move_capture(from_sq, to_sq);
                 move_list.push(mv);
             }
@@ -200,10 +194,9 @@ impl MoveGenerator {
         // ================
         // double pawn move
         // ================
-        let mut starting_pawn_bb = bp_bb & occupancy_masks::RANK_7_BB;
-        while starting_pawn_bb != 0 {
-            let from_sq = bitboard::pop_1st_bit(&mut starting_pawn_bb);
-
+        let starting_pawn_bb = bp_bb & occupancy_masks::RANK_7_BB;
+        let iter = SquareIterator::new(starting_pawn_bb);
+        for from_sq in iter {
             let double_first_move_sq_mask = pos
                 .occupancy_masks()
                 .get_occ_mask_black_pawns_double_move_mask(from_sq);
@@ -220,10 +213,9 @@ impl MoveGenerator {
         // =========
         // promotion
         // =========
-        let mut promo_bb = bp_bb & occupancy_masks::RANK_2_BB;
-        while promo_bb != 0 {
-            let from_sq = bitboard::pop_1st_bit(&mut promo_bb);
-
+        let promo_bb = bp_bb & occupancy_masks::RANK_2_BB;
+        let iter = SquareIterator::new(promo_bb);
+        for from_sq in iter {
             // quiet promotion + capture promotion
             let quiet_to_sq = from_sq.square_minus_1_rank();
             let capt_mask = pos
@@ -240,10 +232,9 @@ impl MoveGenerator {
                 );
             }
 
-            let mut capt_bb = capt_mask & all_opposing_bb;
-
-            while capt_bb != 0 {
-                let to_sq = bitboard::pop_1st_bit(&mut capt_bb);
+            let capt_bb = capt_mask & all_opposing_bb;
+            let iter = SquareIterator::new(capt_bb);
+            for to_sq in iter {
                 self.encode_promotion_capture_moves(pos.side_to_move(), from_sq, to_sq, move_list);
             }
         }
@@ -257,14 +248,11 @@ impl MoveGenerator {
         move_list: &mut MoveList,
         sliding_pce_bb: u64,
     ) {
-        let mut pce_bb = sliding_pce_bb;
-
         let occ_sq_bb = pos.board().get_bitboard();
         let occ_col_bb = pos.board().get_colour_bb(pos.side_to_move());
 
-        while pce_bb != 0 {
-            let from_sq = bitboard::pop_1st_bit(&mut pce_bb);
-
+        let iter = SquareIterator::new(sliding_pce_bb);
+        for from_sq in iter {
             let diagonal_masks = pos.occupancy_masks().get_diag_antidiag_mask(from_sq);
             let slider_bb = bitboard::to_mask(from_sq);
 
@@ -293,10 +281,10 @@ impl MoveGenerator {
 
             let all_moves = (diag & diagonal_masks.get_diag_mask())
                 | (antidiag & diagonal_masks.get_anti_diag_mask());
-            let mut excl_same_colour = all_moves & !occ_col_bb;
+            let excl_same_colour = all_moves & !occ_col_bb;
 
-            while excl_same_colour != 0 {
-                let to_sq = bitboard::pop_1st_bit(&mut excl_same_colour);
+            let iter = SquareIterator::new(excl_same_colour);
+            for to_sq in iter {
                 let mv = if pos.board().is_sq_empty(to_sq) {
                     Mov::encode_move_quiet(from_sq, to_sq)
                 } else {
@@ -316,13 +304,11 @@ impl MoveGenerator {
         move_list: &mut MoveList,
         rank_file_pce_bb: u64,
     ) {
-        let mut pce_bb = rank_file_pce_bb;
-
         let occ_sq_bb = pos.board().get_bitboard();
         let occ_col_bb = pos.board().get_colour_bb(pos.side_to_move());
 
-        while pce_bb != 0 {
-            let from_sq = bitboard::pop_1st_bit(&mut pce_bb);
+        let iter = SquareIterator::new(rank_file_pce_bb);
+        for from_sq in iter {
             let horiz_mask = pos.occupancy_masks().get_horizontal_mask(from_sq);
             let vertical_mask = pos.occupancy_masks().get_vertical_mask(from_sq);
 
@@ -351,10 +337,10 @@ impl MoveGenerator {
 
             let all_moves_mask = (horiz & horiz_mask) | (vert & vertical_mask);
 
-            let mut all_excl_same_col = all_moves_mask & !occ_col_bb;
+            let all_excl_same_col = all_moves_mask & !occ_col_bb;
 
-            while all_excl_same_col != 0 {
-                let to_sq = bitboard::pop_1st_bit(&mut all_excl_same_col);
+            let iter = SquareIterator::new(all_excl_same_col);
+            for to_sq in iter {
                 let mv = if pos.board().is_sq_empty(to_sq) {
                     Mov::encode_move_quiet(from_sq, to_sq)
                 } else {
@@ -372,16 +358,13 @@ impl MoveGenerator {
         move_list: &mut MoveList,
         knight: &'static Piece,
     ) {
-        let mut pce_bb = pos.board().get_piece_bitboard(knight);
-        if pce_bb == 0 {
-            return;
-        }
+        let pce_bb = pos.board().get_piece_bitboard(knight);
 
         let opposite_side = pos.side_to_move().flip_side();
         let opp_occ_sq_bb = pos.board().get_colour_bb(opposite_side);
 
-        while pce_bb != 0 {
-            let sq = bitboard::pop_1st_bit(&mut pce_bb);
+        let iter = SquareIterator::new(pce_bb);
+        for sq in iter {
             let occ_mask = pos.occupancy_masks().get_occupancy_mask_knight(sq);
 
             // generate capture moves
@@ -397,12 +380,11 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_king_moves(&self, pos: &Position, move_list: &mut MoveList, king: &'static Piece) {
+    fn generate_king_moves(&self, pos: &Position, move_list: &mut MoveList) {
         let opposite_side = pos.side_to_move().flip_side();
         let opp_occ_sq_bb = pos.board().get_colour_bb(opposite_side);
 
-        let mut pce_bb = pos.board().get_piece_bitboard(king);
-        let sq = bitboard::pop_1st_bit(&mut pce_bb);
+        let sq = pos.board().get_king_sq(pos.side_to_move());
         let occ_mask = pos.occupancy_masks().get_occupancy_mask_king(sq);
 
         // generate capture moves
@@ -518,9 +500,8 @@ impl MoveGenerator {
         from_sq: Square,
         move_list: &mut MoveList,
     ) {
-        let mut bb = capt_bb;
-        while bb != 0 {
-            let to_sq = bitboard::pop_1st_bit(&mut bb);
+        let iter = SquareIterator::new(capt_bb);
+        for to_sq in iter {
             let mov = Mov::encode_move_capture(from_sq, to_sq);
             move_list.push(mov);
         }
@@ -532,9 +513,8 @@ impl MoveGenerator {
         from_sq: Square,
         move_list: &mut MoveList,
     ) {
-        let mut bb = quiet_move_bb;
-        while bb != 0 {
-            let to_sq = bitboard::pop_1st_bit(&mut bb);
+        let iter = SquareIterator::new(quiet_move_bb);
+        for to_sq in iter {
             let mov = Mov::encode_move_quiet(from_sq, to_sq);
             move_list.push(mov);
         }

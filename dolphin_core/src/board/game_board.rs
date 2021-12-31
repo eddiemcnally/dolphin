@@ -23,6 +23,8 @@ pub struct Board {
     material: Material,
     // pieces on squares
     pieces: [Option<&'static Piece>; NUM_SQUARES],
+    // king squares
+    king_squares: [Square; colour::NUM_COLOURS],
 }
 
 impl Default for Board {
@@ -32,6 +34,7 @@ impl Default for Board {
             colour_bb: [0; colour::NUM_COLOURS],
             material: Material::default(),
             pieces: [None; NUM_SQUARES],
+            king_squares: [Square::default(); colour::NUM_COLOURS],
         }
     }
 }
@@ -89,6 +92,9 @@ impl Board {
         self.material
             .set_material_for_colour(piece.colour(), new_material);
         self.pieces[sq.to_usize()] = Some(piece);
+        if piece.is_king() {
+            self.king_squares[piece.colour().to_usize()] = sq;
+        }
     }
 
     pub fn remove_piece(&mut self, piece: &'static Piece, sq: Square) {
@@ -144,6 +150,9 @@ impl Board {
 
         self.set_bitboards(piece, to_sq);
         self.pieces[to_sq.to_usize()] = Some(piece);
+        if piece.is_king() {
+            self.king_squares[piece.colour().to_usize()] = to_sq;
+        }
     }
 
     pub fn get_piece_on_square(&self, sq: Square, pce: &mut Option<&'static Piece>) {
@@ -191,13 +200,7 @@ impl Board {
     }
 
     pub fn get_king_sq(&self, colour: Colour) -> Square {
-        let king = match colour {
-            Colour::White => &piece::WHITE_KING,
-            Colour::Black => &piece::BLACK_KING,
-        };
-
-        let mut king_bb = self.piece_bb[king.to_usize()];
-        bitboard::pop_1st_bit(&mut king_bb)
+        self.king_squares[colour.to_usize()]
     }
 
     fn clear_bitboards(&mut self, piece: &'static Piece, sq: Square) {

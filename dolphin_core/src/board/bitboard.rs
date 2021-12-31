@@ -4,6 +4,10 @@ use std::ops::Shl;
 
 const BIT_0: u64 = 0x01;
 
+pub struct SquareIterator {
+    bb: u64,
+}
+
 pub fn set_bit(bb: u64, sq: Square) -> u64 {
     let mask = to_mask(sq);
     bb | mask
@@ -24,23 +28,16 @@ pub fn is_clear(bb: u64, sq: Square) -> bool {
     (bb & mask) == 0
 }
 
-pub fn pop_1st_bit(bb: &mut u64) -> Square {
-    debug_assert!(*bb != 0, "bitboard is already zero");
-
-    let bit_being_cleared = bb.trailing_zeros();
-    let sq_clear = Square::new(bit_being_cleared as u8).unwrap();
-
-    *bb = clear_bit(*bb, sq_clear);
-    sq_clear
-}
-
 pub fn display_squares(bb: u64) {
-    let mut slider = bb;
-    while slider != 0 {
-        let sq = pop_1st_bit(&mut slider);
+    let iter = SquareIterator::new(bb);
+    for sq in iter {
         print!("{:?},", sq);
     }
     println!(" ");
+}
+
+pub fn get_square_iterator(bb: u64) -> SquareIterator {
+    SquareIterator::new(bb)
 }
 
 pub fn print_hex(bb: u64) {
@@ -51,18 +48,50 @@ pub fn to_mask(sq: Square) -> u64 {
     BIT_0.shl(sq.to_u8())
 }
 
+impl SquareIterator {
+    pub fn new(num: u64) -> SquareIterator {
+        SquareIterator { bb: num }
+    }
+}
+
+impl Iterator for SquareIterator {
+    type Item = Square;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.bb > 0 {
+            let sq = Square::new(self.bb.trailing_zeros() as u8);
+            self.bb &= self.bb - 1;
+            return sq;
+        }
+
+        None
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use crate::board::bitboard;
+    use crate::board::bitboard::SquareIterator;
     use crate::board::square;
     use crate::board::square::*;
     use std::u64;
 
     #[test]
     pub fn set_msb_check_square_as_h8() {
-        let mut bb: u64 = 0x8000000000000000;
-        let sq = bitboard::pop_1st_bit(&mut bb);
-        assert_eq!(sq, SQUARE_H8);
+        let bb: u64 = 0x8000000000000000;
+        let iter = SquareIterator::new(bb);
+        for sq in iter {
+            assert_eq!(sq, SQUARE_H8);
+        }
+    }
+
+    #[test]
+    pub fn set_lsb_check_square_as_a1() {
+        let bb: u64 = 0x0000000000000001;
+        let iter = SquareIterator::new(bb);
+        for sq in iter {
+            assert_eq!(sq, SQUARE_A1);
+        }
     }
 
     #[test]
@@ -83,27 +112,11 @@ pub mod tests {
     pub fn pop_bit_all_bits() {
         let map = square::SQUARES;
         for square in map {
-            let mut bb = bitboard::set_bit(0, *square);
-            let s = bitboard::pop_1st_bit(&mut bb);
-
-            assert_eq!(s, *square);
-            assert_eq!(bb, 0);
-        }
-    }
-
-    #[test]
-    pub fn pop_all_bits_squares_as_expected() {
-        let mut bb: u64 = 0x1;
-
-        let sqs = square::SQUARES;
-
-        for sq in sqs {
-            let mut temp_bb = bb;
-
-            let popped_sq = bitboard::pop_1st_bit(&mut temp_bb);
-            assert_eq!(popped_sq, *sq);
-
-            bb <<= 1;
+            let bb = bitboard::set_bit(0, *square);
+            let iter = SquareIterator::new(bb);
+            for sq in iter {
+                assert_eq!(sq, *square);
+            }
         }
     }
 }

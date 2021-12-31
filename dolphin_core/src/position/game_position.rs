@@ -1,4 +1,4 @@
-use crate::board::bitboard;
+use crate::board::bitboard::SquareIterator;
 use crate::board::colour::Colour;
 use crate::board::game_board::Board;
 use crate::board::occupancy_masks::OccupancyMasks;
@@ -192,10 +192,10 @@ impl<'a> Position<'a> {
         };
 
         // generate position hash
-        let mut pce_bb = pos.board.get_bitboard();
-        while pce_bb != 0 {
-            let sq = bitboard::pop_1st_bit(&mut pce_bb);
+        let pce_bb = pos.board.get_bitboard();
 
+        let iter = SquareIterator::new(pce_bb);
+        for sq in iter {
             let pce = &mut None;
             pos.board().get_piece_on_square(sq, pce);
 
