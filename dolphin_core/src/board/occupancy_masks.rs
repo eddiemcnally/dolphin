@@ -1,40 +1,38 @@
-use crate::board::bitboard;
+use super::types::ToInt;
+use crate::board::bitboard::Bitboard;
 use crate::board::file::File;
 use crate::board::game_board;
 use crate::board::rank::Rank;
 use crate::board::square;
 use crate::board::square::*;
-
 use std::ops::Shl;
 
-use super::types::ToInt;
-
 // Bitboards representing commonly used ranks
-pub const RANK_2_BB: u64 = 0x0000_0000_0000_FF00;
-pub const RANK_7_BB: u64 = 0x00FF_0000_0000_0000;
+pub const RANK_2_BB: Bitboard = Bitboard::new(0x0000_0000_0000_FF00);
+pub const RANK_7_BB: Bitboard = Bitboard::new(0x00FF_0000_0000_0000);
 
-const RANK_MASK: u64 = 0x0000_0000_0000_00ff;
-const FILE_MASK: u64 = 0x0101_0101_0101_0101;
+const RANK_MASK: Bitboard = Bitboard::new(0x0000_0000_0000_00ff);
+const FILE_MASK: Bitboard = Bitboard::new(0x0101_0101_0101_0101);
 
 // bitboards for squares between castle squares (eg White King side = f1 and g1)
-pub const CASTLE_MASK_WK: u64 = 0x0000_0000_0000_0060;
-pub const CASTLE_MASK_WQ: u64 = 0x0000_0000_0000_000E;
-pub const CASTLE_MASK_BK: u64 = 0x6000_0000_0000_0000;
-pub const CASTLE_MASK_BQ: u64 = 0x0E00_0000_0000_0000;
+pub const CASTLE_MASK_WK: Bitboard = Bitboard::new(0x0000_0000_0000_0060);
+pub const CASTLE_MASK_WQ: Bitboard = Bitboard::new(0x0000_0000_0000_000E);
+pub const CASTLE_MASK_BK: Bitboard = Bitboard::new(0x6000_0000_0000_0000);
+pub const CASTLE_MASK_BQ: Bitboard = Bitboard::new(0x0E00_0000_0000_0000);
 
-const FILE_A_BB: u64 = FILE_MASK;
-const FILE_H_BB: u64 = FILE_A_BB << 7;
+const FILE_A_BB: Bitboard = FILE_MASK;
+const FILE_H_BB: Bitboard = Bitboard::new(0x8080_8080_8080_8080);
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
 pub struct DiagonalAntidiagonal {
-    diag_mask: u64,
-    anti_diag_mask: u64,
+    diag_mask: Bitboard,
+    anti_diag_mask: Bitboard,
 }
 impl DiagonalAntidiagonal {
-    pub fn get_diag_mask(&self) -> u64 {
+    pub fn get_diag_mask(&self) -> Bitboard {
         self.diag_mask
     }
-    pub fn get_anti_diag_mask(&self) -> u64 {
+    pub fn get_anti_diag_mask(&self) -> Bitboard {
         self.anti_diag_mask
     }
 }
@@ -42,24 +40,24 @@ impl DiagonalAntidiagonal {
 impl Default for OccupancyMasks {
     fn default() -> Self {
         OccupancyMasks {
-            knight: [0; game_board::NUM_SQUARES],
+            knight: [Bitboard::default(); game_board::NUM_SQUARES],
             diagonal: [DiagonalAntidiagonal::default(); game_board::NUM_SQUARES],
-            bishop: [0; game_board::NUM_SQUARES],
-            queen: [0; game_board::NUM_SQUARES],
-            king: [0; game_board::NUM_SQUARES],
-            in_between: [[0; game_board::NUM_SQUARES]; game_board::NUM_SQUARES],
+            bishop: [Bitboard::default(); game_board::NUM_SQUARES],
+            queen: [Bitboard::default(); game_board::NUM_SQUARES],
+            king: [Bitboard::default(); game_board::NUM_SQUARES],
+            in_between: [[Bitboard::default(); game_board::NUM_SQUARES]; game_board::NUM_SQUARES],
         }
     }
 }
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 pub struct OccupancyMasks {
-    knight: [u64; game_board::NUM_SQUARES],
+    knight: [Bitboard; game_board::NUM_SQUARES],
     diagonal: [DiagonalAntidiagonal; game_board::NUM_SQUARES],
-    bishop: [u64; game_board::NUM_SQUARES],
-    queen: [u64; game_board::NUM_SQUARES],
-    king: [u64; game_board::NUM_SQUARES],
-    in_between: [[u64; game_board::NUM_SQUARES]; game_board::NUM_SQUARES],
+    bishop: [Bitboard; game_board::NUM_SQUARES],
+    queen: [Bitboard; game_board::NUM_SQUARES],
+    king: [Bitboard; game_board::NUM_SQUARES],
+    in_between: [[Bitboard; game_board::NUM_SQUARES]; game_board::NUM_SQUARES],
 }
 
 impl OccupancyMasks {
@@ -81,35 +79,35 @@ impl OccupancyMasks {
         })
     }
 
-    pub fn get_occupancy_mask_bishop(&self, sq: Square) -> u64 {
+    pub fn get_occupancy_mask_bishop(&self, sq: Square) -> Bitboard {
         *self.bishop.get(sq.to_usize()).unwrap()
     }
 
-    pub fn get_occupancy_mask_knight(&self, sq: Square) -> u64 {
+    pub fn get_occupancy_mask_knight(&self, sq: Square) -> Bitboard {
         *self.knight.get(sq.to_usize()).unwrap()
     }
 
-    pub fn get_occupancy_mask_rook(&self, sq: Square) -> u64 {
+    pub fn get_occupancy_mask_rook(&self, sq: Square) -> Bitboard {
         get_horizontal_move_mask(sq) | get_vertical_move_mask(sq)
     }
 
-    pub fn get_occupancy_mask_queen(&self, sq: Square) -> u64 {
+    pub fn get_occupancy_mask_queen(&self, sq: Square) -> Bitboard {
         *self.queen.get(sq.to_usize()).unwrap()
     }
 
-    pub fn get_occupancy_mask_king(&self, sq: Square) -> u64 {
+    pub fn get_occupancy_mask_king(&self, sq: Square) -> Bitboard {
         *self.king.get(sq.to_usize()).unwrap()
     }
 
-    pub fn get_inbetween_squares(&self, sq1: Square, sq2: Square) -> u64 {
+    pub fn get_inbetween_squares(&self, sq1: Square, sq2: Square) -> Bitboard {
         self.in_between[sq1.to_usize()][sq2.to_usize()]
     }
 
-    pub fn get_horizontal_mask(&self, sq: Square) -> u64 {
+    pub fn get_horizontal_mask(&self, sq: Square) -> Bitboard {
         get_horizontal_move_mask(sq)
     }
 
-    pub fn get_vertical_mask(&self, sq: Square) -> u64 {
+    pub fn get_vertical_mask(&self, sq: Square) -> Bitboard {
         get_vertical_move_mask(sq)
     }
 
@@ -117,86 +115,87 @@ impl OccupancyMasks {
         self.diagonal.get(sq.to_usize()).unwrap()
     }
 
-    pub fn get_occ_mask_white_pawns_double_move_mask(&self, sq: Square) -> u64 {
+    pub fn get_occ_mask_white_pawns_double_move_mask(&self, sq: Square) -> Bitboard {
         let mut bb = sq.get_square_as_bb();
         bb = self.north(bb);
         bb |= self.north(bb);
         bb
     }
-    pub fn get_occ_mask_black_pawns_double_move_mask(&self, sq: Square) -> u64 {
+    pub fn get_occ_mask_black_pawns_double_move_mask(&self, sq: Square) -> Bitboard {
         let mut bb = sq.get_square_as_bb();
         bb = self.south(bb);
         bb |= self.south(bb);
         bb
     }
 
-    pub fn get_occ_mask_white_pawns_attacking_sq(&self, sq: Square) -> u64 {
+    pub fn get_occ_mask_white_pawns_attacking_sq(&self, sq: Square) -> Bitboard {
         let bb = sq.get_square_as_bb();
         self.south_east(bb) | self.south_west(bb)
     }
-    pub fn get_occ_mask_black_pawns_attacking_sq(&self, sq: Square) -> u64 {
+    pub fn get_occ_mask_black_pawns_attacking_sq(&self, sq: Square) -> Bitboard {
         let bb = sq.get_square_as_bb();
         self.north_east(bb) | self.north_west(bb)
     }
-    pub fn get_occ_mask_white_pawn_capture_non_first_double_move(&self, sq: Square) -> u64 {
+    pub fn get_occ_mask_white_pawn_capture_non_first_double_move(&self, sq: Square) -> Bitboard {
         let bb = sq.get_square_as_bb();
         self.north_east(bb) | self.north_west(bb)
     }
-    pub fn get_occ_mask_black_pawn_capture_non_first_double_move(&self, sq: Square) -> u64 {
+    pub fn get_occ_mask_black_pawn_capture_non_first_double_move(&self, sq: Square) -> Bitboard {
         let bb = sq.get_square_as_bb();
         self.south_east(bb) | self.south_west(bb)
     }
-    pub fn get_occ_mask_white_pawn_attack_squares(&self, pawn_sq: Square) -> u64 {
+    pub fn get_occ_mask_white_pawn_attack_squares(&self, pawn_sq: Square) -> Bitboard {
         let bb = pawn_sq.get_square_as_bb();
         self.north_east(bb) | self.north_west(bb)
     }
-    pub fn get_occ_mask_black_pawn_attack_squares(&self, pawn_sq: Square) -> u64 {
+    pub fn get_occ_mask_black_pawn_attack_squares(&self, pawn_sq: Square) -> Bitboard {
         let bb = pawn_sq.get_square_as_bb();
         self.south_east(bb) | self.south_west(bb)
     }
 
-    const fn north_east(&self, bb: u64) -> u64 {
+    fn north_east(&self, bb: Bitboard) -> Bitboard {
         (bb & !FILE_H_BB) << 9
     }
 
-    const fn south_east(&self, bb: u64) -> u64 {
+    fn south_east(&self, bb: Bitboard) -> Bitboard {
         (bb & !FILE_H_BB) >> 7
     }
 
-    const fn south(&self, bb: u64) -> u64 {
+    fn south(&self, bb: Bitboard) -> Bitboard {
         bb >> 8
     }
 
-    const fn north(&self, bb: u64) -> u64 {
+    fn north(&self, bb: Bitboard) -> Bitboard {
         bb << 8
     }
 
-    const fn north_west(&self, bb: u64) -> u64 {
+    fn north_west(&self, bb: Bitboard) -> Bitboard {
         (bb & !FILE_A_BB) << 7
     }
 
-    const fn south_west(&self, bb: u64) -> u64 {
+    fn south_west(&self, bb: Bitboard) -> Bitboard {
         (bb & !FILE_A_BB) >> 9
     }
 }
 
-fn get_vertical_move_mask(sq: Square) -> u64 {
+fn get_vertical_move_mask(sq: Square) -> Bitboard {
     let file = sq.file();
-    FILE_MASK << file.to_usize()
+    FILE_MASK << file.to_u8()
 }
 
-fn get_horizontal_move_mask(sq: Square) -> u64 {
+fn get_horizontal_move_mask(sq: Square) -> Bitboard {
     let rank = sq.rank();
-    RANK_MASK << (rank.to_usize() << 3)
+    RANK_MASK << (rank.to_u8() << 3)
 }
 
-fn populate_knight_occupancy_mask_array() -> [u64; game_board::NUM_SQUARES] {
-    let mut retval: [u64; game_board::NUM_SQUARES] = [0; game_board::NUM_SQUARES];
+fn populate_knight_occupancy_mask_array() -> [Bitboard; game_board::NUM_SQUARES] {
+    let mut retval: [Bitboard; game_board::NUM_SQUARES] =
+        [Bitboard::default(); game_board::NUM_SQUARES];
 
     let squares = square::SQUARES;
 
     for sq in squares {
-        let mut bb: u64 = 0;
+        let mut bb = Bitboard::new(0);
 
         let rank = sq.rank();
         let file = sq.file();
@@ -239,22 +238,23 @@ fn populate_knight_occupancy_mask_array() -> [u64; game_board::NUM_SQUARES] {
     retval
 }
 
-fn set_bb_if_sq_valid(rank: Option<Rank>, file: Option<File>, bb: &mut u64) {
+fn set_bb_if_sq_valid(rank: Option<Rank>, file: Option<File>, bb: &mut Bitboard) {
     if let Some(r) = rank {
         if let Some(f) = file {
             let derived_sq = Square::from_rank_file(r, f);
-            *bb = bitboard::set_bit(*bb, derived_sq);
+            bb.set_bit(derived_sq);
         }
     }
 }
 
-fn populate_king_mask_array() -> [u64; game_board::NUM_SQUARES] {
-    let mut retval: [u64; game_board::NUM_SQUARES] = [0; game_board::NUM_SQUARES];
+fn populate_king_mask_array() -> [Bitboard; game_board::NUM_SQUARES] {
+    let mut retval: [Bitboard; game_board::NUM_SQUARES] =
+        [Bitboard::default(); game_board::NUM_SQUARES];
 
     let squares = square::SQUARES;
 
     for sq in squares {
-        let mut bb: u64 = 0;
+        let mut bb = Bitboard::new(0);
 
         let rank = sq.rank();
         let file = sq.file();
@@ -302,7 +302,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; game_board::NUM_SQUA
         [DiagonalAntidiagonal::default(); game_board::NUM_SQUARES];
 
     for sq in square::SQUARES.iter() {
-        let mut bb: u64 = 0;
+        let mut bb = Bitboard::new(0);
         let mut rank = sq.rank();
         let mut file = sq.file();
 
@@ -313,23 +313,13 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; game_board::NUM_SQUA
 
             if is_valid_rank_and_file(r, f) {
                 let derived_sq = Square::from_rank_file(r.unwrap(), f.unwrap());
-                bb = bitboard::set_bit(bb, derived_sq);
+                bb.set_bit(derived_sq);
 
                 rank = r.unwrap();
                 file = f.unwrap();
             } else {
                 break;
             }
-
-            // if r.is_some() && f.is_some() {
-            //     let derived_sq = Square::get_square(r.unwrap(), f.unwrap());
-            //     bb = bitboard::set_bit(bb, derived_sq);
-
-            //     rank = r.unwrap();
-            //     file = f.unwrap();
-            // } else {
-            //     break;
-            // }
         }
 
         // move NE
@@ -341,7 +331,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; game_board::NUM_SQUA
             let f = file.add_one();
             if is_valid_rank_and_file(r, f) {
                 let derived_sq = Square::from_rank_file(r.unwrap(), f.unwrap());
-                bb = bitboard::set_bit(bb, derived_sq);
+                bb.set_bit(derived_sq);
 
                 rank = r.unwrap();
                 file = f.unwrap();
@@ -351,13 +341,13 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; game_board::NUM_SQUA
         }
 
         // remove current square
-        bb = bitboard::clear_bit(bb, *sq);
+        bb.clear_bit(*sq);
 
         retval[sq.to_usize()].diag_mask = bb;
     }
 
     for sq in square::SQUARES.iter() {
-        let mut bb: u64 = 0;
+        let mut bb = Bitboard::new(0);
 
         let mut rank = sq.rank();
         let mut file = sq.file();
@@ -368,7 +358,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; game_board::NUM_SQUA
             let f = file.subtract_one();
             if is_valid_rank_and_file(r, f) {
                 let derived_sq = Square::from_rank_file(r.unwrap(), f.unwrap());
-                bb = bitboard::set_bit(bb, derived_sq);
+                bb.set_bit(derived_sq);
 
                 rank = r.unwrap();
                 file = f.unwrap();
@@ -387,7 +377,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; game_board::NUM_SQUA
 
             if is_valid_rank_and_file(r, f) {
                 let derived_sq = Square::from_rank_file(r.unwrap(), f.unwrap());
-                bb = bitboard::set_bit(bb, derived_sq);
+                bb.set_bit(derived_sq);
 
                 rank = r.unwrap();
                 file = f.unwrap();
@@ -397,7 +387,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; game_board::NUM_SQUA
         }
 
         // remove current square
-        bb = bitboard::clear_bit(bb, *sq);
+        bb.clear_bit(*sq);
 
         retval[sq.to_usize()].anti_diag_mask = bb;
     }
@@ -407,15 +397,16 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; game_board::NUM_SQUA
 
 fn populate_bishop_mask_array(
     diag_masks: &[DiagonalAntidiagonal; game_board::NUM_SQUARES],
-) -> [u64; game_board::NUM_SQUARES] {
-    let mut retval: [u64; game_board::NUM_SQUARES] = [0; game_board::NUM_SQUARES];
+) -> [Bitboard; game_board::NUM_SQUARES] {
+    let mut retval: [Bitboard; game_board::NUM_SQUARES] =
+        [Bitboard::default(); game_board::NUM_SQUARES];
     let squares = square::SQUARES;
 
     for sq in squares {
         let mut bb = diag_masks[sq.to_usize()].diag_mask | diag_masks[sq.to_usize()].anti_diag_mask;
 
         // remove current square
-        bb = bitboard::clear_bit(bb, *sq);
+        bb.clear_bit(*sq);
 
         retval[sq.to_usize()] = bb;
     }
@@ -424,8 +415,9 @@ fn populate_bishop_mask_array(
 
 fn populate_queen_mask_array(
     diag_masks: &[DiagonalAntidiagonal; game_board::NUM_SQUARES],
-) -> [u64; game_board::NUM_SQUARES] {
-    let mut retval: [u64; game_board::NUM_SQUARES] = [0; game_board::NUM_SQUARES];
+) -> [Bitboard; game_board::NUM_SQUARES] {
+    let mut retval: [Bitboard; game_board::NUM_SQUARES] =
+        [Bitboard::default(); game_board::NUM_SQUARES];
     let squares = square::SQUARES;
 
     for sq in squares {
@@ -435,7 +427,7 @@ fn populate_queen_mask_array(
             | diag_masks[sq.to_usize()].anti_diag_mask;
 
         // remove current square
-        bb = bitboard::clear_bit(bb, *sq);
+        bb.clear_bit(*sq);
 
         retval[sq.to_usize()] = bb;
     }
@@ -448,14 +440,14 @@ fn populate_queen_mask_array(
 // The code is taken from :
 // https://www.chessprogramming.org/Square_Attacked_By
 //
-fn populate_intervening_bitboard_array() -> [[u64; game_board::NUM_SQUARES]; game_board::NUM_SQUARES]
-{
+fn populate_intervening_bitboard_array(
+) -> [[Bitboard; game_board::NUM_SQUARES]; game_board::NUM_SQUARES] {
     const M1: u64 = 0xffff_ffff_ffff_ffff;
     const A2A7: u64 = 0x0001_0101_0101_0100;
     const B2G7: u64 = 0x0040_2010_0804_0200;
     const H1B7: u64 = 0x0002_0408_1020_4080;
 
-    let mut retval = [[0; game_board::NUM_SQUARES]; game_board::NUM_SQUARES];
+    let mut retval = [[Bitboard::default(); game_board::NUM_SQUARES]; game_board::NUM_SQUARES];
 
     let squares = square::SQUARES;
 
@@ -471,7 +463,7 @@ fn populate_intervening_bitboard_array() -> [[u64; game_board::NUM_SQUARES]; gam
             line = line.wrapping_mul(btwn & (btwn.wrapping_neg())); /* mul acts like shift by smaller square */
             let val = line & btwn; /* return the bits on that line in-between */
 
-            retval[sq1.to_usize()][sq2.to_usize()] = val;
+            retval[sq1.to_usize()][sq2.to_usize()] = Bitboard::new(val);
         }
     }
 
@@ -481,7 +473,6 @@ fn populate_intervening_bitboard_array() -> [[u64; game_board::NUM_SQUARES]; gam
 #[cfg(test)]
 pub mod tests {
     use super::OccupancyMasks;
-    use crate::board::bitboard;
     use crate::board::square::*;
 
     #[test]
@@ -489,44 +480,44 @@ pub mod tests {
         let masks = OccupancyMasks::new();
 
         let mut bb = masks.get_occ_mask_white_pawns_double_move_mask(SQUARE_A2);
-        assert!(bitboard::is_set(bb, SQUARE_A3));
-        assert!(bitboard::is_set(bb, SQUARE_A4));
-        assert!(bitboard::is_clear(bb, SQUARE_A2));
+        assert!(bb.is_set(SQUARE_A3));
+        assert!(bb.is_set(SQUARE_A4));
+        assert!(bb.is_clear(SQUARE_A2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(SQUARE_B2);
-        assert!(bitboard::is_set(bb, SQUARE_B3));
-        assert!(bitboard::is_set(bb, SQUARE_B4));
-        assert!(bitboard::is_clear(bb, SQUARE_B2));
+        assert!(bb.is_set(SQUARE_B3));
+        assert!(bb.is_set(SQUARE_B4));
+        assert!(bb.is_clear(SQUARE_B2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(SQUARE_C2);
-        assert!(bitboard::is_set(bb, SQUARE_C3));
-        assert!(bitboard::is_set(bb, SQUARE_C4));
-        assert!(bitboard::is_clear(bb, SQUARE_C2));
+        assert!(bb.is_set(SQUARE_C3));
+        assert!(bb.is_set(SQUARE_C4));
+        assert!(bb.is_clear(SQUARE_C2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(SQUARE_D2);
-        assert!(bitboard::is_set(bb, SQUARE_D3));
-        assert!(bitboard::is_set(bb, SQUARE_D4));
-        assert!(bitboard::is_clear(bb, SQUARE_D2));
+        assert!(bb.is_set(SQUARE_D3));
+        assert!(bb.is_set(SQUARE_D4));
+        assert!(bb.is_clear(SQUARE_D2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(SQUARE_E2);
-        assert!(bitboard::is_set(bb, SQUARE_E3));
-        assert!(bitboard::is_set(bb, SQUARE_E4));
-        assert!(bitboard::is_clear(bb, SQUARE_E2));
+        assert!(bb.is_set(SQUARE_E3));
+        assert!(bb.is_set(SQUARE_E4));
+        assert!(bb.is_clear(SQUARE_E2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(SQUARE_F2);
-        assert!(bitboard::is_set(bb, SQUARE_F3));
-        assert!(bitboard::is_set(bb, SQUARE_F4));
-        assert!(bitboard::is_clear(bb, SQUARE_F2));
+        assert!(bb.is_set(SQUARE_F3));
+        assert!(bb.is_set(SQUARE_F4));
+        assert!(bb.is_clear(SQUARE_F2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(SQUARE_G2);
-        assert!(bitboard::is_set(bb, SQUARE_G3));
-        assert!(bitboard::is_set(bb, SQUARE_G4));
-        assert!(bitboard::is_clear(bb, SQUARE_G2));
+        assert!(bb.is_set(SQUARE_G3));
+        assert!(bb.is_set(SQUARE_G4));
+        assert!(bb.is_clear(SQUARE_G2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(SQUARE_H2);
-        assert!(bitboard::is_set(bb, SQUARE_H3));
-        assert!(bitboard::is_set(bb, SQUARE_H4));
-        assert!(bitboard::is_clear(bb, SQUARE_H2));
+        assert!(bb.is_set(SQUARE_H3));
+        assert!(bb.is_set(SQUARE_H4));
+        assert!(bb.is_clear(SQUARE_H2));
     }
 
     #[test]
@@ -534,43 +525,43 @@ pub mod tests {
         let masks = OccupancyMasks::new();
 
         let mut bb = masks.get_occ_mask_black_pawns_double_move_mask(SQUARE_A7);
-        assert!(bitboard::is_set(bb, SQUARE_A6));
-        assert!(bitboard::is_set(bb, SQUARE_A5));
-        assert!(bitboard::is_clear(bb, SQUARE_A7));
+        assert!(bb.is_set(SQUARE_A6));
+        assert!(bb.is_set(SQUARE_A5));
+        assert!(bb.is_clear(SQUARE_A7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(SQUARE_B7);
-        assert!(bitboard::is_set(bb, SQUARE_B6));
-        assert!(bitboard::is_set(bb, SQUARE_B5));
-        assert!(bitboard::is_clear(bb, SQUARE_B7));
+        assert!(bb.is_set(SQUARE_B6));
+        assert!(bb.is_set(SQUARE_B5));
+        assert!(bb.is_clear(SQUARE_B7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(SQUARE_C7);
-        assert!(bitboard::is_set(bb, SQUARE_C6));
-        assert!(bitboard::is_set(bb, SQUARE_C5));
-        assert!(bitboard::is_clear(bb, SQUARE_C7));
+        assert!(bb.is_set(SQUARE_C6));
+        assert!(bb.is_set(SQUARE_C5));
+        assert!(bb.is_clear(SQUARE_C7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(SQUARE_D7);
-        assert!(bitboard::is_set(bb, SQUARE_D6));
-        assert!(bitboard::is_set(bb, SQUARE_D5));
-        assert!(bitboard::is_clear(bb, SQUARE_D7));
+        assert!(bb.is_set(SQUARE_D6));
+        assert!(bb.is_set(SQUARE_D5));
+        assert!(bb.is_clear(SQUARE_D7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(SQUARE_E7);
-        assert!(bitboard::is_set(bb, SQUARE_E6));
-        assert!(bitboard::is_set(bb, SQUARE_E5));
-        assert!(bitboard::is_clear(bb, SQUARE_E7));
+        assert!(bb.is_set(SQUARE_E6));
+        assert!(bb.is_set(SQUARE_E5));
+        assert!(bb.is_clear(SQUARE_E7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(SQUARE_F7);
-        assert!(bitboard::is_set(bb, SQUARE_F6));
-        assert!(bitboard::is_set(bb, SQUARE_F5));
-        assert!(bitboard::is_clear(bb, SQUARE_F7));
+        assert!(bb.is_set(SQUARE_F6));
+        assert!(bb.is_set(SQUARE_F5));
+        assert!(bb.is_clear(SQUARE_F7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(SQUARE_G7);
-        assert!(bitboard::is_set(bb, SQUARE_G6));
-        assert!(bitboard::is_set(bb, SQUARE_G5));
-        assert!(bitboard::is_clear(bb, SQUARE_G7));
+        assert!(bb.is_set(SQUARE_G6));
+        assert!(bb.is_set(SQUARE_G5));
+        assert!(bb.is_clear(SQUARE_G7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(SQUARE_H7);
-        assert!(bitboard::is_set(bb, SQUARE_H6));
-        assert!(bitboard::is_set(bb, SQUARE_H5));
-        assert!(bitboard::is_clear(bb, SQUARE_H7));
+        assert!(bb.is_set(SQUARE_H6));
+        assert!(bb.is_set(SQUARE_H5));
+        assert!(bb.is_clear(SQUARE_H7));
     }
 }

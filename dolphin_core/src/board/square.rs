@@ -1,3 +1,4 @@
+use crate::board::bitboard::Bitboard;
 use crate::board::file::*;
 use crate::board::rank::*;
 use std::fmt;
@@ -140,8 +141,8 @@ impl Square {
         Square::new(sq).unwrap()
     }
 
-    pub fn get_square_as_bb(self) -> u64 {
-        0x01u64 << (self.to_usize())
+    pub fn get_square_as_bb(self) -> Bitboard {
+        Bitboard::new(0x01u64 << (self.to_usize()))
     }
 
     pub fn get_from_string(square_str: &str) -> Option<Square> {

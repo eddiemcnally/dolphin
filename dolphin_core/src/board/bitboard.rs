@@ -1,56 +1,148 @@
 use super::types::ToInt;
 use crate::board::square::Square;
+use core::ops::BitOr;
+use core::ops::BitOrAssign;
+use std::ops::BitAnd;
+use std::ops::BitAndAssign;
+use std::ops::BitXor;
+use std::ops::BitXorAssign;
+use std::ops::Not;
 use std::ops::Shl;
+use std::ops::Shr;
 
 const BIT_0: u64 = 0x01;
 
-pub struct SquareIterator {
-    bb: u64,
-}
+pub struct SquareIterator(u64);
 
-pub fn set_bit(bb: u64, sq: Square) -> u64 {
-    let mask = to_mask(sq);
-    bb | mask
-}
+#[derive(Eq, PartialEq, Copy, Clone, Hash, Default)]
+pub struct Bitboard(u64);
 
-pub fn clear_bit(bb: u64, sq: Square) -> u64 {
-    let mask = to_mask(sq);
-    bb & !mask
-}
-
-pub fn is_set(bb: u64, sq: Square) -> bool {
-    let mask = to_mask(sq);
-    (bb & mask) != 0
-}
-
-pub fn is_clear(bb: u64, sq: Square) -> bool {
-    let mask = to_mask(sq);
-    (bb & mask) == 0
-}
-
-pub fn display_squares(bb: u64) {
-    let iter = SquareIterator::new(bb);
-    for sq in iter {
-        print!("{:?},", sq);
+impl Bitboard {
+    pub const fn new(bb: u64) -> Bitboard {
+        Bitboard(bb)
     }
-    println!(" ");
+
+    pub fn set_bit(&mut self, sq: Square) {
+        let mask = to_mask(sq);
+        self.0 |= mask.0
+    }
+
+    pub fn clear_bit(&mut self, sq: Square) {
+        let mask = to_mask(sq);
+        self.0 &= !mask.0
+    }
+
+    pub fn is_set(&self, sq: Square) -> bool {
+        let mask = to_mask(sq);
+        (self.0 & mask.0) != 0
+    }
+
+    pub fn is_clear(&self, sq: Square) -> bool {
+        let mask = to_mask(sq);
+        (self.0 & mask.0) == 0
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0 == 0
+    }
+
+    pub fn display_squares(&self) {
+        let iter = SquareIterator::new(self.0);
+        for sq in iter {
+            print!("{:?},", sq);
+        }
+        println!(" ");
+    }
+
+    pub fn print_hex(&self) {
+        println!("{:#X}", self.0);
+    }
+
+    pub fn iterator(&self) -> SquareIterator {
+        SquareIterator(self.0)
+    }
+
+    pub const fn reverse_bits(&self) -> Bitboard {
+        Bitboard(self.0.reverse_bits())
+    }
+
+    pub const fn overflowing_mul(&self, rhs: u64) -> (u64, bool) {
+        let (result, overflowed) = u64::overflowing_mul(self.0, rhs);
+        (result, overflowed)
+    }
+    pub const fn overflowing_sub(&self, rhs: u64) -> (u64, bool) {
+        let (result, overflowed) = u64::overflowing_sub(self.0, rhs);
+        (result, overflowed)
+    }
 }
 
-pub fn get_square_iterator(bb: u64) -> SquareIterator {
-    SquareIterator::new(bb)
+pub fn to_mask(sq: Square) -> Bitboard {
+    Bitboard(BIT_0.shl(sq.to_u8()))
 }
 
-pub fn print_hex(bb: u64) {
-    println!("{:#064X}", bb);
+impl BitAnd for Bitboard {
+    type Output = Self;
+    fn bitand(self, other: Self) -> Self {
+        Bitboard(self.0 & other.0)
+    }
 }
 
-pub fn to_mask(sq: Square) -> u64 {
-    BIT_0.shl(sq.to_u8())
+impl BitOr for Bitboard {
+    type Output = Self;
+    fn bitor(self, other: Self) -> Self {
+        Bitboard(self.0 | other.0)
+    }
+}
+
+impl BitXor for Bitboard {
+    type Output = Self;
+    fn bitxor(self, other: Self) -> Self {
+        Bitboard(self.0 ^ other.0)
+    }
+}
+
+impl BitOrAssign for Bitboard {
+    fn bitor_assign(&mut self, other: Self) {
+        self.0 |= other.0;
+    }
+}
+
+impl BitAndAssign for Bitboard {
+    fn bitand_assign(&mut self, other: Self) {
+        self.0 &= other.0;
+    }
+}
+
+impl BitXorAssign for Bitboard {
+    fn bitxor_assign(&mut self, other: Self) {
+        self.0 ^= other.0;
+    }
+}
+
+impl Not for Bitboard {
+    fn not(self) -> Self {
+        Bitboard(!self.0)
+    }
+    type Output = Bitboard;
+}
+
+impl Shl<u8> for Bitboard {
+    type Output = Self;
+    fn shl(self, shift: u8) -> Self {
+        Bitboard(self.0 << shift)
+    }
+}
+
+impl Shr<u8> for Bitboard {
+    type Output = Self;
+    fn shr(self, shift: u8) -> Self {
+        Bitboard(self.0 >> shift)
+    }
 }
 
 impl SquareIterator {
     pub fn new(num: u64) -> SquareIterator {
-        SquareIterator { bb: num }
+        SquareIterator(num)
     }
 }
 
@@ -58,9 +150,9 @@ impl Iterator for SquareIterator {
     type Item = Square;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.bb > 0 {
-            let sq = Square::new(self.bb.trailing_zeros() as u8);
-            self.bb &= self.bb - 1;
+        if self.0 > 0 {
+            let sq = Square::new(self.0.trailing_zeros() as u8);
+            self.0 &= self.0 - 1;
             return sq;
         }
 
@@ -70,7 +162,7 @@ impl Iterator for SquareIterator {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::board::bitboard;
+    use super::Bitboard;
     use crate::board::bitboard::SquareIterator;
     use crate::board::square;
     use crate::board::square::*;
@@ -96,15 +188,17 @@ pub mod tests {
 
     #[test]
     pub fn set_bit_test_bit_clear_bit() {
-        let mut bb: u64 = 0;
+        let mut bb = Bitboard::new(0);
 
         let map = square::SQUARES;
         for sq in map {
-            bb = bitboard::set_bit(bb, *sq);
-            assert!(bitboard::is_set(bb, *sq));
+            bb.set_bit(*sq);
+            assert!(bb.is_set(*sq));
+            assert!(bb.0 != 0);
 
-            bb = bitboard::clear_bit(bb, *sq);
-            assert!(!bitboard::is_set(bb, *sq));
+            bb.clear_bit(*sq);
+            assert!(!bb.is_set(*sq));
+            assert!(bb.0 == 0);
         }
     }
 
@@ -112,9 +206,9 @@ pub mod tests {
     pub fn pop_bit_all_bits() {
         let map = square::SQUARES;
         for square in map {
-            let bb = bitboard::set_bit(0, *square);
-            let iter = SquareIterator::new(bb);
-            for sq in iter {
+            let mut bb = Bitboard::new(0);
+            bb.set_bit(*square);
+            for sq in bb.iterator() {
                 assert_eq!(sq, *square);
             }
         }

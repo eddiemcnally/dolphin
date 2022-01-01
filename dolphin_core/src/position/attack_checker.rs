@@ -1,5 +1,4 @@
-use crate::board::bitboard;
-use crate::board::bitboard::SquareIterator;
+use crate::board::bitboard::Bitboard;
 use crate::board::colour::Colour;
 use crate::board::game_board::Board;
 use crate::board::occupancy_masks::OccupancyMasks;
@@ -15,7 +14,7 @@ pub fn is_sq_attacked(
     match attacking_side {
         Colour::White => {
             let pawn_bb = board.get_piece_bitboard(&piece::WHITE_PAWN);
-            if pawn_bb != 0 && is_attacked_by_pawn_white(occ_masks, pawn_bb, sq) {
+            if !pawn_bb.is_empty() && is_attacked_by_pawn_white(occ_masks, pawn_bb, sq) {
                 return true;
             }
             if check_non_pawn_pieces_attacking(occ_masks, Colour::White, board, sq) {
@@ -24,7 +23,7 @@ pub fn is_sq_attacked(
         }
         Colour::Black => {
             let pawn_bb = board.get_piece_bitboard(&piece::BLACK_PAWN);
-            if pawn_bb != 0 && is_attacked_by_pawn_black(occ_masks, pawn_bb, sq) {
+            if !pawn_bb.is_empty() && is_attacked_by_pawn_black(occ_masks, pawn_bb, sq) {
                 return true;
             }
             if check_non_pawn_pieces_attacking(occ_masks, Colour::Black, board, sq) {
@@ -48,7 +47,7 @@ pub fn is_castle_squares_attacked(
                 if check_non_pawn_pieces_attacking(occ_masks, Colour::White, board, *sq) {
                     return true;
                 }
-                if pawn_bb != 0 && is_attacked_by_pawn_white(occ_masks, pawn_bb, *sq) {
+                if !pawn_bb.is_empty() && is_attacked_by_pawn_white(occ_masks, pawn_bb, *sq) {
                     return true;
                 }
             }
@@ -59,7 +58,7 @@ pub fn is_castle_squares_attacked(
                 if check_non_pawn_pieces_attacking(occ_masks, Colour::Black, board, *sq) {
                     return true;
                 }
-                if pawn_bb != 0 && is_attacked_by_pawn_black(occ_masks, pawn_bb, *sq) {
+                if !pawn_bb.is_empty() && is_attacked_by_pawn_black(occ_masks, pawn_bb, *sq) {
                     return true;
                 }
             }
@@ -77,20 +76,20 @@ fn check_non_pawn_pieces_attacking(
 ) -> bool {
     if side == Colour::White {
         let knight_bb = board.get_piece_bitboard(&piece::WHITE_KNIGHT);
-        if knight_bb != 0 && is_knight_attacking(occ_masks, knight_bb, sq) {
+        if !knight_bb.is_empty() && is_knight_attacking(occ_masks, knight_bb, sq) {
             return true;
         }
 
         let horiz_vert_bb = board.get_white_rook_queen_bitboard();
         let all_pce_bb = board.get_bitboard();
-        if horiz_vert_bb != 0
+        if !horiz_vert_bb.is_empty()
             && is_horizontal_or_vertical_attacking(occ_masks, all_pce_bb, horiz_vert_bb, sq)
         {
             return true;
         }
 
         let diag_bb = board.get_white_bishop_queen_bitboard();
-        if diag_bb != 0 && is_diagonally_attacked(occ_masks, sq, diag_bb, all_pce_bb) {
+        if !diag_bb.is_empty() && is_diagonally_attacked(occ_masks, sq, diag_bb, all_pce_bb) {
             return true;
         }
 
@@ -100,20 +99,20 @@ fn check_non_pawn_pieces_attacking(
         }
     } else {
         let knight_bb = board.get_piece_bitboard(&piece::BLACK_KNIGHT);
-        if knight_bb != 0 && is_knight_attacking(occ_masks, knight_bb, sq) {
+        if !knight_bb.is_empty() && is_knight_attacking(occ_masks, knight_bb, sq) {
             return true;
         }
 
         let horiz_vert_bb = board.get_black_rook_queen_bitboard();
         let all_pce_bb = board.get_bitboard();
-        if horiz_vert_bb != 0
+        if !horiz_vert_bb.is_empty()
             && is_horizontal_or_vertical_attacking(occ_masks, all_pce_bb, horiz_vert_bb, sq)
         {
             return true;
         }
 
         let diag_bb = board.get_black_bishop_queen_bitboard();
-        if diag_bb != 0 && is_diagonally_attacked(occ_masks, sq, diag_bb, all_pce_bb) {
+        if !diag_bb.is_empty() && is_diagonally_attacked(occ_masks, sq, diag_bb, all_pce_bb) {
             return true;
         }
 
@@ -126,11 +125,13 @@ fn check_non_pawn_pieces_attacking(
     false
 }
 
-fn is_knight_attacking(occ_masks: &OccupancyMasks, pce_bitboard: u64, attack_sq: Square) -> bool {
-    let iter = SquareIterator::new(pce_bitboard);
-    for sq in iter {
-        let occ_mask = occ_masks.get_occupancy_mask_knight(sq);
-        if bitboard::is_set(occ_mask, attack_sq) {
+fn is_knight_attacking(
+    occ_masks: &OccupancyMasks,
+    pce_bitboard: Bitboard,
+    attack_sq: Square,
+) -> bool {
+    for sq in pce_bitboard.iterator() {
+        if occ_masks.get_occupancy_mask_knight(sq).is_set(attack_sq) {
             return true;
         }
     }
@@ -139,8 +140,8 @@ fn is_knight_attacking(occ_masks: &OccupancyMasks, pce_bitboard: u64, attack_sq:
 
 fn is_horizontal_or_vertical_attacking(
     occ_masks: &OccupancyMasks,
-    all_piece_bb: u64,
-    attack_pce_bb: u64,
+    all_piece_bb: Bitboard,
+    attack_pce_bb: Bitboard,
     attack_sq: Square,
 ) -> bool {
     // do a quick check to see if any piece is sharing a rank and file
@@ -148,17 +149,16 @@ fn is_horizontal_or_vertical_attacking(
     let vert_occ_masks = occ_masks.get_vertical_mask(attack_sq);
     let horiz_occ_masks = occ_masks.get_horizontal_mask(attack_sq);
     let horiz_vert_sq_mask = vert_occ_masks | horiz_occ_masks;
-    if attack_pce_bb & horiz_vert_sq_mask == 0 {
+    if (attack_pce_bb & horiz_vert_sq_mask).is_empty() {
         // no diagonals shared
         return false;
     }
 
-    let iter = SquareIterator::new(attack_pce_bb);
-    for pce_sq in iter {
+    for pce_sq in attack_pce_bb.iterator() {
         if pce_sq.same_rank(attack_sq) || pce_sq.same_file(attack_sq) {
             // potentially attacking
             let blocking_pces = occ_masks.get_inbetween_squares(pce_sq, attack_sq);
-            if blocking_pces & all_piece_bb == 0 {
+            if (blocking_pces & all_piece_bb).is_empty() {
                 // no blocking pieces, attacked
                 return true;
             }
@@ -170,26 +170,27 @@ fn is_horizontal_or_vertical_attacking(
 fn is_diagonally_attacked(
     occ_masks: &OccupancyMasks,
     attack_sq: Square,
-    diag_bb: u64,
-    all_pce_bb: u64,
+    diag_bb: Bitboard,
+    all_pce_bb: Bitboard,
 ) -> bool {
     // do a quick check to see if any piece is sharing a diagonal with
     // the square
     let diag_occ_masks = occ_masks.get_diag_antidiag_mask(attack_sq);
     let sq_mask = diag_occ_masks.get_anti_diag_mask() | diag_occ_masks.get_diag_mask();
-    if sq_mask & diag_bb == 0 {
+    if (sq_mask & diag_bb).is_empty() {
         // no diagonals shared
         return false;
     }
 
-    let iter = SquareIterator::new(diag_bb);
-    for pce_sq in iter {
+    for pce_sq in diag_bb.iterator() {
         // diagonal mask will also work for queen
-        let diagonal_bb = occ_masks.get_occupancy_mask_bishop(pce_sq);
-        if bitboard::is_set(diagonal_bb, attack_sq) {
+        if occ_masks
+            .get_occupancy_mask_bishop(pce_sq)
+            .is_set(attack_sq)
+        {
             // potentially attacking....ie, sharing a diagonal
             let blocking_pces = occ_masks.get_inbetween_squares(pce_sq, attack_sq);
-            if blocking_pces & all_pce_bb == 0 {
+            if (blocking_pces & all_pce_bb).is_empty() {
                 // no blocking pieces, attacked
                 return true;
             }
@@ -201,26 +202,29 @@ fn is_diagonally_attacked(
 
 #[inline(always)]
 fn is_attacked_by_king(occ_masks: &OccupancyMasks, king_sq: Square, attacked_sq: Square) -> bool {
-    let king_occ_mask = occ_masks.get_occupancy_mask_king(king_sq);
-    bitboard::is_set(king_occ_mask, attacked_sq)
+    occ_masks
+        .get_occupancy_mask_king(king_sq)
+        .is_set(attacked_sq)
 }
+
 #[inline(always)]
 fn is_attacked_by_pawn_white(
     occ_masks: &OccupancyMasks,
-    pawn_bb: u64,
+    pawn_bb: Bitboard,
     attacked_sq: Square,
 ) -> bool {
     let wp_attacking_square = occ_masks.get_occ_mask_white_pawns_attacking_sq(attacked_sq);
-    (pawn_bb & wp_attacking_square) != 0
+    !(pawn_bb & wp_attacking_square).is_empty()
 }
+
 #[inline(always)]
 fn is_attacked_by_pawn_black(
     occ_masks: &OccupancyMasks,
-    pawn_bb: u64,
+    pawn_bb: Bitboard,
     attacked_sq: Square,
 ) -> bool {
     let bp_attacking_square = occ_masks.get_occ_mask_black_pawns_attacking_sq(attacked_sq);
-    (pawn_bb & bp_attacking_square) != 0
+    !(pawn_bb & bp_attacking_square).is_empty()
 }
 
 #[cfg(test)]

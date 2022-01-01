@@ -1,4 +1,4 @@
-use crate::board::bitboard;
+use crate::board::bitboard::Bitboard;
 use crate::board::colour;
 use crate::board::colour::Colour;
 use crate::board::file::File;
@@ -16,9 +16,9 @@ pub const NUM_SQUARES: usize = 64;
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub struct Board {
     // piece bitboard, an entry for each piece type (enum Piece)
-    piece_bb: [u64; piece::NUM_PIECE_TYPES],
+    piece_bb: [Bitboard; piece::NUM_PIECE_TYPES],
     // bitboard for each Colour
-    colour_bb: [u64; colour::NUM_COLOURS],
+    colour_bb: [Bitboard; colour::NUM_COLOURS],
     // material value
     material: Material,
     // pieces on squares
@@ -30,8 +30,8 @@ pub struct Board {
 impl Default for Board {
     fn default() -> Self {
         Board {
-            piece_bb: [0; piece::NUM_PIECE_TYPES],
-            colour_bb: [0; colour::NUM_COLOURS],
+            piece_bb: [Bitboard::default(); piece::NUM_PIECE_TYPES],
+            colour_bb: [Bitboard::default(); colour::NUM_COLOURS],
             material: Material::default(),
             pieces: [None; NUM_SQUARES],
             king_squares: [Square::default(); colour::NUM_COLOURS],
@@ -124,7 +124,7 @@ impl Board {
         self.remove_piece(pce.unwrap(), sq);
     }
 
-    pub fn get_colour_bb(&self, colour: Colour) -> u64 {
+    pub fn get_colour_bb(&self, colour: Colour) -> Bitboard {
         self.colour_bb[colour.to_usize()]
     }
 
@@ -160,42 +160,41 @@ impl Board {
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
-        let board_bb = self.get_bitboard();
-        bitboard::is_clear(board_bb, sq)
+        self.get_bitboard().is_clear(sq)
     }
 
-    pub fn get_piece_bitboard(&self, piece: &Piece) -> u64 {
+    pub fn get_piece_bitboard(&self, piece: &Piece) -> Bitboard {
         self.piece_bb[piece.to_usize()]
     }
 
-    pub fn get_white_rook_queen_bitboard(&self) -> u64 {
+    pub fn get_white_rook_queen_bitboard(&self) -> Bitboard {
         let wr_off = piece::WHITE_ROOK.to_usize();
         let wq_off = piece::WHITE_QUEEN.to_usize();
         self.piece_bb[wr_off] | self.piece_bb[wq_off]
     }
 
-    pub fn get_black_rook_queen_bitboard(&self) -> u64 {
+    pub fn get_black_rook_queen_bitboard(&self) -> Bitboard {
         let br_off = piece::BLACK_ROOK.to_usize();
         let bq_off = piece::BLACK_QUEEN.to_usize();
 
         self.piece_bb[br_off] | self.piece_bb[bq_off]
     }
 
-    pub fn get_white_bishop_queen_bitboard(&self) -> u64 {
+    pub fn get_white_bishop_queen_bitboard(&self) -> Bitboard {
         let wb_off = piece::WHITE_BISHOP.to_usize();
         let wq_off = piece::WHITE_QUEEN.to_usize();
 
         self.piece_bb[wb_off] | self.piece_bb[wq_off]
     }
 
-    pub fn get_black_bishop_queen_bitboard(&self) -> u64 {
+    pub fn get_black_bishop_queen_bitboard(&self) -> Bitboard {
         let bb_off = piece::BLACK_BISHOP.to_usize();
         let bq_off = piece::BLACK_QUEEN.to_usize();
 
         self.piece_bb[bb_off] | self.piece_bb[bq_off]
     }
 
-    pub fn get_bitboard(&self) -> u64 {
+    pub fn get_bitboard(&self) -> Bitboard {
         self.get_colour_bb(Colour::White) | self.get_colour_bb(Colour::Black)
     }
 
@@ -207,22 +206,21 @@ impl Board {
         let pce_off = piece.to_usize();
         let col_off = piece.colour().to_usize();
 
-        self.piece_bb[pce_off] = bitboard::clear_bit(self.piece_bb[pce_off], sq);
-        self.colour_bb[col_off] = bitboard::clear_bit(self.colour_bb[col_off], sq);
+        self.piece_bb[pce_off].clear_bit(sq);
+        self.colour_bb[col_off].clear_bit(sq);
     }
 
     fn set_bitboards(&mut self, piece: &'static Piece, sq: Square) {
         let pce_off = piece.to_usize();
         let col_off = piece.colour().to_usize();
 
-        self.piece_bb[pce_off] = bitboard::set_bit(self.piece_bb[pce_off], sq);
-        self.colour_bb[col_off] = bitboard::set_bit(self.colour_bb[col_off], sq);
+        self.piece_bb[pce_off].set_bit(sq);
+        self.colour_bb[col_off].set_bit(sq);
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use crate::board::bitboard;
     use crate::board::game_board::Board;
     use crate::board::piece;
     use crate::board::square;
@@ -235,9 +233,13 @@ pub mod tests {
 
         for pce in kings.iter() {
             let mut board = Board::new();
+
             for sq in square::SQUARES {
                 let king = pce;
+
+                assert!(board.get_bitboard().is_empty());
                 board.add_piece(king, *sq);
+                assert!(!board.get_bitboard().is_empty());
 
                 let colour = king.colour();
                 assert_eq!(board.get_king_sq(colour), *sq);
@@ -328,9 +330,8 @@ pub mod tests {
         for pce in piece::ALL_PIECES {
             for square in square::SQUARES {
                 board.add_piece(pce, *square);
-                let bb = board.get_piece_bitboard(pce);
 
-                assert!(bitboard::is_set(bb, *square));
+                assert!(board.get_piece_bitboard(pce).is_set(*square));
 
                 // clean up
                 board.remove_piece(pce, *square);
