@@ -192,9 +192,7 @@ fn populate_knight_occupancy_mask_array() -> [Bitboard; game_board::NUM_SQUARES]
     let mut retval: [Bitboard; game_board::NUM_SQUARES] =
         [Bitboard::default(); game_board::NUM_SQUARES];
 
-    let squares = square::SQUARES;
-
-    for sq in squares {
+    for sq in square::iterator() {
         let mut bb = Bitboard::new(0);
 
         let rank = sq.rank();
@@ -251,9 +249,7 @@ fn populate_king_mask_array() -> [Bitboard; game_board::NUM_SQUARES] {
     let mut retval: [Bitboard; game_board::NUM_SQUARES] =
         [Bitboard::default(); game_board::NUM_SQUARES];
 
-    let squares = square::SQUARES;
-
-    for sq in squares {
+    for sq in square::iterator() {
         let mut bb = Bitboard::new(0);
 
         let rank = sq.rank();
@@ -301,7 +297,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; game_board::NUM_SQUA
     let mut retval: [DiagonalAntidiagonal; game_board::NUM_SQUARES] =
         [DiagonalAntidiagonal::default(); game_board::NUM_SQUARES];
 
-    for sq in square::SQUARES.iter() {
+    for sq in square::iterator() {
         let mut bb = Bitboard::new(0);
         let mut rank = sq.rank();
         let mut file = sq.file();
@@ -346,7 +342,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; game_board::NUM_SQUA
         retval[sq.to_usize()].diag_mask = bb;
     }
 
-    for sq in square::SQUARES.iter() {
+    for sq in square::iterator() {
         let mut bb = Bitboard::new(0);
 
         let mut rank = sq.rank();
@@ -400,9 +396,8 @@ fn populate_bishop_mask_array(
 ) -> [Bitboard; game_board::NUM_SQUARES] {
     let mut retval: [Bitboard; game_board::NUM_SQUARES] =
         [Bitboard::default(); game_board::NUM_SQUARES];
-    let squares = square::SQUARES;
 
-    for sq in squares {
+    for sq in square::iterator() {
         let mut bb = diag_masks[sq.to_usize()].diag_mask | diag_masks[sq.to_usize()].anti_diag_mask;
 
         // remove current square
@@ -418,9 +413,8 @@ fn populate_queen_mask_array(
 ) -> [Bitboard; game_board::NUM_SQUARES] {
     let mut retval: [Bitboard; game_board::NUM_SQUARES] =
         [Bitboard::default(); game_board::NUM_SQUARES];
-    let squares = square::SQUARES;
 
-    for sq in squares {
+    for sq in square::iterator() {
         let mut bb = get_horizontal_move_mask(*sq)
             | get_vertical_move_mask(*sq)
             | diag_masks[sq.to_usize()].diag_mask
@@ -449,10 +443,8 @@ fn populate_intervening_bitboard_array(
 
     let mut retval = [[Bitboard::default(); game_board::NUM_SQUARES]; game_board::NUM_SQUARES];
 
-    let squares = square::SQUARES;
-
-    for sq1 in squares {
-        for sq2 in squares {
+    for sq1 in square::iterator() {
+        for sq2 in square::iterator() {
             let btwn = (M1.shl(sq1.to_usize() as u8)) ^ (M1.shl(sq2.to_usize() as u8));
             let file = (sq2.to_usize() as u64 & 7).wrapping_sub(sq1.to_usize() as u64 & 7);
             let rank = ((sq2.to_usize() as u64 | 7).wrapping_sub(sq1.to_usize() as u64)) >> 3;

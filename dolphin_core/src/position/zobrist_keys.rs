@@ -1,7 +1,9 @@
+use crate::board::colour::Colour;
 use rand::RngCore;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256PlusPlus;
 
+use crate::board::colour::NUM_COLOURS;
 use crate::board::piece::{Piece, NUM_PIECE_TYPES};
 use crate::board::square::{Square, NUM_SQUARES};
 use crate::board::types::ToInt;
@@ -12,7 +14,7 @@ pub type ZobristHash = u64;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct ZobristKeys {
-    piece_keys: [[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES],
+    piece_keys: [[[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES]; NUM_COLOURS],
     side_key: ZobristHash,
     castle_keys: [ZobristHash; NUM_CASTLE_PERMS],
     en_passant_sq_keys: [ZobristHash; NUM_SQUARES],
@@ -21,7 +23,7 @@ pub struct ZobristKeys {
 impl Default for ZobristKeys {
     fn default() -> Self {
         ZobristKeys {
-            piece_keys: [[0; NUM_PIECE_TYPES]; NUM_SQUARES],
+            piece_keys: [[[0; NUM_PIECE_TYPES]; NUM_SQUARES]; NUM_COLOURS],
             side_key: 0,
             castle_keys: [0; NUM_CASTLE_PERMS],
             en_passant_sq_keys: [0; NUM_SQUARES],
@@ -52,10 +54,11 @@ impl ZobristKeys {
         self.side_key
     }
 
-    pub fn piece_square(&self, piece: &'static Piece, square: Square) -> ZobristHash {
+    pub fn piece_square(&self, piece: Piece, colour: Colour, square: Square) -> ZobristHash {
         let pce_offset = piece.to_usize();
         let sq_offset = square.to_usize();
-        self.piece_keys[sq_offset][pce_offset]
+        let col_offset = colour.to_usize();
+        self.piece_keys[col_offset][sq_offset][pce_offset]
     }
 
     pub fn en_passant(&self, square: Square) -> ZobristHash {
@@ -69,10 +72,14 @@ impl ZobristKeys {
     }
 }
 
-fn init_piece_keys(rng: &mut Xoshiro256PlusPlus) -> [[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES] {
-    let mut retval = [[0u64; NUM_PIECE_TYPES]; NUM_SQUARES];
+fn init_piece_keys(
+    rng: &mut Xoshiro256PlusPlus,
+) -> [[[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES]; NUM_COLOURS] {
+    let mut retval = [[[0u64; NUM_PIECE_TYPES]; NUM_SQUARES]; NUM_COLOURS];
     for element in retval.iter_mut().flat_map(|r| r.iter_mut()) {
-        *element = rng.next_u64();
+        for i in element {
+            *i = rng.next_u64();
+        }
     }
     retval
 }
@@ -104,10 +111,12 @@ pub mod tests {
         let keys = ZobristKeys::new();
         let mut v: Vec<ZobristHash> = Vec::new();
 
-        for pce in crate::board::piece::ALL_PIECES {
-            for sq in crate::board::square::SQUARES {
-                let hash = keys.piece_square(pce, *sq);
-                v.push(hash);
+        for pce in crate::board::piece::iterator() {
+            for col in crate::board::colour::iterator() {
+                for sq in crate::board::square::iterator() {
+                    let hash = keys.piece_square(*pce, *col, *sq);
+                    v.push(hash);
+                }
             }
         }
 
@@ -128,7 +137,7 @@ pub mod tests {
         let keys = ZobristKeys::new();
         let mut v: Vec<ZobristHash> = Vec::new();
 
-        for sq in crate::board::square::SQUARES {
+        for sq in crate::board::square::iterator() {
             let hash = keys.en_passant(*sq);
             v.push(hash);
         }
@@ -187,9 +196,14 @@ pub mod tests {
 
         assert_eq!(keys1.side(), keys2.side());
 
-        for pce in crate::board::piece::ALL_PIECES {
-            for sq in crate::board::square::SQUARES {
-                assert_eq!(keys1.piece_square(pce, *sq), keys2.piece_square(pce, *sq));
+        for col in crate::board::colour::iterator() {
+            for pce in crate::board::piece::iterator() {
+                for sq in crate::board::square::iterator() {
+                    assert_eq!(
+                        keys1.piece_square(*pce, *col, *sq),
+                        keys2.piece_square(*pce, *col, *sq)
+                    );
+                }
             }
         }
 

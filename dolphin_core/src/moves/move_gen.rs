@@ -2,7 +2,6 @@ use crate::board::bitboard;
 use crate::board::bitboard::Bitboard;
 use crate::board::colour::Colour;
 use crate::board::occupancy_masks;
-use crate::board::piece;
 use crate::board::piece::Piece;
 use crate::board::square::Square;
 use crate::moves::mov::Mov;
@@ -33,7 +32,7 @@ impl MoveGenerator {
 
             self.generate_white_pawn_moves(position, move_list);
 
-            self.generate_knight_moves(position, move_list, &piece::WHITE_KNIGHT);
+            self.generate_knight_moves(position, move_list, Piece::Knight);
 
             if castle_permissions::has_white_castle_permission(position.castle_permissions()) {
                 self.generate_white_castle_moves(position, move_list);
@@ -47,7 +46,7 @@ impl MoveGenerator {
 
             self.generate_black_pawn_moves(position, move_list);
 
-            self.generate_knight_moves(position, move_list, &piece::BLACK_KNIGHT);
+            self.generate_knight_moves(position, move_list, Piece::Knight);
 
             if castle_permissions::has_black_castle_permission(position.castle_permissions()) {
                 self.generate_black_castle_moves(position, move_list);
@@ -63,7 +62,7 @@ impl MoveGenerator {
         // opposite colour bitboard
         let all_opposing_bb = pos.board().get_colour_bb(Colour::Black);
 
-        let wp_bb = pos.board().get_piece_bitboard(&piece::WHITE_PAWN);
+        let wp_bb = pos.board().get_piece_bitboard(Piece::Pawn, Colour::White);
 
         // =================================================
         // Pawn quiet + capture, exclude possible promotions
@@ -150,7 +149,7 @@ impl MoveGenerator {
         // opposite colour bitboard
         let all_opposing_bb = pos.board().get_colour_bb(Colour::White);
 
-        let bp_bb = pos.board().get_piece_bitboard(&piece::BLACK_PAWN);
+        let bp_bb = pos.board().get_piece_bitboard(Piece::Pawn, Colour::Black);
 
         // =================================================
         // Pawn quiet + capture, exclude possible promotions
@@ -338,13 +337,8 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_knight_moves(
-        &self,
-        pos: &Position,
-        move_list: &mut MoveList,
-        knight: &'static Piece,
-    ) {
-        let pce_bb = pos.board().get_piece_bitboard(knight);
+    fn generate_knight_moves(&self, pos: &Position, move_list: &mut MoveList, knight: Piece) {
+        let pce_bb = pos.board().get_piece_bitboard(knight, pos.side_to_move());
 
         let opposite_side = pos.side_to_move().flip_side();
         let opp_occ_sq_bb = pos.board().get_colour_bb(opposite_side);
@@ -430,22 +424,12 @@ impl MoveGenerator {
     ) {
         match side_to_move {
             Colour::White => {
-                for pce in [
-                    &piece::WHITE_KNIGHT,
-                    &piece::WHITE_BISHOP,
-                    &piece::WHITE_ROOK,
-                    &piece::WHITE_QUEEN,
-                ] {
+                for pce in [Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen] {
                     move_list.push(Mov::encode_move_with_promotion(from_sq, to_sq, pce));
                 }
             }
             Colour::Black => {
-                for pce in [
-                    &piece::BLACK_KNIGHT,
-                    &piece::BLACK_BISHOP,
-                    &piece::BLACK_ROOK,
-                    &piece::BLACK_QUEEN,
-                ] {
+                for pce in [Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen] {
                     move_list.push(Mov::encode_move_with_promotion(from_sq, to_sq, pce));
                 }
             }
@@ -461,22 +445,12 @@ impl MoveGenerator {
     ) {
         match side_to_move {
             Colour::White => {
-                for pce in [
-                    &piece::WHITE_KNIGHT,
-                    &piece::WHITE_BISHOP,
-                    &piece::WHITE_ROOK,
-                    &piece::WHITE_QUEEN,
-                ] {
+                for pce in [Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen] {
                     move_list.push(Mov::encode_move_with_promotion_capture(from_sq, to_sq, pce));
                 }
             }
             Colour::Black => {
-                for pce in [
-                    &piece::BLACK_KNIGHT,
-                    &piece::BLACK_BISHOP,
-                    &piece::BLACK_ROOK,
-                    &piece::BLACK_QUEEN,
-                ] {
+                for pce in [Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen] {
                     move_list.push(Mov::encode_move_with_promotion_capture(from_sq, to_sq, pce));
                 }
             }
@@ -511,7 +485,6 @@ impl MoveGenerator {
 #[cfg(test)]
 pub mod tests {
     use crate::board::occupancy_masks::OccupancyMasks;
-    use crate::board::piece;
     use crate::board::piece::Piece;
     use crate::board::square::*;
     use crate::io::fen;
@@ -1111,12 +1084,8 @@ pub mod tests {
     pub fn move_gen_white_promotion_moves_as_expected() {
         let fen = "2b1rkr1/PPpP1pbP/n1p4p/2NpP1p1/1RBqBP2/pPR1NpQ1/P4P1P/P4K1n w - - 0 1";
 
-        let white_promotion_pces: [&'static Piece; 4] = [
-            &piece::WHITE_BISHOP,
-            &piece::WHITE_KNIGHT,
-            &piece::WHITE_ROOK,
-            &piece::WHITE_QUEEN,
-        ];
+        let white_promotion_pces: [Piece; 4] =
+            [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
 
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
             fen::decompose_fen(fen);
@@ -1146,68 +1115,64 @@ pub mod tests {
         from_sq = SQUARE_A7;
         to_sq = SQUARE_A8;
         for pce in white_promotion_pces.iter() {
-            assert!(move_list.contains(Mov::encode_move_with_promotion(from_sq, to_sq, pce)));
+            assert!(move_list.contains(Mov::encode_move_with_promotion(from_sq, to_sq, *pce)));
         }
 
         from_sq = SQUARE_B7;
         to_sq = SQUARE_B8;
         for pce in white_promotion_pces.iter() {
-            assert!(move_list.contains(Mov::encode_move_with_promotion(from_sq, to_sq, pce)));
+            assert!(move_list.contains(Mov::encode_move_with_promotion(from_sq, to_sq, *pce)));
         }
 
         from_sq = SQUARE_D7;
         to_sq = SQUARE_D8;
         for pce in white_promotion_pces.iter() {
-            assert!(move_list.contains(Mov::encode_move_with_promotion(from_sq, to_sq, pce)));
+            assert!(move_list.contains(Mov::encode_move_with_promotion(from_sq, to_sq, *pce)));
         }
 
         from_sq = SQUARE_H7;
         to_sq = SQUARE_H8;
         for pce in white_promotion_pces.iter() {
-            assert!(move_list.contains(Mov::encode_move_with_promotion(from_sq, to_sq, pce)));
+            assert!(move_list.contains(Mov::encode_move_with_promotion(from_sq, to_sq, *pce)));
         }
         // CAPTURE promotion
         from_sq = SQUARE_B7;
         to_sq = SQUARE_C8;
         for pce in white_promotion_pces.iter() {
-            assert!(
-                move_list.contains(Mov::encode_move_with_promotion_capture(from_sq, to_sq, pce))
-            );
+            assert!(move_list.contains(Mov::encode_move_with_promotion_capture(
+                from_sq, to_sq, *pce
+            )));
         }
         from_sq = SQUARE_D7;
         to_sq = SQUARE_C8;
         for pce in white_promotion_pces.iter() {
-            assert!(
-                move_list.contains(Mov::encode_move_with_promotion_capture(from_sq, to_sq, pce))
-            );
+            assert!(move_list.contains(Mov::encode_move_with_promotion_capture(
+                from_sq, to_sq, *pce
+            )));
         }
 
         from_sq = SQUARE_D7;
         to_sq = SQUARE_E8;
         for pce in white_promotion_pces.iter() {
-            assert!(
-                move_list.contains(Mov::encode_move_with_promotion_capture(from_sq, to_sq, pce))
-            );
+            assert!(move_list.contains(Mov::encode_move_with_promotion_capture(
+                from_sq, to_sq, *pce
+            )));
         }
 
         from_sq = SQUARE_H7;
         to_sq = SQUARE_G8;
         for pce in white_promotion_pces.iter() {
-            assert!(
-                move_list.contains(Mov::encode_move_with_promotion_capture(from_sq, to_sq, pce))
-            );
+            assert!(move_list.contains(Mov::encode_move_with_promotion_capture(
+                from_sq, to_sq, *pce
+            )));
         }
     }
 
     #[test]
     pub fn move_gen_black_promotion_moves_as_expected() {
         let fen = "2b1rkr1/PPpP1pbP/n6p/2NpPn2/1RBqBP2/4N1Q1/ppPpRp1P/P4K2 b - - 0 1";
-        let black_promotion_pces: [&'static Piece; 4] = [
-            &piece::BLACK_BISHOP,
-            &piece::BLACK_KNIGHT,
-            &piece::BLACK_ROOK,
-            &piece::BLACK_QUEEN,
-        ];
+        let black_promotion_pces: [Piece; 4] =
+            [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
 
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
             fen::decompose_fen(fen);
@@ -1238,22 +1203,22 @@ pub mod tests {
         from_sq = SQUARE_B2;
         to_sq = SQUARE_B1;
         for pce in black_promotion_pces.iter() {
-            assert!(move_list.contains(Mov::encode_move_with_promotion(from_sq, to_sq, pce)));
+            assert!(move_list.contains(Mov::encode_move_with_promotion(from_sq, to_sq, *pce)));
         }
 
         from_sq = SQUARE_D2;
         to_sq = SQUARE_D1;
         for pce in black_promotion_pces.iter() {
-            assert!(move_list.contains(Mov::encode_move_with_promotion(from_sq, to_sq, pce)));
+            assert!(move_list.contains(Mov::encode_move_with_promotion(from_sq, to_sq, *pce)));
         }
 
         // CAPTURE promotion
         from_sq = SQUARE_B2;
         to_sq = SQUARE_A1;
         for pce in black_promotion_pces.iter() {
-            assert!(
-                move_list.contains(Mov::encode_move_with_promotion_capture(from_sq, to_sq, pce))
-            );
+            assert!(move_list.contains(Mov::encode_move_with_promotion_capture(
+                from_sq, to_sq, *pce
+            )));
         }
     }
 

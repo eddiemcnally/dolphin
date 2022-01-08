@@ -2,7 +2,7 @@ use crate::board::bitboard::Bitboard;
 use crate::board::colour::Colour;
 use crate::board::game_board::Board;
 use crate::board::occupancy_masks::OccupancyMasks;
-use crate::board::piece;
+use crate::board::piece::Piece;
 use crate::board::square::Square;
 
 pub fn is_sq_attacked(
@@ -13,7 +13,7 @@ pub fn is_sq_attacked(
 ) -> bool {
     match attacking_side {
         Colour::White => {
-            let pawn_bb = board.get_piece_bitboard(&piece::WHITE_PAWN);
+            let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::White);
             if !pawn_bb.is_empty() && is_attacked_by_pawn_white(occ_masks, pawn_bb, sq) {
                 return true;
             }
@@ -22,7 +22,7 @@ pub fn is_sq_attacked(
             }
         }
         Colour::Black => {
-            let pawn_bb = board.get_piece_bitboard(&piece::BLACK_PAWN);
+            let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::Black);
             if !pawn_bb.is_empty() && is_attacked_by_pawn_black(occ_masks, pawn_bb, sq) {
                 return true;
             }
@@ -42,7 +42,7 @@ pub fn is_castle_squares_attacked(
 ) -> bool {
     match attacking_side {
         Colour::White => {
-            let pawn_bb = board.get_piece_bitboard(&piece::WHITE_PAWN);
+            let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::White);
             for sq in sq_array.iter() {
                 if check_non_pawn_pieces_attacking(occ_masks, Colour::White, board, *sq) {
                     return true;
@@ -53,7 +53,7 @@ pub fn is_castle_squares_attacked(
             }
         }
         Colour::Black => {
-            let pawn_bb = board.get_piece_bitboard(&piece::BLACK_PAWN);
+            let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::Black);
             for sq in sq_array.iter() {
                 if check_non_pawn_pieces_attacking(occ_masks, Colour::Black, board, *sq) {
                     return true;
@@ -75,7 +75,7 @@ fn check_non_pawn_pieces_attacking(
     sq: Square,
 ) -> bool {
     if side == Colour::White {
-        let knight_bb = board.get_piece_bitboard(&piece::WHITE_KNIGHT);
+        let knight_bb = board.get_piece_bitboard(Piece::Knight, Colour::White);
         if !knight_bb.is_empty() && is_knight_attacking(occ_masks, knight_bb, sq) {
             return true;
         }
@@ -98,7 +98,7 @@ fn check_non_pawn_pieces_attacking(
             return true;
         }
     } else {
-        let knight_bb = board.get_piece_bitboard(&piece::BLACK_KNIGHT);
+        let knight_bb = board.get_piece_bitboard(Piece::Knight, Colour::Black);
         if !knight_bb.is_empty() && is_knight_attacking(occ_masks, knight_bb, sq) {
             return true;
         }

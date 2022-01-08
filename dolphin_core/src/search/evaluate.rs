@@ -4,7 +4,7 @@
 use crate::board::colour::Colour;
 use crate::board::game_board;
 use crate::board::game_board::Board;
-use crate::board::piece::PieceType;
+use crate::board::piece::Piece;
 use crate::board::types::ToInt;
 
 #[rustfmt::skip]
@@ -89,30 +89,28 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
     for sq in board.get_bitboard().iterator() {
         let sq_offset = sq.to_usize();
 
-        let pce = &mut None;
-        board.get_piece_on_square(sq, pce);
+        let square_contents = board.get_piece_on_square(sq);
 
-        let piece_type = pce.unwrap().piece_type();
-
-        score += match piece_type {
-            PieceType::WhitePawn => PAWN_SQ_VALUE[sq_offset] as i32,
-            PieceType::WhiteBishop => BISHOP_SQ_VALUE[sq_offset] as i32,
-            PieceType::WhiteKnight => KNIGHT_SQ_VALUE[sq_offset] as i32,
-            PieceType::WhiteRook => ROOK_SQ_VALUE[sq_offset] as i32,
-            PieceType::WhiteQueen => QUEEN_SQ_VALUE[sq_offset] as i32,
-            PieceType::WhiteKing => KING_SQ_VALUE[sq_offset] as i32,
-            //
-            // note: black values are negative, and array offsets are mirrored
-            //
-            PieceType::BlackPawn => -PAWN_SQ_VALUE[63 - sq_offset] as i32,
-            PieceType::BlackBishop => -BISHOP_SQ_VALUE[63 - sq_offset] as i32,
-            PieceType::BlackKnight => -KNIGHT_SQ_VALUE[63 - sq_offset] as i32,
-            PieceType::BlackRook => -ROOK_SQ_VALUE[63 - sq_offset] as i32,
-            PieceType::BlackQueen => -QUEEN_SQ_VALUE[63 - sq_offset] as i32,
-            PieceType::BlackKing => -KING_SQ_VALUE[63 - sq_offset] as i32,
-        };
+        if square_contents.unwrap().colour == Colour::White {
+            score += match square_contents.unwrap().piece {
+                Piece::Pawn => PAWN_SQ_VALUE[sq_offset] as i32,
+                Piece::Bishop => BISHOP_SQ_VALUE[sq_offset] as i32,
+                Piece::Knight => KNIGHT_SQ_VALUE[sq_offset] as i32,
+                Piece::Rook => ROOK_SQ_VALUE[sq_offset] as i32,
+                Piece::Queen => QUEEN_SQ_VALUE[sq_offset] as i32,
+                Piece::King => KING_SQ_VALUE[sq_offset] as i32,
+            }
+        } else {
+            score += match square_contents.unwrap().piece {
+                Piece::Pawn => -PAWN_SQ_VALUE[63 - sq_offset] as i32,
+                Piece::Bishop => -BISHOP_SQ_VALUE[63 - sq_offset] as i32,
+                Piece::Knight => -KNIGHT_SQ_VALUE[63 - sq_offset] as i32,
+                Piece::Rook => -ROOK_SQ_VALUE[63 - sq_offset] as i32,
+                Piece::Queen => -QUEEN_SQ_VALUE[63 - sq_offset] as i32,
+                Piece::King => -KING_SQ_VALUE[63 - sq_offset] as i32,
+            }
+        }
     }
-
     if side_to_move == Colour::White {
         score
     } else {

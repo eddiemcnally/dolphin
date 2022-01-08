@@ -2,6 +2,7 @@ use crate::board::bitboard::Bitboard;
 use crate::board::file::*;
 use crate::board::rank::*;
 use std::fmt;
+use std::slice::Iter;
 
 use super::types::ToInt;
 
@@ -200,16 +201,20 @@ impl fmt::Debug for Square {
 }
 
 #[rustfmt::skip]
-pub const SQUARES: &[Square] = &[
-    SQUARE_A1, SQUARE_B1, SQUARE_C1, SQUARE_D1, SQUARE_E1, SQUARE_F1, SQUARE_G1, SQUARE_H1, 
-    SQUARE_A2, SQUARE_B2, SQUARE_C2, SQUARE_D2, SQUARE_E2, SQUARE_F2, SQUARE_G2, SQUARE_H2, 
-    SQUARE_A3, SQUARE_B3, SQUARE_C3, SQUARE_D3, SQUARE_E3, SQUARE_F3, SQUARE_G3, SQUARE_H3, 
-    SQUARE_A4, SQUARE_B4, SQUARE_C4, SQUARE_D4, SQUARE_E4, SQUARE_F4, SQUARE_G4, SQUARE_H4, 
-    SQUARE_A5, SQUARE_B5, SQUARE_C5, SQUARE_D5, SQUARE_E5, SQUARE_F5, SQUARE_G5, SQUARE_H5, 
-    SQUARE_A6, SQUARE_B6, SQUARE_C6, SQUARE_D6, SQUARE_E6, SQUARE_F6, SQUARE_G6, SQUARE_H6, 
-    SQUARE_A7, SQUARE_B7, SQUARE_C7, SQUARE_D7, SQUARE_E7, SQUARE_F7, SQUARE_G7, SQUARE_H7, 
-    SQUARE_A8, SQUARE_B8, SQUARE_C8, SQUARE_D8, SQUARE_E8, SQUARE_F8, SQUARE_G8, SQUARE_H8,
-];
+
+pub fn iterator() -> Iter<'static, Square> {
+    static SQUARES: [Square; NUM_SQUARES] = [
+        SQUARE_A1, SQUARE_B1, SQUARE_C1, SQUARE_D1, SQUARE_E1, SQUARE_F1, SQUARE_G1, SQUARE_H1, 
+        SQUARE_A2, SQUARE_B2, SQUARE_C2, SQUARE_D2, SQUARE_E2, SQUARE_F2, SQUARE_G2, SQUARE_H2, 
+        SQUARE_A3, SQUARE_B3, SQUARE_C3, SQUARE_D3, SQUARE_E3, SQUARE_F3, SQUARE_G3, SQUARE_H3, 
+        SQUARE_A4, SQUARE_B4, SQUARE_C4, SQUARE_D4, SQUARE_E4, SQUARE_F4, SQUARE_G4, SQUARE_H4, 
+        SQUARE_A5, SQUARE_B5, SQUARE_C5, SQUARE_D5, SQUARE_E5, SQUARE_F5, SQUARE_G5, SQUARE_H5, 
+        SQUARE_A6, SQUARE_B6, SQUARE_C6, SQUARE_D6, SQUARE_E6, SQUARE_F6, SQUARE_G6, SQUARE_H6, 
+        SQUARE_A7, SQUARE_B7, SQUARE_C7, SQUARE_D7, SQUARE_E7, SQUARE_F7, SQUARE_G7, SQUARE_H7, 
+        SQUARE_A8, SQUARE_B8, SQUARE_C8, SQUARE_D8, SQUARE_E8, SQUARE_F8, SQUARE_G8, SQUARE_H8,
+    ];
+    SQUARES.iter()
+}
 
 #[cfg(test)]
 pub mod tests {
@@ -252,7 +257,7 @@ pub mod tests {
 
     #[test]
     pub fn square_from_rank_and_file() {
-        let map = super::SQUARES;
+        let map = super::iterator();
         for square in map {
             let rank = square.rank();
             let file = square.file();
@@ -264,7 +269,7 @@ pub mod tests {
 
     #[test]
     pub fn square_from_string() {
-        let map = super::SQUARES;
+        let map = super::iterator();
         for square in map {
             let str = square.to_string();
             let sq = Square::get_from_string(&str);
@@ -286,9 +291,7 @@ pub mod tests {
 
     #[test]
     pub fn square_values() {
-        let map = super::SQUARES;
-
-        for (i, square) in map.iter().enumerate() {
+        for (i, square) in super::iterator().enumerate() {
             assert_eq!(square.0, i as u8);
         }
     }

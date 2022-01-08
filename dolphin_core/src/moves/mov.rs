@@ -1,5 +1,3 @@
-use crate::board::colour::Colour;
-use crate::board::piece;
 use crate::board::piece::Piece;
 use crate::board::square::Square;
 use crate::board::square::*;
@@ -134,7 +132,7 @@ impl Mov {
     pub fn encode_move_with_promotion(
         from_sq: Square,
         to_sq: Square,
-        promotion_piece: &'static Piece,
+        promotion_piece: Piece,
     ) -> Mov {
         debug_assert!(
             from_sq != to_sq,
@@ -143,10 +141,10 @@ impl Mov {
         );
 
         let mt = match promotion_piece {
-            &piece::WHITE_KNIGHT | &piece::BLACK_KNIGHT => MoveType::PromoteKnightQuiet,
-            &piece::WHITE_BISHOP | &piece::BLACK_BISHOP => MoveType::PromoteBishopQuiet,
-            &piece::WHITE_ROOK | &piece::BLACK_ROOK => MoveType::PromoteRookQuiet,
-            &piece::WHITE_QUEEN | &piece::BLACK_QUEEN => MoveType::PromoteQueenQuiet,
+            Piece::Knight => MoveType::PromoteKnightQuiet,
+            Piece::Bishop => MoveType::PromoteBishopQuiet,
+            Piece::Rook => MoveType::PromoteRookQuiet,
+            Piece::Queen => MoveType::PromoteQueenQuiet,
             _ => panic!("Invalid promotion piece"),
         };
 
@@ -161,7 +159,7 @@ impl Mov {
     pub fn encode_move_with_promotion_capture(
         from_sq: Square,
         to_sq: Square,
-        promotion_piece: &'static Piece,
+        promotion_piece: Piece,
     ) -> Mov {
         debug_assert!(
             from_sq != to_sq,
@@ -170,10 +168,10 @@ impl Mov {
         );
 
         let mt = match promotion_piece {
-            &piece::WHITE_KNIGHT | &piece::BLACK_KNIGHT => MoveType::PromoteKnightCapture,
-            &piece::WHITE_BISHOP | &piece::BLACK_BISHOP => MoveType::PromoteBishopCapture,
-            &piece::WHITE_ROOK | &piece::BLACK_ROOK => MoveType::PromoteRookCapture,
-            &piece::WHITE_QUEEN | &piece::BLACK_QUEEN => MoveType::PromoteQueenCapture,
+            Piece::Knight => MoveType::PromoteKnightCapture,
+            Piece::Bishop => MoveType::PromoteBishopCapture,
+            Piece::Rook => MoveType::PromoteRookCapture,
+            Piece::Queen => MoveType::PromoteQueenCapture,
             _ => panic!("Invalid promotion piece"),
         };
         Mov {
@@ -267,31 +265,13 @@ impl Mov {
         self.to_sq
     }
 
-    pub fn decode_promotion_piece(&self, colour: Colour) -> &'static Piece {
-        if colour == Colour::White {
-            match self.move_type {
-                MoveType::PromoteKnightQuiet | MoveType::PromoteKnightCapture => {
-                    &piece::WHITE_KNIGHT
-                }
-                MoveType::PromoteBishopQuiet | MoveType::PromoteBishopCapture => {
-                    &piece::WHITE_BISHOP
-                }
-                MoveType::PromoteRookQuiet | MoveType::PromoteRookCapture => &piece::WHITE_ROOK,
-                MoveType::PromoteQueenQuiet | MoveType::PromoteQueenCapture => &piece::WHITE_QUEEN,
-                _ => panic!("Invalid promotion piece"),
-            }
-        } else {
-            match self.move_type {
-                MoveType::PromoteKnightQuiet | MoveType::PromoteKnightCapture => {
-                    &piece::BLACK_KNIGHT
-                }
-                MoveType::PromoteBishopQuiet | MoveType::PromoteBishopCapture => {
-                    &piece::BLACK_BISHOP
-                }
-                MoveType::PromoteRookQuiet | MoveType::PromoteRookCapture => &piece::BLACK_ROOK,
-                MoveType::PromoteQueenQuiet | MoveType::PromoteQueenCapture => &piece::BLACK_QUEEN,
-                _ => panic!("Invalid promotion piece"),
-            }
+    pub fn decode_promotion_piece(&self) -> Piece {
+        match self.move_type {
+            MoveType::PromoteKnightQuiet | MoveType::PromoteKnightCapture => Piece::Knight,
+            MoveType::PromoteBishopQuiet | MoveType::PromoteBishopCapture => Piece::Bishop,
+            MoveType::PromoteRookQuiet | MoveType::PromoteRookCapture => Piece::Rook,
+            MoveType::PromoteQueenQuiet | MoveType::PromoteQueenCapture => Piece::Queen,
+            _ => panic!("Invalid promotion piece"),
         }
     }
 
@@ -409,7 +389,6 @@ impl Mov {
         println!("From {:?}, To {:?}", self.from_sq, self.to_sq);
     }
 }
-
 pub fn print_move_list(move_list: &MoveList) {
     for mov in move_list.iter() {
         mov.print_move();
@@ -418,7 +397,7 @@ pub fn print_move_list(move_list: &MoveList) {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::board::piece;
+    use crate::board::piece::Piece;
     use crate::board::square;
     use crate::board::square::*;
     use crate::moves::mov::Mov;
@@ -505,8 +484,8 @@ pub mod tests {
 
     #[test]
     pub fn encode_decode_quiet_move() {
-        for from_sq in square::SQUARES {
-            for to_sq in square::SQUARES {
+        for from_sq in square::iterator() {
+            for to_sq in square::iterator() {
                 if *from_sq == *to_sq {
                     continue;
                 }
@@ -531,8 +510,8 @@ pub mod tests {
 
     #[test]
     pub fn encode_decode_double_pawn_first_move() {
-        for from_sq in square::SQUARES {
-            for to_sq in square::SQUARES {
+        for from_sq in square::iterator() {
+            for to_sq in square::iterator() {
                 if *from_sq == *to_sq {
                     continue;
                 }
@@ -557,8 +536,8 @@ pub mod tests {
 
     #[test]
     pub fn encode_decode_en_passant() {
-        for from_sq in square::SQUARES {
-            for to_sq in square::SQUARES {
+        for from_sq in square::iterator() {
+            for to_sq in square::iterator() {
                 if *from_sq == *to_sq {
                     continue;
                 }
@@ -582,31 +561,21 @@ pub mod tests {
 
     #[test]
     pub fn encode_decode_promotion_move_non_capture() {
-        let target_promotions = [
-            &piece::WHITE_BISHOP,
-            &piece::WHITE_KNIGHT,
-            &piece::WHITE_ROOK,
-            &piece::WHITE_QUEEN,
-            &piece::BLACK_BISHOP,
-            &piece::BLACK_KNIGHT,
-            &piece::BLACK_ROOK,
-            &piece::BLACK_QUEEN,
-        ];
+        let target_promotions = [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
 
-        for from_sq in square::SQUARES {
-            for to_sq in square::SQUARES {
+        for from_sq in square::iterator() {
+            for to_sq in square::iterator() {
                 if *from_sq == *to_sq {
                     continue;
                 }
 
                 for pce in target_promotions.iter() {
-                    let mv = Mov::encode_move_with_promotion(*from_sq, *to_sq, pce);
+                    let mv = Mov::encode_move_with_promotion(*from_sq, *to_sq, *pce);
 
                     assert!(mv.is_promote());
                     assert!(!mv.is_capture());
 
-                    let col = pce.colour();
-                    let decoded_pce = mv.decode_promotion_piece(col);
+                    let decoded_pce = mv.decode_promotion_piece();
                     assert_eq!(decoded_pce, *pce);
 
                     let decoded_from_sq = mv.from_square();
@@ -621,31 +590,21 @@ pub mod tests {
 
     #[test]
     pub fn encode_decode_promotion_move_capture() {
-        let target_promotions = [
-            &piece::WHITE_BISHOP,
-            &piece::WHITE_KNIGHT,
-            &piece::WHITE_ROOK,
-            &piece::WHITE_QUEEN,
-            &piece::BLACK_BISHOP,
-            &piece::BLACK_KNIGHT,
-            &piece::BLACK_ROOK,
-            &piece::BLACK_QUEEN,
-        ];
+        let target_promotions = [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
 
-        for from_sq in square::SQUARES {
-            for to_sq in square::SQUARES {
+        for from_sq in square::iterator() {
+            for to_sq in square::iterator() {
                 if *from_sq == *to_sq {
                     continue;
                 }
 
                 for pce in target_promotions.iter() {
-                    let mv = Mov::encode_move_with_promotion_capture(*from_sq, *to_sq, pce);
+                    let mv = Mov::encode_move_with_promotion_capture(*from_sq, *to_sq, *pce);
 
                     assert!(mv.is_promote());
                     assert!(mv.is_capture());
 
-                    let col = pce.colour();
-                    let decoded_piece = mv.decode_promotion_piece(col);
+                    let decoded_piece = mv.decode_promotion_piece();
                     assert_eq!(decoded_piece, *pce);
 
                     let decoded_from_sq = mv.from_square();

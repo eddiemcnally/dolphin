@@ -7,8 +7,8 @@ use std::fmt;
 struct Item {
     game_state: GameState,
     mov: Mov,
-    pce_moved: &'static Piece,
-    pce_captured: Option<&'static Piece>,
+    pce_moved: Piece,
+    pce_captured: Option<Piece>,
 }
 
 #[derive(Eq, Copy, Clone)]
@@ -106,8 +106,8 @@ impl PositionHistory {
         &mut self,
         game_state: GameState,
         mv: Mov,
-        piece: &'static Piece,
-        capt_piece: Option<&'static Piece>,
+        piece: Piece,
+        capt_piece: Option<Piece>,
     ) {
         debug_assert!(
             self.count <= (PositionHistory::MAX_MOVE_HISTORY - 1) as u16,
@@ -126,7 +126,7 @@ impl PositionHistory {
         self.count += 1;
     }
 
-    pub fn pop(&mut self) -> (GameState, Mov, &'static Piece, Option<&'static Piece>) {
+    pub fn pop(&mut self) -> (GameState, Mov, Piece, Option<Piece>) {
         debug_assert!(self.count > 0, "attempt to pop, len = 0");
 
         self.count -= 1;

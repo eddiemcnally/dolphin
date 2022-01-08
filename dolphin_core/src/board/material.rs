@@ -57,25 +57,26 @@ impl fmt::Display for Material {
 #[cfg(test)]
 pub mod tests {
 
+    use crate::board::colour::Colour;
     use crate::board::game_board::Board;
     use crate::board::material::Material;
-    use crate::board::piece;
+    use crate::board::piece::Piece;
     use crate::board::square::*;
 
     #[test]
     pub fn add_remove_white_pieces_material_as_expected() {
         let mut board = Board::new();
 
-        let pce1 = &piece::WHITE_BISHOP;
-        let pce2 = &piece::WHITE_QUEEN;
+        let pce1 = Piece::Bishop;
+        let pce2 = Piece::Queen;
 
-        board.add_piece(pce1, SQUARE_A1);
-        board.add_piece(pce2, SQUARE_D3);
+        board.add_piece(pce1, Colour::White, SQUARE_A1);
+        board.add_piece(pce2, Colour::White, SQUARE_D3);
         let material_after_add = Material::new(pce1.value() + pce2.value(), 0);
 
         assert_eq!(material_after_add, board.get_material());
 
-        board.remove_piece(pce1, SQUARE_A1);
+        board.remove_piece(pce1, Colour::White, SQUARE_A1);
 
         let material_after_remove = pce2.value();
 
@@ -89,16 +90,16 @@ pub mod tests {
     pub fn add_remove_black_pieces_material_as_expected() {
         let mut board = Board::new();
 
-        let pce1 = &piece::BLACK_BISHOP;
-        let pce2 = &piece::BLACK_QUEEN;
+        let pce1 = Piece::Bishop;
+        let pce2 = Piece::Queen;
 
-        board.add_piece(pce1, SQUARE_A1);
-        board.add_piece(pce2, SQUARE_D3);
+        board.add_piece(pce1, Colour::Black, SQUARE_A1);
+        board.add_piece(pce2, Colour::Black, SQUARE_D3);
         let material_after_add = Material::new(0, pce1.value() + pce2.value());
 
         assert_eq!(material_after_add, board.get_material());
 
-        board.remove_piece(pce1, SQUARE_A1);
+        board.remove_piece(pce1, Colour::Black, SQUARE_A1);
 
         let material_after_remove = Material::new(0, pce2.value());
 
@@ -107,20 +108,20 @@ pub mod tests {
 
     #[test]
     pub fn move_white_piece_material_unchanged() {
-        let pce = &piece::WHITE_KNIGHT;
+        let pce = Piece::Knight;
         let from_sq = SQUARE_D4;
         let to_sq = SQUARE_C6;
 
         let mut board = Board::new();
 
-        board.add_piece(pce, from_sq);
+        board.add_piece(pce, Colour::White, from_sq);
         let start_material = board.get_material();
 
         let expected_start_material = Material::new(pce.value(), 0);
 
         assert_eq!(start_material, expected_start_material);
 
-        board.move_piece(from_sq, to_sq, pce);
+        board.move_piece(from_sq, to_sq, pce, Colour::White);
         let end_material = board.get_material();
 
         assert_eq!(start_material, end_material);
@@ -128,20 +129,20 @@ pub mod tests {
 
     #[test]
     pub fn move_black_piece_material_unchanged() {
-        let pce = &piece::BLACK_KNIGHT;
+        let pce = Piece::Knight;
         let from_sq = SQUARE_D4;
         let to_sq = SQUARE_C6;
 
         let mut board = Board::new();
 
-        board.add_piece(pce, SQUARE_D4);
+        board.add_piece(pce, Colour::Black, SQUARE_D4);
         let start_material = board.get_material();
 
         let expected_start_material = Material::new(0, pce.value());
 
         assert_eq!(start_material, expected_start_material);
 
-        board.move_piece(from_sq, to_sq, pce);
+        board.move_piece(from_sq, to_sq, pce, Colour::Black);
         let end_material = board.get_material();
 
         assert_eq!(start_material, end_material);

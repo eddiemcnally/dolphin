@@ -190,8 +190,7 @@ pub mod tests {
     pub fn set_bit_test_bit_clear_bit() {
         let mut bb = Bitboard::new(0);
 
-        let map = square::SQUARES;
-        for sq in map {
+        for sq in square::iterator() {
             bb.set_bit(*sq);
             assert!(bb.is_set(*sq));
             assert!(bb.0 != 0);
@@ -204,12 +203,11 @@ pub mod tests {
 
     #[test]
     pub fn pop_bit_all_bits() {
-        let map = square::SQUARES;
-        for square in map {
+        for sq in square::iterator() {
             let mut bb = Bitboard::new(0);
-            bb.set_bit(*square);
-            for sq in bb.iterator() {
-                assert_eq!(sq, *square);
+            bb.set_bit(*sq);
+            for sqq in bb.iterator() {
+                assert_eq!(sqq, *sq);
             }
         }
     }

@@ -1,6 +1,6 @@
-use std::fmt;
-
 use super::types::ToInt;
+use std::fmt;
+use std::slice::Iter;
 
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub enum Colour {
@@ -59,6 +59,11 @@ impl fmt::Display for Colour {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self, f)
     }
+}
+
+pub fn iterator() -> Iter<'static, Colour> {
+    static COLOURS: [Colour; NUM_COLOURS] = [Colour::White, Colour::Black];
+    COLOURS.iter()
 }
 
 #[cfg(test)]
