@@ -1,4 +1,4 @@
-use crate::moves::mov::Mov;
+use crate::moves::mov::Move;
 use crate::moves::move_gen::MoveGenerator;
 use crate::moves::move_list::MoveList;
 use crate::position::game_position::MoveLegality;
@@ -29,7 +29,7 @@ impl Search {
         }
     }
 
-    pub fn start_search(&mut self, pos: &mut Position, alpha_start: i32, beta_start: i32) -> Mov {
+    pub fn start_search(&mut self, pos: &mut Position, alpha_start: i32, beta_start: i32) -> Move {
         let mut alpha = alpha_start;
         let beta = beta_start;
         let mut move_list = MoveList::new();
@@ -42,7 +42,7 @@ impl Search {
         // }
 
         move_gen.generate_moves(pos, &mut move_list);
-        let mut best_move = Mov::default();
+        let mut best_move = Move::default();
 
         for mv in move_list.iter() {
             let mut score = 0;

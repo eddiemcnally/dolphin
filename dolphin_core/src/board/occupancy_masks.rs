@@ -42,8 +42,6 @@ impl Default for OccupancyMasks {
         OccupancyMasks {
             knight: [Bitboard::default(); game_board::NUM_SQUARES],
             diagonal: [DiagonalAntidiagonal::default(); game_board::NUM_SQUARES],
-            bishop: [Bitboard::default(); game_board::NUM_SQUARES],
-            queen: [Bitboard::default(); game_board::NUM_SQUARES],
             king: [Bitboard::default(); game_board::NUM_SQUARES],
             in_between: [[Bitboard::default(); game_board::NUM_SQUARES]; game_board::NUM_SQUARES],
         }
@@ -54,8 +52,6 @@ impl Default for OccupancyMasks {
 pub struct OccupancyMasks {
     knight: [Bitboard; game_board::NUM_SQUARES],
     diagonal: [DiagonalAntidiagonal; game_board::NUM_SQUARES],
-    bishop: [Bitboard; game_board::NUM_SQUARES],
-    queen: [Bitboard; game_board::NUM_SQUARES],
     king: [Bitboard; game_board::NUM_SQUARES],
     in_between: [[Bitboard; game_board::NUM_SQUARES]; game_board::NUM_SQUARES],
 }
@@ -64,35 +60,25 @@ impl OccupancyMasks {
     pub fn new() -> Box<OccupancyMasks> {
         let knight = populate_knight_occupancy_mask_array();
         let diagonal = populate_diagonal_mask_array();
-        let bishop = populate_bishop_mask_array(&diagonal);
-        let queen = populate_queen_mask_array(&diagonal);
+        // let queen = populate_queen_mask_array(&diagonal);
         let king = populate_king_mask_array();
         let in_between = populate_intervening_bitboard_array();
 
         Box::new(OccupancyMasks {
             knight,
             diagonal,
-            bishop,
-            queen,
             king,
             in_between,
         })
     }
 
     pub fn get_occupancy_mask_bishop(&self, sq: Square) -> Bitboard {
-        *self.bishop.get(sq.to_usize()).unwrap()
+        let d = self.diagonal[sq.to_usize()];
+        d.get_diag_mask() | d.get_anti_diag_mask()
     }
 
     pub fn get_occupancy_mask_knight(&self, sq: Square) -> Bitboard {
         *self.knight.get(sq.to_usize()).unwrap()
-    }
-
-    pub fn get_occupancy_mask_rook(&self, sq: Square) -> Bitboard {
-        get_horizontal_move_mask(sq) | get_vertical_move_mask(sq)
-    }
-
-    pub fn get_occupancy_mask_queen(&self, sq: Square) -> Bitboard {
-        *self.queen.get(sq.to_usize()).unwrap()
     }
 
     pub fn get_occupancy_mask_king(&self, sq: Square) -> Bitboard {
@@ -388,43 +374,6 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; game_board::NUM_SQUA
         retval[sq.to_usize()].anti_diag_mask = bb;
     }
 
-    retval
-}
-
-fn populate_bishop_mask_array(
-    diag_masks: &[DiagonalAntidiagonal; game_board::NUM_SQUARES],
-) -> [Bitboard; game_board::NUM_SQUARES] {
-    let mut retval: [Bitboard; game_board::NUM_SQUARES] =
-        [Bitboard::default(); game_board::NUM_SQUARES];
-
-    for sq in square::iterator() {
-        let mut bb = diag_masks[sq.to_usize()].diag_mask | diag_masks[sq.to_usize()].anti_diag_mask;
-
-        // remove current square
-        bb.clear_bit(*sq);
-
-        retval[sq.to_usize()] = bb;
-    }
-    retval
-}
-
-fn populate_queen_mask_array(
-    diag_masks: &[DiagonalAntidiagonal; game_board::NUM_SQUARES],
-) -> [Bitboard; game_board::NUM_SQUARES] {
-    let mut retval: [Bitboard; game_board::NUM_SQUARES] =
-        [Bitboard::default(); game_board::NUM_SQUARES];
-
-    for sq in square::iterator() {
-        let mut bb = get_horizontal_move_mask(*sq)
-            | get_vertical_move_mask(*sq)
-            | diag_masks[sq.to_usize()].diag_mask
-            | diag_masks[sq.to_usize()].anti_diag_mask;
-
-        // remove current square
-        bb.clear_bit(*sq);
-
-        retval[sq.to_usize()] = bb;
-    }
     retval
 }
 

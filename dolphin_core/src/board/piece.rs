@@ -32,15 +32,6 @@ impl Piece {
             Piece::King => PieceValue::King as u32,
         }
     }
-    pub fn is_king(&self) -> bool {
-        *self == Piece::King
-    }
-    pub fn is_pawn(&self) -> bool {
-        *self == Piece::Pawn
-    }
-    pub fn is_rook(&self) -> bool {
-        *self == Piece::Rook
-    }
 
     pub fn from_char(piece_char: char) -> (Piece, Colour) {
         match piece_char {

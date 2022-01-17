@@ -27,13 +27,6 @@ impl Colour {
             Colour::Black => Colour::White,
         }
     }
-
-    pub fn is_white(self) -> bool {
-        self == Colour::White
-    }
-    pub fn is_black(self) -> bool {
-        self == Colour::Black
-    }
 }
 
 pub const fn offset(colour: Colour) -> usize {
@@ -95,14 +88,5 @@ pub mod tests {
 
         let black_col = Colour::Black;
         assert!(black_col.flip_side() == Colour::White);
-    }
-
-    #[test]
-    pub fn colour_is_correct() {
-        let black_col = Colour::Black;
-        assert!(black_col.is_black());
-
-        let white_col = Colour::White;
-        assert!(white_col.is_white());
     }
 }

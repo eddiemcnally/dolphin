@@ -1,12 +1,12 @@
 use crate::board::piece::Piece;
-use crate::moves::mov::Mov;
+use crate::moves::mov::Move;
 use crate::position::game_position::GameState;
 use std::fmt;
 
 #[derive(Default, Eq, PartialEq, Copy, Clone)]
 struct Item {
     game_state: GameState,
-    mov: Mov,
+    mov: Move,
     pce_moved: Piece,
     pce_captured: Option<Piece>,
 }
@@ -105,7 +105,7 @@ impl PositionHistory {
     pub fn push(
         &mut self,
         game_state: GameState,
-        mv: Mov,
+        mv: Move,
         piece: Piece,
         capt_piece: Option<Piece>,
     ) {
@@ -126,7 +126,7 @@ impl PositionHistory {
         self.count += 1;
     }
 
-    pub fn pop(&mut self) -> (GameState, Mov, Piece, Option<Piece>) {
+    pub fn pop(&mut self) -> (GameState, Move, Piece, Option<Piece>) {
         debug_assert!(self.count > 0, "attempt to pop, len = 0");
 
         self.count -= 1;

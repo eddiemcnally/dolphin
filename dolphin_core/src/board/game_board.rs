@@ -108,7 +108,7 @@ impl Board {
         let new_material = self.material.get_material_for_colour(colour) + piece.value();
         self.material.set_material_for_colour(colour, new_material);
         self.pieces[sq.to_usize()] = Some(piece);
-        if piece.is_king() {
+        if piece == Piece::King {
             self.king_squares[colour.to_usize()] = sq;
         }
     }
@@ -152,7 +152,7 @@ impl Board {
 
         self.set_bitboards(piece, colour, to_sq);
         self.pieces[to_sq.to_usize()] = Some(piece);
-        if piece.is_king() {
+        if piece == Piece::King {
             self.king_squares[colour.to_usize()] = to_sq;
         }
     }
@@ -171,6 +171,10 @@ impl Board {
             piece: pc.unwrap(),
             colour: col,
         })
+    }
+
+    pub fn get_piece_type_on_square(&self, sq: Square) -> Option<Piece> {
+        self.pieces[sq.to_usize()]
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {

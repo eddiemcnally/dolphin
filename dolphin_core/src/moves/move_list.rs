@@ -1,9 +1,9 @@
-use crate::moves::mov::Mov;
+use crate::moves::mov::Move;
 
 const MOVE_LIST_LEN: usize = 96;
 
 pub struct MoveList {
-    ml: [Mov; MOVE_LIST_LEN],
+    ml: [Move; MOVE_LIST_LEN],
     count: usize,
 }
 
@@ -16,12 +16,12 @@ impl Default for MoveList {
 impl MoveList {
     pub fn new() -> Self {
         MoveList {
-            ml: [Mov::default(); MOVE_LIST_LEN],
+            ml: [Move::default(); MOVE_LIST_LEN],
             count: 0,
         }
     }
 
-    pub fn push(&mut self, mov: Mov) {
+    pub fn push(&mut self, mov: Move) {
         debug_assert!(
             self.count < MOVE_LIST_LEN,
             "Attempt to add past end of move list"
@@ -31,7 +31,7 @@ impl MoveList {
         self.count += 1;
     }
 
-    pub fn contains(&self, mov: Mov) -> bool {
+    pub fn contains(&self, mov: Move) -> bool {
         self.ml[0..self.count].contains(&mov)
     }
 
@@ -42,7 +42,7 @@ impl MoveList {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    pub fn iter(&self) -> std::slice::Iter<'_, Mov> {
+    pub fn iter(&self) -> std::slice::Iter<'_, Move> {
         self.ml[0..self.count].iter()
     }
 }
@@ -50,7 +50,7 @@ impl MoveList {
 #[cfg(test)]
 pub mod tests {
     use crate::board::square::*;
-    use crate::moves::mov::Mov;
+    use crate::moves::mov::Move;
     use crate::moves::move_list::MoveList;
 
     #[test]
@@ -74,11 +74,11 @@ pub mod tests {
     #[test]
     pub fn push_moves_contains_as_expected() {
         let mvs = [
-            Mov::encode_move_quiet(SQUARE_H7, SQUARE_H5),
-            Mov::encode_move_quiet(SQUARE_B4, SQUARE_C5),
-            Mov::encode_move_quiet(SQUARE_A3, SQUARE_A2),
-            Mov::encode_move_quiet(SQUARE_D6, SQUARE_E8),
-            Mov::encode_move_quiet(SQUARE_B6, SQUARE_B7),
+            Move::encode_move_quiet(SQUARE_H7, SQUARE_H5),
+            Move::encode_move_quiet(SQUARE_B4, SQUARE_C5),
+            Move::encode_move_quiet(SQUARE_A3, SQUARE_A2),
+            Move::encode_move_quiet(SQUARE_D6, SQUARE_E8),
+            Move::encode_move_quiet(SQUARE_B6, SQUARE_B7),
         ];
 
         let mut ml = MoveList::new();
@@ -94,11 +94,11 @@ pub mod tests {
     #[test]
     pub fn push_moves_iterator_as_expected() {
         let mvs = [
-            Mov::encode_move_quiet(SQUARE_H7, SQUARE_H5),
-            Mov::encode_move_quiet(SQUARE_B4, SQUARE_C5),
-            Mov::encode_move_quiet(SQUARE_A3, SQUARE_A2),
-            Mov::encode_move_quiet(SQUARE_D6, SQUARE_E8),
-            Mov::encode_move_quiet(SQUARE_B6, SQUARE_B7),
+            Move::encode_move_quiet(SQUARE_H7, SQUARE_H5),
+            Move::encode_move_quiet(SQUARE_B4, SQUARE_C5),
+            Move::encode_move_quiet(SQUARE_A3, SQUARE_A2),
+            Move::encode_move_quiet(SQUARE_D6, SQUARE_E8),
+            Move::encode_move_quiet(SQUARE_B6, SQUARE_B7),
         ];
 
         let mut ml = MoveList::new();
@@ -117,11 +117,11 @@ pub mod tests {
     #[test]
     pub fn push_moves_len_as_expected() {
         let mvs = [
-            Mov::encode_move_quiet(SQUARE_H7, SQUARE_H5),
-            Mov::encode_move_quiet(SQUARE_B4, SQUARE_C5),
-            Mov::encode_move_quiet(SQUARE_A3, SQUARE_A2),
-            Mov::encode_move_quiet(SQUARE_D6, SQUARE_E8),
-            Mov::encode_move_quiet(SQUARE_B6, SQUARE_B7),
+            Move::encode_move_quiet(SQUARE_H7, SQUARE_H5),
+            Move::encode_move_quiet(SQUARE_B4, SQUARE_C5),
+            Move::encode_move_quiet(SQUARE_A3, SQUARE_A2),
+            Move::encode_move_quiet(SQUARE_D6, SQUARE_E8),
+            Move::encode_move_quiet(SQUARE_B6, SQUARE_B7),
         ];
 
         let mut ml = MoveList::new();
