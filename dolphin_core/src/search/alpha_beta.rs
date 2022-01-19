@@ -1,4 +1,5 @@
 use crate::moves::mov::Move;
+use crate::moves::mov::MoveTrait;
 use crate::moves::move_gen::MoveGenerator;
 use crate::moves::move_list::MoveList;
 use crate::position::game_position::MoveLegality;

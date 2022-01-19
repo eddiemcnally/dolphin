@@ -4,8 +4,7 @@ use crate::board::occupancy_masks::OccupancyMasks;
 use crate::board::piece::Piece;
 use crate::board::square::Square;
 use crate::board::square::*;
-use crate::moves::mov::Move;
-use crate::moves::mov::MoveType;
+use crate::moves::mov::*;
 use crate::position::castle_permissions;
 use crate::position::castle_permissions::{CastlePermission, CastlePermissionType};
 use crate::position::move_counter::MoveCounter;
@@ -275,8 +274,8 @@ impl<'a> Position<'a> {
 
     pub fn make_move(&mut self, mv: Move) -> MoveLegality {
         // set up some general variables
-        let from_sq = mv.from_square();
-        let to_sq = mv.to_square();
+        let from_sq = mv.decode_from_square();
+        let to_sq = mv.decode_to_square();
 
         let square_contents = self.board().get_piece_on_square(from_sq);
         if square_contents.is_none() {
@@ -309,28 +308,31 @@ impl<'a> Position<'a> {
 
         handle_50_move_rule(self, mv, pce_to_move);
 
-        let move_type = mv.move_type();
+        let move_type = mv.decode_move_type();
 
         match move_type {
-            MoveType::Quiet => move_piece_on_board(self, pce_to_move, from_sq, to_sq),
-            MoveType::Capture => do_capture_move(
+            MOVE_TYPE_QUIET => move_piece_on_board(self, pce_to_move, from_sq, to_sq),
+            MOVE_TYPE_CAPTURE => do_capture_move(
                 self,
                 pce_to_move,
                 from_sq,
                 to_sq,
                 capt_sq_contents.unwrap().piece,
             ),
-            MoveType::DoublePawn => do_double_pawn_move(self, pce_to_move, from_sq, to_sq),
-            MoveType::KingCastle | MoveType::QueenCastle => do_castle_move(self, mv),
-            MoveType::EnPassant => do_en_passant(self, from_sq, to_sq),
-            MoveType::PromoteKnightQuiet
-            | MoveType::PromoteBishopQuiet
-            | MoveType::PromoteRookQuiet
-            | MoveType::PromoteQueenQuiet
-            | MoveType::PromoteKnightCapture
-            | MoveType::PromoteBishopCapture
-            | MoveType::PromoteRookCapture
-            | MoveType::PromoteQueenCapture => do_promotion(self, mv, from_sq, to_sq, pce_to_move),
+            MOVE_TYPE_DOUBLE_PAWN => do_double_pawn_move(self, pce_to_move, from_sq, to_sq),
+            MOVE_TYPE_KING_CASTLE | MOVE_TYPE_QUEEN_CASTLE => do_castle_move(self, mv),
+            MOVE_TYPE_EN_PASSANT => do_en_passant(self, from_sq, to_sq),
+            MOVE_TYPE_PROMOTE_KNIGHT_QUIET
+            | MOVE_TYPE_PROMOTE_BISHOP_QUIET
+            | MOVE_TYPE_PROMOTE_ROOK_QUIET
+            | MOVE_TYPE_PROMOTE_QUEEN_QUIET
+            | MOVE_TYPE_PROMOTE_KNIGHT_CAPTURE
+            | MOVE_TYPE_PROMOTE_BISHOP_CAPTURE
+            | MOVE_TYPE_PROMOTE_ROOK_CAPTURE
+            | MOVE_TYPE_PROMOTE_QUEEN_CAPTURE => {
+                do_promotion(self, mv, from_sq, to_sq, pce_to_move)
+            }
+            _ => panic!("Invalid move type"),
         }
 
         // update some states based on the move
@@ -353,30 +355,31 @@ impl<'a> Position<'a> {
 
         self.game_state = gs;
 
-        let mt = mv.move_type();
+        let mt = mv.decode_move_type();
 
         match mt {
-            MoveType::Quiet => self.reverse_quiet_move(mv, piece),
-            MoveType::DoublePawn => self.reverse_quiet_move(mv, piece),
-            MoveType::Capture => self.reverse_capture_move(mv, piece, capt_piece),
-            MoveType::KingCastle | MoveType::QueenCastle => {
+            MOVE_TYPE_QUIET => self.reverse_quiet_move(mv, piece),
+            MOVE_TYPE_CAPTURE => self.reverse_capture_move(mv, piece, capt_piece),
+            MOVE_TYPE_DOUBLE_PAWN => self.reverse_quiet_move(mv, piece),
+            MOVE_TYPE_KING_CASTLE | MOVE_TYPE_QUEEN_CASTLE => {
                 self.reverse_castle_move(mv, self.side_to_move())
             }
-            MoveType::EnPassant => self.reverse_en_passant_move(mv, self.side_to_move()),
-            MoveType::PromoteKnightQuiet
-            | MoveType::PromoteBishopQuiet
-            | MoveType::PromoteRookQuiet
-            | MoveType::PromoteQueenQuiet
-            | MoveType::PromoteKnightCapture
-            | MoveType::PromoteBishopCapture
-            | MoveType::PromoteRookCapture
-            | MoveType::PromoteQueenCapture => self.reverse_promotion_move(mv, piece, capt_piece),
+            MOVE_TYPE_EN_PASSANT => self.reverse_en_passant_move(mv, self.side_to_move()),
+            MOVE_TYPE_PROMOTE_KNIGHT_QUIET
+            | MOVE_TYPE_PROMOTE_BISHOP_QUIET
+            | MOVE_TYPE_PROMOTE_ROOK_QUIET
+            | MOVE_TYPE_PROMOTE_QUEEN_QUIET
+            | MOVE_TYPE_PROMOTE_KNIGHT_CAPTURE
+            | MOVE_TYPE_PROMOTE_BISHOP_CAPTURE
+            | MOVE_TYPE_PROMOTE_ROOK_CAPTURE
+            | MOVE_TYPE_PROMOTE_QUEEN_CAPTURE => self.reverse_promotion_move(mv, piece, capt_piece),
+            _ => panic!("invalid move type"),
         }
     }
 
     fn reverse_quiet_move(&mut self, mv: Move, piece: Piece) {
-        let from_sq = mv.from_square();
-        let to_sq = mv.to_square();
+        let from_sq = mv.decode_from_square();
+        let to_sq = mv.decode_to_square();
 
         // revert the move
         self.board
@@ -384,8 +387,8 @@ impl<'a> Position<'a> {
     }
 
     fn reverse_capture_move(&mut self, mv: Move, pce: Piece, capture_pce: Option<Piece>) {
-        let from_sq = mv.from_square();
-        let to_sq = mv.to_square();
+        let from_sq = mv.decode_from_square();
+        let to_sq = mv.decode_to_square();
 
         // revert move
         self.board
@@ -398,8 +401,8 @@ impl<'a> Position<'a> {
     fn reverse_promotion_move(&mut self, mv: Move, pce: Piece, capture_pce: Option<Piece>) {
         debug_assert!(mv.is_promote(), "reverse_promotion_move, invalid move type");
 
-        let from_sq = mv.from_square();
-        let to_sq = mv.to_square();
+        let from_sq = mv.decode_from_square();
+        let to_sq = mv.decode_to_square();
 
         let sq_contents = self.board().get_piece_on_square(to_sq);
 
@@ -416,8 +419,8 @@ impl<'a> Position<'a> {
     }
 
     fn reverse_en_passant_move(&mut self, mv: Move, side_move: Colour) {
-        let from_sq = mv.from_square();
-        let to_sq = mv.to_square();
+        let from_sq = mv.decode_from_square();
+        let to_sq = mv.decode_to_square();
 
         match side_move {
             Colour::White => {
@@ -765,7 +768,7 @@ mod tests {
     use crate::board::square::Square;
     use crate::board::square::*;
     use crate::io::fen;
-    use crate::moves::mov::Move;
+    use crate::moves::mov::*;
     use crate::position::castle_permissions;
     use crate::position::game_position::MoveLegality;
     use crate::position::game_position::Position;

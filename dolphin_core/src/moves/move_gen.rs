@@ -6,6 +6,7 @@ use crate::board::piece::Piece;
 use crate::board::rank;
 use crate::board::square::Square;
 use crate::moves::mov::Move;
+use crate::moves::mov::MoveTrait;
 use crate::moves::move_list::MoveList;
 use crate::position::castle_permissions;
 use crate::position::game_position::Position;
@@ -538,6 +539,7 @@ pub mod tests {
     use crate::io::fen;
     use crate::moves::mov;
     use crate::moves::mov::Move;
+    use crate::moves::mov::MoveTrait;
     use crate::moves::move_gen::MoveGenerator;
     use crate::moves::move_list::MoveList;
     use crate::position::castle_permissions;

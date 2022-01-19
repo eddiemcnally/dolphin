@@ -51,6 +51,7 @@ impl MoveList {
 pub mod tests {
     use crate::board::square::*;
     use crate::moves::mov::Move;
+    use crate::moves::mov::MoveTrait;
     use crate::moves::move_list::MoveList;
 
     #[test]
