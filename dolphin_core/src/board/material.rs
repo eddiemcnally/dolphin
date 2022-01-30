@@ -1,27 +1,25 @@
-use crate::board::colour;
 use crate::board::colour::Colour;
+use crate::core::types::ToInt;
 use std::fmt;
-
-use super::types::ToInt;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
 pub struct Material {
-    score: [u32; colour::NUM_COLOURS],
+    score: [u32; Colour::NUM_COLOURS],
 }
 
 impl Material {
     pub fn new(white: u32, black: u32) -> Material {
         let mut met = Material::default();
-        met.score[colour::offset(Colour::White)] = white;
-        met.score[colour::offset(Colour::Black)] = black;
+        met.score[Colour::White.to_usize()] = white;
+        met.score[Colour::Black.to_usize()] = black;
         met
     }
 
-    pub const fn get_black(&self) -> u32 {
-        self.score[colour::offset(Colour::Black)]
+    pub fn get_black(&self) -> u32 {
+        self.score[Colour::Black.to_usize()]
     }
-    pub const fn get_white(&self) -> u32 {
-        self.score[colour::offset(Colour::White)]
+    pub fn get_white(&self) -> u32 {
+        self.score[Colour::White.to_usize()]
     }
 
     pub fn get_material_for_colour(&self, colour: Colour) -> u32 {
@@ -32,7 +30,7 @@ impl Material {
         self.score[colour.to_usize()] = score;
     }
 
-    pub const fn get_net_material(&self) -> i32 {
+    pub fn get_net_material(&self) -> i32 {
         self.get_white().wrapping_sub(self.get_black()) as i32
     }
 }
@@ -70,13 +68,13 @@ pub mod tests {
         let pce1 = Piece::Bishop;
         let pce2 = Piece::Queen;
 
-        board.add_piece(pce1, Colour::White, SQUARE_A1);
-        board.add_piece(pce2, Colour::White, SQUARE_D3);
+        board.add_piece(pce1, Colour::White, Square::A1);
+        board.add_piece(pce2, Colour::White, Square::D3);
         let material_after_add = Material::new(pce1.value() + pce2.value(), 0);
 
         assert_eq!(material_after_add, board.get_material());
 
-        board.remove_piece(pce1, Colour::White, SQUARE_A1);
+        board.remove_piece(pce1, Colour::White, Square::A1);
 
         let material_after_remove = pce2.value();
 
@@ -93,13 +91,13 @@ pub mod tests {
         let pce1 = Piece::Bishop;
         let pce2 = Piece::Queen;
 
-        board.add_piece(pce1, Colour::Black, SQUARE_A1);
-        board.add_piece(pce2, Colour::Black, SQUARE_D3);
+        board.add_piece(pce1, Colour::Black, Square::A1);
+        board.add_piece(pce2, Colour::Black, Square::D3);
         let material_after_add = Material::new(0, pce1.value() + pce2.value());
 
         assert_eq!(material_after_add, board.get_material());
 
-        board.remove_piece(pce1, Colour::Black, SQUARE_A1);
+        board.remove_piece(pce1, Colour::Black, Square::A1);
 
         let material_after_remove = Material::new(0, pce2.value());
 
@@ -109,8 +107,8 @@ pub mod tests {
     #[test]
     pub fn move_white_piece_material_unchanged() {
         let pce = Piece::Knight;
-        let from_sq = SQUARE_D4;
-        let to_sq = SQUARE_C6;
+        let from_sq = Square::D4;
+        let to_sq = Square::C6;
 
         let mut board = Board::new();
 
@@ -130,12 +128,12 @@ pub mod tests {
     #[test]
     pub fn move_black_piece_material_unchanged() {
         let pce = Piece::Knight;
-        let from_sq = SQUARE_D4;
-        let to_sq = SQUARE_C6;
+        let from_sq = Square::D4;
+        let to_sq = Square::C6;
 
         let mut board = Board::new();
 
-        board.add_piece(pce, Colour::Black, SQUARE_D4);
+        board.add_piece(pce, Colour::Black, Square::D4);
         let start_material = board.get_material();
 
         let expected_start_material = Material::new(0, pce.value());

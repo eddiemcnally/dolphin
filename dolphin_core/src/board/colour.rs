@@ -1,4 +1,4 @@
-use super::types::ToInt;
+use crate::core::types::ToInt;
 use std::fmt;
 use std::slice::Iter;
 
@@ -7,8 +7,6 @@ pub enum Colour {
     White,
     Black,
 }
-
-pub const NUM_COLOURS: usize = 2;
 
 impl ToInt for Colour {
     fn to_u8(&self) -> u8 {
@@ -21,16 +19,14 @@ impl ToInt for Colour {
 }
 
 impl Colour {
+    pub const NUM_COLOURS: usize = 2;
+
     pub const fn flip_side(self) -> Colour {
         match self {
             Colour::White => Colour::Black,
             Colour::Black => Colour::White,
         }
     }
-}
-
-pub const fn offset(colour: Colour) -> usize {
-    colour as usize
 }
 
 impl Default for Colour {
@@ -55,7 +51,7 @@ impl fmt::Display for Colour {
 }
 
 pub fn iterator() -> Iter<'static, Colour> {
-    static COLOURS: [Colour; NUM_COLOURS] = [Colour::White, Colour::Black];
+    static COLOURS: [Colour; Colour::NUM_COLOURS] = [Colour::White, Colour::Black];
     COLOURS.iter()
 }
 

@@ -1,4 +1,5 @@
-use super::{colour::Colour, types::ToInt};
+use crate::board::colour::Colour;
+use crate::core::types::ToInt;
 use std::{fmt, slice::Iter};
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
@@ -22,6 +23,9 @@ impl ToInt for Piece {
 }
 
 impl Piece {
+    pub const NUM_PIECES: usize = 32;
+    pub const NUM_PIECE_TYPES: usize = 6;
+
     pub const fn value(&self) -> u32 {
         match self {
             Piece::Pawn => PieceValue::Pawn as u32,
@@ -54,7 +58,7 @@ impl Piece {
 }
 
 pub fn iterator() -> Iter<'static, Piece> {
-    static PIECES: [Piece; NUM_PIECE_TYPES] = [
+    static PIECES: [Piece; Piece::NUM_PIECE_TYPES] = [
         Piece::Pawn,
         Piece::Bishop,
         Piece::Knight,
@@ -105,9 +109,6 @@ impl fmt::Debug for Piece {
         write!(f, "{}", debug_str)
     }
 }
-
-pub const NUM_PIECES: usize = 32;
-pub const NUM_PIECE_TYPES: usize = 6;
 
 // piece values from here:
 // https://www.chessprogramming.org/Simplified_Evaluation_Function

@@ -1,32 +1,29 @@
-use crate::board::colour::Colour;
+use crate::board::piece::Piece;
+use crate::board::square::Square;
+use crate::{board::colour::Colour, core::types::ToInt};
 use rand::RngCore;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256PlusPlus;
 
-use crate::board::colour::NUM_COLOURS;
-use crate::board::piece::{Piece, NUM_PIECE_TYPES};
-use crate::board::square::{Square, NUM_SQUARES};
-use crate::board::types::ToInt;
-use crate::position::castle_permissions;
-use crate::position::castle_permissions::{CastlePermissionType, NUM_CASTLE_PERMS};
+use super::castle_permissions::{CastlePermission, CastlePermissionType};
 
 pub type ZobristHash = u64;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct ZobristKeys {
-    piece_keys: [[[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES]; NUM_COLOURS],
+    piece_keys: [[[ZobristHash; Piece::NUM_PIECE_TYPES]; Square::NUM_SQUARES]; Colour::NUM_COLOURS],
     side_key: ZobristHash,
-    castle_keys: [ZobristHash; NUM_CASTLE_PERMS],
-    en_passant_sq_keys: [ZobristHash; NUM_SQUARES],
+    castle_keys: [ZobristHash; CastlePermission::NUM_CASTLE_PERMS],
+    en_passant_sq_keys: [ZobristHash; Square::NUM_SQUARES],
 }
 
 impl Default for ZobristKeys {
     fn default() -> Self {
         ZobristKeys {
-            piece_keys: [[[0; NUM_PIECE_TYPES]; NUM_SQUARES]; NUM_COLOURS],
+            piece_keys: [[[0; Piece::NUM_PIECE_TYPES]; Square::NUM_SQUARES]; Colour::NUM_COLOURS],
             side_key: 0,
-            castle_keys: [0; NUM_CASTLE_PERMS],
-            en_passant_sq_keys: [0; NUM_SQUARES],
+            castle_keys: [0; CastlePermission::NUM_CASTLE_PERMS],
+            en_passant_sq_keys: [0; Square::NUM_SQUARES],
         }
     }
 }
@@ -67,15 +64,15 @@ impl ZobristKeys {
     }
 
     pub const fn castle_permission(&self, perm_type: CastlePermissionType) -> ZobristHash {
-        let perm_offset = castle_permissions::to_offset(perm_type);
+        let perm_offset = CastlePermission::to_offset(perm_type);
         self.castle_keys[perm_offset]
     }
 }
 
 fn init_piece_keys(
     rng: &mut Xoshiro256PlusPlus,
-) -> [[[ZobristHash; NUM_PIECE_TYPES]; NUM_SQUARES]; NUM_COLOURS] {
-    let mut retval = [[[0u64; NUM_PIECE_TYPES]; NUM_SQUARES]; NUM_COLOURS];
+) -> [[[ZobristHash; Piece::NUM_PIECE_TYPES]; Square::NUM_SQUARES]; Colour::NUM_COLOURS] {
+    let mut retval = [[[0u64; Piece::NUM_PIECE_TYPES]; Square::NUM_SQUARES]; Colour::NUM_COLOURS];
     for element in retval.iter_mut().flat_map(|r| r.iter_mut()) {
         for i in element {
             *i = rng.next_u64();
@@ -83,17 +80,19 @@ fn init_piece_keys(
     }
     retval
 }
-fn init_castle_keys(rng: &mut Xoshiro256PlusPlus) -> [ZobristHash; NUM_CASTLE_PERMS] {
-    let mut retval = [0u64; NUM_CASTLE_PERMS];
-    for item in retval.iter_mut().take(NUM_CASTLE_PERMS) {
+fn init_castle_keys(
+    rng: &mut Xoshiro256PlusPlus,
+) -> [ZobristHash; CastlePermission::NUM_CASTLE_PERMS] {
+    let mut retval = [0u64; CastlePermission::NUM_CASTLE_PERMS];
+    for item in retval.iter_mut().take(CastlePermission::NUM_CASTLE_PERMS) {
         let seed = rng.next_u64();
         *item = seed;
     }
     retval
 }
-fn init_en_passant_keys(rng: &mut Xoshiro256PlusPlus) -> [ZobristHash; NUM_SQUARES] {
-    let mut retval = [0u64; NUM_SQUARES];
-    for item in retval.iter_mut().take(NUM_SQUARES) {
+fn init_en_passant_keys(rng: &mut Xoshiro256PlusPlus) -> [ZobristHash; Square::NUM_SQUARES] {
+    let mut retval = [0u64; Square::NUM_SQUARES];
+    for item in retval.iter_mut().take(Square::NUM_SQUARES) {
         let seed = rng.next_u64();
         *item = seed;
     }

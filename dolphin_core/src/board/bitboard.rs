@@ -1,5 +1,5 @@
-use super::types::ToInt;
 use crate::board::square::Square;
+use crate::core::types::ToInt;
 use core::ops::BitOr;
 use core::ops::BitOrAssign;
 use std::ops::BitAnd;
@@ -18,31 +18,35 @@ pub struct SquareIterator(u64);
 pub struct Bitboard(u64);
 
 impl Bitboard {
+    #[inline(always)]
     pub const fn new(bb: u64) -> Bitboard {
         Bitboard(bb)
     }
 
+    #[inline(always)]
     pub fn set_bit(&mut self, sq: Square) {
         let mask = to_mask(sq);
         self.0 |= mask.0
     }
 
+    #[inline(always)]
     pub fn clear_bit(&mut self, sq: Square) {
         let mask = to_mask(sq);
         self.0 &= !mask.0
     }
 
+    #[inline(always)]
     pub fn is_set(&self, sq: Square) -> bool {
         let mask = to_mask(sq);
         (self.0 & mask.0) != 0
     }
-
+    #[inline(always)]
     pub fn is_clear(&self, sq: Square) -> bool {
         let mask = to_mask(sq);
         (self.0 & mask.0) == 0
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.0 == 0
     }
 
@@ -62,21 +66,24 @@ impl Bitboard {
         SquareIterator(self.0)
     }
 
+    #[inline(always)]
     pub const fn reverse_bits(&self) -> Bitboard {
         Bitboard(self.0.reverse_bits())
     }
-
+    #[inline(always)]
     pub const fn overflowing_mul(&self, rhs: u64) -> (u64, bool) {
         let (result, overflowed) = u64::overflowing_mul(self.0, rhs);
         (result, overflowed)
     }
+    #[inline(always)]
     pub const fn overflowing_sub(&self, rhs: u64) -> (u64, bool) {
         let (result, overflowed) = u64::overflowing_sub(self.0, rhs);
         (result, overflowed)
     }
 }
 
-pub fn to_mask(sq: Square) -> Bitboard {
+#[inline(always)]
+fn to_mask(sq: Square) -> Bitboard {
     Bitboard(BIT_0.shl(sq.to_u8()))
 }
 
@@ -164,8 +171,7 @@ impl Iterator for SquareIterator {
 pub mod tests {
     use super::Bitboard;
     use crate::board::bitboard::SquareIterator;
-    use crate::board::square;
-    use crate::board::square::*;
+    use crate::board::square::{self, Square};
     use std::u64;
 
     #[test]
@@ -173,7 +179,7 @@ pub mod tests {
         let bb: u64 = 0x8000000000000000;
         let iter = SquareIterator::new(bb);
         for sq in iter {
-            assert_eq!(sq, SQUARE_H8);
+            assert_eq!(sq, Square::H8);
         }
     }
 
@@ -182,7 +188,7 @@ pub mod tests {
         let bb: u64 = 0x0000000000000001;
         let iter = SquareIterator::new(bb);
         for sq in iter {
-            assert_eq!(sq, SQUARE_A1);
+            assert_eq!(sq, Square::A1);
         }
     }
 

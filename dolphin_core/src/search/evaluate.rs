@@ -2,13 +2,12 @@
 // https://www.chessprogramming.org/Simplified_Evaluation_Function
 
 use crate::board::colour::Colour;
-use crate::board::game_board;
 use crate::board::game_board::Board;
 use crate::board::piece::Piece;
-use crate::board::types::ToInt;
+use crate::core::types::ToInt;
 
 #[rustfmt::skip]
-const PAWN_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
+const PAWN_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
     0,      0,      0,      0,      0,      0,      0,      0,
     5,      10,     10,     -20,    -20,    10,     10,     5, 
     5,      -5,     -10,    0,      0,      -10,    -5,     5, 
@@ -20,7 +19,7 @@ const PAWN_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
 ];
 
 #[rustfmt::skip]
-const KNIGHT_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
+const KNIGHT_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
     -50,    -40,    -30,    -30,    -30,    -30,    -40,    -50,
     -40,    -20,    0,      5,      5,      0,      -20,    -40, 
     -30,    5,      10,     15,     15,     10,     5,      -30, 
@@ -32,7 +31,7 @@ const KNIGHT_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
 ];
 
 #[rustfmt::skip]
-const BISHOP_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
+const BISHOP_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
     -20,    -10,    -10,    -10,    -10,    -10,    -10,    -20,
     -10,    5,      0,      0,      0,      0,      5,      -10, 
     -10,    10,     10,     10,     10,     10,     10,     -10, 
@@ -44,7 +43,7 @@ const BISHOP_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
 ];
 
 #[rustfmt::skip]
-const ROOK_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
+const ROOK_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
     0,      0,      0,      5,      5,      0,      0,      0,
     -5,     0,      0,      0,      0,      0,      0,      -5, 
     -5,     0,      0,      0,      0,      0,      0,      -5, 
@@ -56,7 +55,7 @@ const ROOK_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
 ];
 
 #[rustfmt::skip]
-const QUEEN_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
+const QUEEN_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
     -20,    -10,    -10,    -5,     -5,     -10,    -10,    -20,
     -10,    0,      5,      0,      0,      0,      0,      -10, 
     -10,    5,      5,      5,      5,      5,      0,      -10, 
@@ -68,7 +67,7 @@ const QUEEN_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
 ];
 
 #[rustfmt::skip]
-const KING_SQ_VALUE: [i8; game_board::NUM_SQUARES] = [
+const KING_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
     20,     30,     10,     0,      0,      10,     30,     20,
     20,     20,     0,      0,      0,      0,      20,     20, 
     -10,    -20,    -20,    -20,    -20,    -20,    -20,    -10, 
@@ -89,26 +88,28 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
     for sq in board.get_bitboard().iterator() {
         let sq_offset = sq.to_usize();
 
-        let square_contents = board.get_piece_on_square(sq);
-
-        if square_contents.unwrap().colour == Colour::White {
-            score += match square_contents.unwrap().piece {
-                Piece::Pawn => PAWN_SQ_VALUE[sq_offset] as i32,
-                Piece::Bishop => BISHOP_SQ_VALUE[sq_offset] as i32,
-                Piece::Knight => KNIGHT_SQ_VALUE[sq_offset] as i32,
-                Piece::Rook => ROOK_SQ_VALUE[sq_offset] as i32,
-                Piece::Queen => QUEEN_SQ_VALUE[sq_offset] as i32,
-                Piece::King => KING_SQ_VALUE[sq_offset] as i32,
+        if let Some((piece, colour)) = board.get_piece_on_square(sq) {
+            if colour == Colour::White {
+                score += match piece {
+                    Piece::Pawn => PAWN_SQ_VALUE[sq_offset] as i32,
+                    Piece::Bishop => BISHOP_SQ_VALUE[sq_offset] as i32,
+                    Piece::Knight => KNIGHT_SQ_VALUE[sq_offset] as i32,
+                    Piece::Rook => ROOK_SQ_VALUE[sq_offset] as i32,
+                    Piece::Queen => QUEEN_SQ_VALUE[sq_offset] as i32,
+                    Piece::King => KING_SQ_VALUE[sq_offset] as i32,
+                }
+            } else {
+                score += match piece {
+                    Piece::Pawn => -PAWN_SQ_VALUE[63 - sq_offset] as i32,
+                    Piece::Bishop => -BISHOP_SQ_VALUE[63 - sq_offset] as i32,
+                    Piece::Knight => -KNIGHT_SQ_VALUE[63 - sq_offset] as i32,
+                    Piece::Rook => -ROOK_SQ_VALUE[63 - sq_offset] as i32,
+                    Piece::Queen => -QUEEN_SQ_VALUE[63 - sq_offset] as i32,
+                    Piece::King => -KING_SQ_VALUE[63 - sq_offset] as i32,
+                }
             }
         } else {
-            score += match square_contents.unwrap().piece {
-                Piece::Pawn => -PAWN_SQ_VALUE[63 - sq_offset] as i32,
-                Piece::Bishop => -BISHOP_SQ_VALUE[63 - sq_offset] as i32,
-                Piece::Knight => -KNIGHT_SQ_VALUE[63 - sq_offset] as i32,
-                Piece::Rook => -ROOK_SQ_VALUE[63 - sq_offset] as i32,
-                Piece::Queen => -QUEEN_SQ_VALUE[63 - sq_offset] as i32,
-                Piece::King => -KING_SQ_VALUE[63 - sq_offset] as i32,
-            }
+            panic!("Inconsistent board representation");
         }
     }
     if side_to_move == Colour::White {

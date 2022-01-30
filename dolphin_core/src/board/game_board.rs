@@ -1,5 +1,4 @@
 use crate::board::bitboard::Bitboard;
-use crate::board::colour;
 use crate::board::colour::Colour;
 use crate::board::file::File;
 use crate::board::material::Material;
@@ -7,92 +6,32 @@ use crate::board::piece;
 use crate::board::piece::Piece;
 use crate::board::rank::Rank;
 use crate::board::square::Square;
-use crate::board::types::ToInt;
+use crate::core::types::ToInt;
 use std::fmt;
 use std::option::Option;
 
-pub const NUM_SQUARES: usize = 64;
-
-#[derive(Eq, PartialEq, Clone, Copy, Default)]
-pub struct SquareContents {
-    pub piece: Piece,
-    pub colour: Colour,
-}
-
 #[derive(Eq, PartialEq, Clone, Copy)]
 struct PieceBitboardArray {
-    bb: [Bitboard; piece::NUM_PIECE_TYPES],
-}
-impl Default for PieceBitboardArray {
-    fn default() -> Self {
-        PieceBitboardArray {
-            bb: [Bitboard::default(); piece::NUM_PIECE_TYPES],
-        }
-    }
+    bb: [Bitboard; Piece::NUM_PIECE_TYPES],
 }
 
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub struct Board {
     // piece bitboard, an entry for each piece type (enum Piece)
-    piece_bb: [PieceBitboardArray; colour::NUM_COLOURS],
+    piece_bb: [PieceBitboardArray; Colour::NUM_COLOURS],
     // bitboard for each Colour
-    colour_bb: [Bitboard; colour::NUM_COLOURS],
+    colour_bb: [Bitboard; Colour::NUM_COLOURS],
     // material value
     material: Material,
     // pieces on squares
-    pieces: [Option<Piece>; NUM_SQUARES],
+    pieces: [Option<Piece>; Board::NUM_SQUARES],
     // king squares
-    king_squares: [Square; colour::NUM_COLOURS],
-}
-
-impl Default for Board {
-    fn default() -> Self {
-        Board {
-            piece_bb: [PieceBitboardArray::default(); colour::NUM_COLOURS],
-            colour_bb: [Bitboard::default(); colour::NUM_COLOURS],
-            material: Material::default(),
-            pieces: [None; NUM_SQUARES],
-            king_squares: [Square::default(); colour::NUM_COLOURS],
-        }
-    }
-}
-
-impl fmt::Debug for Board {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut debug_str = String::new();
-        debug_str.push_str("\n\n");
-
-        for r in Rank::reverse_iterator() {
-            debug_str.push(r.to_char());
-            debug_str.push('\t');
-
-            for f in File::iterator() {
-                let sq = Square::from_rank_file(*r, *f);
-
-                if let Some(square_contents) = self.get_piece_on_square(sq) {
-                    debug_str.push_str(
-                        &piece::label(square_contents.piece, square_contents.colour).to_string(),
-                    );
-                    debug_str.push('\t');
-                } else {
-                    debug_str.push_str(".\t");
-                }
-            }
-
-            debug_str.push('\n');
-        }
-        debug_str.push_str("\n\tA\tB\tC\tD\tE\tF\tG\tH\n\n");
-        write!(f, "{}", debug_str)
-    }
-}
-
-impl fmt::Display for Board {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(&self, f)
-    }
+    king_squares: [Square; Colour::NUM_COLOURS],
 }
 
 impl Board {
+    pub const NUM_SQUARES: usize = 64;
+
     pub fn new() -> Board {
         Board::default()
     }
@@ -157,7 +96,7 @@ impl Board {
         }
     }
 
-    pub fn get_piece_on_square(&self, sq: Square) -> Option<SquareContents> {
+    pub fn get_piece_on_square(&self, sq: Square) -> Option<(Piece, Colour)> {
         let pc = self.pieces[sq.to_usize()];
         pc?;
 
@@ -167,10 +106,7 @@ impl Board {
             Colour::Black
         };
 
-        Some(SquareContents {
-            piece: pc.unwrap(),
-            colour: col,
-        })
+        Some((pc.unwrap(), col))
     }
 
     pub fn get_piece_type_on_square(&self, sq: Square) -> Option<Piece> {
@@ -213,6 +149,7 @@ impl Board {
         self.king_squares[colour.to_usize()]
     }
 
+    #[inline(always)]
     fn clear_bitboards(&mut self, piece: Piece, colour: Colour, sq: Square) {
         let pce_off = piece.to_usize();
         let col_off = colour.to_usize();
@@ -220,13 +157,66 @@ impl Board {
         self.colour_bb[col_off].clear_bit(sq);
         self.piece_bb[col_off].bb[pce_off].clear_bit(sq);
     }
-
+    #[inline(always)]
     fn set_bitboards(&mut self, piece: Piece, colour: Colour, sq: Square) {
         let pce_off = piece.to_usize();
         let col_off = colour.to_usize();
 
         self.piece_bb[col_off].bb[pce_off].set_bit(sq);
         self.colour_bb[col_off].set_bit(sq);
+    }
+}
+
+impl fmt::Debug for Board {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_str = String::new();
+        debug_str.push_str("\n\n");
+
+        for r in Rank::reverse_iterator() {
+            debug_str.push(r.to_char());
+            debug_str.push('\t');
+
+            for f in File::iterator() {
+                let sq = Square::from_rank_file(*r, *f);
+
+                if let Some((piece, colour)) = self.get_piece_on_square(sq) {
+                    debug_str.push_str(&piece::label(piece, colour).to_string());
+                    debug_str.push('\t');
+                } else {
+                    debug_str.push_str(".\t");
+                }
+            }
+
+            debug_str.push('\n');
+        }
+        debug_str.push_str("\n\tA\tB\tC\tD\tE\tF\tG\tH\n\n");
+        write!(f, "{}", debug_str)
+    }
+}
+
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
+    }
+}
+
+impl Default for PieceBitboardArray {
+    fn default() -> Self {
+        PieceBitboardArray {
+            bb: [Bitboard::default(); Piece::NUM_PIECE_TYPES],
+        }
+    }
+}
+
+impl Default for Board {
+    fn default() -> Self {
+        Board {
+            piece_bb: [PieceBitboardArray::default(); Colour::NUM_COLOURS],
+            colour_bb: [Bitboard::default(); Colour::NUM_COLOURS],
+            material: Material::default(),
+            pieces: [None; Board::NUM_SQUARES],
+            king_squares: [Square::default(); Colour::NUM_COLOURS],
+        }
     }
 }
 
@@ -237,7 +227,7 @@ pub mod tests {
     use crate::board::piece;
     use crate::board::piece::Piece;
     use crate::board::square;
-    use crate::board::types::ToInt;
+    use crate::core::types::ToInt;
     use crate::io::fen;
 
     #[test]
@@ -326,8 +316,8 @@ pub mod tests {
             board.add_piece(pce, col, *square);
             assert!(!board.is_sq_empty(*square));
 
-            if let Some(square_contents) = board.get_piece_on_square(*square) {
-                assert_eq!(square_contents.piece, pce);
+            if let Some((piece, _)) = board.get_piece_on_square(*square) {
+                assert_eq!(piece, pce);
             } else {
             }
 
