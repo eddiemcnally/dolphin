@@ -193,11 +193,6 @@ impl<'a> Position<'a> {
     }
 
     pub fn make_move(&mut self, mv: Move) -> MoveLegality {
-        // println!(
-        //     "++++++++ make move: moev={mv}, BEFORE board : {}\n",
-        //     self.board()
-        // );
-
         // set up some general variables
         let from_sq = mv.decode_from_square();
         let to_sq = mv.decode_to_square();
@@ -247,11 +242,6 @@ impl<'a> Position<'a> {
 
             self.flip_side_to_move();
 
-            // println!(
-            //     "^^^^^^^^^^^^^ %make move: moev={mv}, AFTER board : {}\n",
-            //     self.board()
-            // );
-
             move_legality
         } else {
             panic!("No piece on square {}, move {}", from_sq, mv);
@@ -300,14 +290,9 @@ impl<'a> Position<'a> {
         let from_sq = mv.decode_from_square();
         let to_sq = mv.decode_to_square();
 
-        // println!("==================== Reverting move {}", mv);
-        // println!("Before board : {}", self.board());
         // revert the move
         self.board
             .move_piece(to_sq, from_sq, piece, self.side_to_move());
-
-        // println!("After board : {}", self.board());
-        // println!("----------------------------------")
     }
 
     fn reverse_capture_move(&mut self, mv: Move, pce: Piece, capture_pce: Option<Piece>) {

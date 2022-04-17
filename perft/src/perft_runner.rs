@@ -24,7 +24,6 @@ pub fn perft(depth: u8, position: &mut Position, move_generator: &MoveGenerator)
         position.take_move();
     }
 
-    //println!("#Nodes: {}, Move List: {:?}", nodes, move_list);
     nodes
 }
 

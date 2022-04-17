@@ -678,8 +678,6 @@ pub mod tests {
         let move_gen = MoveGenerator::new();
         move_gen.generate_moves(&pos, &mut move_list);
 
-        //mov::print_move_list(&move_list);
-
         // check the quiet moves
         let mut mv = Move::encode_move_quiet(Square::C4, Square::B5);
         assert!(move_list.contains(mv));
@@ -738,7 +736,6 @@ pub mod tests {
         let move_gen = MoveGenerator::new();
         move_gen.generate_moves(&pos, &mut move_list);
 
-        //mov::print_move_list(&move_list);
         // check the quiet moves
         let mut mv = Move::encode_move_quiet(Square::D4, Square::C5);
         assert!(move_list.contains(mv));
@@ -782,14 +779,6 @@ pub mod tests {
         let mut move_list = MoveList::new();
         let move_gen = MoveGenerator::new();
         move_gen.generate_moves(&pos, &mut move_list);
-
-        //mov::print_move_list(&move_list);
-        // quiet moves
-        // b1->c1,d1,e1,f1,b2
-        // e2->e1,e3,e4,d2,c2,b2
-        // capture moves
-        // b1->a1
-        // e2->f2,a2
 
         // check the quiet moves
         let mut mv = Move::encode_move_quiet(Square::B1, Square::C1);
@@ -850,13 +839,6 @@ pub mod tests {
         let move_gen = MoveGenerator::new();
         move_gen.generate_moves(&pos, &mut move_list);
 
-        //mov::print_move_list(&move_list);
-        // quiet moves
-        // b4->a4,b5,b6
-        // c3->d3,e3,c2,c1
-        // capture moves
-        // c3->f3
-
         // check the quiet moves
         let mut mv = Move::encode_move_quiet(Square::B4, Square::A4);
         assert!(move_list.contains(mv));
@@ -902,12 +884,6 @@ pub mod tests {
         let mut move_list = MoveList::new();
         let move_gen = MoveGenerator::new();
         move_gen.generate_moves(&pos, &mut move_list);
-
-        ////mov::print_move_list(&move_list);
-        // quiet moves
-        // e6->e7,e8,d6,f6,g6,f5,g4
-        // capture moves
-        // e6->c6,h6,d7,f7,e5
 
         // check the quiet moves
         let mut mv = Move::encode_move_quiet(Square::E6, Square::E7);
@@ -962,12 +938,6 @@ pub mod tests {
         let mut move_list = MoveList::new();
         let move_gen = MoveGenerator::new();
         move_gen.generate_moves(&pos, &mut move_list);
-
-        //mov::print_move_list(&move_list);
-        // quiet moves
-        // g1->f1,e1,d1,c1,g2,g3,g4
-        // capture moves
-        // g1->f2,h2
 
         // check the quiet moves
         let mut mv = Move::encode_move_quiet(Square::G1, Square::F1);
@@ -1188,8 +1158,6 @@ pub mod tests {
         let move_gen = MoveGenerator::new();
         move_gen.generate_moves(&pos, &mut move_list);
 
-        //mov::print_move_list(&move_list);
-
         let mut from_sq = Square::A7;
         let mut to_sq = Square::A8;
         for pce in white_promotion_pces.iter() {
@@ -1274,8 +1242,6 @@ pub mod tests {
         let mut move_list = MoveList::new();
         move_gen.generate_moves(&pos, &mut move_list);
 
-        //mov::print_move_list(&move_list);
-
         // QUITE promotion
         let mut from_sq = Square::B2;
         let mut to_sq = Square::B1;
@@ -1324,8 +1290,6 @@ pub mod tests {
         let move_gen = MoveGenerator::new();
         move_gen.generate_moves(&pos, &mut move_list);
 
-        //mov::print_move_list(&move_list);
-
         // double first moves
         assert!(move_list.contains(Move::encode_move_double_pawn_first(Square::F2, Square::F4)));
         assert!(move_list.contains(Move::encode_move_double_pawn_first(Square::G2, Square::G4)));
@@ -1371,8 +1335,6 @@ pub mod tests {
         let mut move_list = MoveList::new();
         let move_gen = MoveGenerator::new();
         move_gen.generate_moves(&pos, &mut move_list);
-
-        //mov::print_move_list(&move_list);
 
         // double first moves
         assert!(move_list.contains(Move::encode_move_double_pawn_first(Square::F7, Square::F5)));

@@ -26,8 +26,6 @@ pub fn extract_epd(file_name: String) -> Vec<EpdRow> {
 pub fn extract_row(row: String) -> EpdRow {
     let v: Vec<&str> = row.split(';').collect();
 
-    //println!("EPD Row : {}", row);
-
     assert_eq!(v.len(), 7); // FEN + 6-ply move counts
 
     let fen = v[0].trim();

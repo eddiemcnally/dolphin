@@ -90,25 +90,6 @@ impl Search {
         false
     }
 
-    // static bool move_exists(struct position *pos, const uint64_t mv) {
-    //     struct move_list mvl = mvl_initialise();
-
-    //     mv_gen_all_moves(pos, &mvl);
-
-    //     for (int i = 0; i < mvl.move_count; i++) {
-    //         enum move_legality legal = pos_make_move(pos, mvl.move_list[i]);
-    //         if (legal != LEGAL_MOVE) {
-    //             continue;
-    //         }
-    //         pos_take_move(pos);
-
-    //         if (move_compare(mvl.move_list[i], mv)) {
-    //             return true;
-    //         }
-    //     }
-    //     return false;
-    // }
-
     fn alpha_beta(&mut self, pos: &mut Position, mut alpha: i32, beta: i32, depth: u8) -> i32 {
         if depth == 0 {
             return self.quiesence(pos, alpha, beta);
