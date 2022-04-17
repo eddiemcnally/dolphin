@@ -79,39 +79,37 @@ const KING_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
 ];
 
 pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
-    let material = board.get_material();
+    let mut score = board.get_material().get_net_material();
 
-    // material
-    let mut score = material.get_net_material();
-
-    // piece positions
-    for sq in board.get_bitboard().iterator() {
+    // Evaluate White position
+    for sq in board.get_colour_bb(Colour::White).iterator() {
         let sq_offset = sq.to_usize();
-
-        if let Some((piece, colour)) = board.get_piece_on_square(sq) {
-            if colour == Colour::White {
-                score += match piece {
-                    Piece::Pawn => PAWN_SQ_VALUE[sq_offset] as i32,
-                    Piece::Bishop => BISHOP_SQ_VALUE[sq_offset] as i32,
-                    Piece::Knight => KNIGHT_SQ_VALUE[sq_offset] as i32,
-                    Piece::Rook => ROOK_SQ_VALUE[sq_offset] as i32,
-                    Piece::Queen => QUEEN_SQ_VALUE[sq_offset] as i32,
-                    Piece::King => KING_SQ_VALUE[sq_offset] as i32,
-                }
-            } else {
-                score += match piece {
-                    Piece::Pawn => -PAWN_SQ_VALUE[63 - sq_offset] as i32,
-                    Piece::Bishop => -BISHOP_SQ_VALUE[63 - sq_offset] as i32,
-                    Piece::Knight => -KNIGHT_SQ_VALUE[63 - sq_offset] as i32,
-                    Piece::Rook => -ROOK_SQ_VALUE[63 - sq_offset] as i32,
-                    Piece::Queen => -QUEEN_SQ_VALUE[63 - sq_offset] as i32,
-                    Piece::King => -KING_SQ_VALUE[63 - sq_offset] as i32,
-                }
+        if let Some(pce) = board.get_piece_type_on_square(sq) {
+            score += match pce {
+                Piece::Pawn => PAWN_SQ_VALUE[sq_offset] as i32,
+                Piece::Bishop => BISHOP_SQ_VALUE[sq_offset] as i32,
+                Piece::Knight => KNIGHT_SQ_VALUE[sq_offset] as i32,
+                Piece::Rook => ROOK_SQ_VALUE[sq_offset] as i32,
+                Piece::Queen => QUEEN_SQ_VALUE[sq_offset] as i32,
+                Piece::King => KING_SQ_VALUE[sq_offset] as i32,
             }
-        } else {
-            panic!("Inconsistent board representation");
         }
     }
+
+    for sq in board.get_colour_bb(Colour::Black).iterator() {
+        let sq_offset = sq.to_usize();
+        if let Some(pce) = board.get_piece_type_on_square(sq) {
+            score += match pce {
+                Piece::Pawn => -PAWN_SQ_VALUE[63 - sq_offset] as i32,
+                Piece::Bishop => -BISHOP_SQ_VALUE[63 - sq_offset] as i32,
+                Piece::Knight => -KNIGHT_SQ_VALUE[63 - sq_offset] as i32,
+                Piece::Rook => -ROOK_SQ_VALUE[63 - sq_offset] as i32,
+                Piece::Queen => -QUEEN_SQ_VALUE[63 - sq_offset] as i32,
+                Piece::King => -KING_SQ_VALUE[63 - sq_offset] as i32,
+            }
+        }
+    }
+
     if side_to_move == Colour::White {
         score
     } else {
@@ -124,6 +122,7 @@ mod tests {
     use crate::board::colour::Colour;
     use crate::board::occupancy_masks::OccupancyMasks;
     use crate::io::fen;
+    use crate::position::attack_checker::AttackChecker;
     use crate::position::game_position::Position;
     use crate::position::zobrist_keys::ZobristKeys;
 
@@ -135,6 +134,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -144,6 +144,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let score = super::evaluate_board(pos.board(), Colour::White);
@@ -190,6 +191,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -199,6 +201,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let score = super::evaluate_board(pos.board(), Colour::White);

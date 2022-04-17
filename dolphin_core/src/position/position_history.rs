@@ -3,6 +3,8 @@ use crate::moves::mov::Move;
 use crate::position::game_position::GameState;
 use std::fmt;
 
+use super::zobrist_keys::ZobristHash;
+
 #[derive(Default, Eq, PartialEq, Copy, Clone)]
 struct Item {
     game_state: GameState,
@@ -56,7 +58,7 @@ impl fmt::Debug for Item {
         debug_str.push_str(&format!("Piece: : {}\n", self.pce_moved));
 
         if self.pce_captured.is_none() {
-            debug_str.push_str(&"Captured Piece : -\n".to_string());
+            debug_str.push_str("Captured Piece : -\n");
         } else {
             debug_str.push_str(&format!(
                 "Captured Piece : {}\n",
@@ -73,7 +75,7 @@ impl fmt::Debug for PositionHistory {
         let mut debug_str = String::new();
 
         if self.history.is_empty() {
-            debug_str.push_str(&"Hist : Empty\n".to_string());
+            debug_str.push_str("Hist : Empty\n");
         } else {
             for i in 0..self.count {
                 debug_str.push_str(&format!("Hist : {}\n", self.history[i as usize]));
@@ -144,5 +146,18 @@ impl PositionHistory {
     }
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    pub fn contains_position_hash(&self, hash: ZobristHash, start_offset: usize) -> bool {
+        if start_offset > (self.count - 1).into() {
+            panic!("offset is past end of position histor");
+        }
+
+        for i in start_offset..(self.count - 1) as usize {
+            if self.history[i].game_state.get_zobrist_hash() == hash {
+                return true;
+            }
+        }
+        false
     }
 }

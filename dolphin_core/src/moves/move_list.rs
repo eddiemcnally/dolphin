@@ -40,14 +40,54 @@ impl MoveList {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.count == 0
     }
-    pub fn iter(&self) -> std::slice::Iter<'_, Move> {
+
+    pub fn get_move_at_offset(&self, offset: usize) -> Move {
+        self.ml[offset]
+    }
+
+    pub fn set_score_for_move_at(&mut self, offset: usize, score: i32) {
+        let mut mv = self.get_move_at_offset(offset);
+        mv.set_score(score);
+    }
+
+    pub fn get_offset_for_move(&self, mv: Move) -> Option<usize> {
+        for i in 0..self.len() {
+            if self.ml[i] == mv {
+                return Some(i);
+            }
+        }
+        None
+    }
+
+    pub fn iterator(&self) -> std::slice::Iter<'_, Move> {
         self.ml[0..self.count].iter()
     }
 
+    pub fn sort_by_score(&mut self, sort_from_offset: usize) {
+        if self.count == 0 {
+            return;
+        }
+
+        if sort_from_offset == self.count - 1 {
+            // starting at the end, nothing to sort
+            return;
+        }
+
+        let mut high = sort_from_offset;
+
+        // find entry with highest score
+        for i in (sort_from_offset + 1)..self.count {
+            if self.ml[i].get_score() > self.ml[high].get_score() {
+                high = i;
+            }
+        }
+        self.ml.swap(high, sort_from_offset);
+    }
+
     pub fn print(&self) {
-        for mov in self.iter() {
+        for mov in self.iterator() {
             mov.print_move();
         }
     }
@@ -71,7 +111,7 @@ pub mod tests {
         let mut count = 0;
         let mvl = MoveList::new();
 
-        for _ in mvl.iter() {
+        for _ in mvl.iterator() {
             count += 1;
         }
         assert_eq!(count, 0);
@@ -113,7 +153,7 @@ pub mod tests {
         }
 
         let mut counter = 0;
-        for mv in ml.iter() {
+        for mv in ml.iterator() {
             counter += 1;
             assert!(mvs.contains(mv));
         }
@@ -135,5 +175,116 @@ pub mod tests {
             ml.push(*mv);
         }
         assert_eq!(ml.len(), mvs.len());
+    }
+
+    #[test]
+    pub fn sort_move_by_score_highest_brought_to_top_sort_from_start() {
+        let mut mv1 = Move::encode_move_quiet(Square::H7, Square::H5);
+        let mut mv2 = Move::encode_move_quiet(Square::B4, Square::C5);
+        let mut mv3 = Move::encode_move_quiet(Square::A3, Square::A2);
+        let mut mv4 = Move::encode_move_quiet(Square::D6, Square::E8);
+        let mut mv5 = Move::encode_move_quiet(Square::B6, Square::B7);
+
+        mv1.set_score(1);
+        mv2.set_score(2);
+        mv3.set_score(3);
+        mv4.set_score(4);
+        mv5.set_score(5);
+
+        let mut ml = MoveList::new();
+        ml.push(mv1);
+        ml.push(mv2);
+        ml.push(mv3);
+        ml.push(mv4);
+        ml.push(mv5);
+
+        // check sorting before operation
+        assert!(ml.get_move_at_offset(0) == mv1);
+        assert!(ml.get_move_at_offset(1) == mv2);
+        assert!(ml.get_move_at_offset(2) == mv3);
+        assert!(ml.get_move_at_offset(3) == mv4);
+        assert!(ml.get_move_at_offset(4) == mv5);
+
+        ml.sort_by_score(0); // sort from start
+
+        assert!(ml.get_move_at_offset(0) == mv5);
+        assert!(ml.get_move_at_offset(1) == mv2);
+        assert!(ml.get_move_at_offset(2) == mv3);
+        assert!(ml.get_move_at_offset(3) == mv4);
+        assert!(ml.get_move_at_offset(4) == mv1);
+    }
+
+    #[test]
+    pub fn sort_move_by_score_highest_brought_to_top_sort_from_mid_array() {
+        let mut mv1 = Move::encode_move_quiet(Square::H7, Square::H5);
+        let mut mv2 = Move::encode_move_quiet(Square::B4, Square::C5);
+        let mut mv3 = Move::encode_move_quiet(Square::A3, Square::A2);
+        let mut mv4 = Move::encode_move_quiet(Square::D6, Square::E8);
+        let mut mv5 = Move::encode_move_quiet(Square::B6, Square::B7);
+
+        mv1.set_score(1);
+        mv2.set_score(2);
+        mv3.set_score(3);
+        mv4.set_score(4);
+        mv5.set_score(5);
+
+        let mut ml = MoveList::new();
+        ml.push(mv1);
+        ml.push(mv2);
+        ml.push(mv3);
+        ml.push(mv4);
+        ml.push(mv5);
+
+        // check sorting before operation
+        assert!(ml.get_move_at_offset(0) == mv1);
+        assert!(ml.get_move_at_offset(1) == mv2);
+        assert!(ml.get_move_at_offset(2) == mv3);
+        assert!(ml.get_move_at_offset(3) == mv4);
+        assert!(ml.get_move_at_offset(4) == mv5);
+
+        ml.sort_by_score(2);
+
+        assert!(ml.get_move_at_offset(0) == mv1);
+        assert!(ml.get_move_at_offset(1) == mv2);
+        assert!(ml.get_move_at_offset(2) == mv5);
+        assert!(ml.get_move_at_offset(3) == mv4);
+        assert!(ml.get_move_at_offset(4) == mv3);
+    }
+    #[test]
+    pub fn sort_move_by_score_highest_brought_to_top_sort_from_last_entry() {
+        let mut mv1 = Move::encode_move_quiet(Square::H7, Square::H5);
+        let mut mv2 = Move::encode_move_quiet(Square::B4, Square::C5);
+        let mut mv3 = Move::encode_move_quiet(Square::A3, Square::A2);
+        let mut mv4 = Move::encode_move_quiet(Square::D6, Square::E8);
+        let mut mv5 = Move::encode_move_quiet(Square::B6, Square::B7);
+
+        mv1.set_score(1);
+        mv2.set_score(2);
+        mv3.set_score(3);
+        mv4.set_score(4);
+        mv5.set_score(5);
+
+        let mut ml = MoveList::new();
+        ml.push(mv1);
+        ml.push(mv2);
+        ml.push(mv3);
+        ml.push(mv4);
+        ml.push(mv5);
+
+        // check sorting before operation
+        assert!(ml.get_move_at_offset(0) == mv1);
+        assert!(ml.get_move_at_offset(1) == mv2);
+        assert!(ml.get_move_at_offset(2) == mv3);
+        assert!(ml.get_move_at_offset(3) == mv4);
+        assert!(ml.get_move_at_offset(4) == mv5);
+
+        ml.sort_by_score(4); // sort from last entry
+
+        // no sort performed
+        assert!(ml.get_move_at_offset(0) == mv1);
+        assert!(ml.get_move_at_offset(1) == mv2);
+        assert!(ml.get_move_at_offset(2) == mv3);
+        assert!(ml.get_move_at_offset(3) == mv4);
+        assert!(ml.get_move_at_offset(4) == mv5);
     }
 }

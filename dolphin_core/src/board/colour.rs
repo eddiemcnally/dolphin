@@ -21,11 +21,16 @@ impl ToInt for Colour {
 impl Colour {
     pub const NUM_COLOURS: usize = 2;
 
-    pub const fn flip_side(self) -> Colour {
+    pub fn flip_side(self) -> Colour {
         match self {
             Colour::White => Colour::Black,
             Colour::Black => Colour::White,
         }
+    }
+
+    pub fn iterator() -> Iter<'static, Colour> {
+        static COLOURS: [Colour; Colour::NUM_COLOURS] = [Colour::White, Colour::Black];
+        COLOURS.iter()
     }
 }
 
@@ -50,14 +55,9 @@ impl fmt::Display for Colour {
     }
 }
 
-pub fn iterator() -> Iter<'static, Colour> {
-    static COLOURS: [Colour; Colour::NUM_COLOURS] = [Colour::White, Colour::Black];
-    COLOURS.iter()
-}
-
 #[cfg(test)]
 pub mod tests {
-    use crate::board::colour::Colour;
+    use crate::{board::colour::Colour, core::types::ToInt};
 
     #[test]
     pub fn flip_side_as_expected() {
@@ -73,8 +73,19 @@ pub mod tests {
 
     #[test]
     pub fn default_colour() {
-        let c = Colour::default();
-        assert!(c == Colour::White);
+        let white = Colour::default();
+        assert!(white == Colour::White);
+    }
+
+    #[test]
+    pub fn to_int() {
+        let mut c = Colour::White;
+        assert_eq!(c.to_u8(), 0);
+        assert_eq!(c.to_usize(), 0);
+
+        c = Colour::Black;
+        assert_eq!(c.to_u8(), 1);
+        assert_eq!(c.to_usize(), 1);
     }
 
     #[test]

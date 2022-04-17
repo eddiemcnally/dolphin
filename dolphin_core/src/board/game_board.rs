@@ -2,7 +2,6 @@ use crate::board::bitboard::Bitboard;
 use crate::board::colour::Colour;
 use crate::board::file::File;
 use crate::board::material::Material;
-use crate::board::piece;
 use crate::board::piece::Piece;
 use crate::board::rank::Rank;
 use crate::board::square::Square;
@@ -15,7 +14,7 @@ struct PieceBitboardArray {
     bb: [Bitboard; Piece::NUM_PIECE_TYPES],
 }
 
-#[derive(Eq, PartialEq, Clone, Copy)]
+#[derive(Eq, PartialEq)]
 pub struct Board {
     // piece bitboard, an entry for each piece type (enum Piece)
     piece_bb: [PieceBitboardArray; Colour::NUM_COLOURS],
@@ -96,7 +95,7 @@ impl Board {
         }
     }
 
-    pub fn get_piece_on_square(&self, sq: Square) -> Option<(Piece, Colour)> {
+    pub fn get_piece_and_colour_on_square(&self, sq: Square) -> Option<(Piece, Colour)> {
         let pc = self.pieces[sq.to_usize()];
         pc?;
 
@@ -157,6 +156,7 @@ impl Board {
         self.colour_bb[col_off].clear_bit(sq);
         self.piece_bb[col_off].bb[pce_off].clear_bit(sq);
     }
+
     #[inline(always)]
     fn set_bitboards(&mut self, piece: Piece, colour: Colour, sq: Square) {
         let pce_off = piece.to_usize();
@@ -179,8 +179,8 @@ impl fmt::Debug for Board {
             for f in File::iterator() {
                 let sq = Square::from_rank_file(*r, *f);
 
-                if let Some((piece, colour)) = self.get_piece_on_square(sq) {
-                    debug_str.push_str(&piece::label(piece, colour).to_string());
+                if let Some((piece, colour)) = self.get_piece_and_colour_on_square(sq) {
+                    debug_str.push_str(&Piece::label(piece, colour).to_string());
                     debug_str.push('\t');
                 } else {
                     debug_str.push_str(".\t");
@@ -224,9 +224,8 @@ impl Default for Board {
 pub mod tests {
     use crate::board::colour::Colour;
     use crate::board::game_board::Board;
-    use crate::board::piece;
     use crate::board::piece::Piece;
-    use crate::board::square;
+    use crate::board::square::Square;
     use crate::core::types::ToInt;
     use crate::io::fen;
 
@@ -237,7 +236,7 @@ pub mod tests {
         for col in kings.iter() {
             let mut board = Board::new();
 
-            for sq in square::iterator() {
+            for sq in Square::iterator() {
                 assert!(board.get_bitboard().is_empty());
                 board.add_piece(Piece::King, *col, *sq);
                 assert!(!board.get_bitboard().is_empty());
@@ -256,7 +255,7 @@ pub mod tests {
         let col = Colour::White;
         let mut board = Board::new();
 
-        let map = square::iterator();
+        let map = Square::iterator();
         for square in map {
             assert!(board.is_sq_empty(*square));
 
@@ -275,8 +274,8 @@ pub mod tests {
 
         let mut board = Board::new();
 
-        for from_sq in square::iterator() {
-            for to_sq in square::iterator() {
+        for from_sq in Square::iterator() {
+            for to_sq in Square::iterator() {
                 if *from_sq == *to_sq {
                     continue;
                 }
@@ -310,13 +309,13 @@ pub mod tests {
         let col = Colour::White;
         let mut board = Board::new();
 
-        for square in square::iterator() {
+        for square in Square::iterator() {
             assert!(board.is_sq_empty(*square));
 
             board.add_piece(pce, col, *square);
             assert!(!board.is_sq_empty(*square));
 
-            if let Some((piece, _)) = board.get_piece_on_square(*square) {
+            if let Some((piece, _)) = board.get_piece_and_colour_on_square(*square) {
                 assert_eq!(piece, pce);
             } else {
             }
@@ -331,8 +330,8 @@ pub mod tests {
         let mut board = Board::new();
         let colour = Colour::White;
 
-        for pce in piece::iterator() {
-            for square in square::iterator() {
+        for pce in Piece::iterator() {
+            for square in Square::iterator() {
                 board.add_piece(*pce, colour, *square);
 
                 assert!(board.get_piece_bitboard(*pce, colour).is_set(*square));

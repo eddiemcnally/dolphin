@@ -1,3 +1,4 @@
+use crate::moves::mov::Move;
 use crate::position::zobrist_keys::ZobristHash;
 use std::boxed::Box;
 use std::fmt;
@@ -5,13 +6,18 @@ use std::fmt;
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum TransType {
     Exact,
-    Upper,
-    Lower,
+    Alpha,
+    Beta,
 }
 
 impl fmt::Display for TransType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self, f)
+    }
+}
+impl Default for TransType {
+    fn default() -> Self {
+        TransType::Exact
     }
 }
 
@@ -20,6 +26,7 @@ struct TransEntry {
     trans_type: TransType,
     score: i32,
     depth: u8,
+    mv: Move,
     in_use: bool,
 }
 impl Default for TransEntry {
@@ -28,6 +35,7 @@ impl Default for TransEntry {
             trans_type: TransType::Exact,
             score: 0,
             depth: 0,
+            mv: Move::default(),
             in_use: false,
         }
     }
@@ -68,24 +76,74 @@ impl TransTable {
         }
     }
 
-    pub fn add(&mut self, tt_type: TransType, depth: u8, score: i32, hash: ZobristHash) {
+    pub fn add(&mut self, tt_type: TransType, depth: u8, score: i32, hash: ZobristHash, mv: Move) {
         let offset = self.convert_hash_to_offset(hash, self.capacity);
 
         let tte = TransEntry {
             trans_type: tt_type,
             depth,
             score,
+            mv,
             in_use: true,
         };
 
         self.entries[offset] = tte;
     }
 
-    pub fn get(&mut self, hash: ZobristHash) -> Option<(TransType, u8, i32)> {
+    pub fn contains_position_hash(&self, hash: ZobristHash) -> bool {
+        let offset = self.convert_hash_to_offset(hash, self.capacity);
+
+        if !self.entries[offset].in_use {
+            return true;
+        }
+        false
+    }
+
+    pub fn get_move_for_position_hash(&self, hash: ZobristHash) -> Option<Move> {
+        let offset = self.convert_hash_to_offset(hash, self.capacity);
+
+        if self.entries[offset].in_use {
+            return Some(self.entries[offset].mv);
+        }
+        None
+    }
+
+    pub fn probe(
+        &self,
+        hash: ZobristHash,
+        depth: u8,
+        alpha: i32,
+        beta: i32,
+    ) -> Option<(TransType, i32)> {
+        let offset = self.convert_hash_to_offset(hash, self.capacity);
+
+        let entry = self.entries[offset];
+        if !entry.in_use {
+            return None;
+        }
+
+        if entry.depth >= depth {
+            if entry.trans_type == TransType::Exact {
+                return Some((entry.trans_type, entry.score));
+            }
+
+            if entry.trans_type == TransType::Alpha && entry.score <= alpha {
+                return Some((entry.trans_type, alpha));
+            }
+
+            if entry.trans_type == TransType::Beta && entry.score >= beta {
+                return Some((entry.trans_type, beta));
+            }
+        }
+
+        None
+    }
+
+    pub fn get(&mut self, hash: ZobristHash) -> Option<(TransType, u8, i32, Move)> {
         let offset = self.convert_hash_to_offset(hash, self.capacity);
         if self.entries[offset].in_use {
             let tte = self.entries[offset];
-            let t = (tte.trans_type, tte.depth, tte.score);
+            let t = (tte.trans_type, tte.depth, tte.score, tte.mv);
             return Some(t);
         }
         None
@@ -97,11 +155,11 @@ impl TransTable {
     pub fn get_num_trans_type_exact(&self) -> u32 {
         self.count_tt_types(TransType::Exact)
     }
-    pub fn get_num_trans_type_upper(&self) -> u32 {
-        self.count_tt_types(TransType::Upper)
+    pub fn get_num_trans_type_alpha(&self) -> u32 {
+        self.count_tt_types(TransType::Alpha)
     }
-    pub fn get_num_trans_type_lower(&self) -> u32 {
-        self.count_tt_types(TransType::Lower)
+    pub fn get_num_trans_type_beta(&self) -> u32 {
+        self.count_tt_types(TransType::Beta)
     }
 
     fn count_tt_types(&self, tt_type: TransType) -> u32 {
@@ -121,13 +179,17 @@ impl TransTable {
 pub mod tests {
     use super::TransTable;
     use super::TransType;
+    use crate::board::square::Square;
+    use crate::moves::mov::Move;
     use crate::position::zobrist_keys::ZobristHash;
 
     #[test]
     pub fn add_and_get_multiple_no_collisions_verify_contents_as_expected() {
         const NUM_TO_TEST: usize = 1_000_000;
         const DEPTH: u8 = 5;
-        const TT_ENTRY_TYPE: TransType = TransType::Upper;
+        const TT_ENTRY_TYPE: TransType = TransType::Alpha;
+
+        let target_move = Move::encode_move_quiet(Square::A1, Square::A2);
 
         let mut tt = TransTable::new(NUM_TO_TEST);
         // add to TT
@@ -136,22 +198,24 @@ pub mod tests {
             let depth = DEPTH;
             let trans_type = TT_ENTRY_TYPE;
 
-            tt.add(trans_type, depth, score, i as ZobristHash);
+            tt.add(trans_type, depth, score, i as ZobristHash, target_move);
         }
         assert!(tt.get_num_used() == NUM_TO_TEST as u32);
 
         // retrieve and verify
         for i in 0..NUM_TO_TEST {
-            let tte: Option<(TransType, u8, i32)> = tt.get(i as ZobristHash);
+            let tte: Option<(TransType, u8, i32, Move)> = tt.get(i as ZobristHash);
 
             assert!(tte.is_some());
             let trans_type = tte.unwrap().0;
             let depth = tte.unwrap().1;
             let score = tte.unwrap().2;
+            let mv = tte.unwrap().3;
 
             assert!(score == i as i32);
             assert!(depth == DEPTH);
             assert!(trans_type == TT_ENTRY_TYPE);
+            assert!(mv == target_move);
         }
     }
 
@@ -161,7 +225,9 @@ pub mod tests {
         const TT_SIZE: usize = 100_000;
         const EXPECTED_NUM_COLLISIONS: usize = 900_000;
         const DEPTH: u8 = 5;
-        const TT_ENTRY_TYPE: TransType = TransType::Upper;
+        const TT_ENTRY_TYPE: TransType = TransType::Alpha;
+
+        let target_move = Move::encode_move_quiet(Square::A1, Square::A2);
 
         let mut tt = TransTable::new(TT_SIZE);
         // add to TT
@@ -170,22 +236,24 @@ pub mod tests {
             let depth = DEPTH;
             let trans_type = TT_ENTRY_TYPE;
 
-            tt.add(trans_type, depth, score, i as ZobristHash);
+            tt.add(trans_type, depth, score, i as ZobristHash, target_move);
         }
         assert!(tt.get_num_used() == TT_SIZE as u32);
 
         // elements upo to EXPECTED_NUM_COLLISIONS are overwritten
         for i in EXPECTED_NUM_COLLISIONS..NUM_TO_TEST {
-            let tte: Option<(TransType, u8, i32)> = tt.get(i as ZobristHash);
+            let tte: Option<(TransType, u8, i32, Move)> = tt.get(i as ZobristHash);
 
             assert!(tte.is_some());
             let trans_type = tte.unwrap().0;
             let depth = tte.unwrap().1;
             let score = tte.unwrap().2;
+            let mv = tte.unwrap().3;
 
             assert!(score == i as i32);
             assert!(depth == DEPTH);
             assert!(trans_type == TT_ENTRY_TYPE);
+            assert!(mv == target_move);
         }
     }
 }

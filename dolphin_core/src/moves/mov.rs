@@ -4,14 +4,15 @@ use crate::core::types::ToInt;
 use std::fmt;
 use std::ops::{Shl, Shr};
 
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Eq, PartialEq, Copy, Clone, Hash)]
 pub struct Move {
-    flags: u64,
+    info: u64,
 }
 
 // Move bit map
 //
 // XX XX XX XX -- -- -- --      Move score (i32)
+// -- -- -- -- XX -- -- --      Unused
 // -- -- -- -- -- XX -- --      MoveType
 // -- -- -- -- -- -- XX --      To Square
 // -- -- -- -- -- -- -- XX      From Square
@@ -75,11 +76,11 @@ impl Move {
     /// * `to_sq`   - the to square
     ///
     pub fn encode_move_quiet(from_sq: Square, to_sq: Square) -> Move {
-        new(from_sq, to_sq, MoveType::QUIET)
+        encode(from_sq, to_sq, MoveType::QUIET)
     }
 
     pub fn encode_move_capture(from_sq: Square, to_sq: Square) -> Move {
-        new(from_sq, to_sq, MoveType::CAPTURE)
+        encode(from_sq, to_sq, MoveType::CAPTURE)
     }
 
     pub fn encode_move_with_promotion(
@@ -100,7 +101,7 @@ impl Move {
             Piece::Queen => MoveType::PROMOTE_QUEEN_QUIET,
             _ => panic!("Invalid promotion piece"),
         };
-        new(from_sq, to_sq, mt)
+        encode(from_sq, to_sq, mt)
     }
 
     pub fn encode_move_with_promotion_capture(
@@ -121,7 +122,7 @@ impl Move {
             Piece::Queen => MoveType::PROMOTE_QUEEN_CAPTURE,
             _ => panic!("Invalid promotion piece"),
         };
-        new(from_sq, to_sq, mt)
+        encode(from_sq, to_sq, mt)
     }
 
     /// Encodes an En Passant move given the "from" and "to" squares
@@ -137,7 +138,7 @@ impl Move {
             "from and to square are same : {}",
             from_sq
         );
-        new(from_sq, to_sq, MoveType::EN_PASSANT)
+        encode(from_sq, to_sq, MoveType::EN_PASSANT)
     }
 
     /// Encodes a Double Pawn first move
@@ -153,45 +154,45 @@ impl Move {
             "from and to square are same : {}",
             from_sq
         );
-        new(from_sq, to_sq, MoveType::DOUBLE_PAWN)
+        encode(from_sq, to_sq, MoveType::DOUBLE_PAWN)
     }
 
     /// Encodes a White King-side castle move
     ///
     pub fn encode_move_castle_kingside_white() -> Move {
-        new(Square::E1, Square::G1, MoveType::KING_CASTLE)
+        encode(Square::E1, Square::G1, MoveType::KING_CASTLE)
     }
 
     /// Encodes a Black King-side castle move
     ///
     pub fn encode_move_castle_kingside_black() -> Move {
-        new(Square::E8, Square::G8, MoveType::KING_CASTLE)
+        encode(Square::E8, Square::G8, MoveType::KING_CASTLE)
     }
 
     /// Encodes a White Queen-side castle move
     ///
     pub fn encode_move_castle_queenside_white() -> Move {
-        new(Square::E1, Square::C1, MoveType::QUEEN_CASTLE)
+        encode(Square::E1, Square::C1, MoveType::QUEEN_CASTLE)
     }
 
     /// Encodes a Black Queen-side castle move
     ///
     pub fn encode_move_castle_queenside_black() -> Move {
-        new(Square::E8, Square::C8, MoveType::QUEEN_CASTLE)
+        encode(Square::E8, Square::C8, MoveType::QUEEN_CASTLE)
     }
 
     pub fn decode_from_square(&self) -> Square {
-        let s = ((self.flags as u64) & MV_MASK_FROM_SQ).shr(MV_BIT_SHFT_FROM_SQ);
+        let s = ((self.info as u64) & MV_MASK_FROM_SQ).shr(MV_BIT_SHFT_FROM_SQ);
         Square::new(s as u8).unwrap()
     }
 
     pub fn decode_to_square(&self) -> Square {
-        let s = ((self.flags as u64) & MV_MASK_TO_SQ).shr(MV_BIT_SHFT_TO_SQ);
+        let s = ((self.info as u64) & MV_MASK_TO_SQ).shr(MV_BIT_SHFT_TO_SQ);
         Square::new(s as u8).unwrap()
     }
 
     pub fn decode_move_type(&self) -> MoveType {
-        let s = ((self.flags as u64) & MV_MASK_MV_TYPE).shr(MV_BIT_SHFT_MOVE_TYPE);
+        let s = ((self.info as u64) & MV_MASK_MV_TYPE).shr(MV_BIT_SHFT_MOVE_TYPE);
         let retval = MoveType(s as u8);
         debug_assert!(retval.is_valid_move_type(), "MoveType is invalid");
         retval
@@ -269,11 +270,11 @@ impl Move {
         let mut s: u64 = score as u64;
         s = s.shl(MV_BIT_SHFT_SCORE);
 
-        self.flags |= s & MV_MASK_SCORE;
+        self.info |= s & MV_MASK_SCORE;
     }
 
     pub fn get_score(&self) -> i32 {
-        let s = self.flags.shr(MV_BIT_SHFT_SCORE);
+        let s = self.info.shr(MV_BIT_SHFT_SCORE);
         s as i32
     }
 
@@ -287,16 +288,14 @@ impl Move {
 }
 
 #[inline(always)]
-fn new(from_sq: Square, to_sq: Square, move_type: MoveType) -> Move {
-    let from_sq = (from_sq.to_u8() as u64).shl(MV_BIT_SHFT_FROM_SQ);
-    let to_sq = (to_sq.to_u8() as u64).shl(MV_BIT_SHFT_TO_SQ);
-    let mt = (move_type.0 as u64).shl(MV_BIT_SHFT_MOVE_TYPE);
+fn encode(from_sq: Square, to_sq: Square, move_type: MoveType) -> Move {
+    let mut mv: u64 = 0;
+    mv |= (from_sq.to_u8() as u64).shl(MV_BIT_SHFT_FROM_SQ);
+    mv |= (to_sq.to_u8() as u64).shl(MV_BIT_SHFT_TO_SQ);
+    mv |= (move_type.0 as u64).shl(MV_BIT_SHFT_MOVE_TYPE);
 
-    Move {
-        flags: from_sq | to_sq | mt,
-    }
+    Move { info: mv }
 }
-
 impl fmt::Debug for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
@@ -340,7 +339,7 @@ impl fmt::Display for Move {
 
 impl Default for Move {
     fn default() -> Move {
-        new(Square::A1, Square::A1, MoveType::QUIET)
+        encode(Square::A1, Square::A1, MoveType::QUIET)
     }
 }
 
@@ -353,8 +352,7 @@ impl Default for MoveType {
 #[cfg(test)]
 pub mod tests {
     use crate::board::piece::Piece;
-    use crate::board::square;
-    use crate::board::square::*;
+    use crate::board::square::Square;
     use crate::moves::mov::Move;
 
     #[test]
@@ -458,8 +456,8 @@ pub mod tests {
 
     #[test]
     pub fn encode_decode_quiet_move() {
-        for from_sq in square::iterator() {
-            for to_sq in square::iterator() {
+        for from_sq in Square::iterator() {
+            for to_sq in Square::iterator() {
                 if *from_sq == *to_sq {
                     continue;
                 }
@@ -484,8 +482,8 @@ pub mod tests {
 
     #[test]
     pub fn encode_decode_double_pawn_first_move() {
-        for from_sq in square::iterator() {
-            for to_sq in square::iterator() {
+        for from_sq in Square::iterator() {
+            for to_sq in Square::iterator() {
                 if *from_sq == *to_sq {
                     continue;
                 }
@@ -510,8 +508,8 @@ pub mod tests {
 
     #[test]
     pub fn encode_decode_en_passant() {
-        for from_sq in square::iterator() {
-            for to_sq in square::iterator() {
+        for from_sq in Square::iterator() {
+            for to_sq in Square::iterator() {
                 if *from_sq == *to_sq {
                     continue;
                 }
@@ -537,8 +535,8 @@ pub mod tests {
     pub fn encode_decode_promotion_move_non_capture() {
         let target_promotions = [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
 
-        for from_sq in square::iterator() {
-            for to_sq in square::iterator() {
+        for from_sq in Square::iterator() {
+            for to_sq in Square::iterator() {
                 if *from_sq == *to_sq {
                     continue;
                 }
@@ -566,8 +564,8 @@ pub mod tests {
     pub fn encode_decode_promotion_move_capture() {
         let target_promotions = [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
 
-        for from_sq in square::iterator() {
-            for to_sq in square::iterator() {
+        for from_sq in Square::iterator() {
+            for to_sq in Square::iterator() {
                 if *from_sq == *to_sq {
                     continue;
                 }

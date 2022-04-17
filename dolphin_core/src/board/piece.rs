@@ -26,15 +26,17 @@ impl Piece {
     pub const NUM_PIECES: usize = 32;
     pub const NUM_PIECE_TYPES: usize = 6;
 
-    pub const fn value(&self) -> u32 {
-        match self {
-            Piece::Pawn => PieceValue::Pawn as u32,
-            Piece::Bishop => PieceValue::Bishop as u32,
-            Piece::Knight => PieceValue::Knight as u32,
-            Piece::Rook => PieceValue::Rook as u32,
-            Piece::Queen => PieceValue::Queen as u32,
-            Piece::King => PieceValue::King as u32,
-        }
+    const VALUES: [u32; Piece::NUM_PIECE_TYPES] = [
+        PieceValue::Pawn as u32,
+        PieceValue::Bishop as u32,
+        PieceValue::Knight as u32,
+        PieceValue::Rook as u32,
+        PieceValue::Queen as u32,
+        PieceValue::King as u32,
+    ];
+
+    pub fn value(&self) -> u32 {
+        Piece::VALUES[self.to_usize()]
     }
 
     pub fn from_char(piece_char: char) -> (Piece, Colour) {
@@ -55,34 +57,34 @@ impl Piece {
             _ => panic!("Invalid piece character {}.", piece_char),
         }
     }
-}
 
-pub fn iterator() -> Iter<'static, Piece> {
-    static PIECES: [Piece; Piece::NUM_PIECE_TYPES] = [
-        Piece::Pawn,
-        Piece::Bishop,
-        Piece::Knight,
-        Piece::Rook,
-        Piece::Queen,
-        Piece::King,
-    ];
-    PIECES.iter()
-}
+    pub fn label(piece: Piece, colour: Colour) -> char {
+        let c = match piece {
+            Piece::Pawn => 'P',
+            Piece::Bishop => 'B',
+            Piece::Knight => 'N',
+            Piece::Rook => 'R',
+            Piece::Queen => 'Q',
+            Piece::King => 'K',
+        };
 
-pub fn label(piece: Piece, colour: Colour) -> char {
-    let c = match piece {
-        Piece::Pawn => 'P',
-        Piece::Bishop => 'B',
-        Piece::Knight => 'N',
-        Piece::Rook => 'R',
-        Piece::Queen => 'Q',
-        Piece::King => 'K',
-    };
-
-    if colour == Colour::White {
-        return c;
+        if colour == Colour::White {
+            return c;
+        }
+        c.to_ascii_lowercase()
     }
-    c.to_ascii_lowercase()
+
+    pub fn iterator() -> Iter<'static, Piece> {
+        static PIECES: [Piece; Piece::NUM_PIECE_TYPES] = [
+            Piece::Pawn,
+            Piece::Bishop,
+            Piece::Knight,
+            Piece::Rook,
+            Piece::Queen,
+            Piece::King,
+        ];
+        PIECES.iter()
+    }
 }
 
 impl fmt::Display for Piece {
@@ -104,7 +106,7 @@ impl fmt::Debug for Piece {
             Piece::King => "King",
         };
 
-        debug_str.push_str(&st.to_string());
+        debug_str.push_str(st);
 
         write!(f, "{}", debug_str)
     }
@@ -126,5 +128,61 @@ enum PieceValue {
 impl Default for Piece {
     fn default() -> Piece {
         Piece::Pawn
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use crate::board::{
+        colour::Colour,
+        piece::{Piece, PieceValue},
+    };
+
+    #[test]
+    pub fn piece_values_as_expected() {
+        assert_eq!(Piece::Pawn.value(), PieceValue::Pawn as u32);
+        assert_eq!(Piece::Bishop.value(), PieceValue::Bishop as u32);
+        assert_eq!(Piece::Knight.value(), PieceValue::Knight as u32);
+        assert_eq!(Piece::Rook.value(), PieceValue::Rook as u32);
+        assert_eq!(Piece::Queen.value(), PieceValue::Queen as u32);
+        assert_eq!(Piece::King.value(), PieceValue::King as u32);
+    }
+
+    #[test]
+    pub fn from_char() {
+        // white
+        assert_eq!(Piece::from_char('P'), (Piece::Pawn, Colour::White));
+        assert_eq!(Piece::from_char('B'), (Piece::Bishop, Colour::White));
+        assert_eq!(Piece::from_char('N'), (Piece::Knight, Colour::White));
+        assert_eq!(Piece::from_char('R'), (Piece::Rook, Colour::White));
+        assert_eq!(Piece::from_char('Q'), (Piece::Queen, Colour::White));
+        assert_eq!(Piece::from_char('K'), (Piece::King, Colour::White));
+
+        // black
+        assert_eq!(Piece::from_char('p'), (Piece::Pawn, Colour::Black));
+        assert_eq!(Piece::from_char('b'), (Piece::Bishop, Colour::Black));
+        assert_eq!(Piece::from_char('n'), (Piece::Knight, Colour::Black));
+        assert_eq!(Piece::from_char('r'), (Piece::Rook, Colour::Black));
+        assert_eq!(Piece::from_char('q'), (Piece::Queen, Colour::Black));
+        assert_eq!(Piece::from_char('k'), (Piece::King, Colour::Black));
+    }
+
+    #[test]
+    pub fn label() {
+        // white
+        assert_eq!(Piece::label(Piece::Pawn, Colour::White), 'P');
+        assert_eq!(Piece::label(Piece::Bishop, Colour::White), 'B');
+        assert_eq!(Piece::label(Piece::Knight, Colour::White), 'N');
+        assert_eq!(Piece::label(Piece::Rook, Colour::White), 'R');
+        assert_eq!(Piece::label(Piece::Queen, Colour::White), 'Q');
+        assert_eq!(Piece::label(Piece::King, Colour::White), 'K');
+
+        // black
+        assert_eq!(Piece::label(Piece::Pawn, Colour::Black), 'p');
+        assert_eq!(Piece::label(Piece::Bishop, Colour::Black), 'b');
+        assert_eq!(Piece::label(Piece::Knight, Colour::Black), 'n');
+        assert_eq!(Piece::label(Piece::Rook, Colour::Black), 'r');
+        assert_eq!(Piece::label(Piece::Queen, Colour::Black), 'q');
+        assert_eq!(Piece::label(Piece::King, Colour::Black), 'k');
     }
 }

@@ -104,15 +104,18 @@ pub mod tests {
     use super::ZobristHash;
     use super::ZobristKeys;
     use crate::position::castle_permissions::CastlePermissionType;
+    use crate::position::zobrist_keys::Colour;
+    use crate::position::zobrist_keys::Piece;
+    use crate::position::zobrist_keys::Square;
 
     #[test]
     pub fn piece_square_hashes_all_different() {
         let keys = ZobristKeys::new();
         let mut v: Vec<ZobristHash> = Vec::new();
 
-        for pce in crate::board::piece::iterator() {
-            for col in crate::board::colour::iterator() {
-                for sq in crate::board::square::iterator() {
+        for pce in Piece::iterator() {
+            for col in Colour::iterator() {
+                for sq in Square::iterator() {
                     let hash = keys.piece_square(*pce, *col, *sq);
                     v.push(hash);
                 }
@@ -136,7 +139,7 @@ pub mod tests {
         let keys = ZobristKeys::new();
         let mut v: Vec<ZobristHash> = Vec::new();
 
-        for sq in crate::board::square::iterator() {
+        for sq in Square::iterator() {
             let hash = keys.en_passant(*sq);
             v.push(hash);
         }
@@ -195,9 +198,9 @@ pub mod tests {
 
         assert_eq!(keys1.side(), keys2.side());
 
-        for col in crate::board::colour::iterator() {
-            for pce in crate::board::piece::iterator() {
-                for sq in crate::board::square::iterator() {
+        for col in Colour::iterator() {
+            for pce in Piece::iterator() {
+                for sq in Square::iterator() {
                     assert_eq!(
                         keys1.piece_square(*pce, *col, *sq),
                         keys2.piece_square(*pce, *col, *sq)

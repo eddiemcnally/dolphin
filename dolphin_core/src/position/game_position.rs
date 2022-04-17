@@ -1,10 +1,10 @@
-use super::attack_checker;
 use crate::board::colour::Colour;
 use crate::board::game_board::Board;
 use crate::board::occupancy_masks::OccupancyMasks;
 use crate::board::piece::Piece;
 use crate::board::square::Square;
 use crate::moves::mov::*;
+use crate::position::attack_checker::AttackChecker;
 use crate::position::castle_permissions::{CastlePermission, CastlePermissionType};
 use crate::position::move_counter::MoveCounter;
 use crate::position::position_history::PositionHistory;
@@ -28,12 +28,12 @@ const CASTLE_SQUARES_KING_BLACK: [Square; 3] = [Square::E8, Square::F8, Square::
 
 const CASTLE_SQUARES_QUEEN_BLACK: [Square; 3] = [Square::C8, Square::D8, Square::E8];
 
-#[derive(Eq, Clone)]
 pub struct Position<'a> {
     board: Board,
     position_history: Box<PositionHistory>,
     occ_masks: &'a OccupancyMasks,
     zobrist_keys: &'a ZobristKeys,
+    attack_checker: &'a AttackChecker,
     game_state: GameState,
 }
 
@@ -64,6 +64,9 @@ impl GameState {
     pub fn new() -> GameState {
         GameState::default()
     }
+    pub fn get_zobrist_hash(&self) -> ZobristHash {
+        self.position_hash
+    }
 }
 
 impl<'a> Position<'a> {
@@ -75,6 +78,7 @@ impl<'a> Position<'a> {
         side_to_move: Colour,
         zobrist_keys: &'a ZobristKeys,
         occupancy_masks: &'a OccupancyMasks,
+        attack_checker: &'a AttackChecker,
     ) -> Position<'a> {
         let game_state = GameState {
             side_to_move,
@@ -89,12 +93,13 @@ impl<'a> Position<'a> {
             game_state,
             position_history: PositionHistory::new(),
             occ_masks: occupancy_masks,
+            attack_checker,
             zobrist_keys,
         };
 
         // generate position hash
         for sq in pos.board.get_bitboard().iterator() {
-            if let Some((piece, colour)) = pos.board().get_piece_on_square(sq) {
+            if let Some((piece, colour)) = pos.board().get_piece_and_colour_on_square(sq) {
                 pos.game_state.position_hash ^= pos.zobrist_keys.piece_square(piece, colour, sq);
             };
         }
@@ -147,6 +152,10 @@ impl<'a> Position<'a> {
         self.game_state.en_pass_sq
     }
 
+    pub fn is_en_passant_active(&self) -> bool {
+        self.game_state.en_pass_sq.is_some()
+    }
+
     pub fn castle_permissions(&self) -> CastlePermission {
         self.game_state.castle_perm
     }
@@ -168,7 +177,27 @@ impl<'a> Position<'a> {
         self.game_state.position_hash ^= self.zobrist_keys.side();
     }
 
+    pub fn is_repetition(&self) -> bool {
+        let start_offset =
+            self.move_counter().half_move() as usize - self.game_state.fifty_move_cntr as usize;
+
+        self.position_history
+            .contains_position_hash(self.position_hash(), start_offset)
+    }
+
+    pub fn is_king_sq_attacked(&self) -> bool {
+        let king_sq = self.board.get_king_sq(self.side_to_move());
+        let opp_side = self.side_to_move().flip_side();
+        self.attack_checker
+            .is_sq_attacked(self.occ_masks, self.board(), king_sq, opp_side)
+    }
+
     pub fn make_move(&mut self, mv: Move) -> MoveLegality {
+        // println!(
+        //     "++++++++ make move: moev={mv}, BEFORE board : {}\n",
+        //     self.board()
+        // );
+
         // set up some general variables
         let from_sq = mv.decode_from_square();
         let to_sq = mv.decode_to_square();
@@ -179,20 +208,22 @@ impl<'a> Position<'a> {
                 .push(self.game_state, mv, pce_to_move, capt_pce);
 
             self.game_state.move_cntr.incr_half_move();
-            self.game_state.move_cntr.incr_full_move();
+            if self.side_to_move() == Colour::Black {
+                self.game_state.move_cntr.incr_full_move();
+            }
 
-            handle_50_move_rule(self, mv, pce_to_move);
+            self.handle_50_move_rule(mv, pce_to_move);
 
             let move_type = mv.decode_move_type();
 
             match move_type {
-                MoveType::QUIET => move_piece_on_board(self, pce_to_move, from_sq, to_sq),
+                MoveType::QUIET => self.move_piece_on_board(pce_to_move, from_sq, to_sq),
                 MoveType::CAPTURE => {
-                    do_capture_move(self, pce_to_move, from_sq, to_sq, capt_pce.unwrap())
+                    self.do_capture_move(pce_to_move, from_sq, to_sq, capt_pce.unwrap())
                 }
-                MoveType::DOUBLE_PAWN => do_double_pawn_move(self, pce_to_move, from_sq, to_sq),
-                MoveType::KING_CASTLE | MoveType::QUEEN_CASTLE => do_castle_move(self, mv),
-                MoveType::EN_PASSANT => do_en_passant(self, from_sq, to_sq),
+                MoveType::DOUBLE_PAWN => self.do_double_pawn_move(pce_to_move, from_sq, to_sq),
+                MoveType::KING_CASTLE | MoveType::QUEEN_CASTLE => self.do_castle_move(mv),
+                MoveType::EN_PASSANT => self.do_en_passant(from_sq, to_sq),
                 MoveType::PROMOTE_KNIGHT_QUIET
                 | MoveType::PROMOTE_BISHOP_QUIET
                 | MoveType::PROMOTE_ROOK_QUIET
@@ -201,7 +232,7 @@ impl<'a> Position<'a> {
                 | MoveType::PROMOTE_BISHOP_CAPTURE
                 | MoveType::PROMOTE_ROOK_CAPTURE
                 | MoveType::PROMOTE_QUEEN_CAPTURE => {
-                    do_promotion(self, mv, from_sq, to_sq, pce_to_move)
+                    self.do_promotion(mv, from_sq, to_sq, pce_to_move)
                 }
                 _ => panic!("Invalid move type"),
             }
@@ -216,9 +247,14 @@ impl<'a> Position<'a> {
 
             self.flip_side_to_move();
 
+            // println!(
+            //     "^^^^^^^^^^^^^ %make move: moev={mv}, AFTER board : {}\n",
+            //     self.board()
+            // );
+
             move_legality
         } else {
-            panic!("No piece on square");
+            panic!("No piece on square {}, move {}", from_sq, mv);
         }
     }
 
@@ -253,7 +289,7 @@ impl<'a> Position<'a> {
 
     fn get_capture_piece(&self, mv: Move, sq: Square) -> Option<Piece> {
         if mv.is_capture() && !mv.is_en_passant() {
-            if let Some((capt_sq_pce, _)) = self.board.get_piece_on_square(sq) {
+            if let Some(capt_sq_pce) = self.board.get_piece_type_on_square(sq) {
                 return Some(capt_sq_pce);
             }
         }
@@ -264,9 +300,14 @@ impl<'a> Position<'a> {
         let from_sq = mv.decode_from_square();
         let to_sq = mv.decode_to_square();
 
+        // println!("==================== Reverting move {}", mv);
+        // println!("Before board : {}", self.board());
         // revert the move
         self.board
             .move_piece(to_sq, from_sq, piece, self.side_to_move());
+
+        // println!("After board : {}", self.board());
+        // println!("----------------------------------")
     }
 
     fn reverse_capture_move(&mut self, mv: Move, pce: Piece, capture_pce: Option<Piece>) {
@@ -287,9 +328,9 @@ impl<'a> Position<'a> {
         let from_sq = mv.decode_from_square();
         let to_sq = mv.decode_to_square();
 
-        if let Some((piece, colour)) = self.board().get_piece_on_square(to_sq) {
+        if let Some(piece) = self.board().get_piece_type_on_square(to_sq) {
             // remove promoted piece
-            self.board.remove_piece(piece, colour, to_sq);
+            self.board.remove_piece(piece, self.side_to_move(), to_sq);
         } else {
             panic!("Unexpected empty square");
         }
@@ -363,15 +404,30 @@ impl<'a> Position<'a> {
         let king_sq = self.board().get_king_sq(self.game_state.side_to_move);
         let attacking_side = self.game_state.side_to_move.flip_side();
 
-        if attack_checker::is_sq_attacked(self.occ_masks, self.board(), king_sq, attacking_side) {
+        if self
+            .attack_checker
+            .is_sq_attacked(self.occ_masks, self.board(), king_sq, attacking_side)
+        {
             return MoveLegality::Illegal;
         }
 
         // check castle through attacked squares (or king was in check before the castle move)
         if mv.is_castle() {
-            let squares_to_check =
-                self.get_castle_squares_to_check(mv, self.game_state.side_to_move);
-            let is_invalid_castle = attack_checker::is_castle_squares_attacked(
+            let squares_to_check = if mv.is_king_castle() {
+                match self.game_state.side_to_move {
+                    Colour::White => &CASTLE_SQUARES_KING_WHITE,
+                    Colour::Black => &CASTLE_SQUARES_KING_BLACK,
+                }
+            } else if mv.is_queen_castle() {
+                match self.game_state.side_to_move {
+                    Colour::White => &CASTLE_SQUARES_QUEEN_WHITE,
+                    Colour::Black => &CASTLE_SQUARES_QUEEN_BLACK,
+                }
+            } else {
+                panic!("Invalid move test");
+            };
+
+            let is_invalid_castle = self.attack_checker.is_castle_squares_attacked(
                 self.occ_masks,
                 self.board(),
                 squares_to_check,
@@ -385,22 +441,6 @@ impl<'a> Position<'a> {
             }
         }
         MoveLegality::Legal
-    }
-
-    fn get_castle_squares_to_check(&self, mv: Move, side_to_move: Colour) -> &[Square] {
-        if mv.is_king_castle() {
-            match side_to_move {
-                Colour::White => &CASTLE_SQUARES_KING_WHITE,
-                Colour::Black => &CASTLE_SQUARES_KING_BLACK,
-            }
-        } else if mv.is_queen_castle() {
-            match side_to_move {
-                Colour::White => &CASTLE_SQUARES_QUEEN_WHITE,
-                Colour::Black => &CASTLE_SQUARES_QUEEN_BLACK,
-            }
-        } else {
-            panic!("Invalid move test");
-        }
     }
 
     fn update_en_passant_sq(&mut self, mv: Move) {
@@ -456,158 +496,145 @@ impl<'a> Position<'a> {
             _ => (),
         }
     }
-}
 
-fn find_en_passant_sq(from_sq: Square, col: Colour) -> Option<Square> {
-    // use the *from_sq* to find the en passant sq
-    match col {
-        Colour::White => from_sq.plus_1_rank(),
-        Colour::Black => from_sq.minus_1_rank(),
+    fn find_en_passant_sq(&self, from_sq: Square, col: Colour) -> Option<Square> {
+        // use the *from_sq* to find the en passant sq
+        match col {
+            Colour::White => from_sq.plus_1_rank(),
+            Colour::Black => from_sq.minus_1_rank(),
+        }
     }
-}
 
-fn remove_piece_from_board(position: &mut Position, pce: Piece, colour: Colour, sq: Square) {
-    position.board.remove_piece(pce, colour, sq);
-    position.game_state.position_hash ^= position.zobrist_keys.piece_square(pce, colour, sq);
-}
-
-fn add_piece_to_board(position: &mut Position, pce: Piece, colour: Colour, sq: Square) {
-    position.board.add_piece(pce, colour, sq);
-    position.game_state.position_hash ^= position.zobrist_keys.piece_square(pce, colour, sq);
-}
-
-fn move_piece_on_board(position: &mut Position, pce: Piece, from_sq: Square, to_sq: Square) {
-    position.game_state.position_hash ^=
-        position
-            .zobrist_keys
-            .piece_square(pce, position.side_to_move(), from_sq);
-    position.game_state.position_hash ^=
-        position
-            .zobrist_keys
-            .piece_square(pce, position.side_to_move(), to_sq);
-    position
-        .board
-        .move_piece(from_sq, to_sq, pce, position.side_to_move());
-}
-
-fn handle_50_move_rule(position: &mut Position, mv: Move, pce_to_move: Piece) {
-    if mv.is_capture() || pce_to_move == Piece::Pawn {
-        position.game_state.fifty_move_cntr = 0;
-    } else {
-        position.game_state.fifty_move_cntr += 1;
+    fn remove_piece_from_board(&mut self, pce: Piece, colour: Colour, sq: Square) {
+        self.board.remove_piece(pce, colour, sq);
+        self.game_state.position_hash ^= self.zobrist_keys.piece_square(pce, colour, sq);
     }
-}
 
-fn do_castle_move(position: &mut Position, mv: Move) {
-    let colour = position.side_to_move();
+    fn add_piece_to_board(&mut self, pce: Piece, colour: Colour, sq: Square) {
+        self.board.add_piece(pce, colour, sq);
+        self.game_state.position_hash ^= self.zobrist_keys.piece_square(pce, colour, sq);
+    }
 
-    let (rook_from_sq, rook_to_sq, king_from_sq, king_to_sq) =
-        if mv.is_king_castle() && colour == Colour::White {
-            (Square::H1, Square::F1, Square::E1, Square::G1)
-        } else if mv.is_king_castle() && colour == Colour::Black {
-            (Square::H8, Square::F8, Square::E8, Square::G8)
-        } else if mv.is_queen_castle() && colour == Colour::White {
-            (Square::A1, Square::D1, Square::E1, Square::C1)
-        } else if mv.is_queen_castle() && colour == Colour::Black {
-            (Square::A8, Square::D8, Square::E8, Square::C8)
+    fn move_piece_on_board(&mut self, pce: Piece, from_sq: Square, to_sq: Square) {
+        self.game_state.position_hash ^=
+            self.zobrist_keys
+                .piece_square(pce, self.side_to_move(), from_sq);
+        self.game_state.position_hash ^=
+            self.zobrist_keys
+                .piece_square(pce, self.side_to_move(), to_sq);
+        self.board
+            .move_piece(from_sq, to_sq, pce, self.side_to_move());
+    }
+
+    fn handle_50_move_rule(&mut self, mv: Move, pce_to_move: Piece) {
+        if mv.is_capture() || pce_to_move == Piece::Pawn {
+            self.game_state.fifty_move_cntr = 0;
         } else {
-            panic!("Invalid castle move");
+            self.game_state.fifty_move_cntr += 1;
+        }
+    }
+
+    fn do_castle_move(&mut self, mv: Move) {
+        let colour = self.side_to_move();
+
+        let (rook_from_sq, rook_to_sq, king_from_sq, king_to_sq) =
+            if mv.is_king_castle() && colour == Colour::White {
+                (Square::H1, Square::F1, Square::E1, Square::G1)
+            } else if mv.is_king_castle() && colour == Colour::Black {
+                (Square::H8, Square::F8, Square::E8, Square::G8)
+            } else if mv.is_queen_castle() && colour == Colour::White {
+                (Square::A1, Square::D1, Square::E1, Square::C1)
+            } else if mv.is_queen_castle() && colour == Colour::Black {
+                (Square::A8, Square::D8, Square::E8, Square::C8)
+            } else {
+                panic!("Invalid castle move");
+            };
+
+        self.move_piece_on_board(Piece::King, king_from_sq, king_to_sq);
+        self.move_piece_on_board(Piece::Rook, rook_from_sq, rook_to_sq);
+
+        self.clear_castle_permissions_for_colour(colour);
+    }
+
+    fn clear_castle_permissions_for_colour(&mut self, col: Colour) {
+        match col {
+            Colour::White => {
+                self.game_state.castle_perm.clear_white_king_and_queen();
+                self.game_state.position_hash ^= self
+                    .zobrist_keys
+                    .castle_permission(CastlePermissionType::WhiteKing);
+                self.game_state.position_hash ^= self
+                    .zobrist_keys
+                    .castle_permission(CastlePermissionType::WhiteQueen);
+            }
+            Colour::Black => {
+                self.game_state.castle_perm.clear_black_king_and_queen();
+                self.game_state.position_hash ^= self
+                    .zobrist_keys
+                    .castle_permission(CastlePermissionType::BlackKing);
+                self.game_state.position_hash ^= self
+                    .zobrist_keys
+                    .castle_permission(CastlePermissionType::BlackQueen);
+            }
+        }
+    }
+
+    fn do_double_pawn_move(&mut self, piece: Piece, from_sq: Square, to_sq: Square) {
+        self.move_piece_on_board(piece, from_sq, to_sq);
+
+        let s = self.find_en_passant_sq(from_sq, self.side_to_move());
+        match s {
+            Some(_) => {
+                self.game_state.en_pass_sq = s;
+                self.game_state.position_hash ^= self.zobrist_keys.en_passant(s.unwrap());
+            }
+            None => panic!("Unable to find en passant square"),
+        }
+    }
+
+    fn do_en_passant(&mut self, from_sq: Square, to_sq: Square) {
+        let side_to_move = self.side_to_move();
+        let opposite_side = side_to_move.flip_side();
+
+        let capt_sq = match side_to_move {
+            Colour::White => to_sq.minus_1_rank(),
+            Colour::Black => to_sq.plus_1_rank(),
         };
 
-    move_piece_on_board(position, Piece::King, king_from_sq, king_to_sq);
-    move_piece_on_board(position, Piece::Rook, rook_from_sq, rook_to_sq);
-
-    clear_castle_permissions_for_colour(position, colour);
-}
-
-fn clear_castle_permissions_for_colour(position: &mut Position, col: Colour) {
-    match col {
-        Colour::White => {
-            position.game_state.castle_perm.clear_white_king_and_queen();
-            position.game_state.position_hash ^= position
-                .zobrist_keys
-                .castle_permission(CastlePermissionType::WhiteKing);
-            position.game_state.position_hash ^= position
-                .zobrist_keys
-                .castle_permission(CastlePermissionType::WhiteQueen);
-        }
-        Colour::Black => {
-            position.game_state.castle_perm.clear_black_king_and_queen();
-            position.game_state.position_hash ^= position
-                .zobrist_keys
-                .castle_permission(CastlePermissionType::BlackKing);
-            position.game_state.position_hash ^= position
-                .zobrist_keys
-                .castle_permission(CastlePermissionType::BlackQueen);
-        }
-    }
-}
-
-fn do_double_pawn_move(position: &mut Position, piece: Piece, from_sq: Square, to_sq: Square) {
-    move_piece_on_board(position, piece, from_sq, to_sq);
-
-    let s = find_en_passant_sq(from_sq, position.side_to_move());
-    match s {
-        Some(_) => {
-            position.game_state.en_pass_sq = s;
-            position.game_state.position_hash ^= position.zobrist_keys.en_passant(s.unwrap());
-        }
-        None => panic!("Unable to find en passant square"),
-    }
-}
-
-fn do_en_passant(position: &mut Position, from_sq: Square, to_sq: Square) {
-    let side_to_move = position.side_to_move();
-    let opposite_side = side_to_move.flip_side();
-
-    let capt_sq = match side_to_move {
-        Colour::White => to_sq.minus_1_rank(),
-        Colour::Black => to_sq.plus_1_rank(),
-    };
-
-    match capt_sq {
-        Some(_) => {
-            remove_piece_from_board(position, Piece::Pawn, opposite_side, capt_sq.unwrap());
-            move_piece_on_board(position, Piece::Pawn, from_sq, to_sq);
-        }
-        None => panic!("Invalid capture square for en passant move"),
-    }
-}
-
-fn do_promotion(
-    position: &mut Position,
-    mv: Move,
-    from_sq: Square,
-    to_sq: Square,
-    source_pce: Piece,
-) {
-    if mv.is_capture() {
-        if let Some((piece, colour)) = position.board.get_piece_on_square(to_sq) {
-            remove_piece_from_board(position, piece, colour, to_sq);
-        } else {
-            panic!("Capture, but square is empty");
+        match capt_sq {
+            Some(_) => {
+                self.remove_piece_from_board(Piece::Pawn, opposite_side, capt_sq.unwrap());
+                self.move_piece_on_board(Piece::Pawn, from_sq, to_sq);
+            }
+            None => panic!("Invalid capture square for en passant move"),
         }
     }
 
-    let target_pce = mv.decode_promotion_piece();
-    remove_piece_from_board(position, source_pce, position.side_to_move(), from_sq);
-    add_piece_to_board(position, target_pce, position.side_to_move(), to_sq);
-}
+    fn do_promotion(&mut self, mv: Move, from_sq: Square, to_sq: Square, source_pce: Piece) {
+        if mv.is_capture() {
+            let opposite_side = self.side_to_move().flip_side();
+            if let Some(piece) = self.board.get_piece_type_on_square(to_sq) {
+                self.remove_piece_from_board(piece, opposite_side, to_sq);
+            } else {
+                panic!("Capture, but square is empty");
+            }
+        }
 
-fn do_capture_move(
-    position: &mut Position,
-    piece_to_move: Piece,
-    from_sq: Square,
-    to_sq: Square,
-    capt_pce: Piece,
-) {
-    remove_piece_from_board(
-        position,
-        capt_pce,
-        position.side_to_move().flip_side(),
-        to_sq,
-    );
-    move_piece_on_board(position, piece_to_move, from_sq, to_sq);
+        let target_pce = mv.decode_promotion_piece();
+        self.remove_piece_from_board(source_pce, self.side_to_move(), from_sq);
+        self.add_piece_to_board(target_pce, self.side_to_move(), to_sq);
+    }
+
+    fn do_capture_move(
+        &mut self,
+        piece_to_move: Piece,
+        from_sq: Square,
+        to_sq: Square,
+        capt_pce: Piece,
+    ) {
+        self.remove_piece_from_board(capt_pce, self.side_to_move().flip_side(), to_sq);
+        self.move_piece_on_board(piece_to_move, from_sq, to_sq);
+    }
 }
 
 impl fmt::Display for MoveLegality {
@@ -642,7 +669,7 @@ impl<'a> fmt::Debug for Position<'_> {
         debug_str.push_str(&format!("Board : {}\n", self.board()));
         debug_str.push_str(&format!("SideToMove : {}\n", self.game_state.side_to_move));
         if self.game_state.en_pass_sq.is_none() {
-            debug_str.push_str(&"En pass Sq : -\n".to_string());
+            debug_str.push_str("En pass Sq : -\n");
         } else {
             debug_str.push_str(&format!(
                 "En pass Sq : {}\n",
@@ -714,6 +741,7 @@ mod tests {
     use crate::board::square::Square;
     use crate::io::fen;
     use crate::moves::mov::*;
+    use crate::position::attack_checker::AttackChecker;
     use crate::position::game_position::MoveLegality;
     use crate::position::game_position::Position;
     use crate::position::zobrist_keys::ZobristKeys;
@@ -727,6 +755,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -736,6 +765,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let before_hash = pos.game_state.position_hash;
@@ -769,6 +799,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -778,6 +809,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         // initially no history
@@ -797,6 +829,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -806,6 +839,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         // initially correct side
@@ -824,6 +858,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -833,6 +868,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         // set to some value
@@ -852,6 +888,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -861,12 +898,13 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        if let Some((piece, _)) = pos.board.get_piece_on_square(Square::E5) {
+        if let Some(piece) = pos.board.get_piece_type_on_square(Square::E5) {
             assert_eq!(piece, Piece::Pawn);
         } else {
-            assert!(false);
+            panic!("piece not found");
         }
 
         // set to some value
@@ -886,6 +924,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -895,12 +934,13 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        if let Some((piece, _)) = pos.board.get_piece_on_square(Square::C4) {
+        if let Some(piece) = pos.board.get_piece_type_on_square(Square::C4) {
             assert_eq!(piece, Piece::Bishop);
         } else {
-            assert!(false);
+            panic!("piece not found");
         }
 
         // set to some value
@@ -921,6 +961,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -930,21 +971,90 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        if let Some((piece, _)) = pos.board.get_piece_on_square(Square::C4) {
+        if let Some(piece) = pos.board.get_piece_type_on_square(Square::C4) {
             assert_eq!(piece, Piece::Bishop);
         } else {
-            assert!(false);
+            panic!("piece not found");
         }
 
         let expected_half_move = pos.game_state.move_cntr.half_move() + 1;
-        let expected_full_move = pos.game_state.move_cntr.full_move() + 1;
 
         let mv = Move::encode_move_quiet(Square::C4, Square::D5);
         pos.make_move(mv);
 
         assert_eq!(expected_half_move, pos.game_state.move_cntr.half_move());
+    }
+
+    #[test]
+    pub fn make_move_full_move_cntr_not_incremented_on_white_move() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 21 32";
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
+        let zobrist_keys = ZobristKeys::new();
+        let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
+
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &occ_masks,
+            &attack_checker,
+        );
+
+        if let Some(piece) = pos.board.get_piece_type_on_square(Square::C4) {
+            assert_eq!(piece, Piece::Bishop);
+        } else {
+            panic!("piece not found");
+        }
+
+        let expected_full_move = pos.game_state.move_cntr.full_move();
+
+        let mv = Move::encode_move_quiet(Square::C4, Square::D5);
+        pos.make_move(mv);
+
+        assert_eq!(expected_full_move, pos.game_state.move_cntr.full_move());
+    }
+
+    #[test]
+    pub fn make_move_full_move_cntr_incremented_on_black_move() {
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b - - 21 32";
+        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
+            fen::decompose_fen(fen);
+
+        let zobrist_keys = ZobristKeys::new();
+        let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
+
+        let mut pos = Position::new(
+            board,
+            castle_permissions,
+            move_cntr,
+            en_pass_sq,
+            side_to_move,
+            &zobrist_keys,
+            &occ_masks,
+            &attack_checker,
+        );
+
+        if let Some(piece) = pos.board.get_piece_type_on_square(Square::G7) {
+            assert_eq!(piece, Piece::Bishop);
+        } else {
+            panic!("piece not found");
+        }
+
+        let expected_full_move = pos.game_state.move_cntr.full_move() + 1;
+
+        let mv = Move::encode_move_quiet(Square::G7, Square::F6);
+        pos.make_move(mv);
+
         assert_eq!(expected_full_move, pos.game_state.move_cntr.full_move());
     }
 
@@ -956,6 +1066,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -965,6 +1076,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert!(is_piece_on_square_as_expected(
@@ -998,6 +1110,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1007,6 +1120,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert!(is_piece_on_square_as_expected(
@@ -1040,6 +1154,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1049,6 +1164,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert!(pos.castle_permissions().is_white_king_set());
@@ -1095,6 +1211,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1104,6 +1221,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert!(pos.castle_permissions().is_black_king_set());
@@ -1150,6 +1268,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1159,6 +1278,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert!(pos.castle_permissions().is_white_queen_set());
@@ -1204,6 +1324,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1213,6 +1334,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert!(pos.castle_permissions().is_black_queen_set());
@@ -1259,6 +1381,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1268,6 +1391,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert_eq!(pos.en_passant_square(), Some(Square::B3));
@@ -1306,6 +1430,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1315,6 +1440,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert_eq!(pos.en_passant_square(), Some(Square::D6));
@@ -1356,6 +1482,7 @@ mod tests {
 
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
+            let attack_checker = AttackChecker::new();
 
             let mut pos = Position::new(
                 board,
@@ -1365,6 +1492,7 @@ mod tests {
                 side_to_move,
                 &zobrist_keys,
                 &occ_masks,
+                &attack_checker,
             );
 
             // check pre-conditions
@@ -1399,6 +1527,7 @@ mod tests {
 
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
+            let attack_checker = AttackChecker::new();
 
             let mut pos = Position::new(
                 board,
@@ -1408,6 +1537,7 @@ mod tests {
                 side_to_move,
                 &zobrist_keys,
                 &occ_masks,
+                &attack_checker,
             );
 
             // check pre-conditions
@@ -1442,6 +1572,7 @@ mod tests {
 
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
+            let attack_checker = AttackChecker::new();
 
             let mut pos = Position::new(
                 board,
@@ -1451,6 +1582,7 @@ mod tests {
                 side_to_move,
                 &zobrist_keys,
                 &occ_masks,
+                &attack_checker,
             );
             // check pre-conditions
             assert!(is_sq_empty(&pos, Square::D1));
@@ -1479,6 +1611,7 @@ mod tests {
 
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
+            let attack_checker = AttackChecker::new();
 
             let mut pos = Position::new(
                 board,
@@ -1488,6 +1621,7 @@ mod tests {
                 side_to_move,
                 &zobrist_keys,
                 &occ_masks,
+                &attack_checker,
             );
 
             // check pre-conditions
@@ -1526,6 +1660,7 @@ mod tests {
 
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
+            let attack_checker = AttackChecker::new();
 
             let mut pos = Position::new(
                 board,
@@ -1535,6 +1670,7 @@ mod tests {
                 side_to_move,
                 &zobrist_keys,
                 &occ_masks,
+                &attack_checker,
             );
 
             let mv = Move::encode_move_castle_kingside_white();
@@ -1566,6 +1702,7 @@ mod tests {
 
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
+            let attack_checker = AttackChecker::new();
 
             let mut pos = Position::new(
                 board,
@@ -1575,6 +1712,7 @@ mod tests {
                 side_to_move,
                 &zobrist_keys,
                 &occ_masks,
+                &attack_checker,
             );
 
             let mv = Move::encode_move_castle_queenside_white();
@@ -1603,6 +1741,7 @@ mod tests {
 
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
+            let attack_checker = AttackChecker::new();
 
             let mut pos = Position::new(
                 board,
@@ -1612,6 +1751,7 @@ mod tests {
                 side_to_move,
                 &zobrist_keys,
                 &occ_masks,
+                &attack_checker,
             );
 
             let mv = Move::encode_move_castle_kingside_black();
@@ -1640,6 +1780,7 @@ mod tests {
 
             let zobrist_keys = ZobristKeys::new();
             let occ_masks = OccupancyMasks::new();
+            let attack_checker = AttackChecker::new();
 
             let mut pos = Position::new(
                 board,
@@ -1649,6 +1790,7 @@ mod tests {
                 side_to_move,
                 &zobrist_keys,
                 &occ_masks,
+                &attack_checker,
             );
 
             let mv = Move::encode_move_castle_queenside_black();
@@ -1667,6 +1809,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1676,6 +1819,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert!(pos.castle_permissions().is_white_king_set());
@@ -1699,6 +1843,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1708,6 +1853,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert!(pos.castle_permissions().is_white_king_set());
@@ -1731,6 +1877,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1740,6 +1887,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert!(pos.castle_permissions().is_white_king_set());
@@ -1763,6 +1911,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1772,6 +1921,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert!(pos.castle_permissions().is_black_king_set());
@@ -1795,6 +1945,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1804,6 +1955,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert!(pos.castle_permissions().is_black_king_set());
@@ -1827,6 +1979,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1836,6 +1989,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         assert!(pos.castle_permissions().is_black_king_set());
@@ -1867,6 +2021,7 @@ mod tests {
 
         let zobrist_keys1 = ZobristKeys::new();
         let occ_masks1 = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos1 = Position::new(
             board1,
@@ -1876,6 +2031,7 @@ mod tests {
             side_to_move1,
             &zobrist_keys1,
             &occ_masks1,
+            &attack_checker,
         );
 
         let (board2, move_cntr2, castle_permissions2, side_to_move2, en_pass_sq2) =
@@ -1892,6 +2048,7 @@ mod tests {
             side_to_move2,
             &zobrist_keys1,
             &occ_masks2,
+            &attack_checker,
         );
 
         for mv in ml {
@@ -1922,6 +2079,7 @@ mod tests {
 
         let zobrist_keys1 = ZobristKeys::new();
         let occ_masks1 = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos1 = Position::new(
             board1,
@@ -1931,6 +2089,7 @@ mod tests {
             side_to_move1,
             &zobrist_keys1,
             &occ_masks1,
+            &attack_checker,
         );
 
         let (board2, move_cntr2, castle_permissions2, side_to_move2, en_pass_sq2) =
@@ -1947,6 +2106,7 @@ mod tests {
             side_to_move2,
             &zobrist_keys1,
             &occ_masks2,
+            &attack_checker,
         );
 
         // initial states are the same
@@ -1971,6 +2131,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1980,6 +2141,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
         let init_hash = pos.position_hash();
 
@@ -2005,6 +2167,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -2014,6 +2177,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
         let init_hash = pos.position_hash();
 
@@ -2039,6 +2203,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -2048,6 +2213,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
         let init_hash = pos.position_hash();
 
@@ -2071,6 +2237,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -2080,6 +2247,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
         let init_hash = pos.position_hash();
 
@@ -2103,6 +2271,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -2112,6 +2281,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
         let init_hash = pos.position_hash();
 
@@ -2140,6 +2310,7 @@ mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -2149,6 +2320,7 @@ mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
         let init_hash = pos.position_hash();
 
@@ -2175,7 +2347,7 @@ mod tests {
         pce: Piece,
         colour: Colour,
     ) -> bool {
-        if let Some((piece, col)) = pos.board.get_piece_on_square(sq) {
+        if let Some((piece, col)) = pos.board.get_piece_and_colour_on_square(sq) {
             if piece != pce {
                 return false;
             }
@@ -2188,8 +2360,8 @@ mod tests {
     }
 
     fn is_sq_empty(pos: &Position, sq: Square) -> bool {
-        let square_contents = pos.board.get_piece_on_square(sq);
-        if square_contents.is_some() {
+        let pce = pos.board.get_piece_type_on_square(sq);
+        if pce.is_some() {
             return false;
         }
 

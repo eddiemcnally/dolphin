@@ -286,6 +286,6 @@ mod tests {
         fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b q - 0 0";
         piece_pos = fen.split(' ').collect();
         let no_enp_sq = get_en_passant_sq(piece_pos[FEN_EN_PASSANT]);
-        assert!(!no_enp_sq.is_some());
+        assert!(no_enp_sq.is_none());
     }
 }

@@ -2,7 +2,6 @@ use crate::board::bitboard::Bitboard;
 use crate::board::file::File;
 use crate::board::game_board::Board;
 use crate::board::rank::Rank;
-use crate::board::square;
 use crate::board::square::Square;
 use crate::core::types::ToInt;
 use std::ops::Shl;
@@ -176,7 +175,7 @@ fn get_horizontal_move_mask(sq: Square) -> Bitboard {
 fn populate_knight_occupancy_mask_array() -> [Bitboard; Board::NUM_SQUARES] {
     let mut retval: [Bitboard; Board::NUM_SQUARES] = [Bitboard::default(); Board::NUM_SQUARES];
 
-    for sq in square::iterator() {
+    for sq in Square::iterator() {
         let mut bb = Bitboard::new(0);
 
         let rank = sq.rank();
@@ -232,7 +231,7 @@ fn set_bb_if_sq_valid(rank: Option<Rank>, file: Option<File>, bb: &mut Bitboard)
 fn populate_king_mask_array() -> [Bitboard; Board::NUM_SQUARES] {
     let mut retval: [Bitboard; Board::NUM_SQUARES] = [Bitboard::default(); Board::NUM_SQUARES];
 
-    for sq in square::iterator() {
+    for sq in Square::iterator() {
         let mut bb = Bitboard::new(0);
 
         let rank = sq.rank();
@@ -280,7 +279,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; Board::NUM_SQUARES] 
     let mut retval: [DiagonalAntidiagonal; Board::NUM_SQUARES] =
         [DiagonalAntidiagonal::default(); Board::NUM_SQUARES];
 
-    for sq in square::iterator() {
+    for sq in Square::iterator() {
         let mut bb = Bitboard::new(0);
         let mut rank = sq.rank();
         let mut file = sq.file();
@@ -325,7 +324,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; Board::NUM_SQUARES] 
         retval[sq.to_usize()].diag_mask = bb;
     }
 
-    for sq in square::iterator() {
+    for sq in Square::iterator() {
         let mut bb = Bitboard::new(0);
 
         let mut rank = sq.rank();
@@ -388,8 +387,8 @@ fn populate_intervening_bitboard_array() -> [[Bitboard; Board::NUM_SQUARES]; Boa
 
     let mut retval = [[Bitboard::default(); Board::NUM_SQUARES]; Board::NUM_SQUARES];
 
-    for sq1 in square::iterator() {
-        for sq2 in square::iterator() {
+    for sq1 in Square::iterator() {
+        for sq2 in Square::iterator() {
             let btwn = (M1.shl(sq1.to_usize() as u8)) ^ (M1.shl(sq2.to_usize() as u8));
             let file = (sq2.to_usize() as u64 & 7).wrapping_sub(sq1.to_usize() as u64 & 7);
             let rank = ((sq2.to_usize() as u64 | 7).wrapping_sub(sq1.to_usize() as u64)) >> 3;

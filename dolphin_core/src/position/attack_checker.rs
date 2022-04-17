@@ -5,187 +5,188 @@ use crate::board::occupancy_masks::OccupancyMasks;
 use crate::board::piece::Piece;
 use crate::board::square::Square;
 
-pub fn is_sq_attacked(
-    occ_masks: &OccupancyMasks,
-    board: &Board,
-    sq: Square,
-    attacking_side: Colour,
-) -> bool {
-    match attacking_side {
-        Colour::White => {
-            let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::White);
-            if !pawn_bb.is_empty() && is_attacked_by_pawn_white(occ_masks, pawn_bb, sq) {
+#[derive(Default, Eq, PartialEq, Clone, Copy)]
+pub struct AttackChecker {}
+
+impl AttackChecker {
+    pub fn new() -> AttackChecker {
+        AttackChecker::default()
+    }
+
+    pub fn is_sq_attacked(
+        &self,
+        occ_masks: &OccupancyMasks,
+        board: &Board,
+        sq: Square,
+        attacking_side: Colour,
+    ) -> bool {
+        match attacking_side {
+            Colour::White => {
+                let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::White);
+                let wp_attacking_square = occ_masks.get_occ_mask_white_pawns_attacking_sq(sq);
+                if !(pawn_bb & wp_attacking_square).is_empty() {
+                    return true;
+                }
+
+                let knight_bb = board.get_piece_bitboard(Piece::Knight, Colour::White);
+                for from_sq in knight_bb.iterator() {
+                    if occ_masks.get_occupancy_mask_knight(from_sq).is_set(sq) {
+                        return true;
+                    }
+                }
+
+                let horiz_vert_bb = board.get_white_rook_queen_bitboard();
+                let all_pce_bb = board.get_bitboard();
+                // check to see if the sqaure being attacked shares a rank or file
+                // with any of the rooks or queens before doing a detailed analysis
+                // of potential blocking pieces
+                let horiz_vert_sq_mask =
+                    occ_masks.get_vertical_mask(sq) | occ_masks.get_horizontal_mask(sq);
+                let shares_rank_or_file = !(horiz_vert_bb & horiz_vert_sq_mask).is_empty();
+                if shares_rank_or_file
+                    && self.is_horizontal_or_vertical_attacking(
+                        occ_masks,
+                        all_pce_bb,
+                        horiz_vert_bb,
+                        sq,
+                    )
+                {
+                    return true;
+                }
+
+                let diag_bb = board.get_white_bishop_queen_bitboard();
+                // check to see if the sqaure being attacked shares a diagonal
+                // with any of the bishops or queens before doing a detailed analysis
+                // of potential blocking pieces
+                let diag_occ_masks = occ_masks.get_diag_antidiag_mask(sq);
+                let sq_mask = diag_occ_masks.get_anti_diag_mask() | diag_occ_masks.get_diag_mask();
+                if !(sq_mask & diag_bb).is_empty() {
+                    // possible attack, check for blocking pieces
+                    if self.is_diagonally_attacked(occ_masks, sq, diag_bb, all_pce_bb) {
+                        return true;
+                    }
+                }
+
+                let king_sq = board.get_king_sq(Colour::White);
+                if occ_masks.get_occupancy_mask_king(king_sq).is_set(sq) {
+                    return true;
+                }
+            }
+            Colour::Black => {
+                let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::Black);
+                let bp_attacking_square = occ_masks.get_occ_mask_black_pawns_attacking_sq(sq);
+                if !(pawn_bb & bp_attacking_square).is_empty() {
+                    return true;
+                }
+
+                let knight_bb = board.get_piece_bitboard(Piece::Knight, Colour::Black);
+                for from_sq in knight_bb.iterator() {
+                    if occ_masks.get_occupancy_mask_knight(from_sq).is_set(sq) {
+                        return true;
+                    }
+                }
+
+                let horiz_vert_bb = board.get_black_rook_queen_bitboard();
+                let all_pce_bb = board.get_bitboard();
+                // check to see if the sqaure being attacked shares a rank or file
+                // with any of the rooks or queens before doing a detailed analysis
+                // of potential blocking pieces
+                let horiz_vert_sq_mask =
+                    occ_masks.get_vertical_mask(sq) | occ_masks.get_horizontal_mask(sq);
+                let shares_rank_or_file = !(horiz_vert_bb & horiz_vert_sq_mask).is_empty();
+                if shares_rank_or_file
+                    && self.is_horizontal_or_vertical_attacking(
+                        occ_masks,
+                        all_pce_bb,
+                        horiz_vert_bb,
+                        sq,
+                    )
+                {
+                    return true;
+                }
+
+                let diag_bb = board.get_black_bishop_queen_bitboard();
+                // check to see if the sqaure being attacked shares a diagonal
+                // with any of the bishops or queens before doing a detailed analysis
+                // of potential blocking pieces
+                let diag_occ_masks = occ_masks.get_diag_antidiag_mask(sq);
+                let sq_mask = diag_occ_masks.get_anti_diag_mask() | diag_occ_masks.get_diag_mask();
+                if !(sq_mask & diag_bb).is_empty() {
+                    // possible attack, check for blocking pieces
+                    if self.is_diagonally_attacked(occ_masks, sq, diag_bb, all_pce_bb) {
+                        return true;
+                    }
+                }
+
+                let king_sq = board.get_king_sq(Colour::Black);
+                if occ_masks.get_occupancy_mask_king(king_sq).is_set(sq) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    pub fn is_castle_squares_attacked(
+        &self,
+        occ_masks: &OccupancyMasks,
+        board: &Board,
+        sq_array: &[Square],
+        attacking_side: Colour,
+    ) -> bool {
+        for sq in sq_array {
+            if self.is_sq_attacked(occ_masks, board, *sq, attacking_side) {
                 return true;
             }
+        }
 
-            let knight_bb = board.get_piece_bitboard(Piece::Knight, Colour::White);
-            if !knight_bb.is_empty() && is_knight_attacking(occ_masks, knight_bb, sq) {
-                return true;
+        false
+    }
+
+    fn is_horizontal_or_vertical_attacking(
+        &self,
+        occ_masks: &OccupancyMasks,
+        all_piece_bb: Bitboard,
+        attack_pce_bb: Bitboard,
+        attack_sq: Square,
+    ) -> bool {
+        for pce_sq in attack_pce_bb.iterator() {
+            if pce_sq.same_rank(attack_sq) || pce_sq.same_file(attack_sq) {
+                // potentially attacking
+                let blocking_pces = occ_masks.get_inbetween_squares(pce_sq, attack_sq);
+                if (blocking_pces & all_piece_bb).is_empty() {
+                    // no blocking pieces, attacked
+                    return true;
+                }
             }
+        }
+        false
+    }
 
-            let horiz_vert_bb = board.get_white_rook_queen_bitboard();
-            let all_pce_bb = board.get_bitboard();
-            if !horiz_vert_bb.is_empty()
-                && is_horizontal_or_vertical_attacking(occ_masks, all_pce_bb, horiz_vert_bb, sq)
+    fn is_diagonally_attacked(
+        &self,
+        occ_masks: &OccupancyMasks,
+        attack_sq: Square,
+        diag_bb: Bitboard,
+        all_pce_bb: Bitboard,
+    ) -> bool {
+        for pce_sq in diag_bb.iterator() {
+            // diagonal mask will also work for queen
+            if occ_masks
+                .get_occupancy_mask_bishop(pce_sq)
+                .is_set(attack_sq)
             {
-                return true;
-            }
-
-            let diag_bb = board.get_white_bishop_queen_bitboard();
-            if !diag_bb.is_empty() && is_diagonally_attacked(occ_masks, sq, diag_bb, all_pce_bb) {
-                return true;
-            }
-
-            let king_sq = board.get_king_sq(Colour::White);
-            if is_attacked_by_king(occ_masks, king_sq, sq) {
-                return true;
+                // potentially attacking....ie, sharing a diagonal
+                let blocking_pces = occ_masks.get_inbetween_squares(pce_sq, attack_sq);
+                if (blocking_pces & all_pce_bb).is_empty() {
+                    // no blocking pieces, attacked
+                    return true;
+                }
             }
         }
-        Colour::Black => {
-            let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::Black);
-            if !pawn_bb.is_empty() && is_attacked_by_pawn_black(occ_masks, pawn_bb, sq) {
-                return true;
-            }
 
-            let knight_bb = board.get_piece_bitboard(Piece::Knight, Colour::Black);
-            if !knight_bb.is_empty() && is_knight_attacking(occ_masks, knight_bb, sq) {
-                return true;
-            }
-
-            let horiz_vert_bb = board.get_black_rook_queen_bitboard();
-            let all_pce_bb = board.get_bitboard();
-            if !horiz_vert_bb.is_empty()
-                && is_horizontal_or_vertical_attacking(occ_masks, all_pce_bb, horiz_vert_bb, sq)
-            {
-                return true;
-            }
-
-            let diag_bb = board.get_black_bishop_queen_bitboard();
-            if !diag_bb.is_empty() && is_diagonally_attacked(occ_masks, sq, diag_bb, all_pce_bb) {
-                return true;
-            }
-
-            let king_sq = board.get_king_sq(Colour::Black);
-            if is_attacked_by_king(occ_masks, king_sq, sq) {
-                return true;
-            }
-        }
+        false
     }
-    false
-}
-
-pub fn is_castle_squares_attacked(
-    occ_masks: &OccupancyMasks,
-    board: &Board,
-    sq_array: &[Square],
-    attacking_side: Colour,
-) -> bool {
-    for sq in sq_array {
-        if is_sq_attacked(occ_masks, board, *sq, attacking_side) {
-            return true;
-        }
-    }
-
-    false
-}
-
-fn is_knight_attacking(
-    occ_masks: &OccupancyMasks,
-    pce_bitboard: Bitboard,
-    attack_sq: Square,
-) -> bool {
-    for sq in pce_bitboard.iterator() {
-        if occ_masks.get_occupancy_mask_knight(sq).is_set(attack_sq) {
-            return true;
-        }
-    }
-    false
-}
-
-fn is_horizontal_or_vertical_attacking(
-    occ_masks: &OccupancyMasks,
-    all_piece_bb: Bitboard,
-    attack_pce_bb: Bitboard,
-    attack_sq: Square,
-) -> bool {
-    // do a quick check to see if any piece is sharing a rank and file
-    // with the square
-    let vert_occ_masks = occ_masks.get_vertical_mask(attack_sq);
-    let horiz_occ_masks = occ_masks.get_horizontal_mask(attack_sq);
-    let horiz_vert_sq_mask = vert_occ_masks | horiz_occ_masks;
-    if (attack_pce_bb & horiz_vert_sq_mask).is_empty() {
-        // no diagonals shared
-        return false;
-    }
-
-    for pce_sq in attack_pce_bb.iterator() {
-        if pce_sq.same_rank(attack_sq) || pce_sq.same_file(attack_sq) {
-            // potentially attacking
-            let blocking_pces = occ_masks.get_inbetween_squares(pce_sq, attack_sq);
-            if (blocking_pces & all_piece_bb).is_empty() {
-                // no blocking pieces, attacked
-                return true;
-            }
-        }
-    }
-    false
-}
-
-fn is_diagonally_attacked(
-    occ_masks: &OccupancyMasks,
-    attack_sq: Square,
-    diag_bb: Bitboard,
-    all_pce_bb: Bitboard,
-) -> bool {
-    // do a quick check to see if any piece is sharing a diagonal with
-    // the square
-    let diag_occ_masks = occ_masks.get_diag_antidiag_mask(attack_sq);
-    let sq_mask = diag_occ_masks.get_anti_diag_mask() | diag_occ_masks.get_diag_mask();
-    if (sq_mask & diag_bb).is_empty() {
-        // no diagonals shared
-        return false;
-    }
-
-    for pce_sq in diag_bb.iterator() {
-        // diagonal mask will also work for queen
-        if occ_masks
-            .get_occupancy_mask_bishop(pce_sq)
-            .is_set(attack_sq)
-        {
-            // potentially attacking....ie, sharing a diagonal
-            let blocking_pces = occ_masks.get_inbetween_squares(pce_sq, attack_sq);
-            if (blocking_pces & all_pce_bb).is_empty() {
-                // no blocking pieces, attacked
-                return true;
-            }
-        }
-    }
-
-    false
-}
-
-fn is_attacked_by_king(occ_masks: &OccupancyMasks, king_sq: Square, attacked_sq: Square) -> bool {
-    occ_masks
-        .get_occupancy_mask_king(king_sq)
-        .is_set(attacked_sq)
-}
-
-fn is_attacked_by_pawn_white(
-    occ_masks: &OccupancyMasks,
-    pawn_bb: Bitboard,
-    attacked_sq: Square,
-) -> bool {
-    let wp_attacking_square = occ_masks.get_occ_mask_white_pawns_attacking_sq(attacked_sq);
-    !(pawn_bb & wp_attacking_square).is_empty()
-}
-
-fn is_attacked_by_pawn_black(
-    occ_masks: &OccupancyMasks,
-    pawn_bb: Bitboard,
-    attacked_sq: Square,
-) -> bool {
-    let bp_attacking_square = occ_masks.get_occ_mask_black_pawns_attacking_sq(attacked_sq);
-    !(pawn_bb & bp_attacking_square).is_empty()
 }
 
 #[cfg(test)]
@@ -194,7 +195,7 @@ pub mod tests {
     use crate::board::occupancy_masks::OccupancyMasks;
     use crate::board::square::*;
     use crate::io::fen;
-    use crate::position::attack_checker;
+    use crate::position::attack_checker::AttackChecker;
     use crate::position::game_position::Position;
     use crate::position::zobrist_keys::ZobristKeys;
 
@@ -206,6 +207,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -215,14 +217,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_sq_attacked(
-            &occ_masks,
-            pos.board(),
-            Square::G5,
-            Colour::White
-        ));
+        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::G5, Colour::White));
     }
 
     #[test]
@@ -233,6 +231,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -242,14 +241,9 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
-
-        assert!(attack_checker::is_sq_attacked(
-            &occ_masks,
-            pos.board(),
-            Square::H4,
-            Colour::Black
-        ));
+        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::H4, Colour::Black));
     }
 
     #[test]
@@ -260,6 +254,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -269,14 +264,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_sq_attacked(
-            &occ_masks,
-            pos.board(),
-            Square::E5,
-            Colour::White
-        ));
+        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E5, Colour::White));
     }
 
     #[test]
@@ -287,6 +278,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -296,14 +288,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_sq_attacked(
-            &occ_masks,
-            pos.board(),
-            Square::E3,
-            Colour::Black
-        ));
+        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E3, Colour::Black));
     }
 
     #[test]
@@ -314,6 +302,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -323,14 +312,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_sq_attacked(
-            &occ_masks,
-            pos.board(),
-            Square::E5,
-            Colour::White
-        ));
+        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E5, Colour::White));
     }
 
     #[test]
@@ -341,6 +326,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -350,14 +336,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_sq_attacked(
-            &occ_masks,
-            pos.board(),
-            Square::E3,
-            Colour::Black
-        ));
+        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E3, Colour::Black));
     }
 
     #[test]
@@ -368,6 +350,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -377,14 +360,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_sq_attacked(
-            &occ_masks,
-            pos.board(),
-            Square::E5,
-            Colour::White
-        ));
+        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E5, Colour::White));
     }
 
     #[test]
@@ -395,6 +374,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -404,14 +384,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_sq_attacked(
-            &occ_masks,
-            pos.board(),
-            Square::E3,
-            Colour::Black
-        ));
+        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E3, Colour::Black));
     }
 
     #[test]
@@ -422,6 +398,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -431,14 +408,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_sq_attacked(
-            &occ_masks,
-            pos.board(),
-            Square::E5,
-            Colour::White
-        ));
+        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E5, Colour::White));
     }
 
     #[test]
@@ -449,6 +422,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -458,14 +432,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_sq_attacked(
-            &occ_masks,
-            pos.board(),
-            Square::E3,
-            Colour::Black
-        ));
+        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E3, Colour::Black));
     }
 
     #[test]
@@ -476,6 +446,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -485,14 +456,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_sq_attacked(
-            &occ_masks,
-            pos.board(),
-            Square::B5,
-            Colour::White
-        ));
+        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::B5, Colour::White));
     }
 
     #[test]
@@ -503,6 +470,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -512,14 +480,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_sq_attacked(
-            &occ_masks,
-            pos.board(),
-            Square::F5,
-            Colour::Black
-        ));
+        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::F5, Colour::Black));
     }
 
     #[test]
@@ -532,6 +496,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -541,9 +506,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -561,6 +527,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -570,9 +537,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -590,6 +558,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -599,9 +568,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -619,6 +589,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -628,9 +599,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -648,6 +620,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -657,9 +630,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -677,6 +651,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -686,9 +661,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -706,6 +682,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -715,9 +692,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -735,6 +713,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -744,9 +723,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -764,6 +744,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -773,9 +754,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -793,6 +775,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -802,9 +785,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -822,6 +806,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -831,9 +816,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -851,6 +837,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -860,9 +847,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -880,6 +868,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -889,9 +878,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
@@ -909,6 +899,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -918,9 +909,10 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
-        assert!(attack_checker::is_castle_squares_attacked(
+        assert!(attack_checker.is_castle_squares_attacked(
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,

@@ -127,6 +127,8 @@ impl fmt::Debug for Rank {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::core::types::ToInt;
+
     use super::Rank;
     use std::collections::HashMap;
 
@@ -153,8 +155,8 @@ pub mod tests {
 
     #[test]
     pub fn rank_as_u8() {
-        assert!(Rank::R1.0 as u8 == 0);
-        assert!(Rank::R8.0 as u8 == 7);
+        assert!(Rank::R1.to_u8() == 0);
+        assert!(Rank::R8.to_u8() == 7);
     }
 
     #[test]

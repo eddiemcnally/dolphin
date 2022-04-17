@@ -113,6 +113,8 @@ impl fmt::Debug for File {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::core::types::ToInt;
+
     use super::File;
     use std::collections::HashMap;
 
@@ -135,6 +137,54 @@ pub mod tests {
     }
 
     #[test]
+    pub fn add_one() {
+        assert_eq!(File::A.add_one().unwrap(), File::B);
+        assert_eq!(File::B.add_one().unwrap(), File::C);
+        assert_eq!(File::C.add_one().unwrap(), File::D);
+        assert_eq!(File::D.add_one().unwrap(), File::E);
+        assert_eq!(File::E.add_one().unwrap(), File::F);
+        assert_eq!(File::F.add_one().unwrap(), File::G);
+        assert_eq!(File::G.add_one().unwrap(), File::H);
+        assert!(File::H.add_one().is_none());
+    }
+
+    #[test]
+    pub fn add_two() {
+        assert_eq!(File::A.add_two().unwrap(), File::C);
+        assert_eq!(File::B.add_two().unwrap(), File::D);
+        assert_eq!(File::C.add_two().unwrap(), File::E);
+        assert_eq!(File::D.add_two().unwrap(), File::F);
+        assert_eq!(File::E.add_two().unwrap(), File::G);
+        assert_eq!(File::F.add_two().unwrap(), File::H);
+        assert!(File::G.add_two().is_none());
+        assert!(File::H.add_two().is_none());
+    }
+
+    #[test]
+    pub fn subract_one() {
+        assert!(File::A.subtract_one().is_none());
+        assert_eq!(File::B.subtract_one().unwrap(), File::A);
+        assert_eq!(File::C.subtract_one().unwrap(), File::B);
+        assert_eq!(File::D.subtract_one().unwrap(), File::C);
+        assert_eq!(File::E.subtract_one().unwrap(), File::D);
+        assert_eq!(File::F.subtract_one().unwrap(), File::E);
+        assert_eq!(File::G.subtract_one().unwrap(), File::F);
+        assert_eq!(File::H.subtract_one().unwrap(), File::G);
+    }
+
+    #[test]
+    pub fn subract_two() {
+        assert!(File::A.subtract_two().is_none());
+        assert!(File::B.subtract_two().is_none());
+        assert_eq!(File::C.subtract_two().unwrap(), File::A);
+        assert_eq!(File::D.subtract_two().unwrap(), File::B);
+        assert_eq!(File::E.subtract_two().unwrap(), File::C);
+        assert_eq!(File::F.subtract_two().unwrap(), File::D);
+        assert_eq!(File::G.subtract_two().unwrap(), File::E);
+        assert_eq!(File::H.subtract_two().unwrap(), File::F);
+    }
+
+    #[test]
     pub fn file_from_char() {
         let map = get_file_map();
         for (file, ch) in map {
@@ -150,6 +200,33 @@ pub mod tests {
             let cc = file.to_char();
             assert_eq!(cc, ch);
         }
+    }
+
+    #[test]
+    pub fn file_to_int() {
+        assert_eq!(File::A.to_u8(), 0);
+        assert_eq!(File::A.to_usize(), 0);
+
+        assert_eq!(File::B.to_u8(), 1);
+        assert_eq!(File::B.to_usize(), 1);
+
+        assert_eq!(File::C.to_u8(), 2);
+        assert_eq!(File::C.to_usize(), 2);
+
+        assert_eq!(File::D.to_u8(), 3);
+        assert_eq!(File::D.to_usize(), 3);
+
+        assert_eq!(File::E.to_u8(), 4);
+        assert_eq!(File::E.to_usize(), 4);
+
+        assert_eq!(File::F.to_u8(), 5);
+        assert_eq!(File::F.to_usize(), 5);
+
+        assert_eq!(File::G.to_u8(), 6);
+        assert_eq!(File::G.to_usize(), 6);
+
+        assert_eq!(File::H.to_u8(), 7);
+        assert_eq!(File::H.to_usize(), 7);
     }
 
     fn get_file_map() -> HashMap<File, char> {

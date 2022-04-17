@@ -14,7 +14,7 @@ pub fn perft(depth: u8, position: &mut Position, move_generator: &MoveGenerator)
 
     move_generator.generate_moves(position, &mut move_list);
 
-    for mv in move_list.iter() {
+    for mv in move_list.iterator() {
         let move_legality = position.make_move(*mv);
 
         if move_legality == MoveLegality::Legal {
@@ -35,6 +35,7 @@ pub mod tests {
     use dolphin_core::board::occupancy_masks::OccupancyMasks;
     use dolphin_core::io::fen;
     use dolphin_core::moves::move_gen::MoveGenerator;
+    use dolphin_core::position::attack_checker::AttackChecker;
     use dolphin_core::position::game_position::Position;
     use dolphin_core::position::zobrist_keys::ZobristKeys;
 
@@ -52,6 +53,7 @@ pub mod tests {
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
         let mov_generator = MoveGenerator::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -61,6 +63,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let num_moves = perft_runner::perft(depth, &mut pos, &mov_generator);
@@ -82,6 +85,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -91,6 +95,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let num_moves = perft_runner::perft(depth, &mut pos, &mov_generator);
@@ -112,6 +117,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -121,6 +127,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let num_moves = perft_runner::perft(depth, &mut pos, &mov_generator);

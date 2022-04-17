@@ -5,6 +5,7 @@ use dolphin_core::board::occupancy_masks::OccupancyMasks;
 use dolphin_core::board::piece::Piece;
 use dolphin_core::io::fen;
 use dolphin_core::moves::move_gen::MoveGenerator;
+use dolphin_core::position::attack_checker::AttackChecker;
 use dolphin_core::position::game_position::Position;
 use dolphin_core::position::zobrist_keys::ZobristKeys;
 use std::time::Instant;
@@ -41,6 +42,7 @@ fn process_row(row: &epd_parser::EpdRow, depth: u8) {
 
     let zobrist_keys = ZobristKeys::new();
     let occ_masks = OccupancyMasks::new();
+    let attack_checker = AttackChecker::new();
 
     let mut pos = Position::new(
         board,
@@ -50,6 +52,7 @@ fn process_row(row: &epd_parser::EpdRow, depth: u8) {
         side_to_move,
         &zobrist_keys,
         &occ_masks,
+        &attack_checker,
     );
     let mov_generator = MoveGenerator::new();
 

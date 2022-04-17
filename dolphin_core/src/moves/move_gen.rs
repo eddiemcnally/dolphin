@@ -21,55 +21,90 @@ impl MoveGenerator {
         MoveGenerator {}
     }
 
-    pub fn generate_moves(&self, pos: &Position, move_list: &mut MoveList) {
-        let bb = pos.board().get_colour_bb(pos.side_to_move());
+    pub fn generate_moves(&self, pos: &Position, move_list: &mut MoveList) -> u16 {
+        let move_cnt_start = move_list.len();
 
         match pos.side_to_move() {
             Colour::White => {
-                for from_sq in bb.iterator() {
-                    if let Some(pce) = pos.board().get_piece_type_on_square(from_sq) {
-                        match pce {
-                            Piece::Pawn => self.generate_white_pawn_moves(pos, from_sq, move_list),
-                            Piece::Bishop => self.generate_diagonal_moves(pos, from_sq, move_list),
-                            Piece::Knight => self.generate_knight_moves(pos, from_sq, move_list),
-                            Piece::Rook => self.generate_rank_file_moves(pos, from_sq, move_list),
-                            Piece::Queen => {
-                                self.generate_diagonal_moves(pos, from_sq, move_list);
-                                self.generate_rank_file_moves(pos, from_sq, move_list);
-                            }
-                            Piece::King => self.generate_king_moves(pos, from_sq, move_list),
-                        };
-                    } else {
-                        panic!("Unexpected missing piece");
-                    }
+                // pawn moves
+                for from_sq in pos
+                    .board()
+                    .get_piece_bitboard(Piece::Pawn, Colour::White)
+                    .iterator()
+                {
+                    self.generate_white_pawn_moves(pos, from_sq, move_list);
                 }
+
+                // bishop and queen - conflate for diagonal move gen
+                for from_sq in pos.board().get_white_bishop_queen_bitboard().iterator() {
+                    self.generate_diagonal_moves(pos, from_sq, move_list);
+                }
+
+                // knight
+                for from_sq in pos
+                    .board()
+                    .get_piece_bitboard(Piece::Knight, Colour::White)
+                    .iterator()
+                {
+                    self.generate_knight_moves(pos, from_sq, move_list);
+                }
+
+                //  rook and queen - conflate for horizontal and vertical move gen
+                for from_sq in pos.board().get_white_rook_queen_bitboard().iterator() {
+                    self.generate_rank_file_moves(pos, from_sq, move_list);
+                }
+
+                // king
+                let king_sq = pos.board().get_king_sq(Colour::White);
+                self.generate_king_moves(pos, king_sq, move_list);
+
+                // castle moves
                 if pos.castle_permissions().has_white_castle_permission() {
                     self.generate_white_castle_moves(pos, move_list);
                 }
             }
             Colour::Black => {
-                for from_sq in bb.iterator() {
-                    if let Some(pce) = pos.board().get_piece_type_on_square(from_sq) {
-                        match pce {
-                            Piece::Pawn => self.generate_black_pawn_moves(pos, from_sq, move_list),
-                            Piece::Bishop => self.generate_diagonal_moves(pos, from_sq, move_list),
-                            Piece::Knight => self.generate_knight_moves(pos, from_sq, move_list),
-                            Piece::Rook => self.generate_rank_file_moves(pos, from_sq, move_list),
-                            Piece::Queen => {
-                                self.generate_diagonal_moves(pos, from_sq, move_list);
-                                self.generate_rank_file_moves(pos, from_sq, move_list);
-                            }
-                            Piece::King => self.generate_king_moves(pos, from_sq, move_list),
-                        };
-                    } else {
-                        panic!("Unexpected missing piece");
-                    }
+                // pawn
+                for from_sq in pos
+                    .board()
+                    .get_piece_bitboard(Piece::Pawn, Colour::Black)
+                    .iterator()
+                {
+                    self.generate_black_pawn_moves(pos, from_sq, move_list);
                 }
+
+                // bishop and queen - conflate for diagonal move gen
+                for from_sq in pos.board().get_black_bishop_queen_bitboard().iterator() {
+                    self.generate_diagonal_moves(pos, from_sq, move_list);
+                }
+
+                // knight
+                for from_sq in pos
+                    .board()
+                    .get_piece_bitboard(Piece::Knight, Colour::Black)
+                    .iterator()
+                {
+                    self.generate_knight_moves(pos, from_sq, move_list);
+                }
+
+                // rook and queen - conflate for vertical and horizontal move gen
+                for from_sq in pos.board().get_black_rook_queen_bitboard().iterator() {
+                    self.generate_rank_file_moves(pos, from_sq, move_list);
+                }
+
+                // king
+                let king_sq = pos.board().get_king_sq(Colour::Black);
+                self.generate_king_moves(pos, king_sq, move_list);
+
+                // castle moves
                 if pos.castle_permissions().has_black_castle_permission() {
                     self.generate_black_castle_moves(pos, move_list);
                 }
             }
         }
+        let move_cnt_end = move_list.len();
+
+        (move_cnt_end - move_cnt_start) as u16
     }
 
     fn generate_white_pawn_moves(&self, pos: &Position, from_sq: Square, move_list: &mut MoveList) {
@@ -99,12 +134,8 @@ impl MoveGenerator {
         // opposite colour bitboard
         let all_opposing_bb = pos.board().get_colour_bb(Colour::Black);
 
-        // quiet promotion + capture promotion
+        // quiet promotion
         let quiet_to_sq = from_sq.plus_1_rank();
-        let capt_mask = pos
-            .occupancy_masks()
-            .get_occ_mask_white_pawn_attack_squares(from_sq);
-
         if !all_bb.is_set(quiet_to_sq.unwrap()) {
             // free square ahead
             self.encode_promotion_moves(
@@ -115,8 +146,11 @@ impl MoveGenerator {
             );
         }
 
-        let capt_bb = capt_mask & all_opposing_bb;
-        for to_sq in capt_bb.iterator() {
+        // capture promotion
+        let capt_mask = pos
+            .occupancy_masks()
+            .get_occ_mask_white_pawn_attack_squares(from_sq);
+        for to_sq in (capt_mask & all_opposing_bb).iterator() {
             self.encode_promotion_capture_moves(pos.side_to_move(), from_sq, to_sq, move_list);
         }
     }
@@ -155,18 +189,16 @@ impl MoveGenerator {
 
         // quiet move
         let quiet_to_sq = from_sq.plus_1_rank();
-        let capt_mask = pos
-            .occupancy_masks()
-            .get_occ_mask_white_pawn_attack_squares(from_sq);
-
         if !all_bb.is_set(quiet_to_sq.unwrap()) {
             let mv = Move::encode_move_quiet(from_sq, quiet_to_sq.unwrap());
             move_list.push(mv);
         }
 
         // capture moves
-        let capt_bb = capt_mask & all_opposing_bb;
-        for to_sq in capt_bb.iterator() {
+        let capt_mask = pos
+            .occupancy_masks()
+            .get_occ_mask_white_pawn_attack_squares(from_sq);
+        for to_sq in (capt_mask & all_opposing_bb).iterator() {
             let mv = Move::encode_move_capture(from_sq, to_sq);
             move_list.push(mv);
         }
@@ -208,17 +240,16 @@ impl MoveGenerator {
 
         // quiet moves + capture move
         let quiet_to_sq = from_sq.minus_1_rank();
-        let capt_mask = pos
-            .occupancy_masks()
-            .get_occ_mask_black_pawn_attack_squares(from_sq);
-
         if !all_bb.is_set(quiet_to_sq.unwrap()) {
             let mv = Move::encode_move_quiet(from_sq, quiet_to_sq.unwrap());
             move_list.push(mv);
         }
 
-        let capt_bb = capt_mask & all_opposing_bb;
-        for to_sq in capt_bb.iterator() {
+        let capt_mask = pos
+            .occupancy_masks()
+            .get_occ_mask_black_pawn_attack_squares(from_sq);
+
+        for to_sq in (capt_mask & all_opposing_bb).iterator() {
             let mv = Move::encode_move_capture(from_sq, to_sq);
             move_list.push(mv);
         }
@@ -266,12 +297,8 @@ impl MoveGenerator {
         // opposite colour bitboard
         let all_opposing_bb = pos.board().get_colour_bb(Colour::White);
 
-        // quiet promotion + capture promotion
+        // quiet promotion
         let quiet_to_sq = from_sq.minus_1_rank();
-        let capt_mask = pos
-            .occupancy_masks()
-            .get_occ_mask_black_pawn_attack_squares(from_sq);
-
         if !all_bb.is_set(quiet_to_sq.unwrap()) {
             // free square ahead
             self.encode_promotion_moves(
@@ -282,6 +309,10 @@ impl MoveGenerator {
             );
         }
 
+        // capture promotion
+        let capt_mask = pos
+            .occupancy_masks()
+            .get_occ_mask_black_pawn_attack_squares(from_sq);
         let capt_bb = capt_mask & all_opposing_bb;
         for to_sq in capt_bb.iterator() {
             self.encode_promotion_capture_moves(pos.side_to_move(), from_sq, to_sq, move_list);
@@ -391,32 +422,43 @@ impl MoveGenerator {
         // generate capture moves
         // AND'ing with opposite colour pieces with the occupancy mask, will
         // give all pieces that can be captured by the piece on this square
-        let capt_bb = opp_occ_sq_bb & occ_mask;
-        self.encode_multiple_capture_moves(capt_bb, from_sq, move_list);
+        for to_sq in (opp_occ_sq_bb & occ_mask).iterator() {
+            let mov = Move::encode_move_capture(from_sq, to_sq);
+            move_list.push(mov);
+        }
 
         // generate quiet moves
         let unoccupied_squares_bb = !pos.board().get_bitboard();
         let quiet_move_bb = unoccupied_squares_bb & occ_mask;
-        self.encode_multiple_quiet_moves(quiet_move_bb, from_sq, move_list);
+        for to_sq in quiet_move_bb.iterator() {
+            let mov = Move::encode_move_quiet(from_sq, to_sq);
+            move_list.push(mov);
+        }
     }
 
-    fn generate_king_moves(&self, pos: &Position, sq: Square, move_list: &mut MoveList) {
+    fn generate_king_moves(&self, pos: &Position, from_sq: Square, move_list: &mut MoveList) {
         let opposite_side = pos.side_to_move().flip_side();
         let opp_occ_sq_bb = pos.board().get_colour_bb(opposite_side);
 
-        let occ_mask = pos.occupancy_masks().get_occupancy_mask_king(sq);
+        let occ_mask = pos.occupancy_masks().get_occupancy_mask_king(from_sq);
 
         // generate capture moves
         // ----------------------
         // AND'ing with opposite colour pieces with the occupancy mask, will
         // give all pieces that can be captured by the piece on this square
         let capt_bb = opp_occ_sq_bb & occ_mask;
-        self.encode_multiple_capture_moves(capt_bb, sq, move_list);
+        for to_sq in capt_bb.iterator() {
+            let mov = Move::encode_move_capture(from_sq, to_sq);
+            move_list.push(mov);
+        }
 
         // generate quiet moves
         let unoccupied_squares_bb = !pos.board().get_bitboard();
         let quiet_move_bb = unoccupied_squares_bb & occ_mask;
-        self.encode_multiple_quiet_moves(quiet_move_bb, sq, move_list);
+        for to_sq in quiet_move_bb.iterator() {
+            let mov = Move::encode_move_quiet(from_sq, to_sq);
+            move_list.push(mov);
+        }
     }
 
     fn generate_white_castle_moves(&self, pos: &Position, move_list: &mut MoveList) {
@@ -492,30 +534,6 @@ impl MoveGenerator {
             }
         };
     }
-
-    fn encode_multiple_capture_moves(
-        &self,
-        capt_bb: Bitboard,
-        from_sq: Square,
-        move_list: &mut MoveList,
-    ) {
-        for to_sq in capt_bb.iterator() {
-            let mov = Move::encode_move_capture(from_sq, to_sq);
-            move_list.push(mov);
-        }
-    }
-
-    fn encode_multiple_quiet_moves(
-        &self,
-        quiet_move_bb: Bitboard,
-        from_sq: Square,
-        move_list: &mut MoveList,
-    ) {
-        for to_sq in quiet_move_bb.iterator() {
-            let mov = Move::encode_move_quiet(from_sq, to_sq);
-            move_list.push(mov);
-        }
-    }
 }
 
 #[cfg(test)]
@@ -527,6 +545,7 @@ pub mod tests {
     use crate::moves::mov::Move;
     use crate::moves::move_gen::MoveGenerator;
     use crate::moves::move_list::MoveList;
+    use crate::position::attack_checker::AttackChecker;
     use crate::position::game_position::Position;
     use crate::position::zobrist_keys::ZobristKeys;
 
@@ -539,6 +558,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -548,6 +568,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -600,6 +621,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -609,6 +631,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
         let mut move_list = MoveList::new();
         let move_gen = MoveGenerator::new();
@@ -639,6 +662,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -648,6 +672,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
         let mut move_list = MoveList::new();
         let move_gen = MoveGenerator::new();
@@ -696,6 +721,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -705,6 +731,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -739,6 +766,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -748,6 +776,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -804,6 +833,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -813,6 +843,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -855,6 +886,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -864,6 +896,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -913,6 +946,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -922,6 +956,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -967,6 +1002,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -976,6 +1012,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -995,6 +1032,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -1004,6 +1042,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -1022,6 +1061,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -1031,6 +1071,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -1049,6 +1090,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -1058,6 +1100,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let cp = pos.castle_permissions();
@@ -1080,6 +1123,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let mut pos = Position::new(
             board,
@@ -1089,6 +1133,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -1126,6 +1171,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -1135,6 +1181,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -1143,11 +1190,8 @@ pub mod tests {
 
         //mov::print_move_list(&move_list);
 
-        let mut from_sq: Square;
-        let mut to_sq: Square;
-
-        from_sq = Square::A7;
-        to_sq = Square::A8;
+        let mut from_sq = Square::A7;
+        let mut to_sq = Square::A8;
         for pce in white_promotion_pces.iter() {
             assert!(move_list.contains(Move::encode_move_with_promotion(from_sq, to_sq, *pce)));
         }
@@ -1213,6 +1257,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -1222,6 +1267,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let move_gen = MoveGenerator::new();
@@ -1230,12 +1276,9 @@ pub mod tests {
 
         //mov::print_move_list(&move_list);
 
-        let mut from_sq: Square;
-        let mut to_sq: Square;
-
         // QUITE promotion
-        from_sq = Square::B2;
-        to_sq = Square::B1;
+        let mut from_sq = Square::B2;
+        let mut to_sq = Square::B1;
         for pce in black_promotion_pces.iter() {
             assert!(move_list.contains(Move::encode_move_with_promotion(from_sq, to_sq, *pce)));
         }
@@ -1264,6 +1307,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -1273,6 +1317,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -1284,7 +1329,10 @@ pub mod tests {
         // double first moves
         assert!(move_list.contains(Move::encode_move_double_pawn_first(Square::F2, Square::F4)));
         assert!(move_list.contains(Move::encode_move_double_pawn_first(Square::G2, Square::G4)));
-        let num_double_pawn_moves = move_list.iter().filter(|&n| (*n).is_double_pawn()).count();
+        let num_double_pawn_moves = move_list
+            .iterator()
+            .filter(|&n| (*n).is_double_pawn())
+            .count();
         assert!(num_double_pawn_moves == 2);
 
         // single first move
@@ -1307,6 +1355,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -1316,6 +1365,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -1326,7 +1376,10 @@ pub mod tests {
 
         // double first moves
         assert!(move_list.contains(Move::encode_move_double_pawn_first(Square::F7, Square::F5)));
-        let num_double_pawn_moves = move_list.iter().filter(|&n| (*n).is_double_pawn()).count();
+        let num_double_pawn_moves = move_list
+            .iterator()
+            .filter(|&n| (*n).is_double_pawn())
+            .count();
         assert!(num_double_pawn_moves == 1);
 
         // single first move
@@ -1347,6 +1400,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -1356,6 +1410,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -1383,6 +1438,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -1392,6 +1448,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
         let mut move_list = MoveList::new();
         let move_gen = MoveGenerator::new();
@@ -1423,6 +1480,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -1432,6 +1490,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
@@ -1502,6 +1561,7 @@ pub mod tests {
 
         let zobrist_keys = ZobristKeys::new();
         let occ_masks = OccupancyMasks::new();
+        let attack_checker = AttackChecker::new();
 
         let pos = Position::new(
             board,
@@ -1511,6 +1571,7 @@ pub mod tests {
             side_to_move,
             &zobrist_keys,
             &occ_masks,
+            &attack_checker,
         );
 
         let mut move_list = MoveList::new();
