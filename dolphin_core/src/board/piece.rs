@@ -26,17 +26,15 @@ impl Piece {
     pub const NUM_PIECES: usize = 32;
     pub const NUM_PIECE_TYPES: usize = 6;
 
-    const VALUES: [u32; Piece::NUM_PIECE_TYPES] = [
-        PieceValue::Pawn as u32,
-        PieceValue::Bishop as u32,
-        PieceValue::Knight as u32,
-        PieceValue::Rook as u32,
-        PieceValue::Queen as u32,
-        PieceValue::King as u32,
-    ];
-
     pub fn value(&self) -> u32 {
-        Piece::VALUES[self.to_usize()]
+        match &self {
+            Piece::Pawn => PieceValue::Pawn as u32,
+            Piece::Bishop => PieceValue::Bishop as u32,
+            Piece::Knight => PieceValue::Knight as u32,
+            Piece::Rook => PieceValue::Rook as u32,
+            Piece::Queen => PieceValue::Queen as u32,
+            Piece::King => PieceValue::King as u32,
+        }
     }
 
     pub fn from_char(piece_char: char) -> (Piece, Colour) {

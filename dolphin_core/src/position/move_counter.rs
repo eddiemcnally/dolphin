@@ -12,11 +12,14 @@ impl MoveCounter {
             full_move: full_cntr,
         }
     }
-    pub fn incr_half_move(&mut self) {
+    pub fn incr_half_move(&mut self) -> bool {
         self.half_move += 1;
-    }
-    pub fn incr_full_move(&mut self) {
-        self.full_move += 1;
+
+        if self.half_move % 2 == 0 {
+            self.full_move += 1;
+            return true;
+        }
+        false
     }
 
     pub fn half_move(&self) -> u16 {
@@ -48,6 +51,8 @@ impl fmt::Display for MoveCounter {
 pub mod tests {
     use crate::io::fen;
 
+    use super::MoveCounter;
+
     #[test]
     pub fn move_counters_equality_as_expected() {
         let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 11 12";
@@ -56,5 +61,26 @@ pub mod tests {
         let (_, mc2, _, _, _) = fen::decompose_fen(fen);
 
         assert_eq!(mc1, mc2);
+    }
+
+    #[test]
+    pub fn full_move_incr_only_on_even_moves() {
+        let mut mc = MoveCounter::new(0, 0);
+
+        mc.incr_half_move();
+        assert!(mc.half_move() == 1);
+        assert!(mc.full_move() == 0);
+
+        mc.incr_half_move();
+        assert!(mc.half_move() == 2);
+        assert!(mc.full_move() == 1);
+
+        mc.incr_half_move();
+        assert!(mc.half_move() == 3);
+        assert!(mc.full_move() == 1);
+
+        mc.incr_half_move();
+        assert!(mc.half_move() == 4);
+        assert!(mc.full_move() == 2);
     }
 }

@@ -202,12 +202,7 @@ impl<'a> Position<'a> {
             self.position_history
                 .push(self.game_state, mv, pce_to_move, capt_pce);
 
-            self.game_state.move_cntr.incr_half_move();
-            if self.side_to_move() == Colour::Black {
-                self.game_state.move_cntr.incr_full_move();
-            }
-
-            self.handle_50_move_rule(mv, pce_to_move);
+            self.update_move_counters(mv, pce_to_move);
 
             let move_type = mv.decode_move_type();
 
@@ -511,11 +506,16 @@ impl<'a> Position<'a> {
             .move_piece(from_sq, to_sq, pce, self.side_to_move());
     }
 
-    fn handle_50_move_rule(&mut self, mv: Move, pce_to_move: Piece) {
-        if mv.is_capture() || pce_to_move == Piece::Pawn {
-            self.game_state.fifty_move_cntr = 0;
-        } else {
-            self.game_state.fifty_move_cntr += 1;
+    fn update_move_counters(&mut self, mv: Move, pce_to_move: Piece) {
+        let full_move_incr = self.game_state.move_cntr.incr_half_move();
+
+        if full_move_incr {
+            // handle 50 move rule
+            if mv.is_capture() || pce_to_move == Piece::Pawn {
+                self.game_state.fifty_move_cntr = 0;
+            } else {
+                self.game_state.fifty_move_cntr += 1;
+            }
         }
     }
 
@@ -837,7 +837,7 @@ mod tests {
 
     #[test]
     pub fn make_move_fifty_move_cntr_reset_on_capture_move() {
-        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 5 11";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
             fen::decompose_fen(fen);
 
@@ -856,6 +856,9 @@ mod tests {
             &attack_checker,
         );
 
+        assert!(pos.game_state.move_cntr.half_move() == 5);
+        assert!(pos.game_state.move_cntr.full_move() == 11);
+
         // set to some value
         pos.game_state.fifty_move_cntr = 21;
 
@@ -867,7 +870,7 @@ mod tests {
 
     #[test]
     pub fn make_move_fifty_move_cntr_reset_on_pawn_move() {
-        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 5 11";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
             fen::decompose_fen(fen);
 
@@ -892,6 +895,9 @@ mod tests {
             panic!("piece not found");
         }
 
+        assert!(pos.game_state.move_cntr.half_move() == 5);
+        assert!(pos.game_state.move_cntr.full_move() == 11);
+
         // set to some value
         pos.game_state.fifty_move_cntr = 21;
 
@@ -903,7 +909,7 @@ mod tests {
 
     #[test]
     pub fn make_move_fifty_move_cntr_incremented_on_non_pawn_and_non_capture_move() {
-        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 0 1";
+        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 5 11";
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
             fen::decompose_fen(fen);
 
@@ -927,6 +933,9 @@ mod tests {
         } else {
             panic!("piece not found");
         }
+
+        assert!(pos.game_state.move_cntr.half_move() == 5);
+        assert!(pos.game_state.move_cntr.full_move() == 11);
 
         // set to some value
         pos.game_state.fifty_move_cntr = 21;
@@ -973,75 +982,7 @@ mod tests {
         assert_eq!(expected_half_move, pos.game_state.move_cntr.half_move());
     }
 
-    #[test]
-    pub fn make_move_full_move_cntr_not_incremented_on_white_move() {
-        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n w - - 21 32";
-        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
-            fen::decompose_fen(fen);
 
-        let zobrist_keys = ZobristKeys::new();
-        let occ_masks = OccupancyMasks::new();
-        let attack_checker = AttackChecker::new();
-
-        let mut pos = Position::new(
-            board,
-            castle_permissions,
-            move_cntr,
-            en_pass_sq,
-            side_to_move,
-            &zobrist_keys,
-            &occ_masks,
-            &attack_checker,
-        );
-
-        if let Some(piece) = pos.board.get_piece_type_on_square(Square::C4) {
-            assert_eq!(piece, Piece::Bishop);
-        } else {
-            panic!("piece not found");
-        }
-
-        let expected_full_move = pos.game_state.move_cntr.full_move();
-
-        let mv = Move::encode_move_quiet(Square::C4, Square::D5);
-        pos.make_move(mv);
-
-        assert_eq!(expected_full_move, pos.game_state.move_cntr.full_move());
-    }
-
-    #[test]
-    pub fn make_move_full_move_cntr_incremented_on_black_move() {
-        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n b - - 21 32";
-        let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
-            fen::decompose_fen(fen);
-
-        let zobrist_keys = ZobristKeys::new();
-        let occ_masks = OccupancyMasks::new();
-        let attack_checker = AttackChecker::new();
-
-        let mut pos = Position::new(
-            board,
-            castle_permissions,
-            move_cntr,
-            en_pass_sq,
-            side_to_move,
-            &zobrist_keys,
-            &occ_masks,
-            &attack_checker,
-        );
-
-        if let Some(piece) = pos.board.get_piece_type_on_square(Square::G7) {
-            assert_eq!(piece, Piece::Bishop);
-        } else {
-            panic!("piece not found");
-        }
-
-        let expected_full_move = pos.game_state.move_cntr.full_move() + 1;
-
-        let mv = Move::encode_move_quiet(Square::G7, Square::F6);
-        pos.make_move(mv);
-
-        assert_eq!(expected_full_move, pos.game_state.move_cntr.full_move());
-    }
 
     #[test]
     pub fn make_move_double_pawn_move_en_passant_square_set_white_moves() {

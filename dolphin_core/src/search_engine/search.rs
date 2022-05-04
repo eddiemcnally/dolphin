@@ -52,13 +52,9 @@ impl Search {
         let mut i = 0u8;
 
         while mv.is_some() && i < depth {
-            if self.move_exists(pos, mv.unwrap()) {
-                pos.make_move(mv.unwrap());
-                retval.push(mv.unwrap());
-                i += 1;
-            } else {
-                break;
-            }
+            pos.make_move(mv.unwrap());
+            retval.push(mv.unwrap());
+            i += 1;
             mv = self.tt.get_move_for_position_hash(pos.position_hash());
         }
 
@@ -67,27 +63,6 @@ impl Search {
         }
 
         retval
-    }
-
-    fn move_exists(&self, pos: &mut Position, mv: Move) -> bool {
-        let mut mvl = MoveList::new();
-        let move_gen = MoveGenerator::new();
-
-        move_gen.generate_moves(pos, &mut mvl);
-
-        for m in mvl.iterator() {
-            let legality = pos.make_move(*m);
-            if legality == MoveLegality::Illegal {
-                pos.take_move();
-                continue;
-            }
-            pos.take_move();
-
-            if mvl.contains(mv) {
-                return true;
-            }
-        }
-        false
     }
 
     fn alpha_beta(&mut self, pos: &mut Position, mut alpha: i32, beta: i32, depth: u8) -> i32 {
