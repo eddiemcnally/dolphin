@@ -8,9 +8,8 @@ use std::ops::Shl;
 
 const RANK_MASK: Bitboard = Bitboard::new(0x0000_0000_0000_00ff);
 const FILE_MASK: Bitboard = Bitboard::new(0x0101_0101_0101_0101);
-const FILE_A_BB: Bitboard = FILE_MASK;
-const FILE_H_BB: Bitboard = Bitboard::new(0x8080_8080_8080_8080);
-
+pub const FILE_A_BB: Bitboard = FILE_MASK;
+pub const FILE_H_BB: Bitboard = Bitboard::new(0x8080_8080_8080_8080);
 #[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
 pub struct DiagonalAntidiagonal {
     diag_mask: Bitboard,
@@ -91,64 +90,40 @@ impl OccupancyMasks {
 
     pub fn get_occ_mask_white_pawns_double_move_mask(&self, sq: Square) -> Bitboard {
         let mut bb = sq.get_square_as_bb();
-        bb = self.north(bb);
-        bb |= self.north(bb);
+        bb = bb.north();
+        bb |= bb.north();
         bb
     }
     pub fn get_occ_mask_black_pawns_double_move_mask(&self, sq: Square) -> Bitboard {
         let mut bb = sq.get_square_as_bb();
-        bb = self.south(bb);
-        bb |= self.south(bb);
+        bb = bb.south();
+        bb |= bb.south();
         bb
     }
 
     pub fn get_occ_mask_white_pawns_attacking_sq(&self, sq: Square) -> Bitboard {
         let bb = sq.get_square_as_bb();
-        self.south_east(bb) | self.south_west(bb)
+        bb.south_east() | bb.south_west()
     }
     pub fn get_occ_mask_black_pawns_attacking_sq(&self, sq: Square) -> Bitboard {
         let bb = sq.get_square_as_bb();
-        self.north_east(bb) | self.north_west(bb)
+        bb.north_east() | bb.north_west()
     }
     pub fn get_occ_mask_white_pawn_capture_non_first_double_move(&self, sq: Square) -> Bitboard {
         let bb = sq.get_square_as_bb();
-        self.north_east(bb) | self.north_west(bb)
+        bb.north_east() | bb.north_west()
     }
     pub fn get_occ_mask_black_pawn_capture_non_first_double_move(&self, sq: Square) -> Bitboard {
         let bb = sq.get_square_as_bb();
-        self.south_east(bb) | self.south_west(bb)
+        bb.south_east() | bb.south_west()
     }
     pub fn get_occ_mask_white_pawn_attack_squares(&self, pawn_sq: Square) -> Bitboard {
         let bb = pawn_sq.get_square_as_bb();
-        self.north_east(bb) | self.north_west(bb)
+        bb.north_east() | bb.north_west()
     }
     pub fn get_occ_mask_black_pawn_attack_squares(&self, pawn_sq: Square) -> Bitboard {
         let bb = pawn_sq.get_square_as_bb();
-        self.south_east(bb) | self.south_west(bb)
-    }
-
-    fn north_east(&self, bb: Bitboard) -> Bitboard {
-        (bb & !FILE_H_BB) << 9
-    }
-
-    fn south_east(&self, bb: Bitboard) -> Bitboard {
-        (bb & !FILE_H_BB) >> 7
-    }
-
-    fn south(&self, bb: Bitboard) -> Bitboard {
-        bb >> 8
-    }
-
-    fn north(&self, bb: Bitboard) -> Bitboard {
-        bb << 8
-    }
-
-    fn north_west(&self, bb: Bitboard) -> Bitboard {
-        (bb & !FILE_A_BB) << 7
-    }
-
-    fn south_west(&self, bb: Bitboard) -> Bitboard {
-        (bb & !FILE_A_BB) >> 9
+        bb.south_east() | bb.south_west()
     }
 
     // bitboards for squares between castle squares (eg White King side = f1 and g1)
@@ -159,6 +134,7 @@ impl OccupancyMasks {
 
     // Bitboards representing commonly used ranks
     pub const RANK_2_BB: Bitboard = Bitboard::new(0x0000_0000_0000_FF00);
+    pub const RANK_2_TO_6_BB: Bitboard = Bitboard::new(0x0000_FFFF_FFFF_FF00);
     pub const RANK_7_BB: Bitboard = Bitboard::new(0x00FF_0000_0000_0000);
 }
 

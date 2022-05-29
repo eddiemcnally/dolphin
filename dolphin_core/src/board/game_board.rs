@@ -85,11 +85,21 @@ impl Board {
             from_sq
         );
 
-        self.clear_bitboards(piece, colour, from_sq);
-        self.pieces[from_sq.to_usize()] = None;
+        let pce_off = piece.to_usize();
+        let col_off = colour.to_usize();
 
-        self.set_bitboards(piece, colour, to_sq);
+        // update bitboards
+        Bitboard::move_bit(
+            &mut self.piece_bb[col_off].bb[pce_off],
+            &mut self.colour_bb[col_off],
+            from_sq,
+            to_sq,
+        );
+
+        //move the piece
+        self.pieces[from_sq.to_usize()] = None;
         self.pieces[to_sq.to_usize()] = Some(piece);
+
         if piece == Piece::King {
             self.king_squares[colour.to_usize()] = to_sq;
         }

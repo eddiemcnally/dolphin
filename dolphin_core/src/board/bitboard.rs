@@ -1,3 +1,5 @@
+use crate::board::occupancy_masks::FILE_A_BB;
+use crate::board::occupancy_masks::FILE_H_BB;
 use crate::board::square::Square;
 use crate::core::types::ToInt;
 use core::ops::BitOr;
@@ -9,8 +11,6 @@ use std::ops::BitXorAssign;
 use std::ops::Not;
 use std::ops::Shl;
 use std::ops::Shr;
-
-const BIT_0: u64 = 0x01;
 
 pub struct BitboardIterator(u64);
 
@@ -46,6 +46,44 @@ impl Bitboard {
         self.0 == 0
     }
 
+    pub const fn is_not_empty(&self) -> bool {
+        !self.is_empty()
+    }
+
+    pub fn move_bit(bb1: &mut Bitboard, bb2: &mut Bitboard, from_sq: Square, to_sq: Square) {
+        let from_bb = to_mask(from_sq);
+        let to_bb = to_mask(to_sq);
+
+        *bb1 ^= from_bb;
+        *bb1 ^= to_bb;
+        *bb2 ^= from_bb;
+        *bb2 ^= to_bb;
+    }
+
+    pub fn north_east(&self) -> Bitboard {
+        (*self & !FILE_H_BB) << 9
+    }
+
+    pub fn south_east(&self) -> Bitboard {
+        (*self & !FILE_H_BB) >> 7
+    }
+
+    pub fn south(&self) -> Bitboard {
+        *self >> 8
+    }
+
+    pub fn north(&self) -> Bitboard {
+        *self << 8
+    }
+
+    pub fn north_west(&self) -> Bitboard {
+        (*self & !FILE_A_BB) << 7
+    }
+
+    pub fn south_west(&self) -> Bitboard {
+        (*self & !FILE_A_BB) >> 9
+    }
+
     pub fn display_squares(&self) {
         let iter = BitboardIterator::new(self.0);
         for sq in iter {
@@ -78,7 +116,7 @@ impl Bitboard {
 }
 
 fn to_mask(sq: Square) -> Bitboard {
-    Bitboard(BIT_0.shl(sq.to_u8()))
+    Bitboard::new(1).shl(sq.to_u8())
 }
 
 impl BitAnd for Bitboard {

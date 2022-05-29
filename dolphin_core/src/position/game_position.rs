@@ -207,24 +207,23 @@ impl<'a> Position<'a> {
             let move_type = mv.decode_move_type();
 
             match move_type {
-                MoveType::QUIET => self.move_piece_on_board(pce_to_move, from_sq, to_sq),
-                MoveType::CAPTURE => {
+                MoveType::Quiet => self.move_piece_on_board(pce_to_move, from_sq, to_sq),
+                MoveType::Capture => {
                     self.do_capture_move(pce_to_move, from_sq, to_sq, capt_pce.unwrap())
                 }
-                MoveType::DOUBLE_PAWN => self.do_double_pawn_move(pce_to_move, from_sq, to_sq),
-                MoveType::KING_CASTLE | MoveType::QUEEN_CASTLE => self.do_castle_move(mv),
-                MoveType::EN_PASSANT => self.do_en_passant(from_sq, to_sq),
-                MoveType::PROMOTE_KNIGHT_QUIET
-                | MoveType::PROMOTE_BISHOP_QUIET
-                | MoveType::PROMOTE_ROOK_QUIET
-                | MoveType::PROMOTE_QUEEN_QUIET
-                | MoveType::PROMOTE_KNIGHT_CAPTURE
-                | MoveType::PROMOTE_BISHOP_CAPTURE
-                | MoveType::PROMOTE_ROOK_CAPTURE
-                | MoveType::PROMOTE_QUEEN_CAPTURE => {
+                MoveType::DoublePawn => self.do_double_pawn_move(pce_to_move, from_sq, to_sq),
+                MoveType::KingCastle | MoveType::QueenCastle => self.do_castle_move(mv),
+                MoveType::EnPassant => self.do_en_passant(from_sq, to_sq),
+                MoveType::PromoteKnightQuiet
+                | MoveType::PromoteBishopQuiet
+                | MoveType::PromoteRookQuiet
+                | MoveType::PromoteQueenQuiet
+                | MoveType::PromoteKnightCapture
+                | MoveType::PromoteBishopCapture
+                | MoveType::PromoteRookCapture
+                | MoveType::PromoteQueenCapture => {
                     self.do_promotion(mv, from_sq, to_sq, pce_to_move)
                 }
-                _ => panic!("Invalid move type"),
             }
 
             // update some states based on the move
@@ -253,22 +252,21 @@ impl<'a> Position<'a> {
         let mt = mv.decode_move_type();
 
         match mt {
-            MoveType::QUIET => self.reverse_quiet_move(mv, piece),
-            MoveType::CAPTURE => self.reverse_capture_move(mv, piece, capt_piece),
-            MoveType::DOUBLE_PAWN => self.reverse_quiet_move(mv, piece),
-            MoveType::KING_CASTLE | MoveType::QUEEN_CASTLE => {
+            MoveType::Quiet => self.reverse_quiet_move(mv, piece),
+            MoveType::Capture => self.reverse_capture_move(mv, piece, capt_piece),
+            MoveType::DoublePawn => self.reverse_quiet_move(mv, piece),
+            MoveType::KingCastle | MoveType::QueenCastle => {
                 self.reverse_castle_move(mv, self.side_to_move())
             }
-            MoveType::EN_PASSANT => self.reverse_en_passant_move(mv, self.side_to_move()),
-            MoveType::PROMOTE_KNIGHT_QUIET
-            | MoveType::PROMOTE_BISHOP_QUIET
-            | MoveType::PROMOTE_ROOK_QUIET
-            | MoveType::PROMOTE_QUEEN_QUIET
-            | MoveType::PROMOTE_KNIGHT_CAPTURE
-            | MoveType::PROMOTE_BISHOP_CAPTURE
-            | MoveType::PROMOTE_ROOK_CAPTURE
-            | MoveType::PROMOTE_QUEEN_CAPTURE => self.reverse_promotion_move(mv, piece, capt_piece),
-            _ => panic!("invalid move type"),
+            MoveType::EnPassant => self.reverse_en_passant_move(mv, self.side_to_move()),
+            MoveType::PromoteKnightQuiet
+            | MoveType::PromoteBishopQuiet
+            | MoveType::PromoteRookQuiet
+            | MoveType::PromoteQueenQuiet
+            | MoveType::PromoteKnightCapture
+            | MoveType::PromoteBishopCapture
+            | MoveType::PromoteRookCapture
+            | MoveType::PromoteQueenCapture => self.reverse_promotion_move(mv, piece, capt_piece),
         }
     }
 
@@ -981,8 +979,6 @@ mod tests {
 
         assert_eq!(expected_half_move, pos.game_state.move_cntr.half_move());
     }
-
-
 
     #[test]
     pub fn make_move_double_pawn_move_en_passant_square_set_white_moves() {
