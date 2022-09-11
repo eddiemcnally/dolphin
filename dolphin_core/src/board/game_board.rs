@@ -5,7 +5,6 @@ use crate::board::material::Material;
 use crate::board::piece::Piece;
 use crate::board::rank::Rank;
 use crate::board::square::Square;
-use crate::core::types::ToInt;
 use std::fmt;
 use std::option::Option;
 
@@ -45,9 +44,9 @@ impl Board {
         self.set_bitboards(piece, colour, sq);
         let new_material = self.material.get_material_for_colour(colour) + piece.value();
         self.material.set_material_for_colour(colour, new_material);
-        self.pieces[sq.to_usize()] = Some(piece);
+        self.pieces[sq.to_offset()] = Some(piece);
         if piece == Piece::King {
-            self.king_squares[colour.to_usize()] = sq;
+            self.king_squares[colour.to_offset()] = sq;
         }
     }
 
@@ -61,11 +60,11 @@ impl Board {
         self.clear_bitboards(piece, colour, sq);
         let new_material = self.material.get_material_for_colour(colour) - piece.value();
         self.material.set_material_for_colour(colour, new_material);
-        self.pieces[sq.to_usize()] = None;
+        self.pieces[sq.to_offset()] = None;
     }
 
     pub fn get_colour_bb(&self, colour: Colour) -> Bitboard {
-        self.colour_bb[colour.to_usize()]
+        self.colour_bb[colour.to_offset()]
     }
 
     pub fn get_material(&self) -> Material {
@@ -85,8 +84,8 @@ impl Board {
             from_sq
         );
 
-        let pce_off = piece.to_usize();
-        let col_off = colour.to_usize();
+        let pce_off = piece.to_offset();
+        let col_off = colour.to_offset();
 
         // update bitboards
         Bitboard::move_bit(
@@ -97,16 +96,16 @@ impl Board {
         );
 
         //move the piece
-        self.pieces[from_sq.to_usize()] = None;
-        self.pieces[to_sq.to_usize()] = Some(piece);
+        self.pieces[from_sq.to_offset()] = None;
+        self.pieces[to_sq.to_offset()] = Some(piece);
 
         if piece == Piece::King {
-            self.king_squares[colour.to_usize()] = to_sq;
+            self.king_squares[colour.to_offset()] = to_sq;
         }
     }
 
     pub fn get_piece_and_colour_on_square(&self, sq: Square) -> Option<(Piece, Colour)> {
-        let pc = self.pieces[sq.to_usize()];
+        let pc = self.pieces[sq.to_offset()];
         pc?;
 
         let col = if self.get_colour_bb(Colour::White).is_set(sq) {
@@ -119,49 +118,49 @@ impl Board {
     }
 
     pub fn get_piece_type_on_square(&self, sq: Square) -> Option<Piece> {
-        self.pieces[sq.to_usize()]
+        self.pieces[sq.to_offset()]
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
         self.get_bitboard().is_clear(sq)
     }
 
-    pub fn get_piece_bitboard(&self, piece: Piece, colour: Colour) -> Bitboard {
-        self.piece_bb[colour.to_usize()].bb[piece.to_usize()]
+    pub const fn get_piece_bitboard(&self, piece: Piece, colour: Colour) -> Bitboard {
+        self.piece_bb[colour.to_offset()].bb[piece.to_offset()]
     }
 
     pub fn get_white_rook_queen_bitboard(&self) -> Bitboard {
-        self.piece_bb[Colour::White.to_usize()].bb[Piece::Rook.to_usize()]
-            | self.piece_bb[Colour::White.to_usize()].bb[Piece::Queen.to_usize()]
+        self.piece_bb[Colour::White.to_offset()].bb[Piece::Rook.to_offset()]
+            | self.piece_bb[Colour::White.to_offset()].bb[Piece::Queen.to_offset()]
     }
 
     pub fn get_black_rook_queen_bitboard(&self) -> Bitboard {
-        self.piece_bb[Colour::Black.to_usize()].bb[Piece::Rook.to_usize()]
-            | self.piece_bb[Colour::Black.to_usize()].bb[Piece::Queen.to_usize()]
+        self.piece_bb[Colour::Black.to_offset()].bb[Piece::Rook.to_offset()]
+            | self.piece_bb[Colour::Black.to_offset()].bb[Piece::Queen.to_offset()]
     }
 
     pub fn get_white_bishop_queen_bitboard(&self) -> Bitboard {
-        self.piece_bb[Colour::White.to_usize()].bb[Piece::Bishop.to_usize()]
-            | self.piece_bb[Colour::White.to_usize()].bb[Piece::Queen.to_usize()]
+        self.piece_bb[Colour::White.to_offset()].bb[Piece::Bishop.to_offset()]
+            | self.piece_bb[Colour::White.to_offset()].bb[Piece::Queen.to_offset()]
     }
 
     pub fn get_black_bishop_queen_bitboard(&self) -> Bitboard {
-        self.piece_bb[Colour::Black.to_usize()].bb[Piece::Bishop.to_usize()]
-            | self.piece_bb[Colour::Black.to_usize()].bb[Piece::Queen.to_usize()]
+        self.piece_bb[Colour::Black.to_offset()].bb[Piece::Bishop.to_offset()]
+            | self.piece_bb[Colour::Black.to_offset()].bb[Piece::Queen.to_offset()]
     }
 
     pub fn get_bitboard(&self) -> Bitboard {
         self.get_colour_bb(Colour::White) | self.get_colour_bb(Colour::Black)
     }
 
-    pub fn get_king_sq(&self, colour: Colour) -> Square {
-        self.king_squares[colour.to_usize()]
+    pub const fn get_king_sq(&self, colour: Colour) -> Square {
+        self.king_squares[colour.to_offset()]
     }
 
     #[inline(always)]
     fn clear_bitboards(&mut self, piece: Piece, colour: Colour, sq: Square) {
-        let pce_off = piece.to_usize();
-        let col_off = colour.to_usize();
+        let pce_off = piece.to_offset();
+        let col_off = colour.to_offset();
 
         self.colour_bb[col_off].clear_bit(sq);
         self.piece_bb[col_off].bb[pce_off].clear_bit(sq);
@@ -169,8 +168,8 @@ impl Board {
 
     #[inline(always)]
     fn set_bitboards(&mut self, piece: Piece, colour: Colour, sq: Square) {
-        let pce_off = piece.to_usize();
-        let col_off = colour.to_usize();
+        let pce_off = piece.to_offset();
+        let col_off = colour.to_offset();
 
         self.piece_bb[col_off].bb[pce_off].set_bit(sq);
         self.colour_bb[col_off].set_bit(sq);
@@ -236,7 +235,6 @@ pub mod tests {
     use crate::board::game_board::Board;
     use crate::board::piece::Piece;
     use crate::board::square::Square;
-    use crate::core::types::ToInt;
     use crate::io::fen;
 
     #[test]
@@ -292,20 +290,20 @@ pub mod tests {
 
                 assert!(board.is_sq_empty(*from_sq));
                 assert!(board.is_sq_empty(*to_sq));
-                assert!(board.pieces[from_sq.to_usize()] == None);
-                assert!(board.pieces[to_sq.to_usize()] == None);
+                assert!(board.pieces[from_sq.to_offset()] == None);
+                assert!(board.pieces[to_sq.to_offset()] == None);
 
                 board.add_piece(pce, col, *from_sq);
                 assert!(!board.is_sq_empty(*from_sq));
                 assert!(board.is_sq_empty(*to_sq));
-                assert!(board.pieces[from_sq.to_usize()] == Some(pce));
-                assert!(board.pieces[to_sq.to_usize()] == None);
+                assert!(board.pieces[from_sq.to_offset()] == Some(pce));
+                assert!(board.pieces[to_sq.to_offset()] == None);
 
                 board.move_piece(*from_sq, *to_sq, pce, col);
                 assert!(board.is_sq_empty(*from_sq));
                 assert!(!board.is_sq_empty(*to_sq));
-                assert!(board.pieces[to_sq.to_usize()] == Some(pce));
-                assert!(board.pieces[from_sq.to_usize()] == None);
+                assert!(board.pieces[to_sq.to_offset()] == Some(pce));
+                assert!(board.pieces[from_sq.to_offset()] == None);
 
                 // clean up
                 board.remove_piece(pce, col, *to_sq);

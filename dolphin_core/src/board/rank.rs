@@ -1,4 +1,3 @@
-use crate::core::types::ToInt;
 use std::fmt;
 use std::slice::Iter;
 
@@ -13,23 +12,26 @@ impl Rank {
         None
     }
 
-    pub fn add_one(&self) -> Option<Rank> {
+    pub const fn to_offset(self) -> usize {
+        self.0 as usize
+    }
+    pub const fn add_one(self) -> Option<Rank> {
         Rank::new(self.0 + 1)
     }
 
-    pub fn add_two(&self) -> Option<Rank> {
+    pub const fn add_two(self) -> Option<Rank> {
         Rank::new(self.0 + 2)
     }
 
-    pub fn subtract_one(&self) -> Option<Rank> {
-        match *self {
+    pub const fn subtract_one(self) -> Option<Rank> {
+        match self {
             Rank::R1 => None,
             _ => Rank::new(self.0 - 1),
         }
     }
 
-    pub fn subtract_two(&self) -> Option<Rank> {
-        match *self {
+    pub const fn subtract_two(self) -> Option<Rank> {
+        match self {
             Rank::R1 | Rank::R2 => None,
             _ => Rank::new(self.0 - 2),
         }
@@ -100,16 +102,6 @@ impl Rank {
     pub const R8: Rank = Rank(7);
 }
 
-impl ToInt for Rank {
-    fn to_u8(&self) -> u8 {
-        self.0 as u8
-    }
-
-    fn to_usize(&self) -> usize {
-        self.0 as usize
-    }
-}
-
 impl fmt::Display for Rank {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
@@ -127,8 +119,6 @@ impl fmt::Debug for Rank {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::core::types::ToInt;
-
     use super::Rank;
     use std::collections::HashMap;
 
@@ -154,9 +144,15 @@ pub mod tests {
     }
 
     #[test]
-    pub fn rank_as_u8() {
-        assert!(Rank::R1.to_u8() == 0);
-        assert!(Rank::R8.to_u8() == 7);
+    pub fn rank_to_offset() {
+        assert!(Rank::R1.to_offset() == 0);
+        assert!(Rank::R2.to_offset() == 1);
+        assert!(Rank::R3.to_offset() == 2);
+        assert!(Rank::R4.to_offset() == 3);
+        assert!(Rank::R5.to_offset() == 4);
+        assert!(Rank::R6.to_offset() == 5);
+        assert!(Rank::R7.to_offset() == 6);
+        assert!(Rank::R8.to_offset() == 7);
     }
 
     #[test]

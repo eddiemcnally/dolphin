@@ -1,5 +1,4 @@
 use crate::board::colour::Colour;
-use crate::core::types::ToInt;
 use std::{fmt, slice::Iter};
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
@@ -12,22 +11,16 @@ pub enum Piece {
     King,
 }
 
-impl ToInt for Piece {
-    fn to_u8(&self) -> u8 {
-        *self as u8
-    }
-
-    fn to_usize(&self) -> usize {
-        *self as usize
-    }
-}
-
 impl Piece {
     pub const NUM_PIECES: usize = 32;
     pub const NUM_PIECE_TYPES: usize = 6;
 
-    pub fn value(&self) -> u32 {
-        match &self {
+    pub const fn to_offset(self) -> usize {
+        self as usize
+    }
+
+    pub fn value(self) -> u32 {
+        match self {
             Piece::Pawn => PieceValue::Pawn as u32,
             Piece::Bishop => PieceValue::Bishop as u32,
             Piece::Knight => PieceValue::Knight as u32,

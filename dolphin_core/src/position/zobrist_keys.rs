@@ -1,6 +1,6 @@
+use crate::board::colour::Colour;
 use crate::board::piece::Piece;
 use crate::board::square::Square;
-use crate::{board::colour::Colour, core::types::ToInt};
 use rand::RngCore;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256PlusPlus;
@@ -52,14 +52,14 @@ impl ZobristKeys {
     }
 
     pub fn piece_square(&self, piece: Piece, colour: Colour, square: Square) -> ZobristHash {
-        let pce_offset = piece.to_usize();
-        let sq_offset = square.to_usize();
-        let col_offset = colour.to_usize();
+        let pce_offset = piece.to_offset();
+        let sq_offset = square.to_offset();
+        let col_offset = colour.to_offset();
         self.piece_keys[col_offset][sq_offset][pce_offset]
     }
 
     pub fn en_passant(&self, square: Square) -> ZobristHash {
-        let sq_offset = square.to_usize();
+        let sq_offset = square.to_offset();
         self.en_passant_sq_keys[sq_offset]
     }
 

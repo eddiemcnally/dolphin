@@ -4,7 +4,6 @@
 use crate::board::colour::Colour;
 use crate::board::game_board::Board;
 use crate::board::piece::Piece;
-use crate::core::types::ToInt;
 
 #[rustfmt::skip]
 const PAWN_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
@@ -83,7 +82,7 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
 
     // Evaluate White position
     for sq in board.get_colour_bb(Colour::White).iterator() {
-        let sq_offset = sq.to_usize();
+        let sq_offset = sq.to_offset();
         if let Some(pce) = board.get_piece_type_on_square(sq) {
             score += match pce {
                 Piece::Pawn => PAWN_SQ_VALUE[sq_offset] as i32,
@@ -97,7 +96,7 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
     }
 
     for sq in board.get_colour_bb(Colour::Black).iterator() {
-        let sq_offset = sq.to_usize();
+        let sq_offset = sq.to_offset();
         if let Some(pce) = board.get_piece_type_on_square(sq) {
             score += match pce {
                 Piece::Pawn => -PAWN_SQ_VALUE[63 - sq_offset] as i32,

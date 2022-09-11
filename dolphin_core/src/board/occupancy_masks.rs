@@ -3,7 +3,6 @@ use crate::board::file::File;
 use crate::board::game_board::Board;
 use crate::board::rank::Rank;
 use crate::board::square::Square;
-use crate::core::types::ToInt;
 use std::ops::Shl;
 
 const RANK_MASK: Bitboard = Bitboard::new(0x0000_0000_0000_00ff);
@@ -60,20 +59,20 @@ impl OccupancyMasks {
     }
 
     pub fn get_occupancy_mask_bishop(&self, sq: Square) -> Bitboard {
-        let d = self.diagonal[sq.to_usize()];
+        let d = self.diagonal[sq.to_offset()];
         d.get_diag_mask() | d.get_anti_diag_mask()
     }
 
     pub fn get_occupancy_mask_knight(&self, sq: Square) -> Bitboard {
-        *self.knight.get(sq.to_usize()).unwrap()
+        *self.knight.get(sq.to_offset()).unwrap()
     }
 
     pub fn get_occupancy_mask_king(&self, sq: Square) -> Bitboard {
-        *self.king.get(sq.to_usize()).unwrap()
+        *self.king.get(sq.to_offset()).unwrap()
     }
 
     pub fn get_inbetween_squares(&self, sq1: Square, sq2: Square) -> Bitboard {
-        self.in_between[sq1.to_usize()][sq2.to_usize()]
+        self.in_between[sq1.to_offset()][sq2.to_offset()]
     }
 
     pub fn get_horizontal_mask(&self, sq: Square) -> Bitboard {
@@ -85,7 +84,7 @@ impl OccupancyMasks {
     }
 
     pub fn get_diag_antidiag_mask(&self, sq: Square) -> &DiagonalAntidiagonal {
-        self.diagonal.get(sq.to_usize()).unwrap()
+        self.diagonal.get(sq.to_offset()).unwrap()
     }
 
     pub fn get_occ_mask_white_pawns_double_move_mask(&self, sq: Square) -> Bitboard {
@@ -140,12 +139,12 @@ impl OccupancyMasks {
 
 fn get_vertical_move_mask(sq: Square) -> Bitboard {
     let file = sq.file();
-    FILE_MASK << file.to_u8()
+    FILE_MASK << file.to_offset() as u8
 }
 
 fn get_horizontal_move_mask(sq: Square) -> Bitboard {
     let rank = sq.rank();
-    RANK_MASK << (rank.to_u8() << 3)
+    RANK_MASK << ((rank.to_offset() as u8) << 3)
 }
 
 fn populate_knight_occupancy_mask_array() -> [Bitboard; Board::NUM_SQUARES] {
@@ -190,7 +189,7 @@ fn populate_knight_occupancy_mask_array() -> [Bitboard; Board::NUM_SQUARES] {
         f = file.subtract_one();
         set_bb_if_sq_valid(r, f, &mut bb);
 
-        retval[sq.to_usize()] = bb;
+        retval[sq.to_offset()] = bb;
     }
     retval
 }
@@ -242,7 +241,7 @@ fn populate_king_mask_array() -> [Bitboard; Board::NUM_SQUARES] {
         f = file.add_one();
         set_bb_if_sq_valid(r, f, &mut bb);
 
-        retval[sq.to_usize()] = bb;
+        retval[sq.to_offset()] = bb;
     }
     retval
 }
@@ -297,7 +296,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; Board::NUM_SQUARES] 
         // remove current square
         bb.clear_bit(*sq);
 
-        retval[sq.to_usize()].diag_mask = bb;
+        retval[sq.to_offset()].diag_mask = bb;
     }
 
     for sq in Square::iterator() {
@@ -343,7 +342,7 @@ fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; Board::NUM_SQUARES] 
         // remove current square
         bb.clear_bit(*sq);
 
-        retval[sq.to_usize()].anti_diag_mask = bb;
+        retval[sq.to_offset()].anti_diag_mask = bb;
     }
 
     retval
@@ -365,9 +364,9 @@ fn populate_intervening_bitboard_array() -> [[Bitboard; Board::NUM_SQUARES]; Boa
 
     for sq1 in Square::iterator() {
         for sq2 in Square::iterator() {
-            let btwn = (M1.shl(sq1.to_usize() as u8)) ^ (M1.shl(sq2.to_usize() as u8));
-            let file = (sq2.to_usize() as u64 & 7).wrapping_sub(sq1.to_usize() as u64 & 7);
-            let rank = ((sq2.to_usize() as u64 | 7).wrapping_sub(sq1.to_usize() as u64)) >> 3;
+            let btwn = (M1.shl(sq1.to_offset() as u8)) ^ (M1.shl(sq2.to_offset() as u8));
+            let file = (sq2.to_offset() as u64 & 7).wrapping_sub(sq1.to_offset() as u64 & 7);
+            let rank = ((sq2.to_offset() as u64 | 7).wrapping_sub(sq1.to_offset() as u64)) >> 3;
             let mut line = ((file & 7).wrapping_sub(1)) & A2A7; /* a2a7 if same file */
             line = line.wrapping_add((((rank & 7).wrapping_sub(1)) >> 58).wrapping_mul(2)); /* b1g1 if same rank */
             line = line.wrapping_add((((rank.wrapping_sub(file)) & 15).wrapping_sub(1)) & B2G7); /* b2g7 if same diagonal */
@@ -375,7 +374,7 @@ fn populate_intervening_bitboard_array() -> [[Bitboard; Board::NUM_SQUARES]; Boa
             line = line.wrapping_mul(btwn & (btwn.wrapping_neg())); /* mul acts like shift by smaller square */
             let val = line & btwn; /* return the bits on that line in-between */
 
-            retval[sq1.to_usize()][sq2.to_usize()] = Bitboard::new(val);
+            retval[sq1.to_offset()][sq2.to_offset()] = Bitboard::new(val);
         }
     }
 

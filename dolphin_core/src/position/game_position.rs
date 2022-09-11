@@ -144,31 +144,31 @@ impl<'a> Position<'a> {
         self.game_state.side_to_move
     }
 
-    pub fn board(&self) -> &Board {
+    pub const fn board(&self) -> &Board {
         &self.board
     }
 
-    pub fn en_passant_square(&self) -> Option<Square> {
+    pub const fn en_passant_square(&self) -> Option<Square> {
         self.game_state.en_pass_sq
     }
 
-    pub fn is_en_passant_active(&self) -> bool {
+    pub const fn is_en_passant_active(&self) -> bool {
         self.game_state.en_pass_sq.is_some()
     }
 
-    pub fn castle_permissions(&self) -> CastlePermission {
+    pub const fn castle_permissions(&self) -> CastlePermission {
         self.game_state.castle_perm
     }
 
-    pub fn move_counter(&self) -> &MoveCounter {
+    pub const fn move_counter(&self) -> &MoveCounter {
         &self.game_state.move_cntr
     }
 
-    pub fn position_hash(&self) -> ZobristHash {
+    pub const fn position_hash(&self) -> ZobristHash {
         self.game_state.position_hash
     }
 
-    pub fn occupancy_masks(&self) -> &'a OccupancyMasks {
+    pub const fn occupancy_masks(&self) -> &'a OccupancyMasks {
         self.occ_masks
     }
 

@@ -1,7 +1,6 @@
 use crate::board::bitboard::Bitboard;
 use crate::board::file::*;
 use crate::board::rank::*;
-use crate::core::types::ToInt;
 use std::fmt;
 use std::slice::Iter;
 
@@ -16,6 +15,10 @@ impl Square {
             return Some(Square(num));
         }
         None
+    }
+
+    pub const fn to_offset(self) -> usize {
+        self.0 as usize
     }
 
     pub fn plus_1_rank(self) -> Option<Square> {
@@ -55,12 +58,12 @@ impl Square {
     }
 
     pub fn from_rank_file(rank: Rank, file: File) -> Square {
-        let sq = (rank.to_u8() << 3) + file.to_u8();
-        Square::new(sq).unwrap()
+        let sq = (rank.to_offset() << 3) + file.to_offset();
+        Square::new(sq as u8).unwrap()
     }
 
     pub fn get_square_as_bb(self) -> Bitboard {
-        Bitboard::new(0x01u64 << (self.to_usize()))
+        Bitboard::new(0x01u64 << (self.to_offset()))
     }
 
     pub fn get_from_string(str: &str) -> Option<Square> {
@@ -88,7 +91,6 @@ impl Square {
     }
     const fn file_as_u8(self) -> u8 {
         self.0 & 0x07
-        //(self.0 % 8) as u8
     }
 
     pub const A1: Square = Square(0);
@@ -179,16 +181,6 @@ impl Square {
     }
 }
 
-impl ToInt for Square {
-    fn to_u8(&self) -> u8 {
-        self.0 as u8
-    }
-
-    fn to_usize(&self) -> usize {
-        self.0 as usize
-    }
-}
-
 impl Default for Square {
     fn default() -> Square {
         Square::A1
@@ -219,7 +211,6 @@ pub mod tests {
     use super::Square;
     use crate::board::file::File;
     use crate::board::rank::Rank;
-    use crate::core::types::ToInt;
 
     #[test]
     pub fn rank_from_square() {
@@ -243,12 +234,12 @@ pub mod tests {
     #[test]
     pub fn convert_square_to_uint() {
         let sq: Square = Square::B1;
-        let num = sq.to_usize();
+        let num = sq.to_offset();
 
         assert_eq!(num, 1);
 
         let sq1: Square = Square::D7;
-        let num1 = sq1.to_usize();
+        let num1 = sq1.to_offset();
 
         assert_eq!(num1, 51);
     }

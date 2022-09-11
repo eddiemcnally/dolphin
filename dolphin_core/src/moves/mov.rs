@@ -125,41 +125,41 @@ impl Move {
 
     /// Encodes a White King-side castle move
     ///
-    pub fn encode_move_castle_kingside_white() -> Move {
+    pub const fn encode_move_castle_kingside_white() -> Move {
         encode(Square::E1, Square::G1, MoveType::KingCastle)
     }
 
     /// Encodes a Black King-side castle move
     ///
-    pub fn encode_move_castle_kingside_black() -> Move {
+    pub const fn encode_move_castle_kingside_black() -> Move {
         encode(Square::E8, Square::G8, MoveType::KingCastle)
     }
 
     /// Encodes a White Queen-side castle move
     ///
-    pub fn encode_move_castle_queenside_white() -> Move {
+    pub const fn encode_move_castle_queenside_white() -> Move {
         encode(Square::E1, Square::C1, MoveType::QueenCastle)
     }
 
     /// Encodes a Black Queen-side castle move
     ///
-    pub fn encode_move_castle_queenside_black() -> Move {
+    pub const fn encode_move_castle_queenside_black() -> Move {
         encode(Square::E8, Square::C8, MoveType::QueenCastle)
     }
 
-    pub fn decode_from_square(&self) -> Square {
+    pub fn decode_from_square(self) -> Square {
         self.from_sq
     }
 
-    pub fn decode_to_square(&self) -> Square {
+    pub fn decode_to_square(self) -> Square {
         self.to_sq
     }
 
-    pub fn decode_move_type(&self) -> MoveType {
+    pub fn decode_move_type(self) -> MoveType {
         self.move_type
     }
 
-    pub fn decode_promotion_piece(&self) -> Piece {
+    pub fn decode_promotion_piece(self) -> Piece {
         let mt = Self::decode_move_type(self);
 
         match mt {
@@ -171,35 +171,35 @@ impl Move {
         }
     }
 
-    pub fn is_capture(&self) -> bool {
+    pub fn is_capture(self) -> bool {
         Self::decode_move_type(self).is_capture()
     }
 
-    pub fn is_en_passant(&self) -> bool {
+    pub fn is_en_passant(self) -> bool {
         Self::decode_move_type(self).is_en_passant()
     }
 
-    pub fn is_castle(&self) -> bool {
+    pub fn is_castle(self) -> bool {
         Self::decode_move_type(self).is_castle()
     }
 
-    pub fn is_promote(&self) -> bool {
+    pub fn is_promote(self) -> bool {
         Self::decode_move_type(self).is_promotion()
     }
 
-    pub fn is_quiet(&self) -> bool {
+    pub fn is_quiet(self) -> bool {
         Self::decode_move_type(self).is_quiet()
     }
 
-    pub fn is_queen_castle(&self) -> bool {
+    pub fn is_queen_castle(self) -> bool {
         Self::decode_move_type(self).is_queen_castle()
     }
 
-    pub fn is_king_castle(&self) -> bool {
+    pub fn is_king_castle(self) -> bool {
         Self::decode_move_type(self).is_king_castle()
     }
 
-    pub fn is_double_pawn(&self) -> bool {
+    pub fn is_double_pawn(self) -> bool {
         Self::decode_move_type(self).is_double_pawn()
     }
 
@@ -221,7 +221,7 @@ impl Move {
 }
 
 #[inline(always)]
-fn encode(from_sq: Square, to_sq: Square, move_type: MoveType) -> Move {
+const fn encode(from_sq: Square, to_sq: Square, move_type: MoveType) -> Move {
     Move {
         score: 0,
         move_type,

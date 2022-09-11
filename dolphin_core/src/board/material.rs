@@ -1,5 +1,4 @@
 use crate::board::colour::Colour;
-use crate::core::types::ToInt;
 use std::fmt;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
@@ -10,24 +9,24 @@ pub struct Material {
 impl Material {
     pub fn new(white: u32, black: u32) -> Material {
         let mut met = Material::default();
-        met.score[Colour::White.to_usize()] = white;
-        met.score[Colour::Black.to_usize()] = black;
+        met.score[Colour::White.to_offset()] = white;
+        met.score[Colour::Black.to_offset()] = black;
         met
     }
 
     pub fn get_black(&self) -> u32 {
-        self.score[Colour::Black.to_usize()]
+        self.score[Colour::Black.to_offset()]
     }
     pub fn get_white(&self) -> u32 {
-        self.score[Colour::White.to_usize()]
+        self.score[Colour::White.to_offset()]
     }
 
     pub fn get_material_for_colour(&self, colour: Colour) -> u32 {
-        self.score[colour.to_usize()]
+        self.score[colour.to_offset()]
     }
 
     pub fn set_material_for_colour(&mut self, colour: Colour, score: u32) {
-        self.score[colour.to_usize()] = score;
+        self.score[colour.to_offset()] = score;
     }
 
     pub fn get_net_material(&self) -> i32 {

@@ -1,19 +1,8 @@
-use crate::core::types::ToInt;
 use std::fmt;
 use std::slice::Iter;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 pub struct File(u8);
-
-impl ToInt for File {
-    fn to_u8(&self) -> u8 {
-        self.0 as u8
-    }
-
-    fn to_usize(&self) -> usize {
-        self.0 as usize
-    }
-}
 
 impl File {
     pub const A: File = File(0);
@@ -32,23 +21,26 @@ impl File {
         None
     }
 
-    pub fn add_one(&self) -> Option<File> {
+    pub const fn to_offset(self) -> usize {
+        self.0 as usize
+    }
+    pub fn add_one(self) -> Option<File> {
         File::new(self.0 + 1)
     }
 
-    pub fn subtract_one(&self) -> Option<File> {
-        match *self {
+    pub fn subtract_one(self) -> Option<File> {
+        match self {
             File::A => None,
             _ => File::new(self.0 - 1),
         }
     }
 
-    pub fn add_two(&self) -> Option<File> {
+    pub fn add_two(self) -> Option<File> {
         File::new(self.0 + 2)
     }
 
-    pub fn subtract_two(&self) -> Option<File> {
-        match *self {
+    pub fn subtract_two(self) -> Option<File> {
+        match self {
             File::A | File::B => None,
             _ => File::new(self.0 - 2),
         }
@@ -113,8 +105,6 @@ impl fmt::Debug for File {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::core::types::ToInt;
-
     use super::File;
     use std::collections::HashMap;
 
@@ -204,29 +194,21 @@ pub mod tests {
 
     #[test]
     pub fn file_to_int() {
-        assert_eq!(File::A.to_u8(), 0);
-        assert_eq!(File::A.to_usize(), 0);
+        assert_eq!(File::A.to_offset(), 0);
 
-        assert_eq!(File::B.to_u8(), 1);
-        assert_eq!(File::B.to_usize(), 1);
+        assert_eq!(File::B.to_offset(), 1);
 
-        assert_eq!(File::C.to_u8(), 2);
-        assert_eq!(File::C.to_usize(), 2);
+        assert_eq!(File::C.to_offset(), 2);
 
-        assert_eq!(File::D.to_u8(), 3);
-        assert_eq!(File::D.to_usize(), 3);
+        assert_eq!(File::D.to_offset(), 3);
 
-        assert_eq!(File::E.to_u8(), 4);
-        assert_eq!(File::E.to_usize(), 4);
+        assert_eq!(File::E.to_offset(), 4);
 
-        assert_eq!(File::F.to_u8(), 5);
-        assert_eq!(File::F.to_usize(), 5);
+        assert_eq!(File::F.to_offset(), 5);
 
-        assert_eq!(File::G.to_u8(), 6);
-        assert_eq!(File::G.to_usize(), 6);
+        assert_eq!(File::G.to_offset(), 6);
 
-        assert_eq!(File::H.to_u8(), 7);
-        assert_eq!(File::H.to_usize(), 7);
+        assert_eq!(File::H.to_offset(), 7);
     }
 
     fn get_file_map() -> HashMap<File, char> {

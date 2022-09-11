@@ -1,7 +1,6 @@
 use crate::board::occupancy_masks::FILE_A_BB;
 use crate::board::occupancy_masks::FILE_H_BB;
 use crate::board::square::Square;
-use crate::core::types::ToInt;
 use core::ops::BitOr;
 use core::ops::BitOrAssign;
 use std::ops::BitAnd;
@@ -32,24 +31,25 @@ impl Bitboard {
         self.0 &= !mask.0
     }
 
-    pub fn is_set(&self, sq: Square) -> bool {
+    pub fn is_set(self, sq: Square) -> bool {
         let mask = to_mask(sq);
         (self.0 & mask.0) != 0
     }
 
-    pub fn is_clear(&self, sq: Square) -> bool {
+    pub fn is_clear(self, sq: Square) -> bool {
         let mask = to_mask(sq);
         (self.0 & mask.0) == 0
     }
 
-    pub const fn is_empty(&self) -> bool {
+    pub const fn is_empty(self) -> bool {
         self.0 == 0
     }
 
-    pub const fn is_not_empty(&self) -> bool {
+    pub const fn is_not_empty(self) -> bool {
         !self.is_empty()
     }
 
+    #[inline(always)]
     pub fn move_bit(bb1: &mut Bitboard, bb2: &mut Bitboard, from_sq: Square, to_sq: Square) {
         let from_bb = to_mask(from_sq);
         let to_bb = to_mask(to_sq);
@@ -115,8 +115,9 @@ impl Bitboard {
     }
 }
 
+#[inline(always)]
 fn to_mask(sq: Square) -> Bitboard {
-    Bitboard::new(1).shl(sq.to_u8())
+    Bitboard::new(1).shl(sq.to_offset() as u8)
 }
 
 impl BitAnd for Bitboard {

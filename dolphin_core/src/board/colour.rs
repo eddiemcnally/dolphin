@@ -1,4 +1,3 @@
-use crate::core::types::ToInt;
 use std::fmt;
 use std::slice::Iter;
 
@@ -8,20 +7,14 @@ pub enum Colour {
     Black,
 }
 
-impl ToInt for Colour {
-    fn to_u8(&self) -> u8 {
-        *self as u8
-    }
-
-    fn to_usize(&self) -> usize {
-        *self as usize
-    }
-}
-
 impl Colour {
     pub const NUM_COLOURS: usize = 2;
 
-    pub fn flip_side(self) -> Colour {
+    pub const fn to_offset(self) -> usize {
+        self as usize
+    }
+
+    pub const fn flip_side(self) -> Colour {
         match self {
             Colour::White => Colour::Black,
             Colour::Black => Colour::White,
@@ -57,7 +50,7 @@ impl fmt::Display for Colour {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{board::colour::Colour, core::types::ToInt};
+    use crate::board::colour::Colour;
 
     #[test]
     pub fn flip_side_as_expected() {
@@ -80,12 +73,10 @@ pub mod tests {
     #[test]
     pub fn to_int() {
         let mut c = Colour::White;
-        assert_eq!(c.to_u8(), 0);
-        assert_eq!(c.to_usize(), 0);
+        assert_eq!(c.to_offset(), 0);
 
         c = Colour::Black;
-        assert_eq!(c.to_u8(), 1);
-        assert_eq!(c.to_usize(), 1);
+        assert_eq!(c.to_offset(), 1);
     }
 
     #[test]
