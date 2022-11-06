@@ -53,12 +53,7 @@ impl MoveList {
     }
 
     pub fn get_offset_for_move(&self, mv: Move) -> Option<usize> {
-        for i in 0..self.len() {
-            if self.ml[i] == mv {
-                return Some(i);
-            }
-        }
-        None
+        (0..self.len()).find(|&i| self.ml[i] == mv)
     }
 
     pub fn iterator(&self) -> std::slice::Iter<'_, Move> {

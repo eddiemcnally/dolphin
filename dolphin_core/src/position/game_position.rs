@@ -645,7 +645,7 @@ impl fmt::Display for GameState {
     }
 }
 
-impl<'a> fmt::Debug for Position<'_> {
+impl fmt::Debug for Position<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
 
