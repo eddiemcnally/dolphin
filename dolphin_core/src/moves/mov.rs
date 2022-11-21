@@ -1,19 +1,35 @@
 use crate::board::piece::Piece;
 use crate::board::square::Square;
+use num_enum::TryFromPrimitive;
 use std::fmt;
 
 #[derive(Eq, PartialEq, Copy, Clone, Hash)]
 pub struct Move {
-    score: i32,
-    from_sq: Square,
-    to_sq: Square,
-    move_type: MoveType,
+    m: u64,
 }
+
+pub type Score = i32;
+
+// bitmap for Move (u64)
+// -- -- -- -- -- -- -- XX      From Square
+// -- -- -- -- -- -- XX --      To Square
+// -- -- -- -- -- XX -- --      Move Type
+// -- -- -- -- XX -- -- --      Unused
+// XX XX XX XX -- -- -- --      Score
+
+const MV_MASK_FROM_SQ: u64 = 0x0000_0000_0000_00_FF;
+const MV_MASK_TO_SQ: u64 = 0x0000_0000_0000_FF00;
+const MV_MASK_MOVE_TYPE: u64 = 0x0000_0000_00FF_00_00;
+
+const MV_SHIFT_FROM_SQ: usize = 0;
+const MV_SHIFT_TO_SQ: usize = 8;
+const MV_SHIFT_MOVE_TYPE: usize = 16;
+const MV_SHIFT_SCORE: usize = 32;
 
 //
 // see https://www.chessprogramming.org/Encoding_Moves
 //
-#[derive(Eq, PartialEq, Copy, Clone, Hash)]
+#[derive(Eq, PartialEq, Copy, Clone, Hash, TryFromPrimitive)]
 #[repr(u8)]
 #[rustfmt::skip]
 pub enum MoveType {
@@ -148,15 +164,18 @@ impl Move {
     }
 
     pub fn decode_from_square(self) -> Square {
-        self.from_sq
+        let s: u8 = ((self.m & MV_MASK_FROM_SQ) >> MV_SHIFT_FROM_SQ) as u8;
+        Square::new(s).unwrap()
     }
 
     pub fn decode_to_square(self) -> Square {
-        self.to_sq
+        let s: u8 = ((self.m & MV_MASK_TO_SQ) >> MV_SHIFT_TO_SQ) as u8;
+        Square::new(s).unwrap()
     }
 
     pub fn decode_move_type(self) -> MoveType {
-        self.move_type
+        let s: u8 = ((self.m & MV_MASK_MOVE_TYPE) >> MV_SHIFT_MOVE_TYPE) as u8;
+        MoveType::try_from(s).unwrap()
     }
 
     pub fn decode_promotion_piece(self) -> Piece {
@@ -203,12 +222,14 @@ impl Move {
         Self::decode_move_type(self).is_double_pawn()
     }
 
-    pub fn set_score(&mut self, score: i32) {
-        self.score = score;
+    pub fn set_score(&mut self, score: Score) {
+        let s: u64 = (score as u64) << MV_SHIFT_SCORE;
+
+        self.m |= s;
     }
 
-    pub fn get_score(&self) -> i32 {
-        self.score
+    pub fn get_score(&self) -> Score {
+        (self.m >> MV_SHIFT_SCORE) as Score
     }
 
     pub fn print_move(&self) {
@@ -220,13 +241,13 @@ impl Move {
     }
 }
 
-#[inline(always)]
 const fn encode(from_sq: Square, to_sq: Square, move_type: MoveType) -> Move {
+    let from: u64 = ((from_sq.to_offset() as u64) << MV_SHIFT_FROM_SQ) as u64 & MV_MASK_FROM_SQ;
+    let to: u64 = ((to_sq.to_offset() as u64) << MV_SHIFT_TO_SQ) as u64 & MV_MASK_TO_SQ;
+    let move_type: u64 = ((move_type as u64) << MV_SHIFT_MOVE_TYPE) as u64 & MV_MASK_MOVE_TYPE;
+
     Move {
-        score: 0,
-        move_type,
-        from_sq,
-        to_sq,
+        m: from | to | move_type,
     }
 }
 

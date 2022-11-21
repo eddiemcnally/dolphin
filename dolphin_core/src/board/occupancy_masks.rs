@@ -7,8 +7,10 @@ use std::ops::Shl;
 
 const RANK_MASK: Bitboard = Bitboard::new(0x0000_0000_0000_00ff);
 const FILE_MASK: Bitboard = Bitboard::new(0x0101_0101_0101_0101);
+
 pub const FILE_A_BB: Bitboard = FILE_MASK;
 pub const FILE_H_BB: Bitboard = Bitboard::new(0x8080_8080_8080_8080);
+
 #[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
 pub struct DiagonalAntidiagonal {
     diag_mask: Bitboard,

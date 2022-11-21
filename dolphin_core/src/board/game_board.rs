@@ -290,20 +290,20 @@ pub mod tests {
 
                 assert!(board.is_sq_empty(*from_sq));
                 assert!(board.is_sq_empty(*to_sq));
-                assert!(board.pieces[from_sq.to_offset()] == None);
-                assert!(board.pieces[to_sq.to_offset()] == None);
+                assert!(board.pieces[from_sq.to_offset()].is_none());
+                assert!(board.pieces[to_sq.to_offset()].is_none());
 
                 board.add_piece(pce, col, *from_sq);
                 assert!(!board.is_sq_empty(*from_sq));
                 assert!(board.is_sq_empty(*to_sq));
                 assert!(board.pieces[from_sq.to_offset()] == Some(pce));
-                assert!(board.pieces[to_sq.to_offset()] == None);
+                assert!(board.pieces[to_sq.to_offset()].is_none());
 
                 board.move_piece(*from_sq, *to_sq, pce, col);
                 assert!(board.is_sq_empty(*from_sq));
                 assert!(!board.is_sq_empty(*to_sq));
                 assert!(board.pieces[to_sq.to_offset()] == Some(pce));
-                assert!(board.pieces[from_sq.to_offset()] == None);
+                assert!(board.pieces[from_sq.to_offset()].is_none());
 
                 // clean up
                 board.remove_piece(pce, col, *to_sq);
