@@ -4,6 +4,7 @@
 use crate::board::colour::Colour;
 use crate::board::game_board::Board;
 use crate::board::piece::Piece;
+use crate::moves::mov::Score;
 
 #[rustfmt::skip]
 const PAWN_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
@@ -77,7 +78,7 @@ const KING_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
     -30,    -40,    -40,    -50,    -50,    -40,    -40,    -30, 
 ];
 
-pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
+pub fn evaluate_board(board: &Board, side_to_move: Colour) -> Score {
     let mut score = board.get_material().get_net_material();
 
     // Evaluate White position
@@ -85,12 +86,12 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
         let sq_offset = sq.to_offset();
         if let Some(pce) = board.get_piece_type_on_square(sq) {
             score += match pce {
-                Piece::Pawn => PAWN_SQ_VALUE[sq_offset] as i32,
-                Piece::Bishop => BISHOP_SQ_VALUE[sq_offset] as i32,
-                Piece::Knight => KNIGHT_SQ_VALUE[sq_offset] as i32,
-                Piece::Rook => ROOK_SQ_VALUE[sq_offset] as i32,
-                Piece::Queen => QUEEN_SQ_VALUE[sq_offset] as i32,
-                Piece::King => KING_SQ_VALUE[sq_offset] as i32,
+                Piece::Pawn => PAWN_SQ_VALUE[sq_offset] as Score,
+                Piece::Bishop => BISHOP_SQ_VALUE[sq_offset] as Score,
+                Piece::Knight => KNIGHT_SQ_VALUE[sq_offset] as Score,
+                Piece::Rook => ROOK_SQ_VALUE[sq_offset] as Score,
+                Piece::Queen => QUEEN_SQ_VALUE[sq_offset] as Score,
+                Piece::King => KING_SQ_VALUE[sq_offset] as Score,
             }
         }
     }
@@ -99,12 +100,12 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> i32 {
         let sq_offset = sq.to_offset();
         if let Some(pce) = board.get_piece_type_on_square(sq) {
             score += match pce {
-                Piece::Pawn => -PAWN_SQ_VALUE[63 - sq_offset] as i32,
-                Piece::Bishop => -BISHOP_SQ_VALUE[63 - sq_offset] as i32,
-                Piece::Knight => -KNIGHT_SQ_VALUE[63 - sq_offset] as i32,
-                Piece::Rook => -ROOK_SQ_VALUE[63 - sq_offset] as i32,
-                Piece::Queen => -QUEEN_SQ_VALUE[63 - sq_offset] as i32,
-                Piece::King => -KING_SQ_VALUE[63 - sq_offset] as i32,
+                Piece::Pawn => -PAWN_SQ_VALUE[63 - sq_offset] as Score,
+                Piece::Bishop => -BISHOP_SQ_VALUE[63 - sq_offset] as Score,
+                Piece::Knight => -KNIGHT_SQ_VALUE[63 - sq_offset] as Score,
+                Piece::Rook => -ROOK_SQ_VALUE[63 - sq_offset] as Score,
+                Piece::Queen => -QUEEN_SQ_VALUE[63 - sq_offset] as Score,
+                Piece::King => -KING_SQ_VALUE[63 - sq_offset] as Score,
             }
         }
     }

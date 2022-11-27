@@ -1,4 +1,5 @@
 use crate::moves::mov::Move;
+use crate::moves::mov::Score;
 use crate::moves::move_gen::MoveGenerator;
 use crate::moves::move_list::MoveList;
 use crate::position::game_position::MoveLegality;
@@ -7,8 +8,8 @@ use crate::search_engine::evaluate::evaluate_board;
 use crate::search_engine::tt::TransTable;
 use crate::search_engine::tt::TransType;
 
-const SCORE_INFINITE: i32 = 30000;
-const SCORE_MATE: i32 = 29000;
+const SCORE_INFINITE: Score = 30000;
+const SCORE_MATE: Score = 29000;
 
 #[derive(Default)]
 pub struct Search {
@@ -20,7 +21,7 @@ pub struct Search {
 }
 
 impl Search {
-    const MOVE_ORDER_WEIGHT_PV_MOVE: i32 = 2000000;
+    const MOVE_ORDER_WEIGHT_PV_MOVE: i16 = 32000;
 
     pub fn new(tt_capacity: usize, max_depth: u8) -> Self {
         Search {
@@ -65,7 +66,13 @@ impl Search {
         retval
     }
 
-    fn alpha_beta(&mut self, pos: &mut Position, mut alpha: i32, beta: i32, depth: u8) -> i32 {
+    fn alpha_beta(
+        &mut self,
+        pos: &mut Position,
+        mut alpha: Score,
+        beta: Score,
+        depth: u8,
+    ) -> Score {
         if depth == 0 {
             return self.quiesence(pos, alpha, beta);
         }
@@ -129,9 +136,9 @@ impl Search {
         // check for mate
         if num_legal_moves == 0 {
             if pos.is_king_sq_attacked() {
-                return -SCORE_MATE + pos.move_counter().half_move() as i32;
+                return -SCORE_MATE + pos.move_counter().half_move() as Score;
             } else {
-                return 0_i32;
+                return 0;
             }
         }
 
@@ -147,7 +154,7 @@ impl Search {
         alpha
     }
 
-    fn quiesence(&mut self, pos: &mut Position, mut alpha: i32, beta: i32) -> i32 {
+    fn quiesence(&mut self, pos: &mut Position, mut alpha: Score, beta: Score) -> Score {
         // TODO check repetition
         // TODO checkl 50 move counter
         // TODO check max depth

@@ -4,27 +4,27 @@ use num_enum::TryFromPrimitive;
 use std::fmt;
 
 #[derive(Eq, PartialEq, Copy, Clone, Hash)]
+#[repr(transparent)]
 pub struct Move {
-    m: u64,
+    m: u32,
 }
 
-pub type Score = i32;
+pub type Score = i16;
 
-// bitmap for Move (u64)
-// -- -- -- -- -- -- -- XX      From Square
-// -- -- -- -- -- -- XX --      To Square
-// -- -- -- -- -- XX -- --      Move Type
-// -- -- -- -- XX -- -- --      Unused
-// XX XX XX XX -- -- -- --      Score
+// bitmap for Move (u32)
+// ---- ---- ---- ---- ---- ---- --XX XXXX      From Square
+// ---- ---- ---- ---- ---- XXXX XX-- ----      To Square
+// ---- ---- ---- ---- XXXX ---- ---- ----      Move Type
+// XXXX XXXX XXXX XXXX ---- ---- ---- ----      Score
 
-const MV_MASK_FROM_SQ: u64 = 0x0000_0000_0000_00_FF;
-const MV_MASK_TO_SQ: u64 = 0x0000_0000_0000_FF00;
-const MV_MASK_MOVE_TYPE: u64 = 0x0000_0000_00FF_00_00;
+const MV_MASK_FROM_SQ: u32 = 0x0000_003F;
+const MV_MASK_TO_SQ: u32 = 0x0000_0FC0;
+const MV_MASK_MOVE_TYPE: u32 = 0x0000_F000;
 
 const MV_SHIFT_FROM_SQ: usize = 0;
-const MV_SHIFT_TO_SQ: usize = 8;
-const MV_SHIFT_MOVE_TYPE: usize = 16;
-const MV_SHIFT_SCORE: usize = 32;
+const MV_SHIFT_TO_SQ: usize = 6;
+const MV_SHIFT_MOVE_TYPE: usize = 12;
+const MV_SHIFT_SCORE: usize = 16;
 
 //
 // see https://www.chessprogramming.org/Encoding_Moves
@@ -223,7 +223,7 @@ impl Move {
     }
 
     pub fn set_score(&mut self, score: Score) {
-        let s: u64 = (score as u64) << MV_SHIFT_SCORE;
+        let s: u32 = (score as u32) << MV_SHIFT_SCORE;
 
         self.m |= s;
     }
@@ -242,9 +242,9 @@ impl Move {
 }
 
 const fn encode(from_sq: Square, to_sq: Square, move_type: MoveType) -> Move {
-    let from: u64 = ((from_sq.to_offset() as u64) << MV_SHIFT_FROM_SQ) as u64 & MV_MASK_FROM_SQ;
-    let to: u64 = ((to_sq.to_offset() as u64) << MV_SHIFT_TO_SQ) as u64 & MV_MASK_TO_SQ;
-    let move_type: u64 = ((move_type as u64) << MV_SHIFT_MOVE_TYPE) as u64 & MV_MASK_MOVE_TYPE;
+    let from: u32 = ((from_sq.to_offset() as u32) << MV_SHIFT_FROM_SQ) as u32 & MV_MASK_FROM_SQ;
+    let to: u32 = ((to_sq.to_offset() as u32) << MV_SHIFT_TO_SQ) as u32 & MV_MASK_TO_SQ;
+    let move_type: u32 = ((move_type as u32) << MV_SHIFT_MOVE_TYPE) as u32 & MV_MASK_MOVE_TYPE;
 
     Move {
         m: from | to | move_type,
@@ -341,7 +341,7 @@ pub mod tests {
     #[test]
     pub fn set_get_score() {
         // negative score
-        let mut score = -1234567;
+        let mut score = -12345;
         let mut mv = Move::encode_move_quiet(Square::A1, Square::A2);
         mv.set_score(score);
 
@@ -349,7 +349,7 @@ pub mod tests {
         assert_eq!(retr_score, score);
 
         // positive score
-        score = 1234567;
+        score = 12345;
         mv = Move::encode_move_quiet(Square::A1, Square::A2);
         mv.set_score(score);
 

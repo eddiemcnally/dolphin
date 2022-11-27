@@ -1,4 +1,5 @@
 use crate::moves::mov::Move;
+use crate::moves::mov::Score;
 use crate::position::zobrist_keys::ZobristHash;
 use std::boxed::Box;
 use std::fmt;
@@ -24,7 +25,7 @@ impl Default for TransType {
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
 struct TransEntry {
     trans_type: TransType,
-    score: i32,
+    score: Score,
     depth: u8,
     mv: Move,
     in_use: bool,
@@ -76,7 +77,14 @@ impl TransTable {
         }
     }
 
-    pub fn add(&mut self, tt_type: TransType, depth: u8, score: i32, hash: ZobristHash, mv: Move) {
+    pub fn add(
+        &mut self,
+        tt_type: TransType,
+        depth: u8,
+        score: Score,
+        hash: ZobristHash,
+        mv: Move,
+    ) {
         let offset = self.convert_hash_to_offset(hash, self.capacity);
 
         let tte = TransEntry {
@@ -112,9 +120,9 @@ impl TransTable {
         &self,
         hash: ZobristHash,
         depth: u8,
-        alpha: i32,
-        beta: i32,
-    ) -> Option<(TransType, i32)> {
+        alpha: Score,
+        beta: Score,
+    ) -> Option<(TransType, Score)> {
         let offset = self.convert_hash_to_offset(hash, self.capacity);
 
         let entry = self.entries[offset];
@@ -139,7 +147,7 @@ impl TransTable {
         None
     }
 
-    pub fn get(&mut self, hash: ZobristHash) -> Option<(TransType, u8, i32, Move)> {
+    pub fn get(&mut self, hash: ZobristHash) -> Option<(TransType, u8, Score, Move)> {
         let offset = self.convert_hash_to_offset(hash, self.capacity);
         if self.entries[offset].in_use {
             let tte = self.entries[offset];
@@ -182,10 +190,11 @@ pub mod tests {
     use crate::board::square::Square;
     use crate::moves::mov::Move;
     use crate::position::zobrist_keys::ZobristHash;
+    use crate::search_engine::tt::Score;
 
     #[test]
     pub fn add_and_get_multiple_no_collisions_verify_contents_as_expected() {
-        const NUM_TO_TEST: usize = 1_000_000;
+        const NUM_TO_TEST: usize = 30000;
         const DEPTH: u8 = 5;
         const TT_ENTRY_TYPE: TransType = TransType::Alpha;
 
@@ -194,7 +203,7 @@ pub mod tests {
         let mut tt = TransTable::new(NUM_TO_TEST);
         // add to TT
         for i in 0..NUM_TO_TEST {
-            let score = i as i32;
+            let score = i as Score;
             let depth = DEPTH;
             let trans_type = TT_ENTRY_TYPE;
 
@@ -204,7 +213,7 @@ pub mod tests {
 
         // retrieve and verify
         for i in 0..NUM_TO_TEST {
-            let tte: Option<(TransType, u8, i32, Move)> = tt.get(i as ZobristHash);
+            let tte: Option<(TransType, u8, Score, Move)> = tt.get(i as ZobristHash);
 
             assert!(tte.is_some());
             let trans_type = tte.unwrap().0;
@@ -212,45 +221,7 @@ pub mod tests {
             let score = tte.unwrap().2;
             let mv = tte.unwrap().3;
 
-            assert!(score == i as i32);
-            assert!(depth == DEPTH);
-            assert!(trans_type == TT_ENTRY_TYPE);
-            assert!(mv == target_move);
-        }
-    }
-
-    #[test]
-    pub fn add_and_get_multiple_with_collisions_verify_contents_as_expected() {
-        const NUM_TO_TEST: usize = 1_000_000;
-        const TT_SIZE: usize = 100_000;
-        const EXPECTED_NUM_COLLISIONS: usize = 900_000;
-        const DEPTH: u8 = 5;
-        const TT_ENTRY_TYPE: TransType = TransType::Alpha;
-
-        let target_move = Move::encode_move_quiet(Square::A1, Square::A2);
-
-        let mut tt = TransTable::new(TT_SIZE);
-        // add to TT
-        for i in 0..NUM_TO_TEST {
-            let score = i as i32;
-            let depth = DEPTH;
-            let trans_type = TT_ENTRY_TYPE;
-
-            tt.add(trans_type, depth, score, i as ZobristHash, target_move);
-        }
-        assert!(tt.get_num_used() == TT_SIZE as u32);
-
-        // elements upo to EXPECTED_NUM_COLLISIONS are overwritten
-        for i in EXPECTED_NUM_COLLISIONS..NUM_TO_TEST {
-            let tte: Option<(TransType, u8, i32, Move)> = tt.get(i as ZobristHash);
-
-            assert!(tte.is_some());
-            let trans_type = tte.unwrap().0;
-            let depth = tte.unwrap().1;
-            let score = tte.unwrap().2;
-            let mv = tte.unwrap().3;
-
-            assert!(score == i as i32);
+            assert!(score == i as Score);
             assert!(depth == DEPTH);
             assert!(trans_type == TT_ENTRY_TYPE);
             assert!(mv == target_move);

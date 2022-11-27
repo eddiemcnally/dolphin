@@ -1,4 +1,5 @@
 use crate::moves::mov::Move;
+use crate::moves::mov::Score;
 
 const MOVE_LIST_LEN: usize = 96;
 
@@ -47,7 +48,7 @@ impl MoveList {
         self.ml[offset]
     }
 
-    pub fn set_score_for_move_at(&mut self, offset: usize, score: i32) {
+    pub fn set_score_for_move_at(&mut self, offset: usize, score: Score) {
         let mut mv = self.get_move_at_offset(offset);
         mv.set_score(score);
     }

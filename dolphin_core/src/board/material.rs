@@ -1,36 +1,37 @@
 use crate::board::colour::Colour;
+use crate::moves::mov::Score;
 use std::fmt;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
 pub struct Material {
-    score: [u32; Colour::NUM_COLOURS],
+    score: [Score; Colour::NUM_COLOURS],
 }
 
 impl Material {
-    pub fn new(white: u32, black: u32) -> Material {
+    pub fn new(white: Score, black: Score) -> Material {
         let mut met = Material::default();
         met.score[Colour::White.to_offset()] = white;
         met.score[Colour::Black.to_offset()] = black;
         met
     }
 
-    pub fn get_black(&self) -> u32 {
+    pub fn get_black(&self) -> Score {
         self.score[Colour::Black.to_offset()]
     }
-    pub fn get_white(&self) -> u32 {
+    pub fn get_white(&self) -> Score {
         self.score[Colour::White.to_offset()]
     }
 
-    pub fn get_material_for_colour(&self, colour: Colour) -> u32 {
+    pub fn get_material_for_colour(&self, colour: Colour) -> Score {
         self.score[colour.to_offset()]
     }
 
-    pub fn set_material_for_colour(&mut self, colour: Colour, score: u32) {
+    pub fn set_material_for_colour(&mut self, colour: Colour, score: Score) {
         self.score[colour.to_offset()] = score;
     }
 
-    pub fn get_net_material(&self) -> i32 {
-        self.get_white().wrapping_sub(self.get_black()) as i32
+    pub fn get_net_material(&self) -> Score {
+        self.get_white().wrapping_sub(self.get_black()) as Score
     }
 }
 
@@ -59,6 +60,7 @@ pub mod tests {
     use crate::board::material::Material;
     use crate::board::piece::Piece;
     use crate::board::square::*;
+    use crate::moves::mov::Score;
 
     #[test]
     pub fn add_remove_white_pieces_material_as_expected() {
@@ -79,7 +81,7 @@ pub mod tests {
 
         assert_eq!(
             material_after_remove,
-            board.get_material().get_net_material() as u32
+            board.get_material().get_net_material() as Score
         );
     }
 

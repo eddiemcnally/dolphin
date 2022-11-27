@@ -1,4 +1,5 @@
 use crate::board::colour::Colour;
+use crate::moves::mov::Score;
 use std::{fmt, slice::Iter};
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
@@ -19,14 +20,14 @@ impl Piece {
         self as usize
     }
 
-    pub fn value(self) -> u32 {
+    pub fn value(self) -> Score {
         match self {
-            Piece::Pawn => PieceValue::Pawn as u32,
-            Piece::Bishop => PieceValue::Bishop as u32,
-            Piece::Knight => PieceValue::Knight as u32,
-            Piece::Rook => PieceValue::Rook as u32,
-            Piece::Queen => PieceValue::Queen as u32,
-            Piece::King => PieceValue::King as u32,
+            Piece::Pawn => PieceValue::Pawn as Score,
+            Piece::Bishop => PieceValue::Bishop as Score,
+            Piece::Knight => PieceValue::Knight as Score,
+            Piece::Rook => PieceValue::Rook as Score,
+            Piece::Queen => PieceValue::Queen as Score,
+            Piece::King => PieceValue::King as Score,
         }
     }
 
@@ -128,15 +129,16 @@ pub mod tests {
         colour::Colour,
         piece::{Piece, PieceValue},
     };
+    use crate::moves::mov::Score;
 
     #[test]
     pub fn piece_values_as_expected() {
-        assert_eq!(Piece::Pawn.value(), PieceValue::Pawn as u32);
-        assert_eq!(Piece::Bishop.value(), PieceValue::Bishop as u32);
-        assert_eq!(Piece::Knight.value(), PieceValue::Knight as u32);
-        assert_eq!(Piece::Rook.value(), PieceValue::Rook as u32);
-        assert_eq!(Piece::Queen.value(), PieceValue::Queen as u32);
-        assert_eq!(Piece::King.value(), PieceValue::King as u32);
+        assert_eq!(Piece::Pawn.value(), PieceValue::Pawn as Score);
+        assert_eq!(Piece::Bishop.value(), PieceValue::Bishop as Score);
+        assert_eq!(Piece::Knight.value(), PieceValue::Knight as Score);
+        assert_eq!(Piece::Rook.value(), PieceValue::Rook as Score);
+        assert_eq!(Piece::Queen.value(), PieceValue::Queen as Score);
+        assert_eq!(Piece::King.value(), PieceValue::King as Score);
     }
 
     #[test]
