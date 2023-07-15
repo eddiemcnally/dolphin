@@ -4,6 +4,7 @@
 use crate::board::colour::Colour;
 use crate::board::game_board::Board;
 use crate::board::piece::Piece;
+use crate::core::array_offset::EnumAsOffset;
 use crate::moves::mov::Score;
 
 #[rustfmt::skip]
@@ -83,7 +84,7 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> Score {
 
     // Evaluate White position
     for sq in board.get_colour_bb(Colour::White).iterator() {
-        let sq_offset = sq.to_offset();
+        let sq_offset = sq.as_index();
         if let Some(pce) = board.get_piece_type_on_square(sq) {
             score += match pce {
                 Piece::Pawn => PAWN_SQ_VALUE[sq_offset] as Score,
@@ -97,7 +98,7 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> Score {
     }
 
     for sq in board.get_colour_bb(Colour::Black).iterator() {
-        let sq_offset = sq.to_offset();
+        let sq_offset = sq.as_index();
         if let Some(pce) = board.get_piece_type_on_square(sq) {
             score += match pce {
                 Piece::Pawn => -PAWN_SQ_VALUE[63 - sq_offset] as Score,

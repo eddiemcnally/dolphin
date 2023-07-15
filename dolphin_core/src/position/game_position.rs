@@ -98,11 +98,11 @@ impl<'a> Position<'a> {
         };
 
         // generate position hash
-        for sq in pos.board.get_bitboard().iterator() {
+        pos.board.get_bitboard().iterator().for_each(|sq| {
             if let Some((piece, colour)) = pos.board().get_piece_and_colour_on_square(sq) {
                 pos.game_state.position_hash ^= pos.zobrist_keys.piece_square(piece, colour, sq);
             };
-        }
+        });
 
         pos.game_state.position_hash ^= pos.zobrist_keys.side();
 
@@ -316,7 +316,7 @@ impl<'a> Position<'a> {
         // put the moved piece back to it's original square
         self.board.add_piece(pce, self.side_to_move(), from_sq);
 
-        if let Some(..) = capture_pce {
+        if capture_pce.is_some() {
             self.board
                 .add_piece(capture_pce.unwrap(), self.side_to_move().flip_side(), to_sq);
         }
@@ -348,31 +348,29 @@ impl<'a> Position<'a> {
 
     fn reverse_castle_move(&mut self, mv: Move, side_move: Colour) {
         match side_move {
+            Colour::White if mv.is_king_castle() => {
+                self.board
+                    .move_piece(Square::G1, Square::E1, Piece::King, Colour::White);
+                self.board
+                    .move_piece(Square::F1, Square::H1, Piece::Rook, Colour::White);
+            }
             Colour::White => {
-                if mv.is_king_castle() {
-                    self.board
-                        .move_piece(Square::G1, Square::E1, Piece::King, Colour::White);
-                    self.board
-                        .move_piece(Square::F1, Square::H1, Piece::Rook, Colour::White);
-                } else {
-                    self.board
-                        .move_piece(Square::C1, Square::E1, Piece::King, Colour::White);
-                    self.board
-                        .move_piece(Square::D1, Square::A1, Piece::Rook, Colour::White);
-                }
+                self.board
+                    .move_piece(Square::C1, Square::E1, Piece::King, Colour::White);
+                self.board
+                    .move_piece(Square::D1, Square::A1, Piece::Rook, Colour::White);
+            }
+            Colour::Black if mv.is_king_castle() => {
+                self.board
+                    .move_piece(Square::G8, Square::E8, Piece::King, Colour::Black);
+                self.board
+                    .move_piece(Square::F8, Square::H8, Piece::Rook, Colour::Black);
             }
             Colour::Black => {
-                if mv.is_king_castle() {
-                    self.board
-                        .move_piece(Square::G8, Square::E8, Piece::King, Colour::Black);
-                    self.board
-                        .move_piece(Square::F8, Square::H8, Piece::Rook, Colour::Black);
-                } else {
-                    self.board
-                        .move_piece(Square::C8, Square::E8, Piece::King, Colour::Black);
-                    self.board
-                        .move_piece(Square::D8, Square::A8, Piece::Rook, Colour::Black);
-                }
+                self.board
+                    .move_piece(Square::C8, Square::E8, Piece::King, Colour::Black);
+                self.board
+                    .move_piece(Square::D8, Square::A8, Piece::Rook, Colour::Black);
             }
         }
     }

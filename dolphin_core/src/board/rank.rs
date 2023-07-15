@@ -1,40 +1,49 @@
+use crate::core::array_offset::EnumAsOffset;
+use num_enum::TryFromPrimitive;
 use std::fmt;
 use std::slice::Iter;
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy)]
-pub struct Rank(u8);
+#[derive(Eq, PartialEq, Hash, Clone, Copy, TryFromPrimitive)]
+#[repr(u8)]
+pub enum Rank {
+    R1,
+    R2,
+    R3,
+    R4,
+    R5,
+    R6,
+    R7,
+    R8,
+}
+
+impl EnumAsOffset for Rank {
+    fn as_index(&self) -> usize {
+        *self as usize
+    }
+}
 
 impl Rank {
-    pub const fn new(num: u8) -> Option<Rank> {
-        if num <= Rank::R8.0 {
-            return Some(Rank(num));
-        }
-        None
-    }
-
-    pub const fn to_offset(self) -> usize {
-        self.0 as usize
-    }
-    pub const fn add_one(self) -> Option<Rank> {
-        Rank::new(self.0 + 1)
-    }
-
-    pub const fn add_two(self) -> Option<Rank> {
-        Rank::new(self.0 + 2)
-    }
-
-    pub const fn subtract_one(self) -> Option<Rank> {
-        match self {
-            Rank::R1 => None,
-            _ => Rank::new(self.0 - 1),
+    pub fn new(num: u8) -> Option<Rank> {
+        match Rank::try_from(num) {
+            Ok(rank) => Some(rank),
+            Err(_) => None,
         }
     }
 
-    pub const fn subtract_two(self) -> Option<Rank> {
-        match self {
-            Rank::R1 | Rank::R2 => None,
-            _ => Rank::new(self.0 - 2),
-        }
+    pub fn add_one(self) -> Option<Rank> {
+        Rank::new(self.as_index() as u8 + 1)
+    }
+
+    pub fn add_two(self) -> Option<Rank> {
+        Rank::new(self.as_index() as u8 + 2)
+    }
+
+    pub fn subtract_one(self) -> Option<Rank> {
+        Rank::new((self.as_index() as u8).overflowing_sub(1).0)
+    }
+
+    pub fn subtract_two(self) -> Option<Rank> {
+        Rank::new((self.as_index() as u8).overflowing_sub(2).0)
     }
 
     pub fn from_char(rank: char) -> Option<Rank> {
@@ -60,7 +69,6 @@ impl Rank {
             Rank::R6 => '6',
             Rank::R7 => '7',
             Rank::R8 => '8',
-            _ => panic!("Invalid Rank {}", *self),
         }
     }
 
@@ -91,15 +99,6 @@ impl Rank {
         ];
         RANKS.iter()
     }
-
-    pub const R1: Rank = Rank(0);
-    pub const R2: Rank = Rank(1);
-    pub const R3: Rank = Rank(2);
-    pub const R4: Rank = Rank(3);
-    pub const R5: Rank = Rank(4);
-    pub const R6: Rank = Rank(5);
-    pub const R7: Rank = Rank(6);
-    pub const R8: Rank = Rank(7);
 }
 
 impl fmt::Display for Rank {
@@ -119,6 +118,8 @@ impl fmt::Debug for Rank {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::core::array_offset::EnumAsOffset;
+
     use super::Rank;
     use std::collections::HashMap;
 
@@ -144,15 +145,15 @@ pub mod tests {
     }
 
     #[test]
-    pub fn rank_to_offset() {
-        assert!(Rank::R1.to_offset() == 0);
-        assert!(Rank::R2.to_offset() == 1);
-        assert!(Rank::R3.to_offset() == 2);
-        assert!(Rank::R4.to_offset() == 3);
-        assert!(Rank::R5.to_offset() == 4);
-        assert!(Rank::R6.to_offset() == 5);
-        assert!(Rank::R7.to_offset() == 6);
-        assert!(Rank::R8.to_offset() == 7);
+    pub fn rank_as_index() {
+        assert!(Rank::R1.as_index() == 0);
+        assert!(Rank::R2.as_index() == 1);
+        assert!(Rank::R3.as_index() == 2);
+        assert!(Rank::R4.as_index() == 3);
+        assert!(Rank::R5.as_index() == 4);
+        assert!(Rank::R6.as_index() == 5);
+        assert!(Rank::R7.as_index() == 6);
+        assert!(Rank::R8.as_index() == 7);
     }
 
     #[test]

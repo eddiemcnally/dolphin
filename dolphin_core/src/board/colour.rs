@@ -1,18 +1,23 @@
+use crate::core::array_offset::EnumAsOffset;
 use std::fmt;
 use std::slice::Iter;
 
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Eq, PartialEq, Copy, Clone, Default)]
+#[repr(u8)]
 pub enum Colour {
+    #[default]
     White,
     Black,
 }
 
+impl EnumAsOffset for Colour {
+    fn as_index(&self) -> usize {
+        *self as usize
+    }
+}
+
 impl Colour {
     pub const NUM_COLOURS: usize = 2;
-
-    pub const fn to_offset(self) -> usize {
-        self as usize
-    }
 
     pub const fn flip_side(self) -> Colour {
         match self {
@@ -24,12 +29,6 @@ impl Colour {
     pub fn iterator() -> Iter<'static, Colour> {
         static COLOURS: [Colour; Colour::NUM_COLOURS] = [Colour::White, Colour::Black];
         COLOURS.iter()
-    }
-}
-
-impl Default for Colour {
-    fn default() -> Colour {
-        Colour::White
     }
 }
 
@@ -50,7 +49,7 @@ impl fmt::Display for Colour {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::board::colour::Colour;
+    use crate::{board::colour::Colour, core::array_offset::EnumAsOffset};
 
     #[test]
     pub fn flip_side_as_expected() {
@@ -73,10 +72,10 @@ pub mod tests {
     #[test]
     pub fn to_int() {
         let mut c = Colour::White;
-        assert_eq!(c.to_offset(), 0);
+        assert_eq!(c.as_index(), 0);
 
         c = Colour::Black;
-        assert_eq!(c.to_offset(), 1);
+        assert_eq!(c.as_index(), 1);
     }
 
     #[test]

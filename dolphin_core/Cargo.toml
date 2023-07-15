@@ -9,8 +9,9 @@ edition = "2021"
 rand = "0.8.5"
 rand_seeder = "0.2.3"
 rand_xoshiro = "0.6.0"
-core_affinity = "0.5.10"
-num_enum = "0.5.7"
+core_affinity = "0.8.0"
+num_enum = "0.5.11"
+bitflags = "2.0.2"
 
 
 

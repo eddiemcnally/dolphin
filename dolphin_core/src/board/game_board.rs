@@ -5,26 +5,25 @@ use crate::board::material::Material;
 use crate::board::piece::Piece;
 use crate::board::rank::Rank;
 use crate::board::square::Square;
+use crate::core::array_offset::EnumAsOffset;
 use std::fmt;
 use std::option::Option;
 
-#[derive(Eq, PartialEq, Clone, Copy)]
-struct PieceBitboardArray {
-    bb: [Bitboard; Piece::NUM_PIECE_TYPES],
+#[derive(Eq, PartialEq, Default, Copy, Clone)]
+struct ColourInfo {
+    piece_bb: [Bitboard; Piece::NUM_PIECE_TYPES],
+    colour_bb: Bitboard,
+    king_sq: Square,
 }
 
 #[derive(Eq, PartialEq)]
 pub struct Board {
-    // piece bitboard, an entry for each piece type (enum Piece)
-    piece_bb: [PieceBitboardArray; Colour::NUM_COLOURS],
-    // bitboard for each Colour
-    colour_bb: [Bitboard; Colour::NUM_COLOURS],
+    colour_info: [ColourInfo; Colour::NUM_COLOURS],
+
     // material value
     material: Material,
     // pieces on squares
     pieces: [Option<Piece>; Board::NUM_SQUARES],
-    // king squares
-    king_squares: [Square; Colour::NUM_COLOURS],
 }
 
 impl Board {
@@ -44,9 +43,9 @@ impl Board {
         self.set_bitboards(piece, colour, sq);
         let new_material = self.material.get_material_for_colour(colour) + piece.value();
         self.material.set_material_for_colour(colour, new_material);
-        self.pieces[sq.to_offset()] = Some(piece);
+        self.pieces[sq.as_index()] = Some(piece);
         if piece == Piece::King {
-            self.king_squares[colour.to_offset()] = sq;
+            self.colour_info[colour.as_index()].king_sq = sq;
         }
     }
 
@@ -60,11 +59,11 @@ impl Board {
         self.clear_bitboards(piece, colour, sq);
         let new_material = self.material.get_material_for_colour(colour) - piece.value();
         self.material.set_material_for_colour(colour, new_material);
-        self.pieces[sq.to_offset()] = None;
+        self.pieces[sq.as_index()] = None;
     }
 
     pub fn get_colour_bb(&self, colour: Colour) -> Bitboard {
-        self.colour_bb[colour.to_offset()]
+        self.colour_info[colour.as_index()].colour_bb
     }
 
     pub fn get_material(&self) -> Material {
@@ -84,28 +83,27 @@ impl Board {
             from_sq
         );
 
-        let pce_off = piece.to_offset();
-        let col_off = colour.to_offset();
-
+        let col_offset = colour.as_index();
+        let pce_offset = piece.as_index();
         // update bitboards
         Bitboard::move_bit(
-            &mut self.piece_bb[col_off].bb[pce_off],
-            &mut self.colour_bb[col_off],
+            &mut self.colour_info[col_offset].piece_bb[pce_offset],
+            &mut self.colour_info[col_offset].colour_bb,
             from_sq,
             to_sq,
         );
 
         //move the piece
-        self.pieces[from_sq.to_offset()] = None;
-        self.pieces[to_sq.to_offset()] = Some(piece);
+        self.pieces[from_sq.as_index()] = None;
+        self.pieces[to_sq.as_index()] = Some(piece);
 
         if piece == Piece::King {
-            self.king_squares[colour.to_offset()] = to_sq;
+            self.colour_info[col_offset].king_sq = to_sq;
         }
     }
 
     pub fn get_piece_and_colour_on_square(&self, sq: Square) -> Option<(Piece, Colour)> {
-        let pc = self.pieces[sq.to_offset()];
+        let pc = self.pieces[sq.as_index()];
         pc?;
 
         let col = if self.get_colour_bb(Colour::White).is_set(sq) {
@@ -118,61 +116,59 @@ impl Board {
     }
 
     pub fn get_piece_type_on_square(&self, sq: Square) -> Option<Piece> {
-        self.pieces[sq.to_offset()]
+        self.pieces[sq.as_index()]
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
         self.get_bitboard().is_clear(sq)
     }
 
-    pub const fn get_piece_bitboard(&self, piece: Piece, colour: Colour) -> Bitboard {
-        self.piece_bb[colour.to_offset()].bb[piece.to_offset()]
+    pub fn get_piece_bitboard(&self, piece: Piece, colour: Colour) -> Bitboard {
+        self.colour_info[colour.as_index()].piece_bb[piece.as_index()]
     }
 
     pub fn get_white_rook_queen_bitboard(&self) -> Bitboard {
-        self.piece_bb[Colour::White.to_offset()].bb[Piece::Rook.to_offset()]
-            | self.piece_bb[Colour::White.to_offset()].bb[Piece::Queen.to_offset()]
+        self.colour_info[Colour::White.as_index()].piece_bb[Piece::Rook.as_index()]
+            | self.colour_info[Colour::White.as_index()].piece_bb[Piece::Queen.as_index()]
     }
 
     pub fn get_black_rook_queen_bitboard(&self) -> Bitboard {
-        self.piece_bb[Colour::Black.to_offset()].bb[Piece::Rook.to_offset()]
-            | self.piece_bb[Colour::Black.to_offset()].bb[Piece::Queen.to_offset()]
+        self.colour_info[Colour::Black.as_index()].piece_bb[Piece::Rook.as_index()]
+            | self.colour_info[Colour::Black.as_index()].piece_bb[Piece::Queen.as_index()]
     }
 
     pub fn get_white_bishop_queen_bitboard(&self) -> Bitboard {
-        self.piece_bb[Colour::White.to_offset()].bb[Piece::Bishop.to_offset()]
-            | self.piece_bb[Colour::White.to_offset()].bb[Piece::Queen.to_offset()]
+        self.colour_info[Colour::White.as_index()].piece_bb[Piece::Queen.as_index()]
+            | self.colour_info[Colour::White.as_index()].piece_bb[Piece::Bishop.as_index()]
     }
 
     pub fn get_black_bishop_queen_bitboard(&self) -> Bitboard {
-        self.piece_bb[Colour::Black.to_offset()].bb[Piece::Bishop.to_offset()]
-            | self.piece_bb[Colour::Black.to_offset()].bb[Piece::Queen.to_offset()]
+        self.colour_info[Colour::Black.as_index()].piece_bb[Piece::Queen.as_index()]
+            | self.colour_info[Colour::Black.as_index()].piece_bb[Piece::Bishop.as_index()]
     }
 
     pub fn get_bitboard(&self) -> Bitboard {
         self.get_colour_bb(Colour::White) | self.get_colour_bb(Colour::Black)
     }
 
-    pub const fn get_king_sq(&self, colour: Colour) -> Square {
-        self.king_squares[colour.to_offset()]
+    pub fn get_king_sq(&self, colour: Colour) -> Square {
+        self.colour_info[colour.as_index()].king_sq
     }
 
-    #[inline(always)]
     fn clear_bitboards(&mut self, piece: Piece, colour: Colour, sq: Square) {
-        let pce_off = piece.to_offset();
-        let col_off = colour.to_offset();
+        let pce_off = piece.as_index();
+        let col_off = colour.as_index();
 
-        self.colour_bb[col_off].clear_bit(sq);
-        self.piece_bb[col_off].bb[pce_off].clear_bit(sq);
+        self.colour_info[col_off].piece_bb[pce_off].clear_bit(sq);
+        self.colour_info[col_off].colour_bb.clear_bit(sq);
     }
 
-    #[inline(always)]
     fn set_bitboards(&mut self, piece: Piece, colour: Colour, sq: Square) {
-        let pce_off = piece.to_offset();
-        let col_off = colour.to_offset();
+        let pce_off = piece.as_index();
+        let col_off = colour.as_index();
 
-        self.piece_bb[col_off].bb[pce_off].set_bit(sq);
-        self.colour_bb[col_off].set_bit(sq);
+        self.colour_info[col_off].piece_bb[pce_off].set_bit(sq);
+        self.colour_info[col_off].colour_bb.set_bit(sq);
     }
 }
 
@@ -209,22 +205,12 @@ impl fmt::Display for Board {
     }
 }
 
-impl Default for PieceBitboardArray {
-    fn default() -> Self {
-        PieceBitboardArray {
-            bb: [Bitboard::default(); Piece::NUM_PIECE_TYPES],
-        }
-    }
-}
-
 impl Default for Board {
     fn default() -> Self {
         Board {
-            piece_bb: [PieceBitboardArray::default(); Colour::NUM_COLOURS],
-            colour_bb: [Bitboard::default(); Colour::NUM_COLOURS],
             material: Material::default(),
             pieces: [None; Board::NUM_SQUARES],
-            king_squares: [Square::default(); Colour::NUM_COLOURS],
+            colour_info: [ColourInfo::default(); Colour::NUM_COLOURS],
         }
     }
 }
@@ -235,6 +221,7 @@ pub mod tests {
     use crate::board::game_board::Board;
     use crate::board::piece::Piece;
     use crate::board::square::Square;
+    use crate::core::array_offset::EnumAsOffset;
     use crate::io::fen;
 
     #[test]
@@ -290,20 +277,20 @@ pub mod tests {
 
                 assert!(board.is_sq_empty(*from_sq));
                 assert!(board.is_sq_empty(*to_sq));
-                assert!(board.pieces[from_sq.to_offset()].is_none());
-                assert!(board.pieces[to_sq.to_offset()].is_none());
+                assert!(board.pieces[from_sq.as_index()].is_none());
+                assert!(board.pieces[to_sq.as_index()].is_none());
 
                 board.add_piece(pce, col, *from_sq);
                 assert!(!board.is_sq_empty(*from_sq));
                 assert!(board.is_sq_empty(*to_sq));
-                assert!(board.pieces[from_sq.to_offset()] == Some(pce));
-                assert!(board.pieces[to_sq.to_offset()].is_none());
+                assert!(board.pieces[from_sq.as_index()] == Some(pce));
+                assert!(board.pieces[to_sq.as_index()].is_none());
 
                 board.move_piece(*from_sq, *to_sq, pce, col);
                 assert!(board.is_sq_empty(*from_sq));
                 assert!(!board.is_sq_empty(*to_sq));
-                assert!(board.pieces[to_sq.to_offset()] == Some(pce));
-                assert!(board.pieces[from_sq.to_offset()].is_none());
+                assert!(board.pieces[to_sq.as_index()] == Some(pce));
+                assert!(board.pieces[from_sq.as_index()].is_none());
 
                 // clean up
                 board.remove_piece(pce, col, *to_sq);

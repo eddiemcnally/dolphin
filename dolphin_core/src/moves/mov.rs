@@ -4,27 +4,14 @@ use num_enum::TryFromPrimitive;
 use std::fmt;
 
 #[derive(Eq, PartialEq, Copy, Clone, Hash)]
-#[repr(transparent)]
 pub struct Move {
-    m: u32,
+    from_sq: Square,
+    to_sq: Square,
+    move_type: MoveType,
+    score: Score,
 }
 
 pub type Score = i16;
-
-// bitmap for Move (u32)
-// ---- ---- ---- ---- ---- ---- --XX XXXX      From Square
-// ---- ---- ---- ---- ---- XXXX XX-- ----      To Square
-// ---- ---- ---- ---- XXXX ---- ---- ----      Move Type
-// XXXX XXXX XXXX XXXX ---- ---- ---- ----      Score
-
-const MV_MASK_FROM_SQ: u32 = 0x0000_003F;
-const MV_MASK_TO_SQ: u32 = 0x0000_0FC0;
-const MV_MASK_MOVE_TYPE: u32 = 0x0000_F000;
-
-const MV_SHIFT_FROM_SQ: usize = 0;
-const MV_SHIFT_TO_SQ: usize = 6;
-const MV_SHIFT_MOVE_TYPE: usize = 12;
-const MV_SHIFT_SCORE: usize = 16;
 
 //
 // see https://www.chessprogramming.org/Encoding_Moves
@@ -163,22 +150,23 @@ impl Move {
         encode(Square::E8, Square::C8, MoveType::QueenCastle)
     }
 
-    pub fn decode_from_square(self) -> Square {
-        let s: u8 = ((self.m & MV_MASK_FROM_SQ) >> MV_SHIFT_FROM_SQ) as u8;
-        Square::new(s).unwrap()
+    pub fn decode_from_square(&self) -> Square {
+        self.from_sq
     }
 
-    pub fn decode_to_square(self) -> Square {
-        let s: u8 = ((self.m & MV_MASK_TO_SQ) >> MV_SHIFT_TO_SQ) as u8;
-        Square::new(s).unwrap()
+    pub fn decode_to_square(&self) -> Square {
+        self.to_sq
     }
 
-    pub fn decode_move_type(self) -> MoveType {
-        let s: u8 = ((self.m & MV_MASK_MOVE_TYPE) >> MV_SHIFT_MOVE_TYPE) as u8;
-        MoveType::try_from(s).unwrap()
+    pub fn decode_move_type(&self) -> MoveType {
+        self.move_type
     }
 
-    pub fn decode_promotion_piece(self) -> Piece {
+    pub fn get_score(&self) -> Score {
+        self.score
+    }
+
+    pub fn decode_promotion_piece(&self) -> Piece {
         let mt = Self::decode_move_type(self);
 
         match mt {
@@ -190,46 +178,40 @@ impl Move {
         }
     }
 
-    pub fn is_capture(self) -> bool {
+    pub fn is_capture(&self) -> bool {
         Self::decode_move_type(self).is_capture()
     }
 
-    pub fn is_en_passant(self) -> bool {
+    pub fn is_en_passant(&self) -> bool {
         Self::decode_move_type(self).is_en_passant()
     }
 
-    pub fn is_castle(self) -> bool {
+    pub fn is_castle(&self) -> bool {
         Self::decode_move_type(self).is_castle()
     }
 
-    pub fn is_promote(self) -> bool {
+    pub fn is_promote(&self) -> bool {
         Self::decode_move_type(self).is_promotion()
     }
 
-    pub fn is_quiet(self) -> bool {
+    pub fn is_quiet(&self) -> bool {
         Self::decode_move_type(self).is_quiet()
     }
 
-    pub fn is_queen_castle(self) -> bool {
+    pub fn is_queen_castle(&self) -> bool {
         Self::decode_move_type(self).is_queen_castle()
     }
 
-    pub fn is_king_castle(self) -> bool {
+    pub fn is_king_castle(&self) -> bool {
         Self::decode_move_type(self).is_king_castle()
     }
 
-    pub fn is_double_pawn(self) -> bool {
+    pub fn is_double_pawn(&self) -> bool {
         Self::decode_move_type(self).is_double_pawn()
     }
 
     pub fn set_score(&mut self, score: Score) {
-        let s: u32 = (score as u32) << MV_SHIFT_SCORE;
-
-        self.m |= s;
-    }
-
-    pub fn get_score(&self) -> Score {
-        (self.m >> MV_SHIFT_SCORE) as Score
+        self.score = score
     }
 
     pub fn print_move(&self) {
@@ -242,12 +224,11 @@ impl Move {
 }
 
 const fn encode(from_sq: Square, to_sq: Square, move_type: MoveType) -> Move {
-    let from: u32 = ((from_sq.to_offset() as u32) << MV_SHIFT_FROM_SQ) as u32 & MV_MASK_FROM_SQ;
-    let to: u32 = ((to_sq.to_offset() as u32) << MV_SHIFT_TO_SQ) as u32 & MV_MASK_TO_SQ;
-    let move_type: u32 = ((move_type as u32) << MV_SHIFT_MOVE_TYPE) as u32 & MV_MASK_MOVE_TYPE;
-
     Move {
-        m: from | to | move_type,
+        from_sq,
+        to_sq,
+        move_type,
+        score: 0,
     }
 }
 

@@ -1,8 +1,9 @@
-use crate::board::colour::Colour;
 use crate::moves::mov::Score;
+use crate::{board::colour::Colour, core::array_offset::EnumAsOffset};
 use std::{fmt, slice::Iter};
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
+#[repr(u8)]
 pub enum Piece {
     Pawn,
     Bishop,
@@ -12,13 +13,15 @@ pub enum Piece {
     King,
 }
 
+impl EnumAsOffset for Piece {
+    fn as_index(&self) -> usize {
+        *self as usize
+    }
+}
+
 impl Piece {
     pub const NUM_PIECES: usize = 32;
     pub const NUM_PIECE_TYPES: usize = 6;
-
-    pub const fn to_offset(self) -> usize {
-        self as usize
-    }
 
     pub fn value(self) -> Score {
         match self {

@@ -1,4 +1,5 @@
 use crate::board::colour::Colour;
+use crate::core::array_offset::EnumAsOffset;
 use crate::moves::mov::Score;
 use std::fmt;
 
@@ -10,24 +11,24 @@ pub struct Material {
 impl Material {
     pub fn new(white: Score, black: Score) -> Material {
         let mut met = Material::default();
-        met.score[Colour::White.to_offset()] = white;
-        met.score[Colour::Black.to_offset()] = black;
+        met.score[Colour::White.as_index()] = white;
+        met.score[Colour::Black.as_index()] = black;
         met
     }
 
     pub fn get_black(&self) -> Score {
-        self.score[Colour::Black.to_offset()]
+        self.score[Colour::Black.as_index()]
     }
     pub fn get_white(&self) -> Score {
-        self.score[Colour::White.to_offset()]
+        self.score[Colour::White.as_index()]
     }
 
     pub fn get_material_for_colour(&self, colour: Colour) -> Score {
-        self.score[colour.to_offset()]
+        self.score[colour.as_index()]
     }
 
     pub fn set_material_for_colour(&mut self, colour: Colour, score: Score) {
-        self.score[colour.to_offset()] = score;
+        self.score[colour.as_index()] = score;
     }
 
     pub fn get_net_material(&self) -> Score {

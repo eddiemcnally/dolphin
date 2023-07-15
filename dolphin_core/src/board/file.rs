@@ -1,49 +1,49 @@
+use crate::core::array_offset::EnumAsOffset;
+use num_enum::TryFromPrimitive;
 use std::fmt;
 use std::slice::Iter;
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy)]
-pub struct File(u8);
+#[derive(Eq, PartialEq, Hash, Clone, Copy, TryFromPrimitive)]
+#[repr(u8)]
+pub enum File {
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+}
+
+impl EnumAsOffset for File {
+    fn as_index(&self) -> usize {
+        *self as usize
+    }
+}
 
 impl File {
-    pub const A: File = File(0);
-    pub const B: File = File(1);
-    pub const C: File = File(2);
-    pub const D: File = File(3);
-    pub const E: File = File(4);
-    pub const F: File = File(5);
-    pub const G: File = File(6);
-    pub const H: File = File(7);
-
-    pub const fn new(num: u8) -> Option<File> {
-        if num <= File::H.0 {
-            return Some(File(num));
+    pub fn new(num: u8) -> Option<File> {
+        match File::try_from(num) {
+            Ok(file) => Some(file),
+            Err(_) => None,
         }
-        None
     }
 
-    pub const fn to_offset(self) -> usize {
-        self.0 as usize
-    }
     pub fn add_one(self) -> Option<File> {
-        File::new(self.0 + 1)
+        File::new(self.as_index() as u8 + 1)
     }
 
     pub fn subtract_one(self) -> Option<File> {
-        match self {
-            File::A => None,
-            _ => File::new(self.0 - 1),
-        }
+        File::new((self.as_index() as u8).overflowing_sub(1).0)
     }
 
     pub fn add_two(self) -> Option<File> {
-        File::new(self.0 + 2)
+        File::new(self.as_index() as u8 + 2)
     }
 
     pub fn subtract_two(self) -> Option<File> {
-        match self {
-            File::A | File::B => None,
-            _ => File::new(self.0 - 2),
-        }
+        File::new((self.as_index() as u8).overflowing_sub(2).0)
     }
 
     pub fn from_char(file: char) -> Option<File> {
@@ -69,7 +69,6 @@ impl File {
             File::F => 'f',
             File::G => 'g',
             File::H => 'h',
-            _ => panic!("Invalid File {}", *self),
         }
     }
     pub fn iterator() -> Iter<'static, File> {
@@ -105,13 +104,15 @@ impl fmt::Debug for File {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::core::array_offset::EnumAsOffset;
+
     use super::File;
     use std::collections::HashMap;
 
     #[test]
     pub fn file_as_u8() {
-        assert!(File::A.0 as u8 == 0);
-        assert!(File::H.0 as u8 == 7);
+        assert!(File::A as u8 == 0);
+        assert!(File::H as u8 == 7);
     }
 
     #[test]
@@ -194,21 +195,21 @@ pub mod tests {
 
     #[test]
     pub fn file_to_int() {
-        assert_eq!(File::A.to_offset(), 0);
+        assert_eq!(File::A.as_index(), 0);
 
-        assert_eq!(File::B.to_offset(), 1);
+        assert_eq!(File::B.as_index(), 1);
 
-        assert_eq!(File::C.to_offset(), 2);
+        assert_eq!(File::C.as_index(), 2);
 
-        assert_eq!(File::D.to_offset(), 3);
+        assert_eq!(File::D.as_index(), 3);
 
-        assert_eq!(File::E.to_offset(), 4);
+        assert_eq!(File::E.as_index(), 4);
 
-        assert_eq!(File::F.to_offset(), 5);
+        assert_eq!(File::F.as_index(), 5);
 
-        assert_eq!(File::G.to_offset(), 6);
+        assert_eq!(File::G.as_index(), 6);
 
-        assert_eq!(File::H.to_offset(), 7);
+        assert_eq!(File::H.as_index(), 7);
     }
 
     fn get_file_map() -> HashMap<File, char> {
