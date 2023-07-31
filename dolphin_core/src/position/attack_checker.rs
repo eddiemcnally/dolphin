@@ -2,7 +2,7 @@ use crate::board::bitboard::Bitboard;
 use crate::board::colour::Colour;
 use crate::board::game_board::Board;
 use crate::board::occupancy_masks::OccupancyMasks;
-use crate::board::piece::Piece;
+use crate::board::piece::{BLACK_KNIGHT, BLACK_PAWN, WHITE_KNIGHT, WHITE_PAWN};
 use crate::board::square::Square;
 
 #[derive(Default, Eq, PartialEq, Clone, Copy)]
@@ -22,20 +22,20 @@ impl AttackChecker {
     ) -> bool {
         match attacking_side {
             Colour::White => {
-                let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::White);
+                let pawn_bb = board.get_piece_bitboard(&WHITE_PAWN);
                 let wp_attacking_square = occ_masks.get_occ_mask_white_pawns_attacking_sq(sq);
                 if !(pawn_bb & wp_attacking_square).is_empty() {
                     return true;
                 }
 
-                let knight_bb = board.get_piece_bitboard(Piece::Knight, Colour::White);
+                let knight_bb = board.get_piece_bitboard(&WHITE_KNIGHT);
                 for from_sq in knight_bb.iterator() {
                     if occ_masks.get_occupancy_mask_knight(from_sq).is_set(sq) {
                         return true;
                     }
                 }
 
-                let horiz_vert_bb = board.get_white_rook_queen_bitboard();
+                let horiz_vert_bb = board.get_rook_and_queen_bb_for_colour(Colour::White);
                 let all_pce_bb = board.get_bitboard();
                 // check to see if the sqaure being attacked shares a rank or file
                 // with any of the rooks or queens before doing a detailed analysis
@@ -54,12 +54,11 @@ impl AttackChecker {
                     return true;
                 }
 
-                let diag_bb = board.get_white_bishop_queen_bitboard();
+                let diag_bb = board.get_bishop_and_queen_bb_for_colour(Colour::White);
                 // check to see if the sqaure being attacked shares a diagonal
                 // with any of the bishops or queens before doing a detailed analysis
                 // of potential blocking pieces
-                let diag_occ_masks = occ_masks.get_diag_antidiag_mask(sq);
-                let sq_mask = diag_occ_masks.get_anti_diag_mask() | diag_occ_masks.get_diag_mask();
+                let sq_mask = occ_masks.get_diagonal_mask(sq) | occ_masks.get_antidiagonal_mask(sq);
                 if !(sq_mask & diag_bb).is_empty() {
                     // possible attack, check for blocking pieces
                     if self.is_diagonally_attacked(occ_masks, sq, diag_bb, all_pce_bb) {
@@ -73,20 +72,20 @@ impl AttackChecker {
                 }
             }
             Colour::Black => {
-                let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::Black);
+                let pawn_bb = board.get_piece_bitboard(&BLACK_PAWN);
                 let bp_attacking_square = occ_masks.get_occ_mask_black_pawns_attacking_sq(sq);
                 if !(pawn_bb & bp_attacking_square).is_empty() {
                     return true;
                 }
 
-                let knight_bb = board.get_piece_bitboard(Piece::Knight, Colour::Black);
+                let knight_bb = board.get_piece_bitboard(&BLACK_KNIGHT);
                 for from_sq in knight_bb.iterator() {
                     if occ_masks.get_occupancy_mask_knight(from_sq).is_set(sq) {
                         return true;
                     }
                 }
 
-                let horiz_vert_bb = board.get_black_rook_queen_bitboard();
+                let horiz_vert_bb = board.get_rook_and_queen_bb_for_colour(Colour::Black);
                 let all_pce_bb = board.get_bitboard();
                 // check to see if the sqaure being attacked shares a rank or file
                 // with any of the rooks or queens before doing a detailed analysis
@@ -105,12 +104,11 @@ impl AttackChecker {
                     return true;
                 }
 
-                let diag_bb = board.get_black_bishop_queen_bitboard();
+                let diag_bb = board.get_bishop_and_queen_bb_for_colour(Colour::Black);
                 // check to see if the sqaure being attacked shares a diagonal
                 // with any of the bishops or queens before doing a detailed analysis
                 // of potential blocking pieces
-                let diag_occ_masks = occ_masks.get_diag_antidiag_mask(sq);
-                let sq_mask = diag_occ_masks.get_anti_diag_mask() | diag_occ_masks.get_diag_mask();
+                let sq_mask = occ_masks.get_diagonal_mask(sq) | occ_masks.get_antidiagonal_mask(sq);
                 if !(sq_mask & diag_bb).is_empty() {
                     // possible attack, check for blocking pieces
                     if self.is_diagonally_attacked(occ_masks, sq, diag_bb, all_pce_bb) {

@@ -106,10 +106,10 @@ impl PositionHistory {
     // push
     pub fn push(
         &mut self,
-        game_state: GameState,
-        mv: Move,
-        piece: Piece,
-        capt_piece: Option<Piece>,
+        game_state: &GameState,
+        mv: &Move,
+        piece: &Piece,
+        capt_piece: &Option<Piece>,
     ) {
         debug_assert!(
             self.count <= (PositionHistory::MAX_MOVE_HISTORY - 1) as u16,
@@ -118,10 +118,10 @@ impl PositionHistory {
         );
 
         let item = Item {
-            game_state,
-            mov: mv,
-            pce_moved: piece,
-            pce_captured: capt_piece,
+            game_state: *game_state,
+            mov: *mv,
+            pce_moved: *piece,
+            pce_captured: *capt_piece,
         };
 
         self.history[self.count as usize] = item;

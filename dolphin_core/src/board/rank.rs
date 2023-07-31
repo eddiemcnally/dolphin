@@ -1,4 +1,3 @@
-use crate::core::array_offset::EnumAsOffset;
 use num_enum::TryFromPrimitive;
 use std::fmt;
 use std::slice::Iter;
@@ -16,36 +15,102 @@ pub enum Rank {
     R8,
 }
 
-impl EnumAsOffset for Rank {
-    fn as_index(&self) -> usize {
-        *self as usize
-    }
-}
-
 impl Rank {
-    pub fn new(num: u8) -> Option<Rank> {
-        match Rank::try_from(num) {
-            Ok(rank) => Some(rank),
-            Err(_) => None,
+    pub fn new(num: u8) -> Rank {
+        match num {
+            0 => Rank::R1,
+            1 => Rank::R2,
+            2 => Rank::R3,
+            3 => Rank::R4,
+            4 => Rank::R5,
+            5 => Rank::R6,
+            6 => Rank::R7,
+            7 => Rank::R8,
+            _ => panic!("Invalid rank"),
         }
     }
 
-    pub fn add_one(self) -> Option<Rank> {
-        Rank::new(self.as_index() as u8 + 1)
+    pub const fn as_index(&self) -> usize {
+        *self as usize
     }
 
-    pub fn add_two(self) -> Option<Rank> {
-        Rank::new(self.as_index() as u8 + 2)
+    pub fn can_add_one(self) -> bool {
+        match self {
+            Rank::R1 | Rank::R2 | Rank::R3 | Rank::R4 | Rank::R5 | Rank::R6 | Rank::R7 => true,
+            Rank::R8 => false,
+        }
     }
 
-    pub fn subtract_one(self) -> Option<Rank> {
-        Rank::new((self.as_index() as u8).overflowing_sub(1).0)
+    pub fn can_add_two(self) -> bool {
+        match self {
+            Rank::R1 | Rank::R2 | Rank::R3 | Rank::R4 | Rank::R5 | Rank::R6 => true,
+            Rank::R7 | Rank::R8 => false,
+        }
     }
 
-    pub fn subtract_two(self) -> Option<Rank> {
-        Rank::new((self.as_index() as u8).overflowing_sub(2).0)
+    pub fn can_subtract_one(self) -> bool {
+        match self {
+            Rank::R1 => false,
+            Rank::R2 | Rank::R3 | Rank::R4 | Rank::R5 | Rank::R6 | Rank::R7 | Rank::R8 => true,
+        }
     }
 
+    pub fn can_subtract_two(self) -> bool {
+        match self {
+            Rank::R1 | Rank::R2 => false,
+            Rank::R3 | Rank::R4 | Rank::R5 | Rank::R6 | Rank::R7 | Rank::R8 => true,
+        }
+    }
+
+    pub fn add_one(self) -> Rank {
+        match self {
+            Rank::R1 => Rank::R2,
+            Rank::R2 => Rank::R3,
+            Rank::R3 => Rank::R4,
+            Rank::R4 => Rank::R5,
+            Rank::R5 => Rank::R6,
+            Rank::R6 => Rank::R7,
+            Rank::R7 => Rank::R8,
+            Rank::R8 => panic!("Can't add 1 to rank"),
+        }
+    }
+
+    pub fn add_two(self) -> Rank {
+        match self {
+            Rank::R1 => Rank::R3,
+            Rank::R2 => Rank::R4,
+            Rank::R3 => Rank::R5,
+            Rank::R4 => Rank::R6,
+            Rank::R5 => Rank::R7,
+            Rank::R6 => Rank::R8,
+            Rank::R7 | Rank::R8 => panic!("Can't add 2 to rank"),
+        }
+    }
+
+    pub fn subtract_one(self) -> Rank {
+        match self {
+            Rank::R2 => Rank::R1,
+            Rank::R3 => Rank::R2,
+            Rank::R4 => Rank::R3,
+            Rank::R5 => Rank::R4,
+            Rank::R6 => Rank::R5,
+            Rank::R7 => Rank::R6,
+            Rank::R8 => Rank::R7,
+            Rank::R1 => panic!("Can't subtract 1 from rank"),
+        }
+    }
+
+    pub fn subtract_two(self) -> Rank {
+        match self {
+            Rank::R3 => Rank::R1,
+            Rank::R4 => Rank::R2,
+            Rank::R5 => Rank::R3,
+            Rank::R6 => Rank::R4,
+            Rank::R7 => Rank::R5,
+            Rank::R8 => Rank::R6,
+            Rank::R1 | Rank::R2 => panic!("Can't subtract 2 from rank"),
+        }
+    }
     pub fn from_char(rank: char) -> Option<Rank> {
         match rank {
             '1' => Some(Rank::R1),
@@ -118,22 +183,8 @@ impl fmt::Debug for Rank {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::core::array_offset::EnumAsOffset;
-
     use super::Rank;
     use std::collections::HashMap;
-
-    #[test]
-    pub fn rank_from_u8() {
-        assert!(Rank::new(0) == Some(Rank::R1));
-        assert!(Rank::new(1) == Some(Rank::R2));
-        assert!(Rank::new(2) == Some(Rank::R3));
-        assert!(Rank::new(3) == Some(Rank::R4));
-        assert!(Rank::new(4) == Some(Rank::R5));
-        assert!(Rank::new(5) == Some(Rank::R6));
-        assert!(Rank::new(6) == Some(Rank::R7));
-        assert!(Rank::new(7) == Some(Rank::R8));
-    }
 
     #[test]
     pub fn rank_from_char() {
@@ -154,6 +205,96 @@ pub mod tests {
         assert!(Rank::R6.as_index() == 5);
         assert!(Rank::R7.as_index() == 6);
         assert!(Rank::R8.as_index() == 7);
+    }
+
+    #[test]
+    pub fn can_add_one() {
+        assert!(Rank::R1.can_add_one());
+        assert!(Rank::R2.can_add_one());
+        assert!(Rank::R3.can_add_one());
+        assert!(Rank::R4.can_add_one());
+        assert!(Rank::R5.can_add_one());
+        assert!(Rank::R6.can_add_one());
+        assert!(Rank::R7.can_add_one());
+        assert!(!Rank::R8.can_add_one());
+    }
+
+    #[test]
+    pub fn can_add_two() {
+        assert!(Rank::R1.can_add_two());
+        assert!(Rank::R2.can_add_two());
+        assert!(Rank::R3.can_add_two());
+        assert!(Rank::R4.can_add_two());
+        assert!(Rank::R5.can_add_two());
+        assert!(Rank::R6.can_add_two());
+        assert!(!Rank::R7.can_add_two());
+        assert!(!Rank::R8.can_add_two());
+    }
+
+    #[test]
+    pub fn can_subtract_one() {
+        assert!(!Rank::R1.can_subtract_one());
+        assert!(Rank::R2.can_subtract_one());
+        assert!(Rank::R3.can_subtract_one());
+        assert!(Rank::R4.can_subtract_one());
+        assert!(Rank::R5.can_subtract_one());
+        assert!(Rank::R6.can_subtract_one());
+        assert!(Rank::R7.can_subtract_one());
+        assert!(Rank::R8.can_subtract_one());
+    }
+
+    #[test]
+    pub fn can_subtract_two() {
+        assert!(!Rank::R1.can_subtract_two());
+        assert!(!Rank::R2.can_subtract_two());
+        assert!(Rank::R3.can_subtract_two());
+        assert!(Rank::R4.can_subtract_two());
+        assert!(Rank::R5.can_subtract_two());
+        assert!(Rank::R6.can_subtract_two());
+        assert!(Rank::R7.can_subtract_two());
+        assert!(Rank::R8.can_subtract_two());
+    }
+
+    #[test]
+    pub fn add_one() {
+        assert!(Rank::R1.add_one() == Rank::R2);
+        assert!(Rank::R2.add_one() == Rank::R3);
+        assert!(Rank::R3.add_one() == Rank::R4);
+        assert!(Rank::R4.add_one() == Rank::R5);
+        assert!(Rank::R5.add_one() == Rank::R6);
+        assert!(Rank::R6.add_one() == Rank::R7);
+        assert!(Rank::R7.add_one() == Rank::R8);
+    }
+
+    #[test]
+    pub fn add_two() {
+        assert!(Rank::R1.add_two() == Rank::R3);
+        assert!(Rank::R2.add_two() == Rank::R4);
+        assert!(Rank::R3.add_two() == Rank::R5);
+        assert!(Rank::R4.add_two() == Rank::R6);
+        assert!(Rank::R5.add_two() == Rank::R7);
+        assert!(Rank::R6.add_two() == Rank::R8);
+    }
+
+    #[test]
+    pub fn subtract_one() {
+        assert!(Rank::R2.subtract_one() == Rank::R1);
+        assert!(Rank::R3.subtract_one() == Rank::R2);
+        assert!(Rank::R4.subtract_one() == Rank::R3);
+        assert!(Rank::R5.subtract_one() == Rank::R4);
+        assert!(Rank::R6.subtract_one() == Rank::R5);
+        assert!(Rank::R7.subtract_one() == Rank::R6);
+        assert!(Rank::R8.subtract_one() == Rank::R7);
+    }
+
+    #[test]
+    pub fn subtract_two() {
+        assert!(Rank::R3.subtract_two() == Rank::R1);
+        assert!(Rank::R4.subtract_two() == Rank::R2);
+        assert!(Rank::R5.subtract_two() == Rank::R3);
+        assert!(Rank::R6.subtract_two() == Rank::R4);
+        assert!(Rank::R7.subtract_two() == Rank::R5);
+        assert!(Rank::R8.subtract_two() == Rank::R6);
     }
 
     #[test]

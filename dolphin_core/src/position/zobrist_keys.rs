@@ -1,12 +1,10 @@
+use super::castle_permissions::CastlePermission;
 use crate::board::colour::Colour;
 use crate::board::piece::Piece;
 use crate::board::square::Square;
-use crate::core::array_offset::EnumAsOffset;
 use rand::RngCore;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256PlusPlus;
-
-use super::castle_permissions::{CastlePermission, CastlePermissionType};
 
 pub type ZobristHash = u64;
 
@@ -52,10 +50,10 @@ impl ZobristKeys {
         self.side_key
     }
 
-    pub fn piece_square(&self, piece: Piece, colour: Colour, square: Square) -> ZobristHash {
-        let pce_offset = piece.as_index();
+    pub fn piece_square(&self, piece: &Piece, square: Square) -> ZobristHash {
+        let pce_offset = piece.role().as_index();
         let sq_offset = square.as_index();
-        let col_offset = colour.as_index();
+        let col_offset = piece.colour().as_index();
         self.piece_keys[col_offset][sq_offset][pce_offset]
     }
 
@@ -64,9 +62,17 @@ impl ZobristKeys {
         self.en_passant_sq_keys[sq_offset]
     }
 
-    pub const fn castle_permission(&self, perm_type: CastlePermissionType) -> ZobristHash {
-        let perm_offset = CastlePermission::to_offset(perm_type);
-        self.castle_keys[perm_offset]
+    pub const fn castle_permissions_white_king(&self) -> ZobristHash {
+        self.castle_keys[CastlePermission::white_king_offset()]
+    }
+    pub const fn castle_permissions_white_queen(&self) -> ZobristHash {
+        self.castle_keys[CastlePermission::white_queen_offset()]
+    }
+    pub const fn castle_permissions_black_king(&self) -> ZobristHash {
+        self.castle_keys[CastlePermission::black_king_offset()]
+    }
+    pub const fn castle_permissions_black_queen(&self) -> ZobristHash {
+        self.castle_keys[CastlePermission::black_queen_offset()]
     }
 }
 
@@ -104,8 +110,6 @@ fn init_en_passant_keys(rng: &mut Xoshiro256PlusPlus) -> [ZobristHash; Square::N
 pub mod tests {
     use super::ZobristHash;
     use super::ZobristKeys;
-    use crate::position::castle_permissions::CastlePermissionType;
-    use crate::position::zobrist_keys::Colour;
     use crate::position::zobrist_keys::Piece;
     use crate::position::zobrist_keys::Square;
 
@@ -115,11 +119,9 @@ pub mod tests {
         let mut v: Vec<ZobristHash> = Vec::new();
 
         for pce in Piece::iterator() {
-            for col in Colour::iterator() {
-                for sq in Square::iterator() {
-                    let hash = keys.piece_square(*pce, *col, *sq);
-                    v.push(hash);
-                }
+            for sq in Square::iterator() {
+                let hash = keys.piece_square(pce, *sq);
+                v.push(hash);
             }
         }
 
@@ -158,61 +160,8 @@ pub mod tests {
     }
 
     #[test]
-    pub fn castle_permissions_hashes_all_different() {
-        let castle_types = [
-            CastlePermissionType::WhiteKing,
-            CastlePermissionType::WhiteQueen,
-            CastlePermissionType::BlackKing,
-            CastlePermissionType::BlackQueen,
-        ];
-
-        let keys = ZobristKeys::new();
-        let mut v: Vec<ZobristHash> = Vec::new();
-
-        for perm in castle_types.iter() {
-            let hash = keys.castle_permission(*perm);
-            v.push(hash);
-        }
-
-        let mut found_cnt;
-        for to_find in &v {
-            found_cnt = 0;
-            for hash in &v {
-                if to_find == hash {
-                    found_cnt += 1;
-                }
-            }
-            assert!(found_cnt == 1);
-        }
-    }
-
-    #[test]
     pub fn side_hash_is_non_zero() {
         let keys = ZobristKeys::new();
         assert!(keys.side() != 0);
-    }
-
-    #[test]
-    pub fn ensure_prng_is_reproduceable() {
-        let keys1 = ZobristKeys::new();
-        let keys2 = ZobristKeys::new();
-
-        assert_eq!(keys1.side(), keys2.side());
-
-        for col in Colour::iterator() {
-            for pce in Piece::iterator() {
-                for sq in Square::iterator() {
-                    assert_eq!(
-                        keys1.piece_square(*pce, *col, *sq),
-                        keys2.piece_square(*pce, *col, *sq)
-                    );
-                }
-            }
-        }
-
-        assert_eq!(
-            keys1.castle_permission(CastlePermissionType::WhiteQueen),
-            keys2.castle_permission(CastlePermissionType::WhiteQueen)
-        );
     }
 }

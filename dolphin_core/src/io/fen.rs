@@ -66,19 +66,15 @@ fn extract_board_from_fen(pieces: &str) -> Board {
                 }
                 None => {
                     // not a number, so it's a piece
-                    let (piece, colour) = Piece::from_char(c);
+                    let piece = Piece::from_char(c);
 
-                    if let Some(r) = Rank::new(rank as u8) {
-                        if let Some(f) = File::new(file as u8) {
-                            //                    if r.is_some() && f.is_some() {
-                            let sq: Square = Square::from_rank_file(r, f);
-                            file += 1;
+                    let r = Rank::new(rank as u8);
 
-                            retval.add_piece(piece, colour, sq);
-                        }
-                    } else {
-                        panic!("Invalid rank or file");
-                    }
+                    let f = File::new(file as u8);
+                    let sq: Square = Square::from_rank_file(r, f);
+
+                    file += 1;
+                    retval.add_piece(&piece, sq);
                 }
             }
         }

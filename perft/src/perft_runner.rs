@@ -15,7 +15,7 @@ pub fn perft(depth: u8, position: &mut Position, move_generator: &MoveGenerator)
     move_generator.generate_moves(position, &mut move_list);
 
     for mv in move_list.iterator() {
-        let move_legality = position.make_move(*mv);
+        let move_legality = position.make_move(mv);
 
         if move_legality == MoveLegality::Legal {
             nodes += perft(depth - 1, position, move_generator);

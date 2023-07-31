@@ -1,4 +1,3 @@
-use crate::core::array_offset::EnumAsOffset;
 use std::fmt;
 use std::slice::Iter;
 
@@ -10,14 +9,12 @@ pub enum Colour {
     Black,
 }
 
-impl EnumAsOffset for Colour {
-    fn as_index(&self) -> usize {
-        *self as usize
-    }
-}
-
 impl Colour {
     pub const NUM_COLOURS: usize = 2;
+
+    pub const fn as_index(&self) -> usize {
+        *self as usize
+    }
 
     pub const fn flip_side(self) -> Colour {
         match self {
@@ -49,7 +46,7 @@ impl fmt::Display for Colour {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{board::colour::Colour, core::array_offset::EnumAsOffset};
+    use crate::board::colour::Colour;
 
     #[test]
     pub fn flip_side_as_expected() {

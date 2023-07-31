@@ -1,4 +1,4 @@
-use crate::board::piece::Piece;
+use crate::board::piece::Role;
 use crate::board::square::Square;
 use num_enum::TryFromPrimitive;
 use std::fmt;
@@ -55,7 +55,7 @@ impl Move {
     pub fn encode_move_with_promotion(
         from_sq: Square,
         to_sq: Square,
-        promotion_piece: Piece,
+        promotion_role: Role,
     ) -> Move {
         debug_assert!(
             from_sq != to_sq,
@@ -63,11 +63,11 @@ impl Move {
             from_sq
         );
 
-        let mt = match promotion_piece {
-            Piece::Knight => MoveType::PromoteKnightQuiet,
-            Piece::Bishop => MoveType::PromoteBishopQuiet,
-            Piece::Rook => MoveType::PromoteRookQuiet,
-            Piece::Queen => MoveType::PromoteQueenQuiet,
+        let mt = match promotion_role {
+            Role::Knight => MoveType::PromoteKnightQuiet,
+            Role::Bishop => MoveType::PromoteBishopQuiet,
+            Role::Rook => MoveType::PromoteRookQuiet,
+            Role::Queen => MoveType::PromoteQueenQuiet,
             _ => panic!("Invalid promotion piece"),
         };
         encode(from_sq, to_sq, mt)
@@ -76,7 +76,7 @@ impl Move {
     pub fn encode_move_with_promotion_capture(
         from_sq: Square,
         to_sq: Square,
-        promotion_piece: Piece,
+        promotion_role: Role,
     ) -> Move {
         debug_assert!(
             from_sq != to_sq,
@@ -84,11 +84,11 @@ impl Move {
             from_sq
         );
 
-        let mt = match promotion_piece {
-            Piece::Knight => MoveType::PromoteKnightCapture,
-            Piece::Bishop => MoveType::PromoteBishopCapture,
-            Piece::Rook => MoveType::PromoteRookCapture,
-            Piece::Queen => MoveType::PromoteQueenCapture,
+        let mt = match promotion_role {
+            Role::Knight => MoveType::PromoteKnightCapture,
+            Role::Bishop => MoveType::PromoteBishopCapture,
+            Role::Rook => MoveType::PromoteRookCapture,
+            Role::Queen => MoveType::PromoteQueenCapture,
             _ => panic!("Invalid promotion piece"),
         };
         encode(from_sq, to_sq, mt)
@@ -166,14 +166,14 @@ impl Move {
         self.score
     }
 
-    pub fn decode_promotion_piece(&self) -> Piece {
+    pub fn decode_promotion_role(&self) -> Role {
         let mt = Self::decode_move_type(self);
 
         match mt {
-            MoveType::PromoteKnightQuiet | MoveType::PromoteKnightCapture => Piece::Knight,
-            MoveType::PromoteBishopQuiet | MoveType::PromoteBishopCapture => Piece::Bishop,
-            MoveType::PromoteRookQuiet | MoveType::PromoteRookCapture => Piece::Rook,
-            MoveType::PromoteQueenQuiet | MoveType::PromoteQueenCapture => Piece::Queen,
+            MoveType::PromoteKnightQuiet | MoveType::PromoteKnightCapture => Role::Knight,
+            MoveType::PromoteBishopQuiet | MoveType::PromoteBishopCapture => Role::Bishop,
+            MoveType::PromoteRookQuiet | MoveType::PromoteRookCapture => Role::Rook,
+            MoveType::PromoteQueenQuiet | MoveType::PromoteQueenCapture => Role::Queen,
             _ => panic!("Invalid promotion piece"),
         }
     }
@@ -315,7 +315,7 @@ impl Default for Move {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::board::piece::Piece;
+    use crate::board::piece::Role;
     use crate::board::square::Square;
     use crate::moves::mov::Move;
 
@@ -497,7 +497,7 @@ pub mod tests {
 
     #[test]
     pub fn encode_decode_promotion_move_non_capture() {
-        let target_promotions = [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
+        let target_promotions = [Role::Bishop, Role::Knight, Role::Rook, Role::Queen];
 
         for from_sq in Square::iterator() {
             for to_sq in Square::iterator() {
@@ -505,14 +505,14 @@ pub mod tests {
                     continue;
                 }
 
-                for pce in target_promotions.iter() {
-                    let mv = Move::encode_move_with_promotion(*from_sq, *to_sq, *pce);
+                for role in target_promotions.iter() {
+                    let mv = Move::encode_move_with_promotion(*from_sq, *to_sq, *role);
 
                     assert!(mv.is_promote());
                     assert!(!mv.is_capture());
 
-                    let decoded_pce = mv.decode_promotion_piece();
-                    assert_eq!(decoded_pce, *pce);
+                    let decoded_role = mv.decode_promotion_role();
+                    assert_eq!(decoded_role, *role);
 
                     let decoded_from_sq = mv.decode_from_square();
                     let decoded_to_sq = mv.decode_to_square();
@@ -526,7 +526,7 @@ pub mod tests {
 
     #[test]
     pub fn encode_decode_promotion_move_capture() {
-        let target_promotions = [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
+        let target_promotions = [Role::Bishop, Role::Knight, Role::Rook, Role::Queen];
 
         for from_sq in Square::iterator() {
             for to_sq in Square::iterator() {
@@ -534,14 +534,14 @@ pub mod tests {
                     continue;
                 }
 
-                for pce in target_promotions.iter() {
-                    let mv = Move::encode_move_with_promotion_capture(*from_sq, *to_sq, *pce);
+                for role in target_promotions.iter() {
+                    let mv = Move::encode_move_with_promotion_capture(*from_sq, *to_sq, *role);
 
                     assert!(mv.is_promote());
                     assert!(mv.is_capture());
 
-                    let decoded_piece = mv.decode_promotion_piece();
-                    assert_eq!(decoded_piece, *pce);
+                    let decoded_role = mv.decode_promotion_role();
+                    assert_eq!(decoded_role, *role);
 
                     let decoded_from_sq = mv.decode_from_square();
                     let decoded_to_sq = mv.decode_to_square();

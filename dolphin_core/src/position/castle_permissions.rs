@@ -3,20 +3,26 @@ use std::ops::{BitAnd, BitOr};
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct CastlePermission(u8);
 
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+// Bit fields for CastlePermission
+// ---- ---X    White King
+// ---- --X-    White Queen
+// ---- -X--    Black King
+// ---- X---    Black Queen
+//
 #[rustfmt::skip]
-pub enum CastlePermissionType {
-    WhiteKing   = 0x01,
-    WhiteQueen  = 0x01 << 1,
-    BlackKing   = 0x01 << 2,
-    BlackQueen  = 0x01 << 3,
-}
+const MASK_WHITE_KING: u8 = 0b0000_0001;
+const MASK_WHITE_QUEEN: u8 = 0b0000_0010;
+const MASK_BLACK_KING: u8 = 0b0000_0100;
+const MASK_BLACK_QUEEN: u8 = 0b0000_1000;
 
-impl CastlePermissionType {
-    pub const fn to_offset(self) -> usize {
-        self as usize
-    }
+const MASK_WHITE: u8 = 0b0000_0011;
+const MASK_BLACK: u8 = 0b0000_1100;
+
+enum AsOffset {
+    WhiteKing,
+    WhiteQueen,
+    BlackKing,
+    BlackQueen,
 }
 
 impl CastlePermission {
@@ -29,78 +35,83 @@ impl CastlePermission {
     }
 
     pub fn set_black_king(&mut self) {
-        self.0 |= CastlePermissionType::BlackKing.to_offset() as u8;
+        self.0 |= MASK_BLACK_KING;
     }
 
     pub fn set_white_king(&mut self) {
-        self.0 |= CastlePermissionType::WhiteKing.to_offset() as u8;
+        self.0 |= MASK_WHITE_KING;
     }
 
     pub fn clear_white_king_and_queen(&mut self) {
-        self.0 &= !CastlePermissionType::WhiteKing.to_offset() as u8;
-        self.0 &= !CastlePermissionType::WhiteQueen.to_offset() as u8;
+        self.0 &= !MASK_WHITE;
     }
 
     pub fn clear_black_king_and_queen(&mut self) {
-        self.0 &= !CastlePermissionType::BlackKing.to_offset() as u8;
-        self.0 &= !CastlePermissionType::BlackQueen.to_offset() as u8;
+        self.0 &= !MASK_BLACK;
     }
 
     pub fn clear_king_black(&mut self) {
-        self.0 &= !CastlePermissionType::BlackKing.to_offset() as u8;
+        self.0 &= !MASK_BLACK_KING;
     }
 
     pub fn clear_king_white(&mut self) {
-        self.0 &= !CastlePermissionType::WhiteKing.to_offset() as u8;
+        self.0 &= !MASK_WHITE_KING;
     }
 
-    pub fn is_white_king_set(&self) -> bool {
-        self.0 & CastlePermissionType::WhiteKing.to_offset() as u8 != 0
+    pub const fn is_white_king_set(&self) -> bool {
+        self.0 & MASK_WHITE_KING != 0
     }
 
-    pub fn is_black_king_set(&self) -> bool {
-        self.0 & CastlePermissionType::BlackKing.to_offset() as u8 != 0
+    pub const fn is_black_king_set(&self) -> bool {
+        self.0 & MASK_BLACK_KING != 0
     }
 
     pub fn set_white_queen(&mut self) {
-        self.0 |= CastlePermissionType::WhiteQueen.to_offset() as u8
+        self.0 |= MASK_WHITE_QUEEN
     }
 
     pub fn set_black_queen(&mut self) {
-        self.0 |= CastlePermissionType::BlackQueen.to_offset() as u8
+        self.0 |= MASK_BLACK_QUEEN
     }
 
-    pub fn has_white_castle_permission(&self) -> bool {
-        self.is_white_king_set() || self.is_white_queen_set()
+    pub const fn has_white_castle_permission(&self) -> bool {
+        self.0 & MASK_WHITE != 0
     }
 
-    pub fn has_black_castle_permission(&self) -> bool {
-        self.is_black_king_set() || self.is_black_queen_set()
+    pub const fn has_black_castle_permission(&self) -> bool {
+        self.0 & MASK_BLACK != 0
     }
 
     pub fn clear_queen_black(&mut self) {
-        self.0 &= !CastlePermissionType::BlackQueen.to_offset() as u8
+        self.0 &= !MASK_BLACK_QUEEN
     }
 
     pub fn clear_queen_white(&mut self) {
-        self.0 &= !CastlePermissionType::WhiteQueen.to_offset() as u8
+        self.0 &= !MASK_WHITE_QUEEN
     }
 
-    pub fn is_white_queen_set(&self) -> bool {
-        self.0 & CastlePermissionType::WhiteQueen.to_offset() as u8 != 0
+    pub const fn is_white_queen_set(&self) -> bool {
+        self.0 & MASK_WHITE_QUEEN != 0
     }
 
-    pub fn is_black_queen_set(&self) -> bool {
-        self.0 & CastlePermissionType::BlackQueen.to_offset() as u8 != 0
+    pub const fn is_black_queen_set(&self) -> bool {
+        self.0 & MASK_BLACK_QUEEN != 0
     }
 
-    pub const fn to_offset(perm_type: CastlePermissionType) -> usize {
-        match perm_type {
-            CastlePermissionType::WhiteKing => 0,
-            CastlePermissionType::WhiteQueen => 1,
-            CastlePermissionType::BlackKing => 2,
-            CastlePermissionType::BlackQueen => 3,
-        }
+    pub const fn white_king_offset() -> usize {
+        AsOffset::WhiteKing as usize
+    }
+
+    pub const fn white_queen_offset() -> usize {
+        AsOffset::WhiteQueen as usize
+    }
+
+    pub const fn black_king_offset() -> usize {
+        AsOffset::BlackKing as usize
+    }
+
+    pub const fn black_queen_offset() -> usize {
+        AsOffset::BlackQueen as usize
     }
 }
 
@@ -120,7 +131,7 @@ impl BitOr for CastlePermission {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::position::castle_permissions::{CastlePermission, CastlePermissionType};
+    use crate::position::castle_permissions::CastlePermission;
 
     #[test]
     pub fn default_castle_permissisons_none_set() {
@@ -131,14 +142,6 @@ pub mod tests {
         assert!(!cp.is_white_queen_set());
         assert!(!cp.is_black_queen_set());
         assert!(!cp.has_castle_permission());
-    }
-
-    #[test]
-    pub fn castle_permissison_offsets() {
-        assert!(CastlePermission::to_offset(CastlePermissionType::WhiteKing) == 0);
-        assert!(CastlePermission::to_offset(CastlePermissionType::WhiteQueen) == 1);
-        assert!(CastlePermission::to_offset(CastlePermissionType::BlackKing) == 2);
-        assert!(CastlePermission::to_offset(CastlePermissionType::BlackQueen) == 3);
     }
 
     #[test]

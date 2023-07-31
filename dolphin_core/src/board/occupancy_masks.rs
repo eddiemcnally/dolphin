@@ -3,7 +3,6 @@ use crate::board::file::File;
 use crate::board::game_board::Board;
 use crate::board::rank::Rank;
 use crate::board::square::Square;
-use crate::core::array_offset::EnumAsOffset;
 use std::ops::Shl;
 
 const RANK_MASK: Bitboard = Bitboard::new(0x0000_0000_0000_00ff);
@@ -12,66 +11,51 @@ const FILE_MASK: Bitboard = Bitboard::new(0x0101_0101_0101_0101);
 pub const FILE_A_BB: Bitboard = FILE_MASK;
 pub const FILE_H_BB: Bitboard = Bitboard::new(0x8080_8080_8080_8080);
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
-pub struct DiagonalAntidiagonal {
-    diag_mask: Bitboard,
-    anti_diag_mask: Bitboard,
+#[derive(Default, Eq, PartialEq, Hash, Clone, Copy)]
+struct OccupancyMasksForSquare {
+    knight: Bitboard,
+    diagonal: Bitboard,
+    antidiagonal: Bitboard,
+    king: Bitboard,
 }
-impl DiagonalAntidiagonal {
-    pub fn get_diag_mask(&self) -> Bitboard {
-        self.diag_mask
-    }
-    pub fn get_anti_diag_mask(&self) -> Bitboard {
-        self.anti_diag_mask
-    }
+
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
+pub struct OccupancyMasks {
+    masks_for_sq: [OccupancyMasksForSquare; Square::NUM_SQUARES],
+    in_between: [[Bitboard; Board::NUM_SQUARES]; Board::NUM_SQUARES],
 }
 
 impl Default for OccupancyMasks {
     fn default() -> Self {
         OccupancyMasks {
-            knight: [Bitboard::default(); Board::NUM_SQUARES],
-            diagonal: [DiagonalAntidiagonal::default(); Board::NUM_SQUARES],
-            king: [Bitboard::default(); Board::NUM_SQUARES],
+            masks_for_sq: [OccupancyMasksForSquare::default(); Board::NUM_SQUARES],
             in_between: [[Bitboard::default(); Board::NUM_SQUARES]; Board::NUM_SQUARES],
         }
     }
 }
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy)]
-pub struct OccupancyMasks {
-    knight: [Bitboard; Board::NUM_SQUARES],
-    diagonal: [DiagonalAntidiagonal; Board::NUM_SQUARES],
-    king: [Bitboard; Board::NUM_SQUARES],
-    in_between: [[Bitboard; Board::NUM_SQUARES]; Board::NUM_SQUARES],
-}
-
 impl OccupancyMasks {
     pub fn new() -> Box<OccupancyMasks> {
-        let knight = populate_knight_occupancy_mask_array();
-        let diagonal = populate_diagonal_mask_array();
-        // let queen = populate_queen_mask_array(&diagonal);
-        let king = populate_king_mask_array();
-        let in_between = populate_intervening_bitboard_array();
+        let mut occ_masks = Box::<OccupancyMasks>::default();
 
-        Box::new(OccupancyMasks {
-            knight,
-            diagonal,
-            king,
-            in_between,
-        })
+        Self::populate_knight_occupancy_mask_array(&mut occ_masks);
+        Self::populate_knight_occupancy_mask_array(&mut occ_masks);
+        Self::populate_diagonal_mask_arrays(&mut occ_masks);
+        Self::populate_king_mask_array(&mut occ_masks);
+        Self::populate_intervening_bitboard_array(&mut occ_masks);
+
+        occ_masks
     }
 
     pub fn get_occupancy_mask_bishop(&self, sq: Square) -> Bitboard {
-        let d = self.diagonal[sq.as_index()];
-        d.get_diag_mask() | d.get_anti_diag_mask()
+        self.masks_for_sq[sq.as_index()].diagonal | self.masks_for_sq[sq.as_index()].antidiagonal
     }
-
     pub fn get_occupancy_mask_knight(&self, sq: Square) -> Bitboard {
-        *self.knight.get(sq.as_index()).unwrap()
+        self.masks_for_sq[sq.as_index()].knight
     }
 
     pub fn get_occupancy_mask_king(&self, sq: Square) -> Bitboard {
-        *self.king.get(sq.as_index()).unwrap()
+        self.masks_for_sq[sq.as_index()].king
     }
 
     pub fn get_inbetween_squares(&self, sq1: Square, sq2: Square) -> Bitboard {
@@ -86,8 +70,12 @@ impl OccupancyMasks {
         get_vertical_move_mask(sq)
     }
 
-    pub fn get_diag_antidiag_mask(&self, sq: Square) -> &DiagonalAntidiagonal {
-        self.diagonal.get(sq.as_index()).unwrap()
+    pub fn get_diagonal_mask(&self, sq: Square) -> Bitboard {
+        self.masks_for_sq[sq.as_index()].diagonal
+    }
+
+    pub fn get_antidiagonal_mask(&self, sq: Square) -> Bitboard {
+        self.masks_for_sq[sq.as_index()].antidiagonal
     }
 
     pub fn get_occ_mask_white_pawns_double_move_mask(&self, sq: Square) -> Bitboard {
@@ -129,15 +117,246 @@ impl OccupancyMasks {
     }
 
     // bitboards for squares between castle squares (eg White King side = f1 and g1)
-    pub const CASTLE_MASK_WK: Bitboard = Bitboard::new(0x0000_0000_0000_0060);
-    pub const CASTLE_MASK_WQ: Bitboard = Bitboard::new(0x0000_0000_0000_000E);
-    pub const CASTLE_MASK_BK: Bitboard = Bitboard::new(0x6000_0000_0000_0000);
-    pub const CASTLE_MASK_BQ: Bitboard = Bitboard::new(0x0E00_0000_0000_0000);
+    pub const CASTLE_MASK_FREE_SQ_WK: Bitboard = Bitboard::new(0x0000_0000_0000_0060);
+    pub const CASTLE_MASK_FREE_SQ_WQ: Bitboard = Bitboard::new(0x0000_0000_0000_000E);
+    pub const CASTLE_MASK_FREE_SQ_BK: Bitboard = Bitboard::new(0x6000_0000_0000_0000);
+    pub const CASTLE_MASK_FREE_SQ_BQ: Bitboard = Bitboard::new(0x0E00_0000_0000_0000);
 
     // Bitboards representing commonly used ranks
     pub const RANK_2_BB: Bitboard = Bitboard::new(0x0000_0000_0000_FF00);
     pub const RANK_2_TO_6_BB: Bitboard = Bitboard::new(0x0000_FFFF_FFFF_FF00);
     pub const RANK_7_BB: Bitboard = Bitboard::new(0x00FF_0000_0000_0000);
+
+    fn populate_knight_occupancy_mask_array(occ_mask: &mut Box<OccupancyMasks>) {
+        for sq in Square::iterator() {
+            let mut bb = Bitboard::new(0);
+
+            let rank = sq.rank();
+            let file = sq.file();
+
+            // rank + 2, file +/- 1
+            if rank.can_add_two() {
+                let r = rank.add_two();
+                if file.can_add_one() {
+                    let f = file.add_one();
+                    Self::set_bb_for_sq(r, f, &mut bb);
+                }
+                if file.can_subtract_one() {
+                    let f = file.subtract_one();
+                    Self::set_bb_for_sq(r, f, &mut bb);
+                }
+            }
+
+            // rank + 1, file +/- 2
+            if rank.can_add_one() {
+                let r = rank.add_one();
+                if file.can_add_two() {
+                    let f = file.add_two();
+                    Self::set_bb_for_sq(r, f, &mut bb);
+                }
+                if file.can_subtract_two() {
+                    let f = file.subtract_two();
+                    Self::set_bb_for_sq(r, f, &mut bb);
+                }
+            }
+
+            // rank - 1, file +/- 2
+            if rank.can_subtract_one() {
+                let r = rank.subtract_one();
+                if file.can_add_two() {
+                    let f = file.add_two();
+                    Self::set_bb_for_sq(r, f, &mut bb);
+                }
+                if file.can_subtract_two() {
+                    let f = file.subtract_two();
+                    Self::set_bb_for_sq(r, f, &mut bb);
+                }
+            }
+
+            // rank - 2, file +/- 1
+            if rank.can_subtract_two() {
+                let r = rank.subtract_two();
+                if file.can_add_one() {
+                    let f = file.add_one();
+                    Self::set_bb_for_sq(r, f, &mut bb);
+                }
+                if file.can_subtract_one() {
+                    let f = file.subtract_one();
+                    Self::set_bb_for_sq(r, f, &mut bb);
+                }
+            }
+
+            occ_mask.masks_for_sq[sq.as_index()].knight = bb;
+        }
+    }
+
+    fn set_bb_for_sq(rank: Rank, file: File, bb: &mut Bitboard) {
+        let derived_sq = Square::from_rank_file(rank, file);
+        bb.set_bit(derived_sq);
+    }
+
+    fn populate_king_mask_array(occ_mask: &mut Box<OccupancyMasks>) {
+        for sq in Square::iterator() {
+            let mut bb = Bitboard::new(0);
+
+            let rank = sq.rank();
+            let file = sq.file();
+
+            // rank+1, file -1/0/+1
+            if rank.can_add_one() {
+                let r = rank.add_one();
+                // rank + 1, file 0
+                Self::set_bb_for_sq(r, file, &mut bb);
+
+                if file.can_subtract_one() {
+                    let f = file.subtract_one();
+                    Self::set_bb_for_sq(r, f, &mut bb);
+                }
+                if file.can_add_one() {
+                    let f = file.add_one();
+                    Self::set_bb_for_sq(r, f, &mut bb);
+                }
+            }
+
+            // rank, file -1/+1
+            if file.can_subtract_one() {
+                let f = file.subtract_one();
+                Self::set_bb_for_sq(rank, f, &mut bb);
+            }
+            if file.can_add_one() {
+                let f = file.add_one();
+                Self::set_bb_for_sq(rank, f, &mut bb);
+            }
+
+            // rank-1, file -1/0/+1
+            if rank.can_subtract_one() {
+                let r = rank.subtract_one();
+                // rank - 1, file 0
+                Self::set_bb_for_sq(r, file, &mut bb);
+
+                if file.can_subtract_one() {
+                    let f = file.subtract_one();
+                    Self::set_bb_for_sq(r, f, &mut bb);
+                }
+                if file.can_add_one() {
+                    let f = file.add_one();
+                    Self::set_bb_for_sq(r, f, &mut bb);
+                }
+            }
+
+            occ_mask.masks_for_sq[sq.as_index()].king = bb;
+        }
+    }
+
+    fn populate_diagonal_mask_arrays(occ_mask: &mut Box<OccupancyMasks>) {
+        for sq in Square::iterator() {
+            let mut bb = Bitboard::new(0);
+            let mut rank = sq.rank();
+            let mut file = sq.file();
+
+            // move SW
+            loop {
+                if rank.can_subtract_one() && file.can_subtract_one() {
+                    rank = rank.subtract_one();
+                    file = file.subtract_one();
+
+                    let derived_sq = Square::from_rank_file(rank, file);
+                    bb.set_bit(derived_sq);
+                } else {
+                    break;
+                }
+            }
+            rank = sq.rank();
+            file = sq.file();
+
+            // move NE
+            loop {
+                if rank.can_add_one() && file.can_add_one() {
+                    rank = rank.add_one();
+                    file = file.add_one();
+
+                    let derived_sq = Square::from_rank_file(rank, file);
+                    bb.set_bit(derived_sq);
+                } else {
+                    break;
+                }
+            }
+
+            // remove current square
+            bb.clear_bit(*sq);
+
+            occ_mask.masks_for_sq[sq.as_index()].diagonal = bb;
+        }
+
+        for sq in Square::iterator() {
+            let mut bb = Bitboard::new(0);
+
+            let mut rank = sq.rank();
+            let mut file = sq.file();
+
+            // move NW
+            loop {
+                if rank.can_add_one() && file.can_subtract_one() {
+                    rank = rank.add_one();
+                    file = file.subtract_one();
+
+                    let derived_sq = Square::from_rank_file(rank, file);
+                    bb.set_bit(derived_sq);
+                } else {
+                    break;
+                }
+            }
+            rank = sq.rank();
+            file = sq.file();
+
+            // move SE
+            loop {
+                if rank.can_subtract_one() && file.can_add_one() {
+                    rank = rank.subtract_one();
+                    file = file.add_one();
+
+                    let derived_sq = Square::from_rank_file(rank, file);
+                    bb.set_bit(derived_sq);
+                } else {
+                    break;
+                }
+            }
+
+            // remove current square
+            bb.clear_bit(*sq);
+
+            occ_mask.masks_for_sq[sq.as_index()].antidiagonal = bb;
+        }
+    }
+
+    // This code returns a bitboard with bits set representing squares between
+    // the given 2 squares.
+    //
+    // The code is taken from :
+    // https://www.chessprogramming.org/Square_Attacked_By
+    //
+    fn populate_intervening_bitboard_array(occ_mask: &mut Box<OccupancyMasks>) {
+        const M1: u64 = 0xffff_ffff_ffff_ffff;
+        const A2A7: u64 = 0x0001_0101_0101_0100;
+        const B2G7: u64 = 0x0040_2010_0804_0200;
+        const H1B7: u64 = 0x0002_0408_1020_4080;
+
+        for sq1 in Square::iterator() {
+            for sq2 in Square::iterator() {
+                let btwn = (M1.shl(sq1.as_index() as u8)) ^ (M1.shl(sq2.as_index() as u8));
+                let file = (sq2.as_index() as u64 & 7).wrapping_sub(sq1.as_index() as u64 & 7);
+                let rank = ((sq2.as_index() as u64 | 7).wrapping_sub(sq1.as_index() as u64)) >> 3;
+                let mut line = ((file & 7).wrapping_sub(1)) & A2A7; /* a2a7 if same file */
+                line = line.wrapping_add((((rank & 7).wrapping_sub(1)) >> 58).wrapping_mul(2)); /* b1g1 if same rank */
+                line = line.wrapping_add((((rank.wrapping_sub(file)) & 15).wrapping_sub(1)) & B2G7); /* b2g7 if same diagonal */
+                line = line.wrapping_add((((rank.wrapping_add(file)) & 15).wrapping_sub(1)) & H1B7); /* h1b7 if same antidiag */
+                line = line.wrapping_mul(btwn & (btwn.wrapping_neg())); /* mul acts like shift by smaller square */
+                let val = line & btwn; /* return the bits on that line in-between */
+
+                occ_mask.in_between[sq1.as_index()][sq2.as_index()] = Bitboard::new(val);
+            }
+        }
+    }
 }
 
 fn get_vertical_move_mask(sq: Square) -> Bitboard {
@@ -148,240 +367,6 @@ fn get_vertical_move_mask(sq: Square) -> Bitboard {
 fn get_horizontal_move_mask(sq: Square) -> Bitboard {
     let rank = sq.rank();
     RANK_MASK << ((rank.as_index() as u8) << 3)
-}
-
-fn populate_knight_occupancy_mask_array() -> [Bitboard; Board::NUM_SQUARES] {
-    let mut retval: [Bitboard; Board::NUM_SQUARES] = [Bitboard::default(); Board::NUM_SQUARES];
-
-    for sq in Square::iterator() {
-        let mut bb = Bitboard::new(0);
-
-        let rank = sq.rank();
-        let file = sq.file();
-
-        // rank + 2, file +/- 1
-        let mut r = rank.add_two();
-        let mut f = file.add_one();
-
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        f = file.subtract_one();
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        // rank + 1, file +/- 2
-        r = rank.add_one();
-        f = file.add_two();
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        f = file.subtract_two();
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        // rank - 1, file +/- 2
-        r = rank.subtract_one();
-        f = file.add_two();
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        f = file.subtract_two();
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        // rank - 2, file +/- 1
-        r = rank.subtract_two();
-        f = file.add_one();
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        f = file.subtract_one();
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        retval[sq.as_index()] = bb;
-    }
-    retval
-}
-
-fn set_bb_if_sq_valid(rank: Option<Rank>, file: Option<File>, bb: &mut Bitboard) {
-    if let Some(r) = rank {
-        if let Some(f) = file {
-            let derived_sq = Square::from_rank_file(r, f);
-            bb.set_bit(derived_sq);
-        }
-    }
-}
-
-fn populate_king_mask_array() -> [Bitboard; Board::NUM_SQUARES] {
-    let mut retval: [Bitboard; Board::NUM_SQUARES] = [Bitboard::default(); Board::NUM_SQUARES];
-
-    for sq in Square::iterator() {
-        let mut bb = Bitboard::new(0);
-
-        let rank = sq.rank();
-        let file = sq.file();
-
-        // rank+1, file -1/0/+1
-        let mut r = rank.add_one();
-        let mut f = file.subtract_one();
-        set_bb_if_sq_valid(r, f, &mut bb);
-        f = Some(file);
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        f = file.add_one();
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        // rank, file -1/+1
-        r = Some(rank);
-        f = file.subtract_one();
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        f = file.add_one();
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        // rank-1, file -1/0/+1
-        r = rank.subtract_one();
-        f = file.subtract_one();
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        f = Some(file);
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        f = file.add_one();
-        set_bb_if_sq_valid(r, f, &mut bb);
-
-        retval[sq.as_index()] = bb;
-    }
-    retval
-}
-
-fn is_valid_rank_and_file(rank: Option<Rank>, file: Option<File>) -> bool {
-    rank.is_some() && file.is_some()
-}
-
-fn populate_diagonal_mask_array() -> [DiagonalAntidiagonal; Board::NUM_SQUARES] {
-    let mut retval: [DiagonalAntidiagonal; Board::NUM_SQUARES] =
-        [DiagonalAntidiagonal::default(); Board::NUM_SQUARES];
-
-    for sq in Square::iterator() {
-        let mut bb = Bitboard::new(0);
-        let mut rank = sq.rank();
-        let mut file = sq.file();
-
-        // move SW
-        loop {
-            let r = rank.subtract_one();
-            let f = file.subtract_one();
-
-            if is_valid_rank_and_file(r, f) {
-                let derived_sq = Square::from_rank_file(r.unwrap(), f.unwrap());
-                bb.set_bit(derived_sq);
-
-                rank = r.unwrap();
-                file = f.unwrap();
-            } else {
-                break;
-            }
-        }
-
-        // move NE
-        rank = sq.rank();
-        file = sq.file();
-
-        loop {
-            let r = rank.add_one();
-            let f = file.add_one();
-            if is_valid_rank_and_file(r, f) {
-                let derived_sq = Square::from_rank_file(r.unwrap(), f.unwrap());
-                bb.set_bit(derived_sq);
-
-                rank = r.unwrap();
-                file = f.unwrap();
-            } else {
-                break;
-            }
-        }
-
-        // remove current square
-        bb.clear_bit(*sq);
-
-        retval[sq.as_index()].diag_mask = bb;
-    }
-
-    for sq in Square::iterator() {
-        let mut bb = Bitboard::new(0);
-
-        let mut rank = sq.rank();
-        let mut file = sq.file();
-
-        // move NW
-        loop {
-            let r = rank.add_one();
-            let f = file.subtract_one();
-            if is_valid_rank_and_file(r, f) {
-                let derived_sq = Square::from_rank_file(r.unwrap(), f.unwrap());
-                bb.set_bit(derived_sq);
-
-                rank = r.unwrap();
-                file = f.unwrap();
-            } else {
-                break;
-            }
-        }
-
-        // move SE
-        rank = sq.rank();
-        file = sq.file();
-
-        loop {
-            let r = rank.subtract_one();
-            let f = file.add_one();
-
-            if is_valid_rank_and_file(r, f) {
-                let derived_sq = Square::from_rank_file(r.unwrap(), f.unwrap());
-                bb.set_bit(derived_sq);
-
-                rank = r.unwrap();
-                file = f.unwrap();
-            } else {
-                break;
-            }
-        }
-
-        // remove current square
-        bb.clear_bit(*sq);
-
-        retval[sq.as_index()].anti_diag_mask = bb;
-    }
-
-    retval
-}
-
-// This code returns a bitboard with bits set representing squares between
-// the given 2 squares.
-//
-// The code is taken from :
-// https://www.chessprogramming.org/Square_Attacked_By
-//
-fn populate_intervening_bitboard_array() -> [[Bitboard; Board::NUM_SQUARES]; Board::NUM_SQUARES] {
-    const M1: u64 = 0xffff_ffff_ffff_ffff;
-    const A2A7: u64 = 0x0001_0101_0101_0100;
-    const B2G7: u64 = 0x0040_2010_0804_0200;
-    const H1B7: u64 = 0x0002_0408_1020_4080;
-
-    let mut retval = [[Bitboard::default(); Board::NUM_SQUARES]; Board::NUM_SQUARES];
-
-    for sq1 in Square::iterator() {
-        for sq2 in Square::iterator() {
-            let btwn = (M1.shl(sq1.as_index() as u8)) ^ (M1.shl(sq2.as_index() as u8));
-            let file = (sq2.as_index() as u64 & 7).wrapping_sub(sq1.as_index() as u64 & 7);
-            let rank = ((sq2.as_index() as u64 | 7).wrapping_sub(sq1.as_index() as u64)) >> 3;
-            let mut line = ((file & 7).wrapping_sub(1)) & A2A7; /* a2a7 if same file */
-            line = line.wrapping_add((((rank & 7).wrapping_sub(1)) >> 58).wrapping_mul(2)); /* b1g1 if same rank */
-            line = line.wrapping_add((((rank.wrapping_sub(file)) & 15).wrapping_sub(1)) & B2G7); /* b2g7 if same diagonal */
-            line = line.wrapping_add((((rank.wrapping_add(file)) & 15).wrapping_sub(1)) & H1B7); /* h1b7 if same antidiag */
-            line = line.wrapping_mul(btwn & (btwn.wrapping_neg())); /* mul acts like shift by smaller square */
-            let val = line & btwn; /* return the bits on that line in-between */
-
-            retval[sq1.as_index()][sq2.as_index()] = Bitboard::new(val);
-        }
-    }
-
-    retval
 }
 
 #[cfg(test)]

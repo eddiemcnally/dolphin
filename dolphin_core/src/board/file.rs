@@ -1,4 +1,3 @@
-use crate::core::array_offset::EnumAsOffset;
 use num_enum::TryFromPrimitive;
 use std::fmt;
 use std::slice::Iter;
@@ -16,34 +15,101 @@ pub enum File {
     H,
 }
 
-impl EnumAsOffset for File {
-    fn as_index(&self) -> usize {
-        *self as usize
-    }
-}
-
 impl File {
-    pub fn new(num: u8) -> Option<File> {
-        match File::try_from(num) {
-            Ok(file) => Some(file),
-            Err(_) => None,
+    pub fn new(num: u8) -> File {
+        match num {
+            0 => File::A,
+            1 => File::B,
+            2 => File::C,
+            3 => File::D,
+            4 => File::E,
+            5 => File::F,
+            6 => File::G,
+            7 => File::H,
+            _ => panic!("Unexpected File"),
         }
     }
 
-    pub fn add_one(self) -> Option<File> {
-        File::new(self.as_index() as u8 + 1)
+    pub const fn as_index(&self) -> usize {
+        *self as usize
     }
 
-    pub fn subtract_one(self) -> Option<File> {
-        File::new((self.as_index() as u8).overflowing_sub(1).0)
+    pub fn can_add_one(self) -> bool {
+        match self {
+            File::A | File::B | File::C | File::D | File::E | File::F | File::G => true,
+            File::H => false,
+        }
     }
 
-    pub fn add_two(self) -> Option<File> {
-        File::new(self.as_index() as u8 + 2)
+    pub fn can_add_two(self) -> bool {
+        match self {
+            File::A | File::B | File::C | File::D | File::E | File::F => true,
+            File::G | File::H => false,
+        }
     }
 
-    pub fn subtract_two(self) -> Option<File> {
-        File::new((self.as_index() as u8).overflowing_sub(2).0)
+    pub fn can_subtract_one(self) -> bool {
+        match self {
+            File::B | File::C | File::D | File::E | File::F | File::G | File::H => true,
+            File::A => false,
+        }
+    }
+
+    pub fn can_subtract_two(self) -> bool {
+        match self {
+            File::C | File::D | File::E | File::F | File::G | File::H => true,
+            File::A | File::B => false,
+        }
+    }
+
+    pub fn add_one(self) -> File {
+        match self {
+            File::A => File::B,
+            File::B => File::C,
+            File::C => File::D,
+            File::D => File::E,
+            File::E => File::F,
+            File::F => File::G,
+            File::G => File::H,
+            File::H => panic!("Invalid file"),
+        }
+    }
+
+    pub fn subtract_one(self) -> File {
+        match self {
+            File::A => panic!("Invalid file"),
+            File::B => File::A,
+            File::C => File::B,
+            File::D => File::C,
+            File::E => File::D,
+            File::F => File::E,
+            File::G => File::F,
+            File::H => File::G,
+        }
+    }
+
+    pub fn add_two(self) -> File {
+        match self {
+            File::A => File::C,
+            File::B => File::D,
+            File::C => File::E,
+            File::D => File::F,
+            File::E => File::G,
+            File::F => File::H,
+            File::G | File::H => panic!("Invalid file"),
+        }
+    }
+
+    pub fn subtract_two(self) -> File {
+        match self {
+            File::A | File::B => panic!("Invalid file"),
+            File::C => File::A,
+            File::D => File::B,
+            File::E => File::C,
+            File::F => File::D,
+            File::G => File::E,
+            File::H => File::F,
+        }
     }
 
     pub fn from_char(file: char) -> Option<File> {
@@ -104,8 +170,6 @@ impl fmt::Debug for File {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::core::array_offset::EnumAsOffset;
-
     use super::File;
     use std::collections::HashMap;
 
@@ -116,63 +180,93 @@ pub mod tests {
     }
 
     #[test]
-    pub fn file_from_u8() {
-        assert!(File::new(0) == Some(File::A));
-        assert!(File::new(1) == Some(File::B));
-        assert!(File::new(2) == Some(File::C));
-        assert!(File::new(3) == Some(File::D));
-        assert!(File::new(4) == Some(File::E));
-        assert!(File::new(5) == Some(File::F));
-        assert!(File::new(6) == Some(File::G));
-        assert!(File::new(7) == Some(File::H));
+    pub fn can_add_one() {
+        assert!(File::A.can_add_one());
+        assert!(File::B.can_add_one());
+        assert!(File::C.can_add_one());
+        assert!(File::D.can_add_one());
+        assert!(File::E.can_add_one());
+        assert!(File::F.can_add_one());
+        assert!(File::G.can_add_one());
+        assert!(!File::H.can_add_one());
+    }
+
+    #[test]
+    pub fn can_add_two() {
+        assert!(File::A.can_add_two());
+        assert!(File::B.can_add_two());
+        assert!(File::C.can_add_two());
+        assert!(File::D.can_add_two());
+        assert!(File::E.can_add_two());
+        assert!(File::F.can_add_two());
+        assert!(!File::G.can_add_two());
+        assert!(!File::H.can_add_two());
+    }
+
+    #[test]
+    pub fn can_subtract_one() {
+        assert!(!File::A.can_subtract_one());
+        assert!(File::B.can_subtract_one());
+        assert!(File::C.can_subtract_one());
+        assert!(File::D.can_subtract_one());
+        assert!(File::E.can_subtract_one());
+        assert!(File::F.can_subtract_one());
+        assert!(File::G.can_subtract_one());
+        assert!(File::H.can_subtract_one());
+    }
+
+    #[test]
+    pub fn can_subtract_two() {
+        assert!(!File::A.can_subtract_two());
+        assert!(!File::B.can_subtract_two());
+        assert!(File::C.can_subtract_two());
+        assert!(File::D.can_subtract_two());
+        assert!(File::E.can_subtract_two());
+        assert!(File::F.can_subtract_two());
+        assert!(File::G.can_subtract_two());
+        assert!(File::H.can_subtract_two());
     }
 
     #[test]
     pub fn add_one() {
-        assert_eq!(File::A.add_one().unwrap(), File::B);
-        assert_eq!(File::B.add_one().unwrap(), File::C);
-        assert_eq!(File::C.add_one().unwrap(), File::D);
-        assert_eq!(File::D.add_one().unwrap(), File::E);
-        assert_eq!(File::E.add_one().unwrap(), File::F);
-        assert_eq!(File::F.add_one().unwrap(), File::G);
-        assert_eq!(File::G.add_one().unwrap(), File::H);
-        assert!(File::H.add_one().is_none());
+        assert_eq!(File::A.add_one(), File::B);
+        assert_eq!(File::B.add_one(), File::C);
+        assert_eq!(File::C.add_one(), File::D);
+        assert_eq!(File::D.add_one(), File::E);
+        assert_eq!(File::E.add_one(), File::F);
+        assert_eq!(File::F.add_one(), File::G);
+        assert_eq!(File::G.add_one(), File::H);
     }
 
     #[test]
     pub fn add_two() {
-        assert_eq!(File::A.add_two().unwrap(), File::C);
-        assert_eq!(File::B.add_two().unwrap(), File::D);
-        assert_eq!(File::C.add_two().unwrap(), File::E);
-        assert_eq!(File::D.add_two().unwrap(), File::F);
-        assert_eq!(File::E.add_two().unwrap(), File::G);
-        assert_eq!(File::F.add_two().unwrap(), File::H);
-        assert!(File::G.add_two().is_none());
-        assert!(File::H.add_two().is_none());
+        assert_eq!(File::A.add_two(), File::C);
+        assert_eq!(File::B.add_two(), File::D);
+        assert_eq!(File::C.add_two(), File::E);
+        assert_eq!(File::D.add_two(), File::F);
+        assert_eq!(File::E.add_two(), File::G);
+        assert_eq!(File::F.add_two(), File::H);
     }
 
     #[test]
     pub fn subract_one() {
-        assert!(File::A.subtract_one().is_none());
-        assert_eq!(File::B.subtract_one().unwrap(), File::A);
-        assert_eq!(File::C.subtract_one().unwrap(), File::B);
-        assert_eq!(File::D.subtract_one().unwrap(), File::C);
-        assert_eq!(File::E.subtract_one().unwrap(), File::D);
-        assert_eq!(File::F.subtract_one().unwrap(), File::E);
-        assert_eq!(File::G.subtract_one().unwrap(), File::F);
-        assert_eq!(File::H.subtract_one().unwrap(), File::G);
+        assert_eq!(File::B.subtract_one(), File::A);
+        assert_eq!(File::C.subtract_one(), File::B);
+        assert_eq!(File::D.subtract_one(), File::C);
+        assert_eq!(File::E.subtract_one(), File::D);
+        assert_eq!(File::F.subtract_one(), File::E);
+        assert_eq!(File::G.subtract_one(), File::F);
+        assert_eq!(File::H.subtract_one(), File::G);
     }
 
     #[test]
     pub fn subract_two() {
-        assert!(File::A.subtract_two().is_none());
-        assert!(File::B.subtract_two().is_none());
-        assert_eq!(File::C.subtract_two().unwrap(), File::A);
-        assert_eq!(File::D.subtract_two().unwrap(), File::B);
-        assert_eq!(File::E.subtract_two().unwrap(), File::C);
-        assert_eq!(File::F.subtract_two().unwrap(), File::D);
-        assert_eq!(File::G.subtract_two().unwrap(), File::E);
-        assert_eq!(File::H.subtract_two().unwrap(), File::F);
+        assert_eq!(File::C.subtract_two(), File::A);
+        assert_eq!(File::D.subtract_two(), File::B);
+        assert_eq!(File::E.subtract_two(), File::C);
+        assert_eq!(File::F.subtract_two(), File::D);
+        assert_eq!(File::G.subtract_two(), File::E);
+        assert_eq!(File::H.subtract_two(), File::F);
     }
 
     #[test]
@@ -196,19 +290,12 @@ pub mod tests {
     #[test]
     pub fn file_to_int() {
         assert_eq!(File::A.as_index(), 0);
-
         assert_eq!(File::B.as_index(), 1);
-
         assert_eq!(File::C.as_index(), 2);
-
         assert_eq!(File::D.as_index(), 3);
-
         assert_eq!(File::E.as_index(), 4);
-
         assert_eq!(File::F.as_index(), 5);
-
         assert_eq!(File::G.as_index(), 6);
-
         assert_eq!(File::H.as_index(), 7);
     }
 

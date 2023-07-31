@@ -53,7 +53,7 @@ impl Search {
         let mut i = 0u8;
 
         while mv.is_some() && i < depth {
-            pos.make_move(mv.unwrap());
+            pos.make_move(&mv.unwrap());
             retval.push(mv.unwrap());
             i += 1;
             mv = self.tt.get_move_for_position_hash(pos.position_hash());
@@ -108,7 +108,7 @@ impl Search {
 
             let mv = move_list.get_move_at_offset(i);
 
-            let move_legality = pos.make_move(mv);
+            let move_legality = pos.make_move(&mv);
             if move_legality == MoveLegality::Illegal {
                 pos.take_move();
                 continue;
@@ -179,7 +179,7 @@ impl Search {
 
             let mv = move_list.get_move_at_offset(i);
 
-            let move_legality = pos.make_move(mv);
+            let move_legality = pos.make_move(&mv);
             if move_legality == MoveLegality::Illegal {
                 pos.take_move();
                 continue;

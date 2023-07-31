@@ -2,7 +2,7 @@ extern crate core_affinity;
 extern crate dolphin_core;
 
 use dolphin_core::board::occupancy_masks::OccupancyMasks;
-use dolphin_core::board::piece::Piece;
+use dolphin_core::board::piece::WHITE_KING;
 use dolphin_core::io::fen;
 use dolphin_core::moves::move_gen::MoveGenerator;
 use dolphin_core::position::attack_checker::AttackChecker;
@@ -14,7 +14,7 @@ mod epd_parser;
 mod perft_runner;
 
 fn main() {
-    let x = Piece::King;
+    let x = WHITE_KING;
 
     print!("val {}", x);
     // Pin current thread to a core

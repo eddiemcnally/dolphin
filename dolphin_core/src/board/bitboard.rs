@@ -1,7 +1,6 @@
 use crate::board::occupancy_masks::FILE_A_BB;
 use crate::board::occupancy_masks::FILE_H_BB;
 use crate::board::square::Square;
-use crate::core::array_offset::EnumAsOffset;
 use core::ops::BitOr;
 use core::ops::BitOrAssign;
 use std::ops::BitAnd;
@@ -24,6 +23,10 @@ impl Bitboard {
 
     pub const fn into_u64(&self) -> u64 {
         self.0
+    }
+
+    pub fn from_square(sq: Square) -> Bitboard {
+        to_mask(sq)
     }
 
     pub fn set_bit(&mut self, sq: Square) {
@@ -52,17 +55,6 @@ impl Bitboard {
 
     pub const fn is_not_empty(self) -> bool {
         !self.is_empty()
-    }
-
-    #[inline(always)]
-    pub fn move_bit(bb1: &mut Bitboard, bb2: &mut Bitboard, from_sq: Square, to_sq: Square) {
-        let from_bb = to_mask(from_sq);
-        let to_bb = to_mask(to_sq);
-
-        *bb1 ^= from_bb;
-        *bb1 ^= to_bb;
-        *bb2 ^= from_bb;
-        *bb2 ^= to_bb;
     }
 
     pub fn north_east(&self) -> Bitboard {
@@ -198,7 +190,7 @@ impl Iterator for BitboardIterator {
         if self.0 > 0 {
             let sq = Square::new(self.0.trailing_zeros() as u8);
             self.0 &= self.0 - 1;
-            return sq;
+            return Some(sq);
         }
 
         None
