@@ -5,7 +5,8 @@ use crate::board::piece::{
     Piece, Role, BLACK_KING, BLACK_PAWN, BLACK_ROOK, WHITE_KING, WHITE_PAWN, WHITE_ROOK,
 };
 use crate::board::square::Square;
-use crate::moves::mov::*;
+use crate::moves::mov::Move;
+use crate::moves::move_types::*;
 use crate::position::attack_checker::AttackChecker;
 use crate::position::castle_permissions::CastlePermission;
 use crate::position::move_counter::MoveCounter;
@@ -202,23 +203,20 @@ impl<'a> Position<'a> {
             let move_type = mv.decode_move_type();
 
             match move_type {
-                MoveType::Quiet => self.move_piece_on_board(&pce_to_move, from_sq, to_sq),
-                MoveType::Capture => {
-                    self.do_capture_move(&pce_to_move, from_sq, to_sq, &capt_pce.unwrap())
-                }
-                MoveType::DoublePawn => self.do_double_pawn_move(&pce_to_move, from_sq, to_sq),
-                MoveType::KingCastle | MoveType::QueenCastle => self.do_castle_move(mv),
-                MoveType::EnPassant => self.do_en_passant(from_sq, to_sq),
-                MoveType::PromoteKnightQuiet
-                | MoveType::PromoteBishopQuiet
-                | MoveType::PromoteRookQuiet
-                | MoveType::PromoteQueenQuiet
-                | MoveType::PromoteKnightCapture
-                | MoveType::PromoteBishopCapture
-                | MoveType::PromoteRookCapture
-                | MoveType::PromoteQueenCapture => {
-                    self.do_promotion(mv, from_sq, to_sq, &pce_to_move)
-                }
+                QUIET => self.move_piece_on_board(&pce_to_move, from_sq, to_sq),
+                CAPTURE => self.do_capture_move(&pce_to_move, from_sq, to_sq, &capt_pce.unwrap()),
+                DOUBLE_PAWN => self.do_double_pawn_move(&pce_to_move, from_sq, to_sq),
+                KING_CASTLE | QUEEN_CASTLE => self.do_castle_move(mv),
+                EN_PASSANT => self.do_en_passant(from_sq, to_sq),
+                PROMOTE_KNIGHT_QUIET
+                | PROMOTE_BISHOP_QUIET
+                | PROMOTE_ROOK_QUIET
+                | PROMOTE_QUEEN_QUIET
+                | PROMOTE_KNIGHT_CAPTURE
+                | PROMOTE_BISHOP_CAPTURE
+                | PROMOTE_ROOK_CAPTURE
+                | PROMOTE_QUEEN_CAPTURE => self.do_promotion(mv, from_sq, to_sq, &pce_to_move),
+                _ => panic!("Invalid move type"),
             }
 
             // update some states based on the move
@@ -247,23 +245,20 @@ impl<'a> Position<'a> {
         let mt = mv.decode_move_type();
 
         match mt {
-            MoveType::Quiet => self.reverse_quiet_move(&mv, &piece),
-            MoveType::Capture => self.reverse_capture_move(&mv, &piece, &capt_piece),
-            MoveType::DoublePawn => self.reverse_quiet_move(&mv, &piece),
-            MoveType::KingCastle | MoveType::QueenCastle => {
-                self.reverse_castle_move(&mv, self.side_to_move())
-            }
-            MoveType::EnPassant => self.reverse_en_passant_move(&mv, self.side_to_move()),
-            MoveType::PromoteKnightQuiet
-            | MoveType::PromoteBishopQuiet
-            | MoveType::PromoteRookQuiet
-            | MoveType::PromoteQueenQuiet
-            | MoveType::PromoteKnightCapture
-            | MoveType::PromoteBishopCapture
-            | MoveType::PromoteRookCapture
-            | MoveType::PromoteQueenCapture => {
-                self.reverse_promotion_move(&mv, &piece, &capt_piece)
-            }
+            QUIET => self.reverse_quiet_move(&mv, &piece),
+            CAPTURE => self.reverse_capture_move(&mv, &piece, &capt_piece),
+            DOUBLE_PAWN => self.reverse_quiet_move(&mv, &piece),
+            KING_CASTLE | QUEEN_CASTLE => self.reverse_castle_move(&mv, self.side_to_move()),
+            EN_PASSANT => self.reverse_en_passant_move(&mv, self.side_to_move()),
+            PROMOTE_KNIGHT_QUIET
+            | PROMOTE_BISHOP_QUIET
+            | PROMOTE_ROOK_QUIET
+            | PROMOTE_QUEEN_QUIET
+            | PROMOTE_KNIGHT_CAPTURE
+            | PROMOTE_BISHOP_CAPTURE
+            | PROMOTE_ROOK_CAPTURE
+            | PROMOTE_QUEEN_CAPTURE => self.reverse_promotion_move(&mv, &piece, &capt_piece),
+            _ => panic!("Invalid move type"),
         }
     }
 

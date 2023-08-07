@@ -36,7 +36,7 @@ static SQUARES: [Square; Square::NUM_SQUARES] = [
 impl Square {
     pub const NUM_SQUARES: usize = 64;
 
-    pub fn new(num: u8) -> Square {
+    pub const fn new(num: u8) -> Square {
         Self::get_sq(num)
     }
     pub const fn as_index(&self) -> usize {

@@ -1,40 +1,30 @@
 use crate::board::piece::Role;
 use crate::board::square::Square;
-use num_enum::TryFromPrimitive;
+use crate::moves::move_types::*;
 use std::fmt;
 
+//
+// bit flags for Move (u32)
+// ---- ---- ---- ---- ---- ---- --XX XXXX  From Square
+// ---- ---- ---- ---- ---- XXXX XX-- ----  To Square
+// ---- ---- ---- ---- XXXX ---- ---- ----  Move Type
+// XXXX XXXX XXXX XXXX ---- ---- ---- ----  Score
+
 #[derive(Eq, PartialEq, Copy, Clone, Hash)]
-pub struct Move {
-    from_sq: Square,
-    to_sq: Square,
-    move_type: MoveType,
-    score: Score,
-}
+#[repr(transparent)]
+pub struct Move(u32);
 
 pub type Score = i16;
 
-//
-// see https://www.chessprogramming.org/Encoding_Moves
-//
-#[derive(Eq, PartialEq, Copy, Clone, Hash, TryFromPrimitive)]
-#[repr(u8)]
-#[rustfmt::skip]
-pub enum MoveType {
-    Quiet                   = 0b0000_0000,
-    DoublePawn              = 0b0000_0001,
-    KingCastle              = 0b0000_0010,
-    QueenCastle             = 0b0000_0011,
-    Capture                 = 0b0000_0100,
-    EnPassant               = 0b0000_0101,
-    PromoteKnightQuiet      = 0b0000_1000,
-    PromoteBishopQuiet      = 0b0000_1001,
-    PromoteRookQuiet        = 0b0000_1010,
-    PromoteQueenQuiet       = 0b0000_1011,
-    PromoteKnightCapture    = 0b0000_1100,
-    PromoteBishopCapture    = 0b0000_1101,
-    PromoteRookCapture      = 0b0000_1110,
-    PromoteQueenCapture     = 0b0000_1111,
-}
+const MV_MASK_FROM_SQ: u32 = 0x0000_003F;
+const MV_MASK_TO_SQ: u32 = 0x0000_0FC0;
+const MV_MASK_MOVE_TYPE: u32 = 0x0000_F000;
+const MV_MASK_SCORE: u32 = 0xFFFF_0000;
+
+const MV_SHIFT_FROM_SQ: usize = 0;
+const MV_SHIFT_TO_SQ: usize = 6;
+const MV_SHIFT_MOVE_TYPE: usize = 12;
+const MV_SHIFT_SCORE: usize = 16;
 
 impl Move {
     /// Encodes a Quiet move given the "from" and "to" squares
@@ -44,51 +34,39 @@ impl Move {
     /// * `from_sq` - the from square
     /// * `to_sq`   - the to square
     ///
-    pub fn encode_move_quiet(from_sq: Square, to_sq: Square) -> Move {
-        encode(from_sq, to_sq, MoveType::Quiet)
+    pub const fn encode_move_quiet(from_sq: Square, to_sq: Square) -> Move {
+        encode(from_sq, to_sq, QUIET)
     }
 
-    pub fn encode_move_capture(from_sq: Square, to_sq: Square) -> Move {
-        encode(from_sq, to_sq, MoveType::Capture)
+    pub const fn encode_move_capture(from_sq: Square, to_sq: Square) -> Move {
+        encode(from_sq, to_sq, CAPTURE)
     }
 
-    pub fn encode_move_with_promotion(
+    pub const fn encode_move_with_promotion(
         from_sq: Square,
         to_sq: Square,
         promotion_role: Role,
     ) -> Move {
-        debug_assert!(
-            from_sq != to_sq,
-            "from and to square are same : {}",
-            from_sq
-        );
-
         let mt = match promotion_role {
-            Role::Knight => MoveType::PromoteKnightQuiet,
-            Role::Bishop => MoveType::PromoteBishopQuiet,
-            Role::Rook => MoveType::PromoteRookQuiet,
-            Role::Queen => MoveType::PromoteQueenQuiet,
+            Role::Knight => PROMOTE_KNIGHT_QUIET,
+            Role::Bishop => PROMOTE_BISHOP_QUIET,
+            Role::Rook => PROMOTE_ROOK_QUIET,
+            Role::Queen => PROMOTE_QUEEN_QUIET,
             _ => panic!("Invalid promotion piece"),
         };
         encode(from_sq, to_sq, mt)
     }
 
-    pub fn encode_move_with_promotion_capture(
+    pub const fn encode_move_with_promotion_capture(
         from_sq: Square,
         to_sq: Square,
         promotion_role: Role,
     ) -> Move {
-        debug_assert!(
-            from_sq != to_sq,
-            "from and to square are same : {}",
-            from_sq
-        );
-
         let mt = match promotion_role {
-            Role::Knight => MoveType::PromoteKnightCapture,
-            Role::Bishop => MoveType::PromoteBishopCapture,
-            Role::Rook => MoveType::PromoteRookCapture,
-            Role::Queen => MoveType::PromoteQueenCapture,
+            Role::Knight => PROMOTE_KNIGHT_CAPTURE,
+            Role::Bishop => PROMOTE_BISHOP_CAPTURE,
+            Role::Rook => PROMOTE_ROOK_CAPTURE,
+            Role::Queen => PROMOTE_QUEEN_CAPTURE,
             _ => panic!("Invalid promotion piece"),
         };
         encode(from_sq, to_sq, mt)
@@ -101,13 +79,8 @@ impl Move {
     /// * `from_sq`         - the from square
     /// * `to_sq`           - the to square
     ///
-    pub fn encode_move_en_passant(from_sq: Square, to_sq: Square) -> Move {
-        debug_assert!(
-            from_sq != to_sq,
-            "from and to square are same : {}",
-            from_sq
-        );
-        encode(from_sq, to_sq, MoveType::EnPassant)
+    pub const fn encode_move_en_passant(from_sq: Square, to_sq: Square) -> Move {
+        encode(from_sq, to_sq, EN_PASSANT)
     }
 
     /// Encodes a Double Pawn first move
@@ -117,101 +90,107 @@ impl Move {
     /// * `from_sq`         - the from squareClone,
     /// * `to_sq`           - the to square
     ///
-    pub fn encode_move_double_pawn_first(from_sq: Square, to_sq: Square) -> Move {
-        debug_assert!(
-            from_sq != to_sq,
-            "from and to square are same : {}",
-            from_sq
-        );
-        encode(from_sq, to_sq, MoveType::DoublePawn)
+    pub const fn encode_move_double_pawn_first(from_sq: Square, to_sq: Square) -> Move {
+        encode(from_sq, to_sq, DOUBLE_PAWN)
     }
 
     /// Encodes a White King-side castle move
     ///
     pub const fn encode_move_castle_kingside_white() -> Move {
-        encode(Square::E1, Square::G1, MoveType::KingCastle)
+        encode(Square::E1, Square::G1, KING_CASTLE)
     }
 
     /// Encodes a Black King-side castle move
     ///
     pub const fn encode_move_castle_kingside_black() -> Move {
-        encode(Square::E8, Square::G8, MoveType::KingCastle)
+        encode(Square::E8, Square::G8, KING_CASTLE)
     }
 
     /// Encodes a White Queen-side castle move
     ///
     pub const fn encode_move_castle_queenside_white() -> Move {
-        encode(Square::E1, Square::C1, MoveType::QueenCastle)
+        encode(Square::E1, Square::C1, QUEEN_CASTLE)
     }
 
     /// Encodes a Black Queen-side castle move
     ///
     pub const fn encode_move_castle_queenside_black() -> Move {
-        encode(Square::E8, Square::C8, MoveType::QueenCastle)
+        encode(Square::E8, Square::C8, QUEEN_CASTLE)
     }
 
     pub fn decode_from_square(&self) -> Square {
-        self.from_sq
+        let num = ((self.0 & MV_MASK_FROM_SQ) >> MV_SHIFT_FROM_SQ) as u8;
+        Square::new(num)
     }
 
-    pub fn decode_to_square(&self) -> Square {
-        self.to_sq
+    pub const fn decode_to_square(&self) -> Square {
+        let num = ((self.0 & MV_MASK_TO_SQ) >> MV_SHIFT_TO_SQ) as u8;
+        Square::new(num)
     }
 
-    pub fn decode_move_type(&self) -> MoveType {
-        self.move_type
+    pub const fn decode_move_type(&self) -> MoveType {
+        ((self.0 & MV_MASK_MOVE_TYPE) >> MV_SHIFT_MOVE_TYPE) as MoveType
     }
 
-    pub fn get_score(&self) -> Score {
-        self.score
+    pub const fn get_score(&self) -> Score {
+        ((self.0 & MV_MASK_SCORE) >> MV_SHIFT_SCORE) as Score
     }
 
-    pub fn decode_promotion_role(&self) -> Role {
+    pub const fn decode_promotion_role(&self) -> Role {
         let mt = Self::decode_move_type(self);
 
         match mt {
-            MoveType::PromoteKnightQuiet | MoveType::PromoteKnightCapture => Role::Knight,
-            MoveType::PromoteBishopQuiet | MoveType::PromoteBishopCapture => Role::Bishop,
-            MoveType::PromoteRookQuiet | MoveType::PromoteRookCapture => Role::Rook,
-            MoveType::PromoteQueenQuiet | MoveType::PromoteQueenCapture => Role::Queen,
+            PROMOTE_KNIGHT_QUIET | PROMOTE_KNIGHT_CAPTURE => Role::Knight,
+            PROMOTE_BISHOP_QUIET | PROMOTE_BISHOP_CAPTURE => Role::Bishop,
+            PROMOTE_ROOK_QUIET | PROMOTE_ROOK_CAPTURE => Role::Rook,
+            PROMOTE_QUEEN_QUIET | PROMOTE_QUEEN_CAPTURE => Role::Queen,
             _ => panic!("Invalid promotion piece"),
         }
     }
 
-    pub fn is_capture(&self) -> bool {
-        Self::decode_move_type(self).is_capture()
+    pub const fn is_capture(&self) -> bool {
+        let move_type = self.decode_move_type();
+        is_capture(move_type)
     }
 
-    pub fn is_en_passant(&self) -> bool {
-        Self::decode_move_type(self).is_en_passant()
+    pub const fn is_en_passant(&self) -> bool {
+        let move_type = self.decode_move_type();
+        is_en_passant(move_type)
     }
 
-    pub fn is_castle(&self) -> bool {
-        Self::decode_move_type(self).is_castle()
+    pub const fn is_castle(&self) -> bool {
+        let move_type = self.decode_move_type();
+        is_castle(move_type)
     }
 
-    pub fn is_promote(&self) -> bool {
-        Self::decode_move_type(self).is_promotion()
+    pub const fn is_promote(&self) -> bool {
+        let move_type = self.decode_move_type();
+        is_promotion(move_type)
     }
 
-    pub fn is_quiet(&self) -> bool {
-        Self::decode_move_type(self).is_quiet()
+    pub const fn is_quiet(&self) -> bool {
+        let move_type = self.decode_move_type();
+        is_quiet(move_type)
     }
 
-    pub fn is_queen_castle(&self) -> bool {
-        Self::decode_move_type(self).is_queen_castle()
+    pub const fn is_queen_castle(&self) -> bool {
+        let move_type = self.decode_move_type();
+        is_queen_castle(move_type)
     }
 
-    pub fn is_king_castle(&self) -> bool {
-        Self::decode_move_type(self).is_king_castle()
+    pub const fn is_king_castle(&self) -> bool {
+        let move_type = self.decode_move_type();
+        is_king_castle(move_type)
     }
 
     pub fn is_double_pawn(&self) -> bool {
-        Self::decode_move_type(self).is_double_pawn()
+        let move_type = self.decode_move_type();
+        is_double_pawn(move_type)
     }
 
     pub fn set_score(&mut self, score: Score) {
-        self.score = score
+        let sc: u32 = (score as u32) << MV_SHIFT_SCORE;
+        self.0 |= sc;
     }
 
     pub fn print_move(&self) {
@@ -224,47 +203,13 @@ impl Move {
 }
 
 const fn encode(from_sq: Square, to_sq: Square, move_type: MoveType) -> Move {
-    Move {
-        from_sq,
-        to_sq,
-        move_type,
-        score: 0,
-    }
-}
+    let mut mv = 0;
 
-impl MoveType {
-    const MOVE_TYPE_MASK_CAPTURE: u8 = 0b0000_0100;
-    const MOVE_TYPE_MASK_PROMOTE: u8 = 0b0000_1000;
+    mv |= ((from_sq as u32) << MV_SHIFT_FROM_SQ) & MV_MASK_FROM_SQ;
+    mv |= ((to_sq as u32) << MV_SHIFT_TO_SQ) & MV_MASK_TO_SQ;
+    mv |= ((move_type as u32) << MV_SHIFT_MOVE_TYPE) & MV_MASK_MOVE_TYPE;
 
-    const fn is_promotion(&self) -> bool {
-        *self as u8 & MoveType::MOVE_TYPE_MASK_PROMOTE != 0
-    }
-
-    const fn is_capture(&self) -> bool {
-        *self as u8 & MoveType::MOVE_TYPE_MASK_CAPTURE != 0
-    }
-    fn is_en_passant(&self) -> bool {
-        *self == MoveType::EnPassant
-    }
-
-    fn is_castle(&self) -> bool {
-        self.is_king_castle() || self.is_queen_castle()
-    }
-
-    fn is_queen_castle(&self) -> bool {
-        *self == MoveType::QueenCastle
-    }
-
-    fn is_king_castle(&self) -> bool {
-        *self == MoveType::KingCastle
-    }
-
-    fn is_quiet(&self) -> bool {
-        *self == MoveType::Quiet
-    }
-    fn is_double_pawn(&self) -> bool {
-        *self == MoveType::DoublePawn
-    }
+    Move(mv)
 }
 
 impl fmt::Debug for Move {
@@ -280,20 +225,21 @@ impl fmt::Debug for Move {
         debug_str.push_str(&format!("{} ", to_sq.rank()));
 
         let mt = match self.decode_move_type() {
-            MoveType::Quiet => "Quiet",
-            MoveType::DoublePawn => "DoublePawn",
-            MoveType::KingCastle => "KingCastle",
-            MoveType::QueenCastle => "QueenCastle",
-            MoveType::Capture => "Capture",
-            MoveType::EnPassant => "En Passant",
-            MoveType::PromoteKnightQuiet => "Promote Knight Quiet",
-            MoveType::PromoteBishopQuiet => "Promote Bishop Quiet",
-            MoveType::PromoteRookQuiet => "Promote Rook Quiet",
-            MoveType::PromoteQueenQuiet => "Promote Queen Quiet",
-            MoveType::PromoteKnightCapture => "Promote Knight Capture",
-            MoveType::PromoteBishopCapture => "Promote Bishop Capture",
-            MoveType::PromoteRookCapture => "Promote Rook Capture",
-            MoveType::PromoteQueenCapture => "Promnote Queen Capture",
+            QUIET => "Quiet",
+            DOUBLE_PAWN => "DoublePawn",
+            KING_CASTLE => "KingCastle",
+            QUEEN_CASTLE => "QueenCastle",
+            CAPTURE => "Capture",
+            EN_PASSANT => "En Passant",
+            PROMOTE_KNIGHT_QUIET => "Promote Knight Quiet",
+            PROMOTE_BISHOP_QUIET => "Promote Bishop Quiet",
+            PROMOTE_ROOK_QUIET => "Promote Rook Quiet",
+            PROMOTE_QUEEN_QUIET => "Promote Queen Quiet",
+            PROMOTE_KNIGHT_CAPTURE => "Promote Knight Capture",
+            PROMOTE_BISHOP_CAPTURE => "Promote Bishop Capture",
+            PROMOTE_ROOK_CAPTURE => "Promote Rook Capture",
+            PROMOTE_QUEEN_CAPTURE => "Promnote Queen Capture",
+            _ => panic!("Invalid move type"),
         };
         debug_str.push_str(&format!(" : {}]", mt));
 
@@ -309,7 +255,7 @@ impl fmt::Display for Move {
 
 impl Default for Move {
     fn default() -> Move {
-        encode(Square::A1, Square::A1, MoveType::Quiet)
+        encode(Square::A1, Square::A1, QUIET)
     }
 }
 
