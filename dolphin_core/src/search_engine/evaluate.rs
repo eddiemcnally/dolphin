@@ -3,7 +3,7 @@
 
 use crate::board::colour::Colour;
 use crate::board::game_board::Board;
-use crate::board::piece::Role;
+use crate::board::piece::Piece;
 
 use crate::moves::mov::Score;
 
@@ -82,32 +82,29 @@ const KING_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
 pub fn evaluate_board(board: &Board, side_to_move: Colour) -> Score {
     let mut score = board.get_net_material();
 
-    // Evaluate White position
-    for sq in board.get_colour_bb(Colour::White).iterator() {
-        let sq_offset = sq.as_index();
-        if let Some(pce) = board.get_piece_on_square(sq) {
-            score += match pce.role() {
-                Role::Pawn => PAWN_SQ_VALUE[sq_offset] as Score,
-                Role::Bishop => BISHOP_SQ_VALUE[sq_offset] as Score,
-                Role::Knight => KNIGHT_SQ_VALUE[sq_offset] as Score,
-                Role::Rook => ROOK_SQ_VALUE[sq_offset] as Score,
-                Role::Queen => QUEEN_SQ_VALUE[sq_offset] as Score,
-                Role::King => KING_SQ_VALUE[sq_offset] as Score,
-            }
-        }
-    }
+    for sq in board.get_bitboard().iterator() {
+        if let Some((pce, colour)) = board.get_piece_on_square(sq) {
+            let sq_offset = sq.as_index();
+            let pce_score = match colour {
+                Colour::White => match pce {
+                    Piece::Pawn => PAWN_SQ_VALUE[sq_offset] as Score,
+                    Piece::Bishop => BISHOP_SQ_VALUE[sq_offset] as Score,
+                    Piece::Knight => KNIGHT_SQ_VALUE[sq_offset] as Score,
+                    Piece::Rook => ROOK_SQ_VALUE[sq_offset] as Score,
+                    Piece::Queen => QUEEN_SQ_VALUE[sq_offset] as Score,
+                    Piece::King => KING_SQ_VALUE[sq_offset] as Score,
+                },
+                Colour::Black => match pce {
+                    Piece::Pawn => -PAWN_SQ_VALUE[63 - sq_offset] as Score,
+                    Piece::Bishop => -BISHOP_SQ_VALUE[63 - sq_offset] as Score,
+                    Piece::Knight => -KNIGHT_SQ_VALUE[63 - sq_offset] as Score,
+                    Piece::Rook => -ROOK_SQ_VALUE[63 - sq_offset] as Score,
+                    Piece::Queen => -QUEEN_SQ_VALUE[63 - sq_offset] as Score,
+                    Piece::King => -KING_SQ_VALUE[63 - sq_offset] as Score,
+                },
+            };
 
-    for sq in board.get_colour_bb(Colour::Black).iterator() {
-        let sq_offset = sq.as_index();
-        if let Some(pce) = board.get_piece_on_square(sq) {
-            score += match pce.role() {
-                Role::Pawn => -PAWN_SQ_VALUE[63 - sq_offset] as Score,
-                Role::Bishop => -BISHOP_SQ_VALUE[63 - sq_offset] as Score,
-                Role::Knight => -KNIGHT_SQ_VALUE[63 - sq_offset] as Score,
-                Role::Rook => -ROOK_SQ_VALUE[63 - sq_offset] as Score,
-                Role::Queen => -QUEEN_SQ_VALUE[63 - sq_offset] as Score,
-                Role::King => -KING_SQ_VALUE[63 - sq_offset] as Score,
-            }
+            score += pce_score;
         }
     }
 

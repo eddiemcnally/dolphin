@@ -108,8 +108,8 @@ impl PositionHistory {
         &mut self,
         game_state: &GameState,
         mv: &Move,
-        piece: &Piece,
-        capt_piece: &Option<Piece>,
+        piece: Piece,
+        capt_piece: Option<Piece>,
     ) {
         debug_assert!(
             self.count <= (PositionHistory::MAX_MOVE_HISTORY - 1) as u16,
@@ -120,8 +120,8 @@ impl PositionHistory {
         let item = Item {
             game_state: *game_state,
             mov: *mv,
-            pce_moved: *piece,
-            pce_captured: *capt_piece,
+            pce_moved: piece,
+            pce_captured: capt_piece,
         };
 
         self.history[self.count as usize] = item;
@@ -150,7 +150,7 @@ impl PositionHistory {
 
     pub fn contains_position_hash(&self, hash: ZobristHash, start_offset: usize) -> bool {
         if start_offset > (self.count - 1).into() {
-            panic!("offset is past end of position histor");
+            panic!("offset is past end of position history");
         }
 
         for i in start_offset..(self.count - 1) as usize {

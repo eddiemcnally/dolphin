@@ -2,7 +2,7 @@ use crate::board::bitboard::Bitboard;
 use crate::board::colour::Colour;
 use crate::board::game_board::Board;
 use crate::board::occupancy_masks::OccupancyMasks;
-use crate::board::piece::{BLACK_KNIGHT, BLACK_PAWN, WHITE_KNIGHT, WHITE_PAWN};
+use crate::board::piece::Piece;
 use crate::board::square::Square;
 
 #[derive(Default, Eq, PartialEq, Clone, Copy)]
@@ -22,13 +22,13 @@ impl AttackChecker {
     ) -> bool {
         match attacking_side {
             Colour::White => {
-                let pawn_bb = board.get_piece_bitboard(&WHITE_PAWN);
+                let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::White);
                 let wp_attacking_square = occ_masks.get_occ_mask_white_pawns_attacking_sq(sq);
                 if !(pawn_bb & wp_attacking_square).is_empty() {
                     return true;
                 }
 
-                let knight_bb = board.get_piece_bitboard(&WHITE_KNIGHT);
+                let knight_bb = board.get_piece_bitboard(Piece::Knight, Colour::White);
                 for from_sq in knight_bb.iterator() {
                     if occ_masks.get_occupancy_mask_knight(from_sq).is_set(sq) {
                         return true;
@@ -72,13 +72,13 @@ impl AttackChecker {
                 }
             }
             Colour::Black => {
-                let pawn_bb = board.get_piece_bitboard(&BLACK_PAWN);
+                let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::Black);
                 let bp_attacking_square = occ_masks.get_occ_mask_black_pawns_attacking_sq(sq);
                 if !(pawn_bb & bp_attacking_square).is_empty() {
                     return true;
                 }
 
-                let knight_bb = board.get_piece_bitboard(&BLACK_KNIGHT);
+                let knight_bb = board.get_piece_bitboard(Piece::Knight, Colour::Black);
                 for from_sq in knight_bb.iterator() {
                     if occ_masks.get_occupancy_mask_knight(from_sq).is_set(sq) {
                         return true;

@@ -1,4 +1,4 @@
-use crate::board::piece::Role;
+use crate::board::piece::Piece;
 use crate::board::square::Square;
 use crate::moves::move_types::*;
 use std::fmt;
@@ -45,13 +45,13 @@ impl Move {
     pub const fn encode_move_with_promotion(
         from_sq: Square,
         to_sq: Square,
-        promotion_role: Role,
+        promotion_role: Piece,
     ) -> Move {
         let mt = match promotion_role {
-            Role::Knight => PROMOTE_KNIGHT_QUIET,
-            Role::Bishop => PROMOTE_BISHOP_QUIET,
-            Role::Rook => PROMOTE_ROOK_QUIET,
-            Role::Queen => PROMOTE_QUEEN_QUIET,
+            Piece::Knight => PROMOTE_KNIGHT_QUIET,
+            Piece::Bishop => PROMOTE_BISHOP_QUIET,
+            Piece::Rook => PROMOTE_ROOK_QUIET,
+            Piece::Queen => PROMOTE_QUEEN_QUIET,
             _ => panic!("Invalid promotion piece"),
         };
         encode(from_sq, to_sq, mt)
@@ -60,13 +60,13 @@ impl Move {
     pub const fn encode_move_with_promotion_capture(
         from_sq: Square,
         to_sq: Square,
-        promotion_role: Role,
+        promotion_role: Piece,
     ) -> Move {
         let mt = match promotion_role {
-            Role::Knight => PROMOTE_KNIGHT_CAPTURE,
-            Role::Bishop => PROMOTE_BISHOP_CAPTURE,
-            Role::Rook => PROMOTE_ROOK_CAPTURE,
-            Role::Queen => PROMOTE_QUEEN_CAPTURE,
+            Piece::Knight => PROMOTE_KNIGHT_CAPTURE,
+            Piece::Bishop => PROMOTE_BISHOP_CAPTURE,
+            Piece::Rook => PROMOTE_ROOK_CAPTURE,
+            Piece::Queen => PROMOTE_QUEEN_CAPTURE,
             _ => panic!("Invalid promotion piece"),
         };
         encode(from_sq, to_sq, mt)
@@ -136,14 +136,14 @@ impl Move {
         ((self.0 & MV_MASK_SCORE) >> MV_SHIFT_SCORE) as Score
     }
 
-    pub const fn decode_promotion_role(&self) -> Role {
+    pub const fn decode_promotion_role(&self) -> Piece {
         let mt = Self::decode_move_type(self);
 
         match mt {
-            PROMOTE_KNIGHT_QUIET | PROMOTE_KNIGHT_CAPTURE => Role::Knight,
-            PROMOTE_BISHOP_QUIET | PROMOTE_BISHOP_CAPTURE => Role::Bishop,
-            PROMOTE_ROOK_QUIET | PROMOTE_ROOK_CAPTURE => Role::Rook,
-            PROMOTE_QUEEN_QUIET | PROMOTE_QUEEN_CAPTURE => Role::Queen,
+            PROMOTE_KNIGHT_QUIET | PROMOTE_KNIGHT_CAPTURE => Piece::Knight,
+            PROMOTE_BISHOP_QUIET | PROMOTE_BISHOP_CAPTURE => Piece::Bishop,
+            PROMOTE_ROOK_QUIET | PROMOTE_ROOK_CAPTURE => Piece::Rook,
+            PROMOTE_QUEEN_QUIET | PROMOTE_QUEEN_CAPTURE => Piece::Queen,
             _ => panic!("Invalid promotion piece"),
         }
     }
@@ -261,7 +261,7 @@ impl Default for Move {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::board::piece::Role;
+    use crate::board::piece::Piece;
     use crate::board::square::Square;
     use crate::moves::mov::Move;
 
@@ -443,7 +443,7 @@ pub mod tests {
 
     #[test]
     pub fn encode_decode_promotion_move_non_capture() {
-        let target_promotions = [Role::Bishop, Role::Knight, Role::Rook, Role::Queen];
+        let target_promotions = [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
 
         for from_sq in Square::iterator() {
             for to_sq in Square::iterator() {
@@ -472,7 +472,7 @@ pub mod tests {
 
     #[test]
     pub fn encode_decode_promotion_move_capture() {
-        let target_promotions = [Role::Bishop, Role::Knight, Role::Rook, Role::Queen];
+        let target_promotions = [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
 
         for from_sq in Square::iterator() {
             for to_sq in Square::iterator() {

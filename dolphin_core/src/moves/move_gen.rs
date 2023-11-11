@@ -1,7 +1,7 @@
 use crate::board::bitboard::Bitboard;
 use crate::board::colour::Colour;
 use crate::board::occupancy_masks::OccupancyMasks;
-use crate::board::piece::{Role, BLACK_PAWN, WHITE_PAWN};
+use crate::board::piece::Piece;
 use crate::board::rank::Rank;
 use crate::board::square::Square;
 use crate::moves::mov::Move;
@@ -58,7 +58,11 @@ impl MoveGenerator {
     fn generate_white_pawn_moves(&self, pos: &Position, move_list: &mut MoveList) {
         let all_bb = pos.board().get_bitboard();
 
-        for from_sq in pos.board().get_piece_bitboard(&WHITE_PAWN).iterator() {
+        for from_sq in pos
+            .board()
+            .get_piece_bitboard(Piece::Pawn, Colour::White)
+            .iterator()
+        {
             let rank = from_sq.rank();
 
             match rank {
@@ -131,7 +135,11 @@ impl MoveGenerator {
     fn generate_black_pawn_moves(&self, pos: &Position, move_list: &mut MoveList) {
         let all_bb = pos.board().get_bitboard();
 
-        for from_sq in pos.board().get_piece_bitboard(&BLACK_PAWN).iterator() {
+        for from_sq in pos
+            .board()
+            .get_piece_bitboard(Piece::Pawn, Colour::Black)
+            .iterator()
+        {
             match from_sq.rank() {
                 Rank::R1 => panic!("Invalid Rank 1"),
                 Rank::R8 => panic!("Invalid Rank 8"),
@@ -384,7 +392,7 @@ impl MoveGenerator {
     }
 
     fn encode_promotion_moves(&self, from_sq: Square, to_sq: Square, move_list: &mut MoveList) {
-        for role in [Role::Knight, Role::Bishop, Role::Rook, Role::Queen] {
+        for role in [Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen] {
             move_list.push(Move::encode_move_with_promotion(from_sq, to_sq, role));
         }
     }
@@ -395,7 +403,7 @@ impl MoveGenerator {
         to_sq: Square,
         move_list: &mut MoveList,
     ) {
-        [Role::Knight, Role::Bishop, Role::Rook, Role::Queen]
+        [Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen]
             .into_iter()
             .for_each(|pce| {
                 move_list.push(Move::encode_move_with_promotion_capture(
@@ -408,7 +416,7 @@ impl MoveGenerator {
 #[cfg(test)]
 pub mod tests {
     use crate::board::occupancy_masks::OccupancyMasks;
-    use crate::board::piece::Role;
+    use crate::board::piece::Piece;
     use crate::board::square::*;
     use crate::io::fen;
     use crate::moves::mov::Move;
@@ -1002,8 +1010,8 @@ pub mod tests {
     pub fn move_gen_white_promotion_moves_as_expected() {
         let fen = "2b1rkr1/PPpP1pbP/n1p4p/2NpP1p1/1RBqBP2/pPR1NpQ1/P4P1P/5K1n w - - 0 1";
 
-        let white_promotion_roles: [Role; 4] =
-            [Role::Bishop, Role::Knight, Role::Rook, Role::Queen];
+        let white_promotion_roles: [Piece; 4] =
+            [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
 
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
             fen::decompose_fen(fen);
@@ -1086,8 +1094,8 @@ pub mod tests {
     #[test]
     pub fn move_gen_black_promotion_moves_as_expected() {
         let fen = "2b1rkr1/PPpP1pbP/n6p/2NpPn2/1RBqBP2/4N1Q1/ppPpRp1P/B4K2 b - - 0 1";
-        let black_promotion_roles: [Role; 4] =
-            [Role::Bishop, Role::Knight, Role::Rook, Role::Queen];
+        let black_promotion_roles: [Piece; 4] =
+            [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
 
         let (board, move_cntr, castle_permissions, side_to_move, en_pass_sq) =
             fen::decompose_fen(fen);

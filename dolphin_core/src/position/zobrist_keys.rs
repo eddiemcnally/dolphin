@@ -50,10 +50,10 @@ impl ZobristKeys {
         self.side_key
     }
 
-    pub fn piece_square(&self, piece: &Piece, square: Square) -> ZobristHash {
-        let pce_offset = piece.role().as_index();
+    pub fn piece_square(&self, piece: Piece, colour: Colour, square: Square) -> ZobristHash {
+        let pce_offset = piece.as_index();
         let sq_offset = square.as_index();
-        let col_offset = piece.colour().as_index();
+        let col_offset = colour.as_index();
         self.piece_keys[col_offset][sq_offset][pce_offset]
     }
 
@@ -110,6 +110,7 @@ fn init_en_passant_keys(rng: &mut Xoshiro256PlusPlus) -> [ZobristHash; Square::N
 pub mod tests {
     use super::ZobristHash;
     use super::ZobristKeys;
+    use crate::board::colour::Colour;
     use crate::position::zobrist_keys::Piece;
     use crate::position::zobrist_keys::Square;
 
@@ -118,10 +119,22 @@ pub mod tests {
         let keys = ZobristKeys::new();
         let mut v: Vec<ZobristHash> = Vec::new();
 
-        for pce in Piece::iterator() {
-            for sq in Square::iterator() {
-                let hash = keys.piece_square(pce, *sq);
-                v.push(hash);
+        let pieces = [
+            Piece::Pawn,
+            Piece::Bishop,
+            Piece::Knight,
+            Piece::Rook,
+            Piece::Queen,
+            Piece::King,
+        ];
+        let colours = [Colour::White, Colour::Black];
+
+        for pce in pieces.iter() {
+            for col in colours.iter() {
+                for sq in Square::iterator() {
+                    let hash = keys.piece_square(*pce, *col, *sq);
+                    v.push(hash);
+                }
             }
         }
 
