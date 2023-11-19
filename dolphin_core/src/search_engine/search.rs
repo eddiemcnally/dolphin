@@ -92,19 +92,22 @@ impl Search {
 
         // check to see if current position is in transposition table
         // and if it is, set the score so we can prioritise it
-        if let Some((_, _, _, mv)) = self.tt.get(pos.position_hash()) {
-            if let Some(offset) = move_list.get_offset_for_move(mv) {
-                move_list.set_score_for_move_at(offset, Search::MOVE_ORDER_WEIGHT_PV_MOVE);
-            } else {
-                panic!("Cant find move in list, but is in TT");
-            }
-        }
+
+        // todo - fix
+        // if let Some((_, _, _, mv)) = self.tt.get(pos.position_hash()) {
+        //     if let Some(offset) = move_list.get_offset_for_move(mv) {
+        //         move_list.set_score_for_move_at(offset, Search::MOVE_ORDER_WEIGHT_PV_MOVE);
+        //     } else {
+        //         panic!("Cant find move in list, but is in TT");
+        //     }
+        // }
 
         let mut best_move: Move = Move::default();
 
         for i in 0..move_list.len() {
             // sort to bring highest score to the top
-            move_list.sort_by_score(i);
+            // todo - fix
+            //move_list.sort_by_score(i);
 
             let mv = move_list.get_move_at_offset(i);
 
@@ -146,7 +149,9 @@ impl Search {
             self.tt.add(
                 TransType::Exact,
                 depth,
-                best_move.get_score(),
+                // todo - fix
+                // best_move.get_score(),
+                0,
                 pos.position_hash(),
                 best_move,
             );
@@ -175,7 +180,8 @@ impl Search {
 
         for i in 0..move_list.len() {
             // sort to bring highest score to the top
-            move_list.sort_by_score(i);
+            // todo - fix
+            // move_list.sort_by_score(i);
 
             let mv = move_list.get_move_at_offset(i);
 

@@ -1,16 +1,12 @@
-use crate::board::piece::Piece;
+use super::zobrist_keys::ZobristHash;
 use crate::moves::mov::Move;
 use crate::position::game_position::GameState;
 use std::fmt;
-
-use super::zobrist_keys::ZobristHash;
 
 #[derive(Default, Eq, PartialEq, Copy, Clone)]
 struct Item {
     game_state: GameState,
     mov: Move,
-    pce_moved: Piece,
-    pce_captured: Option<Piece>,
 }
 
 #[derive(Eq, Copy, Clone)]
@@ -55,16 +51,6 @@ impl fmt::Debug for Item {
 
         debug_str.push_str(&format!("GameState : {}\n", self.game_state));
         debug_str.push_str(&format!("Move: : {}\n", self.mov));
-        debug_str.push_str(&format!("Piece: : {}\n", self.pce_moved));
-
-        if self.pce_captured.is_none() {
-            debug_str.push_str("Captured Piece : -\n");
-        } else {
-            debug_str.push_str(&format!(
-                "Captured Piece : {}\n",
-                self.pce_captured.unwrap()
-            ));
-        }
 
         write!(f, "{}", debug_str)
     }
@@ -104,13 +90,7 @@ impl PositionHistory {
     }
 
     // push
-    pub fn push(
-        &mut self,
-        game_state: &GameState,
-        mv: &Move,
-        piece: Piece,
-        capt_piece: Option<Piece>,
-    ) {
+    pub fn push(&mut self, game_state: &GameState, mv: &Move) {
         debug_assert!(
             self.count <= (PositionHistory::MAX_MOVE_HISTORY - 1) as u16,
             "max length exceeded. {:?}",
@@ -120,15 +100,13 @@ impl PositionHistory {
         let item = Item {
             game_state: *game_state,
             mov: *mv,
-            pce_moved: piece,
-            pce_captured: capt_piece,
         };
 
         self.history[self.count as usize] = item;
         self.count += 1;
     }
 
-    pub fn pop(&mut self) -> (GameState, Move, Piece, Option<Piece>) {
+    pub fn pop(&mut self) -> (GameState, Move) {
         debug_assert!(self.count > 0, "attempt to pop, len = 0");
 
         self.count -= 1;
@@ -136,8 +114,6 @@ impl PositionHistory {
         (
             self.history[self.count as usize].game_state,
             self.history[self.count as usize].mov,
-            self.history[self.count as usize].pce_moved,
-            self.history[self.count as usize].pce_captured,
         )
     }
 

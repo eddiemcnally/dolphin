@@ -83,7 +83,7 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> Score {
     let mut score = board.get_net_material();
 
     for sq in board.get_bitboard().iterator() {
-        if let Some((pce, colour)) = board.get_piece_on_square(sq) {
+        if let Some((pce, colour)) = board.get_piece_and_colour_on_square(sq) {
             let sq_offset = sq.as_index();
             let pce_score = match colour {
                 Colour::White => match pce {

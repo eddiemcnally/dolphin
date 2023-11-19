@@ -16,11 +16,6 @@ impl fmt::Display for TransType {
         fmt::Debug::fmt(&self, f)
     }
 }
-impl Default for TransType {
-    fn default() -> Self {
-        TransType::Exact
-    }
-}
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
 struct TransEntry {
@@ -187,6 +182,7 @@ impl TransTable {
 pub mod tests {
     use super::TransTable;
     use super::TransType;
+    use crate::board::piece::Piece;
     use crate::board::square::Square;
     use crate::moves::mov::Move;
     use crate::position::zobrist_keys::ZobristHash;
@@ -198,7 +194,7 @@ pub mod tests {
         const DEPTH: u8 = 5;
         const TT_ENTRY_TYPE: TransType = TransType::Alpha;
 
-        let target_move = Move::encode_move_quiet(Square::A1, Square::A2);
+        let target_move = Move::encode_move_quiet(Square::A1, Square::A2, Piece::Bishop);
 
         let mut tt = TransTable::new(NUM_TO_TEST);
         // add to TT
