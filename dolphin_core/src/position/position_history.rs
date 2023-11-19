@@ -1,4 +1,5 @@
 use super::zobrist_keys::ZobristHash;
+use crate::board::piece::Piece;
 use crate::moves::mov::Move;
 use crate::position::game_position::GameState;
 use std::fmt;
@@ -7,6 +8,7 @@ use std::fmt;
 struct Item {
     game_state: GameState,
     mov: Move,
+    capt_pce: Option<Piece>,
 }
 
 #[derive(Eq, Copy, Clone)]
@@ -90,7 +92,7 @@ impl PositionHistory {
     }
 
     // push
-    pub fn push(&mut self, game_state: &GameState, mv: &Move) {
+    pub fn push(&mut self, game_state: &GameState, mv: &Move, capt_pce: Option<Piece>) {
         debug_assert!(
             self.count <= (PositionHistory::MAX_MOVE_HISTORY - 1) as u16,
             "max length exceeded. {:?}",
@@ -100,13 +102,14 @@ impl PositionHistory {
         let item = Item {
             game_state: *game_state,
             mov: *mv,
+            capt_pce,
         };
 
         self.history[self.count as usize] = item;
         self.count += 1;
     }
 
-    pub fn pop(&mut self) -> (GameState, Move) {
+    pub fn pop(&mut self) -> (GameState, Move, Option<Piece>) {
         debug_assert!(self.count > 0, "attempt to pop, len = 0");
 
         self.count -= 1;
@@ -114,6 +117,7 @@ impl PositionHistory {
         (
             self.history[self.count as usize].game_state,
             self.history[self.count as usize].mov,
+            self.history[self.count as usize].capt_pce,
         )
     }
 

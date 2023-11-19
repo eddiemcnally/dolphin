@@ -25,9 +25,6 @@ pub struct Material {
 #[derive(Eq, PartialEq)]
 pub struct Board {
     colour_info: [ColourInfo; Colour::NUM_COLOURS],
-
-    // pieces on squares
-    pieces: [Option<Piece>; Board::NUM_SQUARES],
 }
 
 impl Board {
@@ -47,8 +44,6 @@ impl Board {
         if piece == Piece::King {
             self.colour_info[colour.as_index()].king_sq = sq;
         }
-
-        self.pieces[sq.as_index()] = Some(piece);
     }
 
     pub fn remove_piece(&mut self, piece: Piece, colour: Colour, sq: Square) {
@@ -58,8 +53,6 @@ impl Board {
         self.colour_info[col_off].piece_bb[pce_off].clear_bit(sq);
         self.colour_info[col_off].colour_bb.clear_bit(sq);
         self.colour_info[col_off].material -= piece.value();
-
-        self.pieces[sq.as_index()] = None;
     }
 
     pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece, colour: Colour) {
@@ -76,36 +69,61 @@ impl Board {
         *col_bb ^= from_bb;
         *col_bb ^= to_bb;
 
-        //move the piece
-        self.pieces[from_sq.as_index()] = None;
-        self.pieces[to_sq.as_index()] = Some(piece);
-
         if piece == Piece::King {
             self.colour_info[col_offset].king_sq = to_sq;
         }
     }
 
     pub fn get_piece_and_colour_on_square(&self, sq: Square) -> Option<(Piece, Colour)> {
-        if self.colour_info[Colour::White.as_index()]
-            .colour_bb
-            .is_set(sq)
-        {
-            return Some((self.pieces[sq.as_index()].unwrap(), Colour::White));
-        } else if self.colour_info[Colour::Black.as_index()]
-            .colour_bb
-            .is_set(sq)
-        {
-            return Some((self.pieces[sq.as_index()].unwrap(), Colour::Black));
+        if let Some(pce) = self.get_piece_on_square(sq) {
+            let colour = if self.colour_info[Colour::White.as_index()]
+                .colour_bb
+                .is_set(sq)
+            {
+                Colour::White
+            } else {
+                Colour::Black
+            };
+
+            return Some((pce, colour));
         }
+
         None
     }
 
-    pub const fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
-        self.pieces[sq.as_index()]
+    pub fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
+        if self.get_bitboard().is_clear(sq) {
+            return None;
+        }
+
+        let col_info = if self.colour_info[Colour::White.as_index()]
+            .colour_bb
+            .is_set(sq)
+        {
+            &self.colour_info[Colour::White.as_index()]
+        } else {
+            &self.colour_info[Colour::Black.as_index()]
+        };
+
+        if col_info.piece_bb[Piece::Pawn.as_index()].is_set(sq) {
+            return Some(Piece::Pawn);
+        } else if col_info.piece_bb[Piece::Bishop.as_index()].is_set(sq) {
+            return Some(Piece::Bishop);
+        } else if col_info.piece_bb[Piece::Knight.as_index()].is_set(sq) {
+            return Some(Piece::Knight);
+        } else if col_info.piece_bb[Piece::Rook.as_index()].is_set(sq) {
+            return Some(Piece::Rook);
+        } else if col_info.piece_bb[Piece::Queen.as_index()].is_set(sq) {
+            return Some(Piece::Queen);
+        } else if col_info.piece_bb[Piece::King.as_index()].is_set(sq) {
+            return Some(Piece::King);
+        }
+
+        None
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
-        self.pieces[sq.as_index()].is_none()
+        self.get_bitboard().is_clear(sq)
     }
 
     pub fn get_piece_bitboard(&self, piece: Piece, colour: Colour) -> Bitboard {
@@ -187,7 +205,6 @@ impl fmt::Display for Board {
 impl Default for Board {
     fn default() -> Self {
         Board {
-            pieces: [None; Board::NUM_SQUARES],
             colour_info: [ColourInfo::default(); Colour::NUM_COLOURS],
         }
     }
@@ -254,20 +271,14 @@ pub mod tests {
 
                 assert!(board.is_sq_empty(*from_sq));
                 assert!(board.is_sq_empty(*to_sq));
-                assert!(board.pieces[from_sq.as_index()].is_none());
-                assert!(board.pieces[to_sq.as_index()].is_none());
 
                 board.add_piece(pce, col, *from_sq);
                 assert!(!board.is_sq_empty(*from_sq));
                 assert!(board.is_sq_empty(*to_sq));
-                assert!(board.pieces[from_sq.as_index()] == Some(pce));
-                assert!(board.pieces[to_sq.as_index()].is_none());
 
                 board.move_piece(*from_sq, *to_sq, pce, col);
                 assert!(board.is_sq_empty(*from_sq));
                 assert!(!board.is_sq_empty(*to_sq));
-                assert!(board.pieces[to_sq.as_index()] == Some(pce));
-                assert!(board.pieces[from_sq.as_index()].is_none());
 
                 // clean up
                 board.remove_piece(pce, col, *to_sq);

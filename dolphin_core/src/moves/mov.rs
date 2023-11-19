@@ -50,7 +50,6 @@ pub struct Move {
     to_sq: Square,
     move_type: MoveType,
     pce_to_move: Piece,
-    capt_pce: Option<Piece>,
 }
 
 #[derive(Eq, PartialEq, Copy, Clone, Hash)]
@@ -92,32 +91,21 @@ impl Move {
         self.pce_to_move
     }
 
-    pub fn captured_piece(&self) -> Option<Piece> {
-        self.capt_pce
-    }
-
     pub const fn encode_move_quiet(from_sq: Square, to_sq: Square, pce_to_move: Piece) -> Move {
         Move {
             from_sq,
             to_sq,
             move_type: MoveType::Quiet,
             pce_to_move,
-            capt_pce: None,
         }
     }
 
-    pub const fn encode_move_capture(
-        from_sq: Square,
-        to_sq: Square,
-        pce_to_move: Piece,
-        capt_pce: Piece,
-    ) -> Move {
+    pub const fn encode_move_capture(from_sq: Square, to_sq: Square, pce_to_move: Piece) -> Move {
         Move {
             from_sq,
             to_sq,
             move_type: MoveType::Capture,
             pce_to_move,
-            capt_pce: Some(capt_pce),
         }
     }
 
@@ -138,7 +126,6 @@ impl Move {
             to_sq,
             move_type: mt,
             pce_to_move: Piece::Pawn,
-            capt_pce: None,
         }
     }
 
@@ -146,7 +133,6 @@ impl Move {
         from_sq: Square,
         to_sq: Square,
         promotion_role: Piece,
-        capt_pce: Piece,
     ) -> Move {
         let mt = match promotion_role {
             Piece::Knight => MoveType::PromoteKnightCapture,
@@ -160,7 +146,6 @@ impl Move {
             to_sq,
             move_type: mt,
             pce_to_move: Piece::Pawn,
-            capt_pce: Some(capt_pce),
         }
     }
 
@@ -177,7 +162,6 @@ impl Move {
             to_sq,
             move_type: MoveType::EnPassant,
             pce_to_move: Piece::Pawn,
-            capt_pce: Some(Piece::Pawn),
         }
     }
 
@@ -194,7 +178,6 @@ impl Move {
             to_sq,
             move_type: MoveType::DoublePawn,
             pce_to_move: Piece::Pawn,
-            capt_pce: Some(Piece::Pawn),
         }
     }
 
@@ -206,7 +189,6 @@ impl Move {
             to_sq: Square::G1,
             move_type: MoveType::KingCastle,
             pce_to_move: Piece::King,
-            capt_pce: None,
         }
     }
 
@@ -218,7 +200,6 @@ impl Move {
             to_sq: Square::G8,
             move_type: MoveType::KingCastle,
             pce_to_move: Piece::King,
-            capt_pce: None,
         }
     }
 
@@ -230,7 +211,6 @@ impl Move {
             to_sq: Square::C1,
             move_type: MoveType::QueenCastle,
             pce_to_move: Piece::King,
-            capt_pce: None,
         }
     }
 
@@ -242,7 +222,6 @@ impl Move {
             to_sq: Square::C8,
             move_type: MoveType::QueenCastle,
             pce_to_move: Piece::King,
-            capt_pce: None,
         }
     }
 
@@ -295,7 +274,6 @@ impl Default for Move {
             to_sq: Square::B1,
             move_type: MoveType::Quiet,
             pce_to_move: Piece::Pawn,
-            capt_pce: None,
         }
     }
 }
@@ -421,12 +399,7 @@ pub mod tests {
                 }
 
                 for role in target_promotions.iter() {
-                    let mv = Move::encode_move_with_promotion_capture(
-                        *from_sq,
-                        *to_sq,
-                        *role,
-                        Piece::Knight,
-                    );
+                    let mv = Move::encode_move_with_promotion_capture(*from_sq, *to_sq, *role);
 
                     let decoded_role = mv.move_type.decode_promotion_role();
                     assert_eq!(decoded_role.unwrap(), *role);

@@ -186,8 +186,13 @@ impl<'a> Position<'a> {
     }
 
     pub fn make_move(&mut self, mv: &Move) -> MoveLegality {
-        // save state
-        self.position_history.push(&self.game_state, mv);
+        let capt_pce = if mv.move_type().is_capture() {
+            self.board.get_piece_on_square(mv.to_sq())
+        } else {
+            None
+        };
+
+        self.position_history.push(&self.game_state, mv, capt_pce);
 
         self.update_move_counters(mv);
 
@@ -228,11 +233,10 @@ impl<'a> Position<'a> {
         );
     }
     fn do_capture_move(&mut self, mv: &Move) {
-        self.remove_piece_from_board(
-            mv.captured_piece().unwrap(),
-            self.side_to_move().flip_side(),
-            mv.to_sq(),
-        );
+        let capt_pce = self.board.get_piece_on_square(mv.to_sq()).unwrap();
+
+        self.remove_piece_from_board(capt_pce, self.side_to_move().flip_side(), mv.to_sq());
+
         self.move_piece_on_board(
             mv.piece_to_move(),
             self.side_to_move(),
@@ -262,12 +266,10 @@ impl<'a> Position<'a> {
     }
 
     fn do_capture_promotion(&mut self, mv: &Move) {
+        let capt_pce = self.board.get_piece_on_square(mv.to_sq()).unwrap();
+
         // remove piece being captured
-        self.remove_piece_from_board(
-            mv.captured_piece().unwrap(),
-            self.side_to_move().flip_side(),
-            mv.to_sq(),
-        );
+        self.remove_piece_from_board(capt_pce, self.side_to_move().flip_side(), mv.to_sq());
 
         let target_role = mv.move_type().decode_promotion_role();
         self.remove_piece_from_board(mv.piece_to_move(), self.side_to_move(), mv.from_sq());
@@ -286,13 +288,13 @@ impl<'a> Position<'a> {
         self.flip_side_to_move();
 
         // restore state
-        let (gs, mv) = self.position_history.pop();
+        let (gs, mv, capt_pce) = self.position_history.pop();
         self.game_state = gs;
 
         match mv.move_type() {
             MoveType::Quiet | MoveType::DoublePawn => self.reverse_quiet_move(&mv),
             MoveType::KingCastle | MoveType::QueenCastle => self.reverse_castle_move(&mv),
-            MoveType::Capture => self.reverse_capture_move(&mv),
+            MoveType::Capture => self.reverse_capture_move(&mv, capt_pce),
             MoveType::EnPassant => self.reverse_en_passant_move(&mv),
             MoveType::PromoteBishop
             | MoveType::PromoteKnight
@@ -301,7 +303,7 @@ impl<'a> Position<'a> {
             MoveType::PromoteBishopCapture
             | MoveType::PromoteKnightCapture
             | MoveType::PromoteRookCapture
-            | MoveType::PromoteQueenCapture => self.reverse_capture_promotion_move(&mv),
+            | MoveType::PromoteQueenCapture => self.reverse_capture_promotion_move(&mv, capt_pce),
         }
     }
 
@@ -315,7 +317,7 @@ impl<'a> Position<'a> {
         );
     }
 
-    fn reverse_capture_move(&mut self, mv: &Move) {
+    fn reverse_capture_move(&mut self, mv: &Move, capt_pce: Option<Piece>) {
         // revert move
         self.board.move_piece(
             mv.to_sq(),
@@ -325,7 +327,7 @@ impl<'a> Position<'a> {
         );
         // add back the captured piece
         self.board.add_piece(
-            mv.captured_piece().unwrap(),
+            capt_pce.unwrap(),
             self.side_to_move().flip_side(),
             mv.to_sq(),
         );
@@ -342,7 +344,7 @@ impl<'a> Position<'a> {
             .add_piece(Piece::Pawn, self.side_to_move(), mv.from_sq());
     }
 
-    fn reverse_capture_promotion_move(&mut self, mv: &Move) {
+    fn reverse_capture_promotion_move(&mut self, mv: &Move, capt_pce: Option<Piece>) {
         // remove promoted piece
         let prom_piece = mv.move_type().decode_promotion_role().unwrap();
         self.board
@@ -354,7 +356,7 @@ impl<'a> Position<'a> {
 
         // restore captured piece
         self.board.add_piece(
-            mv.captured_piece().unwrap(),
+            capt_pce.unwrap(),
             self.side_to_move().flip_side(),
             mv.to_sq(),
         );
@@ -825,7 +827,7 @@ mod tests {
         // set to some random value
         pos.game_state.fifty_move_cntr = 21;
 
-        let mv = Move::encode_move_capture(Square::B5, Square::C6, Piece::Bishop, Piece::Pawn);
+        let mv = Move::encode_move_capture(Square::B5, Square::C6, Piece::Bishop);
         pos.make_move(&mv);
 
         assert_eq!(0, pos.game_state.fifty_move_cntr);
@@ -1390,12 +1392,7 @@ mod tests {
                 Colour::Black
             ));
 
-            let mv = Move::encode_move_with_promotion_capture(
-                Square::E7,
-                Square::F8,
-                target,
-                Piece::Bishop,
-            );
+            let mv = Move::encode_move_with_promotion_capture(Square::E7, Square::F8, target);
             pos.make_move(&mv);
 
             assert!(is_sq_empty(&pos, Square::E7));
@@ -1440,12 +1437,7 @@ mod tests {
                 Colour::White
             ));
 
-            let mv = Move::encode_move_with_promotion_capture(
-                Square::D2,
-                Square::C1,
-                target,
-                Piece::Rook,
-            );
+            let mv = Move::encode_move_with_promotion_capture(Square::D2, Square::C1, target);
             pos.make_move(&mv);
 
             assert!(is_sq_empty(&pos, Square::D2));
@@ -1908,7 +1900,7 @@ mod tests {
         let ml = vec![
             Move::encode_move_castle_kingside_white(),
             Move::encode_move_castle_queenside_white(),
-            Move::encode_move_capture(Square::E8, Square::G7, Piece::Knight, Piece::Pawn),
+            Move::encode_move_capture(Square::E8, Square::G7, Piece::Knight),
             Move::encode_move_quiet(Square::B5, Square::B6, Piece::Pawn),
             Move::encode_move_double_pawn_first(Square::C2, Square::C4),
         ];
@@ -1966,7 +1958,7 @@ mod tests {
         let ml = vec![
             Move::encode_move_castle_kingside_black(),
             Move::encode_move_castle_queenside_black(),
-            Move::encode_move_capture(Square::C7, Square::B6, Piece::Bishop, Piece::Queen),
+            Move::encode_move_capture(Square::C7, Square::B6, Piece::Bishop),
             Move::encode_move_quiet(Square::F7, Square::F6, Piece::Pawn),
             Move::encode_move_double_pawn_first(Square::F7, Square::F6),
         ];

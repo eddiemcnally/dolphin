@@ -21,7 +21,7 @@ pub struct Search {
 }
 
 impl Search {
-    const MOVE_ORDER_WEIGHT_PV_MOVE: i16 = 32000;
+    //const MOVE_ORDER_WEIGHT_PV_MOVE: i16 = 32000;
 
     pub fn new(tt_capacity: usize, max_depth: u8) -> Self {
         Search {
