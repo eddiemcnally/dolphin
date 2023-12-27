@@ -135,53 +135,41 @@ impl OccupancyMasks {
             let file = sq.file();
 
             // rank + 2, file +/- 1
-            if rank.can_add_two() {
-                let r = rank.add_two();
-                if file.can_add_one() {
-                    let f = file.add_one();
+            if let Some(r) = rank.add_two() {
+                if let Some(f) = file.add_one() {
                     Self::set_bb_for_sq(r, f, &mut bb);
                 }
-                if file.can_subtract_one() {
-                    let f = file.subtract_one();
+                if let Some(f) = file.subtract_one() {
                     Self::set_bb_for_sq(r, f, &mut bb);
                 }
             }
 
             // rank + 1, file +/- 2
-            if rank.can_add_one() {
-                let r = rank.add_one();
-                if file.can_add_two() {
-                    let f = file.add_two();
+            if let Some(r) = rank.add_one() {
+                if let Some(f) = file.add_two() {
                     Self::set_bb_for_sq(r, f, &mut bb);
                 }
-                if file.can_subtract_two() {
-                    let f = file.subtract_two();
+                if let Some(f) = file.subtract_two() {
                     Self::set_bb_for_sq(r, f, &mut bb);
                 }
             }
 
             // rank - 1, file +/- 2
-            if rank.can_subtract_one() {
-                let r = rank.subtract_one();
-                if file.can_add_two() {
-                    let f = file.add_two();
+            if let Some(r) = rank.subtract_one() {
+                if let Some(f) = file.add_two() {
                     Self::set_bb_for_sq(r, f, &mut bb);
                 }
-                if file.can_subtract_two() {
-                    let f = file.subtract_two();
+                if let Some(f) = file.subtract_two() {
                     Self::set_bb_for_sq(r, f, &mut bb);
                 }
             }
 
             // rank - 2, file +/- 1
-            if rank.can_subtract_two() {
-                let r = rank.subtract_two();
-                if file.can_add_one() {
-                    let f = file.add_one();
+            if let Some(r) = rank.subtract_two() {
+                if let Some(f) = file.add_one() {
                     Self::set_bb_for_sq(r, f, &mut bb);
                 }
-                if file.can_subtract_one() {
-                    let f = file.subtract_one();
+                if let Some(f) = file.subtract_one() {
                     Self::set_bb_for_sq(r, f, &mut bb);
                 }
             }
@@ -203,43 +191,35 @@ impl OccupancyMasks {
             let file = sq.file();
 
             // rank+1, file -1/0/+1
-            if rank.can_add_one() {
-                let r = rank.add_one();
+            if let Some(r) = rank.add_one() {
                 // rank + 1, file 0
                 Self::set_bb_for_sq(r, file, &mut bb);
 
-                if file.can_subtract_one() {
-                    let f = file.subtract_one();
+                if let Some(f) = file.subtract_one() {
                     Self::set_bb_for_sq(r, f, &mut bb);
                 }
-                if file.can_add_one() {
-                    let f = file.add_one();
+                if let Some(f) = file.add_one() {
                     Self::set_bb_for_sq(r, f, &mut bb);
                 }
             }
 
             // rank, file -1/+1
-            if file.can_subtract_one() {
-                let f = file.subtract_one();
+            if let Some(f) = file.subtract_one() {
                 Self::set_bb_for_sq(rank, f, &mut bb);
             }
-            if file.can_add_one() {
-                let f = file.add_one();
+            if let Some(f) = file.add_one() {
                 Self::set_bb_for_sq(rank, f, &mut bb);
             }
 
             // rank-1, file -1/0/+1
-            if rank.can_subtract_one() {
-                let r = rank.subtract_one();
+            if let Some(r) = rank.subtract_one() {
                 // rank - 1, file 0
                 Self::set_bb_for_sq(r, file, &mut bb);
 
-                if file.can_subtract_one() {
-                    let f = file.subtract_one();
+                if let Some(f) = file.subtract_one() {
                     Self::set_bb_for_sq(r, f, &mut bb);
                 }
-                if file.can_add_one() {
-                    let f = file.add_one();
+                if let Some(f) = file.add_one() {
                     Self::set_bb_for_sq(r, f, &mut bb);
                 }
             }
@@ -255,31 +235,23 @@ impl OccupancyMasks {
             let mut file = sq.file();
 
             // move SW
-            loop {
-                if rank.can_subtract_one() && file.can_subtract_one() {
-                    rank = rank.subtract_one();
-                    file = file.subtract_one();
+            while let (Some(r), Some(f)) = (rank.subtract_one(), file.subtract_one()) {
+                let derived_sq = Square::from_rank_file(r, f);
+                bb.set_bit(derived_sq);
 
-                    let derived_sq = Square::from_rank_file(rank, file);
-                    bb.set_bit(derived_sq);
-                } else {
-                    break;
-                }
+                rank = r;
+                file = f;
             }
+
             rank = sq.rank();
             file = sq.file();
 
             // move NE
-            loop {
-                if rank.can_add_one() && file.can_add_one() {
-                    rank = rank.add_one();
-                    file = file.add_one();
-
-                    let derived_sq = Square::from_rank_file(rank, file);
-                    bb.set_bit(derived_sq);
-                } else {
-                    break;
-                }
+            while let (Some(r), Some(f)) = (rank.add_one(), file.add_one()) {
+                let derived_sq = Square::from_rank_file(r, f);
+                bb.set_bit(derived_sq);
+                rank = r;
+                file = f;
             }
 
             // remove current square
@@ -295,31 +267,22 @@ impl OccupancyMasks {
             let mut file = sq.file();
 
             // move NW
-            loop {
-                if rank.can_add_one() && file.can_subtract_one() {
-                    rank = rank.add_one();
-                    file = file.subtract_one();
-
-                    let derived_sq = Square::from_rank_file(rank, file);
-                    bb.set_bit(derived_sq);
-                } else {
-                    break;
-                }
+            while let (Some(r), Some(f)) = (rank.add_one(), file.subtract_one()) {
+                let derived_sq = Square::from_rank_file(r, f);
+                bb.set_bit(derived_sq);
+                rank = r;
+                file = f;
             }
+
             rank = sq.rank();
             file = sq.file();
 
             // move SE
-            loop {
-                if rank.can_subtract_one() && file.can_add_one() {
-                    rank = rank.subtract_one();
-                    file = file.add_one();
-
-                    let derived_sq = Square::from_rank_file(rank, file);
-                    bb.set_bit(derived_sq);
-                } else {
-                    break;
-                }
+            while let (Some(r), Some(f)) = (rank.subtract_one(), file.add_one()) {
+                let derived_sq = Square::from_rank_file(r, f);
+                bb.set_bit(derived_sq);
+                rank = r;
+                file = f;
             }
 
             // remove current square

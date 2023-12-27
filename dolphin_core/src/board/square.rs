@@ -1,13 +1,12 @@
 use crate::board::bitboard::Bitboard;
 use crate::board::file::*;
 use crate::board::rank::*;
-use num_enum::TryFromPrimitive;
 use std::fmt;
 use std::slice::Iter;
 
 #[rustfmt::skip]
 #[allow(non_camel_case_types)]
-#[derive(Default, Eq, PartialEq, Hash, Clone, Copy, TryFromPrimitive)]
+#[derive(Default, Eq, PartialEq, Hash, Clone, Copy)]
 #[repr(u8)]
 pub enum Square{
     #[default]
@@ -139,11 +138,11 @@ impl Square {
     }
 
     pub fn rank(self) -> Rank {
-        Rank::new(self.rank_as_u8())
+        Rank::new(self.rank_as_u8()).unwrap()
     }
 
     pub fn file(self) -> File {
-        File::new(self.file_as_u8())
+        File::new(self.file_as_u8()).unwrap()
     }
 
     pub fn from_rank_file(rank: Rank, file: File) -> Square {
