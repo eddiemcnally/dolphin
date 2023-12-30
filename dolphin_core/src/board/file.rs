@@ -1,9 +1,10 @@
 use std::fmt;
 use std::slice::Iter;
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
 #[repr(u8)]
 pub enum File {
+    #[default]
     A,
     B,
     C,

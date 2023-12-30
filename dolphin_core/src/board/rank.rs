@@ -1,9 +1,10 @@
 use std::fmt;
 use std::slice::Iter;
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
 #[repr(u8)]
 pub enum Rank {
+    #[default]
     R1,
     R2,
     R3,
@@ -187,7 +188,7 @@ pub mod tests {
         assert!(Rank::R5.add_one() == Some(Rank::R6));
         assert!(Rank::R6.add_one() == Some(Rank::R7));
         assert!(Rank::R7.add_one() == Some(Rank::R8));
-        assert!(Rank::R8.add_one() == None);
+        assert!(Rank::R8.add_one().is_none());
     }
 
     #[test]
@@ -198,13 +199,13 @@ pub mod tests {
         assert!(Rank::R4.add_two() == Some(Rank::R6));
         assert!(Rank::R5.add_two() == Some(Rank::R7));
         assert!(Rank::R6.add_two() == Some(Rank::R8));
-        assert!(Rank::R7.add_two() == None);
-        assert!(Rank::R8.add_two() == None);
+        assert!(Rank::R7.add_two().is_none());
+        assert!(Rank::R8.add_two().is_none());
     }
 
     #[test]
     pub fn subtract_one() {
-        assert!(Rank::R1.subtract_one() == None);
+        assert!(Rank::R1.subtract_one().is_none());
         assert!(Rank::R2.subtract_one() == Some(Rank::R1));
         assert!(Rank::R3.subtract_one() == Some(Rank::R2));
         assert!(Rank::R4.subtract_one() == Some(Rank::R3));
@@ -216,8 +217,8 @@ pub mod tests {
 
     #[test]
     pub fn subtract_two() {
-        assert!(Rank::R1.subtract_two() == None);
-        assert!(Rank::R2.subtract_two() == None);
+        assert!(Rank::R1.subtract_two().is_none());
+        assert!(Rank::R2.subtract_two().is_none());
         assert!(Rank::R3.subtract_two() == Some(Rank::R1));
         assert!(Rank::R4.subtract_two() == Some(Rank::R2));
         assert!(Rank::R5.subtract_two() == Some(Rank::R3));

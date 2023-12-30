@@ -257,8 +257,8 @@ impl<'a> Position<'a> {
         let side_to_move = self.side_to_move();
 
         let (col_to_move, col_to_capt, capt_sq) = match side_to_move {
-            Colour::White => (Colour::White, Colour::Black, mv.to_sq().minus_1_rank()),
-            Colour::Black => (Colour::Black, Colour::White, mv.to_sq().plus_1_rank()),
+            Colour::White => (Colour::White, Colour::Black, mv.to_sq().south()),
+            Colour::Black => (Colour::Black, Colour::White, mv.to_sq().north()),
         };
 
         self.remove_piece_from_board(Piece::Pawn, col_to_capt, capt_sq);
@@ -368,14 +368,14 @@ impl<'a> Position<'a> {
                 self.board
                     .move_piece(mv.to_sq(), mv.from_sq(), Piece::Pawn, Colour::White);
 
-                let capt_sq = mv.to_sq().minus_1_rank();
+                let capt_sq = mv.to_sq().south();
                 self.board.add_piece(Piece::Pawn, Colour::Black, capt_sq);
             }
             Colour::Black => {
                 self.board
                     .move_piece(mv.to_sq(), mv.from_sq(), Piece::Pawn, Colour::Black);
 
-                let capt_sq = mv.to_sq().plus_1_rank();
+                let capt_sq = mv.to_sq().north();
                 self.board.add_piece(Piece::Pawn, Colour::White, capt_sq);
             }
         }
@@ -511,8 +511,8 @@ impl<'a> Position<'a> {
     fn find_en_passant_sq(&self, from_sq: Square, col: Colour) -> Square {
         // use the *from_sq* to find the en passant sq
         match col {
-            Colour::White => from_sq.plus_1_rank(),
-            Colour::Black => from_sq.minus_1_rank(),
+            Colour::White => from_sq.north(),
+            Colour::Black => from_sq.south(),
         }
     }
 

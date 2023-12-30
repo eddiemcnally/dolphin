@@ -7,7 +7,6 @@ use std::slice::Iter;
 #[rustfmt::skip]
 #[allow(non_camel_case_types)]
 #[derive(Default, Eq, PartialEq, Hash, Clone, Copy)]
-#[repr(u8)]
 pub enum Square{
     #[default]
     A1, B1, C1, D1, E1, F1, G1, H1,
@@ -21,7 +20,7 @@ pub enum Square{
 }
 
 #[rustfmt::skip]
-static SQUARES: [Square; Square::NUM_SQUARES] = [
+const SQUARES: [Square; Square::NUM_SQUARES] = [
     Square::A1, Square::B1, Square::C1, Square::D1, Square::E1, Square::F1, Square::G1, Square::H1,
     Square::A2, Square::B2, Square::C2, Square::D2, Square::E2, Square::F2, Square::G2, Square::H2,
     Square::A3, Square::B3, Square::C3, Square::D3, Square::E3, Square::F3, Square::G3, Square::H3,
@@ -35,112 +34,55 @@ static SQUARES: [Square; Square::NUM_SQUARES] = [
 impl Square {
     pub const NUM_SQUARES: usize = 64;
 
+    #[inline(always)]
     pub const fn new(num: u8) -> Square {
-        Self::get_sq(num)
+        debug_assert!(num <= Square::H8.as_index() as u8);
+
+        let sq = (num & 0x3F) as usize;
+        SQUARES[sq]
     }
-    pub const fn as_index(&self) -> usize {
-        *self as usize
+
+    #[inline(always)]
+    pub const fn as_index(self) -> usize {
+        self as usize
     }
-    pub fn plus_1_rank(self) -> Square {
+
+    #[inline(always)]
+    pub fn north_east(self) -> Square {
+        Square::new(self.as_index() as u8 + 9)
+    }
+
+    #[inline(always)]
+    pub fn north_west(self) -> Square {
+        Square::new(self.as_index() as u8 + 7)
+    }
+
+    #[inline(always)]
+    pub fn south_west(self) -> Square {
+        Square::new(self.as_index() as u8 - 9)
+    }
+
+    #[inline(always)]
+    pub fn south_east(self) -> Square {
+        Square::new(self.as_index() as u8 - 7)
+    }
+
+    #[inline(always)]
+    pub fn north(self) -> Square {
         Square::new(self.as_index() as u8 + 8)
     }
 
-    const fn get_sq(num: u8) -> Square {
-        // a match is more performant than looking up the array or using any existing
-        // crates for converting ints to enums :-)
-        match num {
-            0 => Square::A1,
-            1 => Square::B1,
-            2 => Square::C1,
-            3 => Square::D1,
-            4 => Square::E1,
-            5 => Square::F1,
-            6 => Square::G1,
-            7 => Square::H1,
-
-            8 => Square::A2,
-            9 => Square::B2,
-            10 => Square::C2,
-            11 => Square::D2,
-            12 => Square::E2,
-            13 => Square::F2,
-            14 => Square::G2,
-            15 => Square::H2,
-
-            16 => Square::A3,
-            17 => Square::B3,
-            18 => Square::C3,
-            19 => Square::D3,
-            20 => Square::E3,
-            21 => Square::F3,
-            22 => Square::G3,
-            23 => Square::H3,
-
-            24 => Square::A4,
-            25 => Square::B4,
-            26 => Square::C4,
-            27 => Square::D4,
-            28 => Square::E4,
-            29 => Square::F4,
-            30 => Square::G4,
-            31 => Square::H4,
-
-            32 => Square::A5,
-            33 => Square::B5,
-            34 => Square::C5,
-            35 => Square::D5,
-            36 => Square::E5,
-            37 => Square::F5,
-            38 => Square::G5,
-            39 => Square::H5,
-
-            40 => Square::A6,
-            41 => Square::B6,
-            42 => Square::C6,
-            43 => Square::D6,
-            44 => Square::E6,
-            45 => Square::F6,
-            46 => Square::G6,
-            47 => Square::H6,
-
-            48 => Square::A7,
-            49 => Square::B7,
-            50 => Square::C7,
-            51 => Square::D7,
-            52 => Square::E7,
-            53 => Square::F7,
-            54 => Square::G7,
-            55 => Square::H7,
-
-            56 => Square::A8,
-            57 => Square::B8,
-            58 => Square::C8,
-            59 => Square::D8,
-            60 => Square::E8,
-            61 => Square::F8,
-            62 => Square::G8,
-            63 => Square::H8,
-
-            _ => panic!("Invalid square"),
-        }
-    }
-
-    pub fn minus_1_rank(self) -> Square {
+    #[inline(always)]
+    pub fn south(self) -> Square {
         Square::new(self.as_index() as u8 - 8)
     }
 
-    pub fn plus_2_ranks(self) -> Square {
-        Square::new(self.as_index() as u8 + 16)
-    }
-
-    pub fn minus_2_ranks(self) -> Square {
-        Square::new(self.as_index() as u8 - 16)
-    }
-
+    #[inline(always)]
     pub fn rank(self) -> Rank {
         Rank::new(self.rank_as_u8()).unwrap()
     }
 
+    #[inline(always)]
     pub fn file(self) -> File {
         File::new(self.file_as_u8()).unwrap()
     }
@@ -283,5 +225,34 @@ pub mod tests {
         for (i, square) in Square::iterator().enumerate() {
             assert_eq!(square.as_index(), i);
         }
+    }
+
+    #[test]
+    pub fn north() {
+        assert_eq!(Square::A1.north(), Square::A2);
+    }
+
+    #[test]
+    pub fn south() {
+        assert_eq!(Square::C7.south(), Square::C6);
+    }
+
+    #[test]
+    pub fn north_east() {
+        assert_eq!(Square::A1.north_east(), Square::B2);
+    }
+
+    #[test]
+    pub fn north_west() {
+        assert_eq!(Square::F6.north_west(), Square::E7);
+    }
+
+    #[test]
+    pub fn south_east() {
+        assert_eq!(Square::D4.south_east(), Square::E3);
+    }
+    #[test]
+    pub fn south_west() {
+        assert_eq!(Square::D4.south_west(), Square::C3);
     }
 }

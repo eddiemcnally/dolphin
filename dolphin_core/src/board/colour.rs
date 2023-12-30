@@ -12,8 +12,8 @@ pub enum Colour {
 impl Colour {
     pub const NUM_COLOURS: usize = 2;
 
-    pub const fn as_index(&self) -> usize {
-        *self as usize
+    pub const fn as_index(self) -> usize {
+        self as usize
     }
 
     pub const fn flip_side(self) -> Colour {

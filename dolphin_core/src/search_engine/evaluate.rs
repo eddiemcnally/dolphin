@@ -79,34 +79,33 @@ const KING_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
     -30,    -40,    -40,    -50,    -50,    -40,    -40,    -30, 
 ];
 
+static PIECE_MAP: [(Piece, &[i8; Board::NUM_SQUARES]); 6] = [
+    (Piece::Pawn, &PAWN_SQ_VALUE),
+    (Piece::Bishop, &BISHOP_SQ_VALUE),
+    (Piece::Knight, &KNIGHT_SQ_VALUE),
+    (Piece::Rook, &ROOK_SQ_VALUE),
+    (Piece::Queen, &QUEEN_SQ_VALUE),
+    (Piece::King, &KING_SQ_VALUE),
+];
+
 pub fn evaluate_board(board: &Board, side_to_move: Colour) -> Score {
     let mut score = board.get_net_material();
 
-    for sq in board.get_bitboard().iterator() {
-        if let Some((pce, colour)) = board.get_piece_and_colour_on_square(sq) {
-            let sq_offset = sq.as_index();
-            let pce_score = match colour {
-                Colour::White => match pce {
-                    Piece::Pawn => PAWN_SQ_VALUE[sq_offset] as Score,
-                    Piece::Bishop => BISHOP_SQ_VALUE[sq_offset] as Score,
-                    Piece::Knight => KNIGHT_SQ_VALUE[sq_offset] as Score,
-                    Piece::Rook => ROOK_SQ_VALUE[sq_offset] as Score,
-                    Piece::Queen => QUEEN_SQ_VALUE[sq_offset] as Score,
-                    Piece::King => KING_SQ_VALUE[sq_offset] as Score,
-                },
-                Colour::Black => match pce {
-                    Piece::Pawn => -PAWN_SQ_VALUE[63 - sq_offset] as Score,
-                    Piece::Bishop => -BISHOP_SQ_VALUE[63 - sq_offset] as Score,
-                    Piece::Knight => -KNIGHT_SQ_VALUE[63 - sq_offset] as Score,
-                    Piece::Rook => -ROOK_SQ_VALUE[63 - sq_offset] as Score,
-                    Piece::Queen => -QUEEN_SQ_VALUE[63 - sq_offset] as Score,
-                    Piece::King => -KING_SQ_VALUE[63 - sq_offset] as Score,
-                },
-            };
+    // white
+    PIECE_MAP.iter().for_each(|(pce, map)| {
+        board
+            .get_piece_bitboard(*pce, Colour::White)
+            .iterator()
+            .for_each(|sq| score += map[sq.as_index()] as Score);
+    });
 
-            score += pce_score;
-        }
-    }
+    // black (note negative score, and mirror'ed table lookup)
+    PIECE_MAP.iter().for_each(|(pce, map)| {
+        board
+            .get_piece_bitboard(*pce, Colour::Black)
+            .iterator()
+            .for_each(|sq| score -= map[63 - sq.as_index()] as Score);
+    });
 
     if side_to_move == Colour::White {
         score
