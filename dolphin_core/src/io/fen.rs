@@ -70,7 +70,7 @@ fn extract_board_from_fen(pieces: &str) -> Board {
                         if let (Some(r), Some(f)) = (Rank::new(rank as u8), File::new(file as u8)) {
                             let sq = Square::from_rank_file(r, f);
                             file += 1;
-                            retval.add_piece(piece, colour, sq);
+                            retval.add_piece(piece, colour, sq.expect("Invalid square"));
                         }
                     }
                 }

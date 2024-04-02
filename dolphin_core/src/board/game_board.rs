@@ -181,7 +181,9 @@ impl fmt::Debug for Board {
             for f in File::iterator() {
                 let sq = Square::from_rank_file(*r, *f);
 
-                if let Some((piece, colour)) = self.get_piece_and_colour_on_square(sq) {
+                if let Some((piece, colour)) =
+                    self.get_piece_and_colour_on_square(sq.expect("Invalid square"))
+                {
                     debug_str.push_str(&Piece::label(piece, colour).to_string());
                     debug_str.push('\t');
                 } else {

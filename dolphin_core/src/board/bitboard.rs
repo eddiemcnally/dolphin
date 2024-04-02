@@ -190,7 +190,7 @@ impl Iterator for BitboardIterator {
         if self.0 > 0 {
             let sq = Square::new(self.0.trailing_zeros() as u8);
             self.0 &= self.0 - 1;
-            return Some(sq);
+            return sq;
         }
 
         None

@@ -180,7 +180,7 @@ impl OccupancyMasks {
 
     fn set_bb_for_sq(rank: Rank, file: File, bb: &mut Bitboard) {
         let derived_sq = Square::from_rank_file(rank, file);
-        bb.set_bit(derived_sq);
+        bb.set_bit(derived_sq.expect("Invalid square"));
     }
 
     fn populate_king_mask_array(occ_mask: &mut Box<OccupancyMasks>) {
@@ -237,7 +237,7 @@ impl OccupancyMasks {
             // move SW
             while let (Some(r), Some(f)) = (rank.subtract_one(), file.subtract_one()) {
                 let derived_sq = Square::from_rank_file(r, f);
-                bb.set_bit(derived_sq);
+                bb.set_bit(derived_sq.expect("Invalid square"));
 
                 rank = r;
                 file = f;
@@ -249,7 +249,7 @@ impl OccupancyMasks {
             // move NE
             while let (Some(r), Some(f)) = (rank.add_one(), file.add_one()) {
                 let derived_sq = Square::from_rank_file(r, f);
-                bb.set_bit(derived_sq);
+                bb.set_bit(derived_sq.expect("Invalid square"));
                 rank = r;
                 file = f;
             }
@@ -269,7 +269,7 @@ impl OccupancyMasks {
             // move NW
             while let (Some(r), Some(f)) = (rank.add_one(), file.subtract_one()) {
                 let derived_sq = Square::from_rank_file(r, f);
-                bb.set_bit(derived_sq);
+                bb.set_bit(derived_sq.expect("Invalid square"));
                 rank = r;
                 file = f;
             }
@@ -280,7 +280,7 @@ impl OccupancyMasks {
             // move SE
             while let (Some(r), Some(f)) = (rank.subtract_one(), file.add_one()) {
                 let derived_sq = Square::from_rank_file(r, f);
-                bb.set_bit(derived_sq);
+                bb.set_bit(derived_sq.expect("Invalid square"));
                 rank = r;
                 file = f;
             }

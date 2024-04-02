@@ -2,86 +2,49 @@ use std::fmt;
 use std::slice::Iter;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
-#[repr(u8)]
-pub enum Rank {
-    #[default]
-    R1,
-    R2,
-    R3,
-    R4,
-    R5,
-    R6,
-    R7,
-    R8,
-}
+pub struct Rank(u8);
 
 impl Rank {
+    pub const R1: Rank = Rank(0);
+    pub const R2: Rank = Rank(1);
+    pub const R3: Rank = Rank(2);
+    pub const R4: Rank = Rank(3);
+    pub const R5: Rank = Rank(4);
+    pub const R6: Rank = Rank(5);
+    pub const R7: Rank = Rank(6);
+    pub const R8: Rank = Rank(7);
+
     pub fn new(num: u8) -> Option<Rank> {
-        match num {
-            0 => Some(Rank::R1),
-            1 => Some(Rank::R2),
-            2 => Some(Rank::R3),
-            3 => Some(Rank::R4),
-            4 => Some(Rank::R5),
-            5 => Some(Rank::R6),
-            6 => Some(Rank::R7),
-            7 => Some(Rank::R8),
-            _ => None,
+        if num <= Rank::R8.0 {
+            return Some(Rank(num));
         }
+        None
     }
 
-    pub const fn as_index(&self) -> usize {
-        *self as usize
+    pub const fn as_index(self) -> usize {
+        self.0 as usize
     }
 
     pub fn add_one(self) -> Option<Rank> {
-        match self {
-            Rank::R1 => Some(Rank::R2),
-            Rank::R2 => Some(Rank::R3),
-            Rank::R3 => Some(Rank::R4),
-            Rank::R4 => Some(Rank::R5),
-            Rank::R5 => Some(Rank::R6),
-            Rank::R6 => Some(Rank::R7),
-            Rank::R7 => Some(Rank::R8),
-            Rank::R8 => None,
-        }
+        Rank::new(self.0 + 1)
     }
 
     pub fn add_two(self) -> Option<Rank> {
-        match self {
-            Rank::R1 => Some(Rank::R3),
-            Rank::R2 => Some(Rank::R4),
-            Rank::R3 => Some(Rank::R5),
-            Rank::R4 => Some(Rank::R6),
-            Rank::R5 => Some(Rank::R7),
-            Rank::R6 => Some(Rank::R8),
-            Rank::R7 | Rank::R8 => None,
-        }
+        Rank::new(self.0 + 2)
     }
 
     pub fn subtract_one(self) -> Option<Rank> {
-        match self {
-            Rank::R2 => Some(Rank::R1),
-            Rank::R3 => Some(Rank::R2),
-            Rank::R4 => Some(Rank::R3),
-            Rank::R5 => Some(Rank::R4),
-            Rank::R6 => Some(Rank::R5),
-            Rank::R7 => Some(Rank::R6),
-            Rank::R8 => Some(Rank::R7),
-            Rank::R1 => None,
+        if self.0 >= Rank::R2.0 {
+            return Rank::new(self.0 - 1);
         }
+        None
     }
 
     pub fn subtract_two(self) -> Option<Rank> {
-        match self {
-            Rank::R3 => Some(Rank::R1),
-            Rank::R4 => Some(Rank::R2),
-            Rank::R5 => Some(Rank::R3),
-            Rank::R6 => Some(Rank::R4),
-            Rank::R7 => Some(Rank::R5),
-            Rank::R8 => Some(Rank::R6),
-            Rank::R1 | Rank::R2 => None,
+        if self.0 >= Rank::R3.0 {
+            return Rank::new(self.0 - 2);
         }
+        None
     }
     pub fn from_char(rank: char) -> Option<Rank> {
         match rank {
@@ -96,8 +59,8 @@ impl Rank {
             _ => None,
         }
     }
-    pub fn to_char(&self) -> char {
-        match *self {
+    pub fn to_char(self) -> char {
+        match self {
             Rank::R1 => '1',
             Rank::R2 => '2',
             Rank::R3 => '3',
@@ -106,6 +69,7 @@ impl Rank {
             Rank::R6 => '6',
             Rank::R7 => '7',
             Rank::R8 => '8',
+            _ => '-',
         }
     }
 

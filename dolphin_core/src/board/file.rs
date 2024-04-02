@@ -2,86 +2,49 @@ use std::fmt;
 use std::slice::Iter;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
-#[repr(u8)]
-pub enum File {
-    #[default]
-    A,
-    B,
-    C,
-    D,
-    E,
-    F,
-    G,
-    H,
-}
+pub struct File(u8);
 
 impl File {
+    pub const A: File = File(0);
+    pub const B: File = File(1);
+    pub const C: File = File(2);
+    pub const D: File = File(3);
+    pub const E: File = File(4);
+    pub const F: File = File(5);
+    pub const G: File = File(6);
+    pub const H: File = File(7);
+
     pub fn new(num: u8) -> Option<File> {
-        match num {
-            0 => Some(File::A),
-            1 => Some(File::B),
-            2 => Some(File::C),
-            3 => Some(File::D),
-            4 => Some(File::E),
-            5 => Some(File::F),
-            6 => Some(File::G),
-            7 => Some(File::H),
-            _ => None,
+        if num <= File::H.0 {
+            return Some(File(num));
         }
+        None
     }
 
-    pub const fn as_index(&self) -> usize {
-        *self as usize
+    pub const fn as_index(self) -> usize {
+        self.0 as usize
     }
 
     pub fn add_one(self) -> Option<File> {
-        match self {
-            File::A => Some(File::B),
-            File::B => Some(File::C),
-            File::C => Some(File::D),
-            File::D => Some(File::E),
-            File::E => Some(File::F),
-            File::F => Some(File::G),
-            File::G => Some(File::H),
-            File::H => None,
-        }
+        File::new(self.0 + 1)
     }
 
     pub fn subtract_one(self) -> Option<File> {
-        match self {
-            File::A => None,
-            File::B => Some(File::A),
-            File::C => Some(File::B),
-            File::D => Some(File::C),
-            File::E => Some(File::D),
-            File::F => Some(File::E),
-            File::G => Some(File::F),
-            File::H => Some(File::G),
+        if self.0 >= File::B.0 {
+            return File::new(self.0 - 1);
         }
+        None
     }
 
     pub fn add_two(self) -> Option<File> {
-        match self {
-            File::A => Some(File::C),
-            File::B => Some(File::D),
-            File::C => Some(File::E),
-            File::D => Some(File::F),
-            File::E => Some(File::G),
-            File::F => Some(File::H),
-            File::G | File::H => None,
-        }
+        File::new(self.0 + 2)
     }
 
     pub fn subtract_two(self) -> Option<File> {
-        match self {
-            File::A | File::B => None,
-            File::C => Some(File::A),
-            File::D => Some(File::B),
-            File::E => Some(File::C),
-            File::F => Some(File::D),
-            File::G => Some(File::E),
-            File::H => Some(File::F),
+        if self.0 >= File::C.0 {
+            return File::new(self.0 - 2);
         }
+        None
     }
 
     pub fn from_char(file: char) -> Option<File> {
@@ -97,8 +60,8 @@ impl File {
             _ => None,
         }
     }
-    pub fn to_char(&self) -> char {
-        match *self {
+    pub fn to_char(self) -> char {
+        match self {
             File::A => 'a',
             File::B => 'b',
             File::C => 'c',
@@ -107,6 +70,7 @@ impl File {
             File::F => 'f',
             File::G => 'g',
             File::H => 'h',
+            _ => '-',
         }
     }
     pub fn iterator() -> Iter<'static, File> {
@@ -144,12 +108,6 @@ impl fmt::Debug for File {
 pub mod tests {
     use super::File;
     use std::collections::HashMap;
-
-    #[test]
-    pub fn file_as_u8() {
-        assert!(File::A as u8 == 0);
-        assert!(File::H as u8 == 7);
-    }
 
     #[test]
     pub fn add_one() {

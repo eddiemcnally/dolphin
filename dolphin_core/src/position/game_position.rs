@@ -261,7 +261,11 @@ impl<'a> Position<'a> {
             Colour::Black => (Colour::Black, Colour::White, mv.to_sq().north()),
         };
 
-        self.remove_piece_from_board(Piece::Pawn, col_to_capt, capt_sq);
+        self.remove_piece_from_board(
+            Piece::Pawn,
+            col_to_capt,
+            capt_sq.expect("Invalid capture square"),
+        );
         self.move_piece_on_board(Piece::Pawn, col_to_move, mv.from_sq(), mv.to_sq());
     }
 
@@ -369,13 +373,17 @@ impl<'a> Position<'a> {
                     .move_piece(mv.to_sq(), mv.from_sq(), Piece::Pawn, Colour::White);
 
                 let capt_sq = mv.to_sq().south();
-                self.board.add_piece(Piece::Pawn, Colour::Black, capt_sq);
+                self.board.add_piece(
+                    Piece::Pawn,
+                    Colour::Black,
+                    capt_sq.expect("Invalid capture square"),
+                );
             }
             Colour::Black => {
                 self.board
                     .move_piece(mv.to_sq(), mv.from_sq(), Piece::Pawn, Colour::Black);
 
-                let capt_sq = mv.to_sq().north();
+                let capt_sq = mv.to_sq().north().expect("Invalid north() square");
                 self.board.add_piece(Piece::Pawn, Colour::White, capt_sq);
             }
         }
@@ -511,8 +519,8 @@ impl<'a> Position<'a> {
     fn find_en_passant_sq(&self, from_sq: Square, col: Colour) -> Square {
         // use the *from_sq* to find the en passant sq
         match col {
-            Colour::White => from_sq.north(),
-            Colour::Black => from_sq.south(),
+            Colour::White => from_sq.north().expect("Invalid north() en passant square"),
+            Colour::Black => from_sq.south().expect("Invalid south() en passant square"),
         }
     }
 
