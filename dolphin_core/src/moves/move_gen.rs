@@ -42,10 +42,7 @@ impl MoveGenerator {
         }
 
         self.generate_non_sliding_moves(pos, move_list);
-        // rook and queen
-        self.generate_rank_file_moves(pos, move_list);
-        // bishop and queen
-        self.generate_diagonal_moves(pos, move_list);
+        self.generate_sliding_moves(pos, move_list);
 
         let move_cnt_end = move_list.len();
 
@@ -213,125 +210,93 @@ impl MoveGenerator {
             });
     }
 
-    // generates diagonal and anti-diagonal moves for queen and bishop
-    // see Hyperbola Quintessence
-    fn generate_diagonal_moves(&self, pos: &Position, move_list: &mut MoveList) {
-        let occ_col_bb = pos.board().get_colour_bb(pos.side_to_move());
-        let all_bb = pos.board().get_bitboard();
-
-        [Piece::Bishop, Piece::Queen].into_iter().for_each(|piece| {
-            let pce_bb = pos.board().get_piece_bitboard(piece, pos.side_to_move());
-
-            pce_bb.iterator().for_each(|from_sq| {
-                let slider_bb = from_sq.get_square_as_bb();
-
-                let diagonal_mask = pos.occupancy_masks().get_diagonal_mask(from_sq);
-                let anti_diagonal_mask = pos.occupancy_masks().get_antidiagonal_mask(from_sq);
-
-                // diagonal moves
-                let diag1 = (all_bb & diagonal_mask)
-                    .overflowing_sub(slider_bb.overflowing_mul(2).0)
-                    .0;
-                let diag2 = ((all_bb & diagonal_mask)
-                    .reverse_bits()
-                    .overflowing_sub(slider_bb.reverse_bits().overflowing_mul(2).0))
-                .0
-                .reverse_bits();
-                let diag = Bitboard::new(diag1 ^ diag2);
-
-                // anti-diagonal moves
-                let antidiag1 = (all_bb & anti_diagonal_mask)
-                    .overflowing_sub(slider_bb.overflowing_mul(2).0)
-                    .0;
-                let antidiag2 = ((all_bb & anti_diagonal_mask)
-                    .reverse_bits()
-                    .overflowing_sub(slider_bb.reverse_bits().overflowing_mul(2).0))
-                .0
-                .reverse_bits();
-
-                let antidiag = Bitboard::new(antidiag1 ^ antidiag2);
-
-                let all_moves = (diag & diagonal_mask) | (antidiag & anti_diagonal_mask);
-                let excl_same_colour = all_moves & !occ_col_bb;
-
-                excl_same_colour.iterator().for_each(|to_sq| {
-                    match pos
-                        .board()
-                        .get_colour_bb(pos.side_to_move().flip_side())
-                        .is_set(to_sq)
-                    {
-                        true => {
-                            let mv = Move::encode_move_capture(from_sq, to_sq, piece);
-                            move_list.push(mv);
-                        }
-                        false => {
-                            let mv = Move::encode_move_quiet(from_sq, to_sq, piece);
-                            move_list.push(mv);
-                        }
-                    }
+    fn generate_sliding_moves(&self, pos: &Position, move_list: &mut MoveList) {
+        // rank/file moves
+        [Piece::Rook, Piece::Queen].into_iter().for_each(|piece| {
+            pos.board()
+                .get_piece_bitboard(piece, pos.side_to_move())
+                .iterator()
+                .for_each(|from_sq| {
+                    let rank_file_to_sq = self.hyperbola_quintessence(
+                        pos,
+                        pos.occupancy_masks()
+                            .get_horizontal_mask(from_sq)
+                            .into_u64(),
+                        pos.occupancy_masks().get_vertical_mask(from_sq).into_u64(),
+                        from_sq,
+                    );
+                    self.gen_capt_or_quiet_moves(pos, move_list, from_sq, rank_file_to_sq, piece);
                 });
-            });
+        });
+
+        // diagonal/anti-diagonal moves
+        [Piece::Bishop, Piece::Queen].into_iter().for_each(|piece| {
+            pos.board()
+                .get_piece_bitboard(piece, pos.side_to_move())
+                .iterator()
+                .for_each(|from_sq| {
+                    let diag_to_sq = self.hyperbola_quintessence(
+                        pos,
+                        pos.occupancy_masks().get_diagonal_mask(from_sq).into_u64(),
+                        pos.occupancy_masks()
+                            .get_antidiagonal_mask(from_sq)
+                            .into_u64(),
+                        from_sq,
+                    );
+                    self.gen_capt_or_quiet_moves(pos, move_list, from_sq, diag_to_sq, piece);
+                });
         });
     }
 
-    // generates sliding rank and file moves for queen and rook
-    // see Hyperbola Quintessence
-    fn generate_rank_file_moves(&self, pos: &Position, move_list: &mut MoveList) {
-        let occ_col_bb = pos.board().get_colour_bb(pos.side_to_move());
-        let occ_sq_bb = pos.board().get_bitboard();
-
-        [Piece::Rook, Piece::Queen].into_iter().for_each(|piece| {
-            let pce_bb = pos.board().get_piece_bitboard(piece, pos.side_to_move());
-
-            pce_bb.iterator().for_each(|from_sq| {
-                let horiz_mask = pos.occupancy_masks().get_horizontal_mask(from_sq);
-                let vertical_mask = pos.occupancy_masks().get_vertical_mask(from_sq);
-
-                let slider_bb = from_sq.get_square_as_bb();
-                let slider_bb_reverse = slider_bb.reverse_bits();
-
-                // horizontal moves
-                let horiz1 = occ_sq_bb.overflowing_sub(slider_bb.overflowing_mul(2).0).0;
-                let horiz2 = (occ_sq_bb
-                    .reverse_bits()
-                    .overflowing_sub(slider_bb_reverse.overflowing_mul(2).0)
-                    .0)
-                    .reverse_bits();
-                let horiz = Bitboard::new(horiz1 ^ horiz2);
-
-                // vertical moves
-                let vert1 = (occ_sq_bb & vertical_mask)
-                    .overflowing_sub(slider_bb.overflowing_mul(2).0)
-                    .0;
-                let vert2 = ((occ_sq_bb & vertical_mask)
-                    .reverse_bits()
-                    .overflowing_sub(slider_bb_reverse.overflowing_mul(2).0))
-                .0
-                .reverse_bits();
-                let vert = Bitboard::new(vert1 ^ vert2);
-
-                let all_moves_mask = (horiz & horiz_mask) | (vert & vertical_mask);
-
-                let all_excl_same_col = all_moves_mask & !occ_col_bb;
-
-                all_excl_same_col.iterator().for_each(|to_sq| {
-                    match pos
-                        .board()
-                        .get_colour_bb(pos.side_to_move().flip_side())
-                        .is_set(to_sq)
-                    {
-                        true => {
-                            let mv = Move::encode_move_capture(from_sq, to_sq, piece);
-                            move_list.push(mv);
-                        }
-                        false => {
-                            let mv = Move::encode_move_quiet(from_sq, to_sq, piece);
-                            move_list.push(mv);
-                        }
-                    }
-                });
-            });
+    #[inline(always)]
+    fn gen_capt_or_quiet_moves(
+        &self,
+        pos: &Position,
+        move_list: &mut MoveList,
+        from_sq: Square,
+        to_sq_bb: Bitboard,
+        piece: Piece,
+    ) {
+        let opp_col_bb = pos.board().get_colour_bb(pos.side_to_move().flip_side());
+        to_sq_bb.iterator().for_each(|to_sq| {
+            let mv = if opp_col_bb.is_set(to_sq) {
+                Move::encode_move_capture(from_sq, to_sq, piece)
+            } else {
+                Move::encode_move_quiet(from_sq, to_sq, piece)
+            };
+            move_list.push(mv);
         });
+    }
+
+    #[inline(always)]
+    fn hyperbola_quintessence(
+        &self,
+        pos: &Position,
+        dir_1_mask: u64,
+        dir_2_mask: u64,
+        square: Square,
+    ) -> Bitboard {
+        let all_bb = pos.board().get_bitboard().into_u64();
+        let col_bb = pos.board().get_colour_bb(pos.side_to_move()).into_u64();
+        let slider_bb = Bitboard::from_square(square).into_u64();
+
+        let dir_1_a = (all_bb & dir_1_mask).wrapping_sub(slider_bb.wrapping_shl(1));
+        let dir_1_b = ((all_bb & dir_1_mask)
+            .reverse_bits()
+            .wrapping_sub(slider_bb.reverse_bits().wrapping_shl(1)))
+        .reverse_bits();
+        let dir_1_moves = dir_1_a ^ dir_1_b;
+
+        let dir_2_a = (all_bb & dir_2_mask).wrapping_sub(slider_bb.wrapping_shl(1));
+        let dir_2_b = ((all_bb & dir_2_mask)
+            .reverse_bits()
+            .wrapping_sub(slider_bb.reverse_bits().wrapping_shl(1)))
+        .reverse_bits();
+        let dir_2_moves = dir_2_a ^ dir_2_b;
+
+        let all_moves = (dir_1_moves & dir_1_mask) | (dir_2_moves & dir_2_mask);
+        // return all moves excluding same colour pieces
+        Bitboard::new(all_moves & !col_bb)
     }
 
     fn generate_non_sliding_moves(&self, pos: &Position, move_list: &mut MoveList) {
