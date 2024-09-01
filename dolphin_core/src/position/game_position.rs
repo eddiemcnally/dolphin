@@ -1,7 +1,9 @@
 use crate::board::colour::Colour;
+use crate::board::file::File;
 use crate::board::game_board::Board;
 use crate::board::occupancy_masks::OccupancyMasks;
 use crate::board::piece::Piece;
+use crate::board::rank::Rank;
 use crate::board::square::Square;
 use crate::moves::mov::Move;
 use crate::moves::mov::MoveType;
@@ -185,37 +187,45 @@ impl<'a> Position<'a> {
             .is_sq_attacked(self.occ_masks, self.board(), king_sq, opp_side)
     }
 
+    fn save_game_state(&mut self, mv: &Move) -> Option<Piece> {
+        match mv.move_type() {
+            MoveType::Normal | MoveType::Promotion => {
+                let to_sq = mv.to_sq();
+                let capt_pce = self.board.get_piece_on_square(to_sq);
+                self.position_history.push(&self.game_state, mv, capt_pce);
+                return capt_pce;
+            }
+            MoveType::EnPassant => {
+                self.position_history
+                    .push(&self.game_state, mv, Some(Piece::Pawn));
+                return Some(Piece::Pawn);
+            }
+            MoveType::Castle => {
+                self.position_history.push(&self.game_state, mv, None);
+                return None;
+            }
+        }
+    }
+
     pub fn make_move(&mut self, mv: &Move) -> MoveLegality {
-        let capt_pce = if mv.move_type().is_capture() {
-            self.board.get_piece_on_square(mv.to_sq())
-        } else {
-            None
-        };
-
-        self.position_history.push(&self.game_state, mv, capt_pce);
-
-        self.update_move_counters(mv);
+        let capt_pce = self.save_game_state(mv);
+        let pce_to_move = self
+            .board
+            .get_piece_on_square(mv.from_sq())
+            .expect("Unepxected empty square");
+        self.update_move_counters(capt_pce, pce_to_move);
 
         match mv.move_type() {
-            MoveType::Quiet => self.do_quiet_move(mv),
-            MoveType::DoublePawn => self.do_double_pawn_move(mv),
-            MoveType::KingCastle | MoveType::QueenCastle => self.do_castle_move(mv),
-            MoveType::Capture => self.do_capture_move(mv),
+            MoveType::Normal => self.do_normal_move(mv),
+            MoveType::Promotion => self.do_promotion_move(mv),
             MoveType::EnPassant => self.do_en_passant(mv),
-            MoveType::PromoteBishop
-            | MoveType::PromoteKnight
-            | MoveType::PromoteRook
-            | MoveType::PromoteQueen => self.do_promotion(mv),
-            MoveType::PromoteBishopCapture
-            | MoveType::PromoteKnightCapture
-            | MoveType::PromoteRookCapture
-            | MoveType::PromoteQueenCapture => self.do_capture_promotion(mv),
+            MoveType::Castle => self.do_castle_move(mv),
         }
 
         // update some states based on the move
-        self.update_en_passant_sq(mv);
+        self.update_en_passant_sq(mv, pce_to_move);
         if self.game_state.castle_perm.has_castle_permission() {
-            self.update_castle_perms(mv);
+            self.update_castle_perms(mv, pce_to_move, capt_pce);
         }
 
         let move_legality = self.get_move_legality(mv);
@@ -224,33 +234,49 @@ impl<'a> Position<'a> {
         move_legality
     }
 
-    fn do_quiet_move(&mut self, mv: &Move) {
-        self.move_piece_on_board(
-            mv.piece_to_move(),
-            self.side_to_move(),
-            mv.from_sq(),
-            mv.to_sq(),
-        );
+    fn do_normal_move(&mut self, mv: &Move) {
+        let (from_sq, to_sq) = mv.decode_from_to_sq();
+
+        if let Some(pce) = self.board.get_piece_on_square(to_sq) {
+            // capture
+            self.remove_piece_from_board(pce, self.side_to_move().flip_side(), to_sq);
+        };
+
+        let pce_to_move = self
+            .board
+            .get_piece_on_square(from_sq)
+            .expect("Expecting piece on from sq");
+
+        self.move_piece_on_board(pce_to_move, self.side_to_move(), from_sq, to_sq);
+
+        if self.is_double_pawn_move(mv, pce_to_move) {
+            let s = self.find_en_passant_sq(mv.from_sq(), self.side_to_move());
+            self.game_state.en_pass_sq = Some(s);
+            self.game_state.position_hash ^= self.zobrist_keys.en_passant(s);
+        }
     }
-    fn do_capture_move(&mut self, mv: &Move) {
-        let capt_pce = self.board.get_piece_on_square(mv.to_sq()).unwrap();
 
-        self.remove_piece_from_board(capt_pce, self.side_to_move().flip_side(), mv.to_sq());
-
-        self.move_piece_on_board(
-            mv.piece_to_move(),
-            self.side_to_move(),
-            mv.from_sq(),
-            mv.to_sq(),
-        );
+    fn find_en_passant_sq(&self, from_sq: Square, col: Colour) -> Square {
+        // use the *from_sq* to find the en passant sq
+        match col {
+            Colour::White => from_sq.north().expect("Invalid north() en passant square"),
+            Colour::Black => from_sq.south().expect("Invalid south() en passant square"),
+        }
     }
 
-    fn do_double_pawn_move(&mut self, mv: &Move) {
-        self.move_piece_on_board(Piece::Pawn, self.side_to_move(), mv.from_sq(), mv.to_sq());
+    fn do_promotion_move(&mut self, mv: &Move) {
+        let (from_sq, to_sq) = mv.decode_from_to_sq();
 
-        let s = self.find_en_passant_sq(mv.from_sq(), self.side_to_move());
-        self.game_state.en_pass_sq = Some(s);
-        self.game_state.position_hash ^= self.zobrist_keys.en_passant(s);
+        if let Some(pce) = self.board.get_piece_on_square(to_sq) {
+            // capture
+            self.remove_piece_from_board(pce, self.side_to_move().flip_side(), to_sq);
+        }
+
+        // remove the pawn being moved
+        self.remove_piece_from_board(Piece::Pawn, self.side_to_move(), from_sq);
+        // add the promoted piece
+        let promo_pce = mv.decode_promotion_piece();
+        self.add_piece_to_board(promo_pce, self.side_to_move(), to_sq)
     }
 
     fn do_en_passant(&mut self, mv: &Move) {
@@ -269,25 +295,6 @@ impl<'a> Position<'a> {
         self.move_piece_on_board(Piece::Pawn, col_to_move, mv.from_sq(), mv.to_sq());
     }
 
-    fn do_capture_promotion(&mut self, mv: &Move) {
-        let capt_pce = self.board.get_piece_on_square(mv.to_sq()).unwrap();
-
-        // remove piece being captured
-        self.remove_piece_from_board(capt_pce, self.side_to_move().flip_side(), mv.to_sq());
-
-        let target_role = mv.move_type().decode_promotion_role();
-        self.remove_piece_from_board(mv.piece_to_move(), self.side_to_move(), mv.from_sq());
-
-        self.add_piece_to_board(target_role.unwrap(), self.side_to_move(), mv.to_sq());
-    }
-
-    fn do_promotion(&mut self, mv: &Move) {
-        let target_role = mv.move_type().decode_promotion_role();
-        self.remove_piece_from_board(mv.piece_to_move(), self.side_to_move(), mv.from_sq());
-
-        self.add_piece_to_board(target_role.unwrap(), self.side_to_move(), mv.to_sq());
-    }
-
     pub fn take_move(&mut self) {
         self.flip_side_to_move();
 
@@ -296,61 +303,39 @@ impl<'a> Position<'a> {
         self.game_state = gs;
 
         match mv.move_type() {
-            MoveType::Quiet | MoveType::DoublePawn => self.reverse_quiet_move(&mv),
-            MoveType::KingCastle | MoveType::QueenCastle => self.reverse_castle_move(&mv),
-            MoveType::Capture => self.reverse_capture_move(&mv, capt_pce),
+            MoveType::Normal => self.reverse_normal_move(&mv, capt_pce),
+            MoveType::Promotion => self.reverse_promotion_move(&mv, capt_pce),
             MoveType::EnPassant => self.reverse_en_passant_move(&mv),
-            MoveType::PromoteBishop
-            | MoveType::PromoteKnight
-            | MoveType::PromoteRook
-            | MoveType::PromoteQueen => self.reverse_promotion_move(&mv),
-            MoveType::PromoteBishopCapture
-            | MoveType::PromoteKnightCapture
-            | MoveType::PromoteRookCapture
-            | MoveType::PromoteQueenCapture => self.reverse_capture_promotion_move(&mv, capt_pce),
+            MoveType::Castle => self.reverse_castle_move(&mv),
         }
     }
 
-    fn reverse_quiet_move(&mut self, mv: &Move) {
-        // revert the move
-        self.board.move_piece(
-            mv.to_sq(),
-            mv.from_sq(),
-            mv.piece_to_move(),
-            self.side_to_move(),
-        );
-    }
+    fn reverse_normal_move(&mut self, mv: &Move, capt_pce: Option<Piece>) {
+        let pce_moved = self
+            .board
+            .get_piece_on_square(mv.to_sq())
+            .expect("Unexpected empty square");
 
-    fn reverse_capture_move(&mut self, mv: &Move, capt_pce: Option<Piece>) {
         // revert move
-        self.board.move_piece(
-            mv.to_sq(),
-            mv.from_sq(),
-            mv.piece_to_move(),
-            self.side_to_move(),
-        );
-        // add back the captured piece
-        self.board.add_piece(
-            capt_pce.unwrap(),
-            self.side_to_move().flip_side(),
-            mv.to_sq(),
-        );
-    }
-
-    fn reverse_promotion_move(&mut self, mv: &Move) {
-        // remove promoted piece
-        let prom_piece = mv.move_type().decode_promotion_role().unwrap();
         self.board
-            .remove_piece(prom_piece, self.side_to_move(), mv.to_sq());
+            .move_piece(mv.to_sq(), mv.from_sq(), pce_moved, self.side_to_move());
 
-        // put the moved piece back to it's original square
-        self.board
-            .add_piece(Piece::Pawn, self.side_to_move(), mv.from_sq());
+        if capt_pce.is_some() {
+            // add back the captured piece
+            self.board.add_piece(
+                capt_pce.unwrap(),
+                self.side_to_move().flip_side(),
+                mv.to_sq(),
+            );
+        }
+
+        if self.is_double_pawn_move(mv, pce_moved) {
+            self.game_state.en_pass_sq = None;
+        }
     }
-
-    fn reverse_capture_promotion_move(&mut self, mv: &Move, capt_pce: Option<Piece>) {
+    fn reverse_promotion_move(&mut self, mv: &Move, capt_pce: Option<Piece>) {
         // remove promoted piece
-        let prom_piece = mv.move_type().decode_promotion_role().unwrap();
+        let prom_piece = mv.decode_promotion_piece();
         self.board
             .remove_piece(prom_piece, self.side_to_move(), mv.to_sq());
 
@@ -358,12 +343,14 @@ impl<'a> Position<'a> {
         self.board
             .add_piece(Piece::Pawn, self.side_to_move(), mv.from_sq());
 
-        // restore captured piece
-        self.board.add_piece(
-            capt_pce.unwrap(),
-            self.side_to_move().flip_side(),
-            mv.to_sq(),
-        );
+        // replace the captured piece
+        if capt_pce.is_some() {
+            self.board.add_piece(
+                capt_pce.unwrap(),
+                self.side_to_move().flip_side(),
+                mv.to_sq(),
+            );
+        }
     }
 
     fn reverse_en_passant_move(&mut self, mv: &Move) {
@@ -389,32 +376,71 @@ impl<'a> Position<'a> {
         }
     }
 
+    fn do_castle_move(&mut self, mv: &Move) {
+        let colour = self.side_to_move();
+
+        let (from_sq, to_sq) = mv.decode_from_to_sq();
+
+        match (from_sq, to_sq) {
+            (Square::E1, Square::G1) => {
+                // white king castle
+                self.move_piece_on_board(Piece::King, Colour::White, Square::E1, Square::G1);
+                self.move_piece_on_board(Piece::Rook, Colour::White, Square::H1, Square::F1);
+            }
+            (Square::E8, Square::G8) => {
+                // black king castle
+                self.move_piece_on_board(Piece::King, Colour::Black, Square::E8, Square::G8);
+                self.move_piece_on_board(Piece::Rook, Colour::Black, Square::H8, Square::F8);
+            }
+            (Square::E1, Square::C1) => {
+                // white queen castle
+                self.move_piece_on_board(Piece::King, Colour::White, Square::E1, Square::C1);
+                self.move_piece_on_board(Piece::Rook, Colour::White, Square::A1, Square::D1);
+            }
+            (Square::E8, Square::C8) => {
+                // black queen castle
+                self.move_piece_on_board(Piece::King, Colour::Black, Square::E8, Square::C8);
+                self.move_piece_on_board(Piece::Rook, Colour::Black, Square::A8, Square::D8);
+            }
+            _ => panic!("Invalid castle move"),
+        }
+
+        self.clear_castle_permissions_for_colour(colour);
+    }
+
     fn reverse_castle_move(&mut self, mv: &Move) {
-        match self.side_to_move() {
-            Colour::White if mv.move_type() == MoveType::KingCastle => {
+        let (from_sq, to_sq) = mv.decode_from_to_sq();
+
+        match (from_sq, to_sq) {
+            (Square::E1, Square::G1) => {
+                // white king castle
                 self.board
                     .move_piece(Square::G1, Square::E1, Piece::King, Colour::White);
                 self.board
                     .move_piece(Square::F1, Square::H1, Piece::Rook, Colour::White);
             }
-            Colour::White => {
-                self.board
-                    .move_piece(Square::C1, Square::E1, Piece::King, Colour::White);
-                self.board
-                    .move_piece(Square::D1, Square::A1, Piece::Rook, Colour::White);
-            }
-            Colour::Black if mv.move_type() == MoveType::KingCastle => {
+            (Square::E8, Square::G8) => {
+                // black king castle
                 self.board
                     .move_piece(Square::G8, Square::E8, Piece::King, Colour::Black);
                 self.board
                     .move_piece(Square::F8, Square::H8, Piece::Rook, Colour::Black);
             }
-            Colour::Black => {
+            (Square::E1, Square::C1) => {
+                // white queen castle
+                self.board
+                    .move_piece(Square::C1, Square::E1, Piece::King, Colour::White);
+                self.board
+                    .move_piece(Square::D1, Square::A1, Piece::Rook, Colour::White);
+            }
+            (Square::E8, Square::C8) => {
+                // black queen castle
                 self.board
                     .move_piece(Square::C8, Square::E8, Piece::King, Colour::Black);
                 self.board
                     .move_piece(Square::D8, Square::A8, Piece::Rook, Colour::Black);
             }
+            _ => panic!("Invalid castle move"),
         }
     }
 
@@ -431,13 +457,13 @@ impl<'a> Position<'a> {
         }
 
         // check castle through attacked squares (or king was in check before the castle move)
-        if mv.move_type() == MoveType::KingCastle || mv.move_type() == MoveType::QueenCastle {
-            let squares_to_check = if mv.move_type() == MoveType::KingCastle {
+        if mv.move_type() == MoveType::Castle {
+            let squares_to_check = if mv.to_sq().file() == File::G {
                 match self.game_state.side_to_move {
                     Colour::White => &CASTLE_SQUARES_KING_WHITE,
                     Colour::Black => &CASTLE_SQUARES_KING_BLACK,
                 }
-            } else if mv.move_type() == MoveType::QueenCastle {
+            } else if mv.to_sq().file() == File::C {
                 match self.game_state.side_to_move {
                     Colour::White => &CASTLE_SQUARES_QUEEN_WHITE,
                     Colour::Black => &CASTLE_SQUARES_QUEEN_BLACK,
@@ -462,9 +488,24 @@ impl<'a> Position<'a> {
         MoveLegality::Legal
     }
 
-    fn update_en_passant_sq(&mut self, mv: &Move) {
+    fn is_double_pawn_move(&self, mv: &Move, pce_moved: Piece) -> bool {
+        if pce_moved != Piece::Pawn {
+            return false;
+        }
+
+        let from_rank = mv.from_sq().rank();
+        let to_rank = mv.to_sq().rank();
+
+        match (from_rank, to_rank) {
+            (Rank::R2, Rank::R4) => true,
+            (Rank::R7, Rank::R5) => true,
+            _ => false,
+        }
+    }
+
+    fn update_en_passant_sq(&mut self, mv: &Move, pce_moved: Piece) {
         // clear en passant
-        if self.game_state.en_pass_sq.is_some() && mv.move_type() != MoveType::DoublePawn {
+        if self.game_state.en_pass_sq.is_some() && !self.is_double_pawn_move(mv, pce_moved) {
             self.game_state.position_hash ^= self
                 .zobrist_keys
                 .en_passant(self.game_state.en_pass_sq.unwrap());
@@ -473,14 +514,14 @@ impl<'a> Position<'a> {
     }
 
     // remove castle permissions based on the move
-    fn update_castle_perms(&mut self, mv: &Move) {
-        if mv.move_type() == MoveType::KingCastle || mv.move_type() == MoveType::QueenCastle {
-            // permissions already adjusted
+    fn update_castle_perms(&mut self, mv: &Move, pce_moved: Piece, capt_pce: Option<Piece>) {
+        if mv.move_type() == MoveType::Castle {
+            // permissions already adjusted when move made
             return;
         }
 
         // check if rook has just been captured
-        if mv.move_type().is_capture() {
+        if capt_pce == Some(Piece::Rook) {
             match mv.to_sq() {
                 Square::A1 => self.game_state.castle_perm.clear_queen_white(),
                 Square::H1 => self.game_state.castle_perm.clear_king_white(),
@@ -491,7 +532,7 @@ impl<'a> Position<'a> {
         }
 
         // check if king or rook have moved
-        match mv.piece_to_move() {
+        match pce_moved {
             Piece::King => match self.side_to_move() {
                 Colour::White => self.game_state.castle_perm.clear_white_king_and_queen(),
                 Colour::Black => self.game_state.castle_perm.clear_black_king_and_queen(),
@@ -516,13 +557,13 @@ impl<'a> Position<'a> {
         }
     }
 
-    fn find_en_passant_sq(&self, from_sq: Square, col: Colour) -> Square {
-        // use the *from_sq* to find the en passant sq
-        match col {
-            Colour::White => from_sq.north().expect("Invalid north() en passant square"),
-            Colour::Black => from_sq.south().expect("Invalid south() en passant square"),
-        }
-    }
+    // fn find_en_passant_sq(&self, from_sq: Square, col: Colour) -> Square {
+    //     // use the *from_sq* to find the en passant sq
+    //     match col {
+    //         Colour::White => from_sq.north().expect("Invalid north() en passant square"),
+    //         Colour::Black => from_sq.south().expect("Invalid south() en passant square"),
+    //     }
+    // }
 
     fn remove_piece_from_board(&mut self, pce: Piece, colour: Colour, sq: Square) {
         self.board.remove_piece(pce, colour, sq);
@@ -540,43 +581,17 @@ impl<'a> Position<'a> {
         self.board.move_piece(from_sq, to_sq, pce, colour);
     }
 
-    fn update_move_counters(&mut self, mv: &Move) {
+    fn update_move_counters(&mut self, capt_pce: Option<Piece>, pce_moved: Piece) {
         let full_move_incr = self.game_state.move_cntr.incr_half_move();
 
         if full_move_incr {
             // handle 50 move rule
-            if mv.move_type().is_capture() || mv.piece_to_move() == Piece::Pawn {
+            if capt_pce.is_some() || pce_moved == Piece::Pawn {
                 self.game_state.fifty_move_cntr = 0;
             } else {
                 self.game_state.fifty_move_cntr += 1;
             }
         }
-    }
-    fn do_castle_move(&mut self, mv: &Move) {
-        let colour = self.side_to_move();
-
-        let (rook_from_sq, rook_to_sq, king_from_sq, king_to_sq) =
-            if mv.move_type() == MoveType::KingCastle && colour == Colour::White {
-                (Square::H1, Square::F1, Square::E1, Square::G1)
-            } else if mv.move_type() == MoveType::KingCastle && colour == Colour::Black {
-                (Square::H8, Square::F8, Square::E8, Square::G8)
-            } else if mv.move_type() == MoveType::QueenCastle && colour == Colour::White {
-                (Square::A1, Square::D1, Square::E1, Square::C1)
-            } else if mv.move_type() == MoveType::QueenCastle && colour == Colour::Black {
-                (Square::A8, Square::D8, Square::E8, Square::C8)
-            } else {
-                panic!("Invalid castle move");
-            };
-
-        if colour == Colour::White {
-            self.move_piece_on_board(Piece::King, Colour::White, king_from_sq, king_to_sq);
-            self.move_piece_on_board(Piece::Rook, Colour::White, rook_from_sq, rook_to_sq);
-        } else {
-            self.move_piece_on_board(Piece::King, Colour::Black, king_from_sq, king_to_sq);
-            self.move_piece_on_board(Piece::Rook, Colour::Black, rook_from_sq, rook_to_sq);
-        }
-
-        self.clear_castle_permissions_for_colour(colour);
     }
     fn clear_castle_permissions_for_colour(&mut self, col: Colour) {
         match col {
@@ -727,7 +742,7 @@ mod tests {
 
         let before_hash = pos.game_state.position_hash;
 
-        let mv = Move::encode_move_quiet(Square::E5, Square::E6, Piece::Pawn);
+        let mv = Move::encode_move(Square::E5, Square::E6);
 
         // check before move
         assert!(is_piece_on_square_as_expected(
@@ -772,7 +787,7 @@ mod tests {
 
         // initially no history
         assert_eq!(pos.position_history.len(), 0);
-        let mv = Move::encode_move_quiet(Square::E5, Square::E6, Piece::Pawn);
+        let mv = Move::encode_move(Square::E5, Square::E6);
         pos.make_move(&mv);
 
         // history updated
@@ -802,7 +817,7 @@ mod tests {
 
         // initially correct side
         assert_eq!(pos.game_state.side_to_move, Colour::White);
-        let mv = Move::encode_move_quiet(Square::E5, Square::E6, Piece::Pawn);
+        let mv = Move::encode_move(Square::E5, Square::E6);
         pos.make_move(&mv);
 
         assert_eq!(pos.game_state.side_to_move, Colour::Black);
@@ -835,7 +850,7 @@ mod tests {
         // set to some random value
         pos.game_state.fifty_move_cntr = 21;
 
-        let mv = Move::encode_move_capture(Square::B5, Square::C6, Piece::Bishop);
+        let mv = Move::encode_move(Square::B5, Square::C6);
         pos.make_move(&mv);
 
         assert_eq!(0, pos.game_state.fifty_move_cntr);
@@ -874,7 +889,7 @@ mod tests {
         // set to some value
         pos.game_state.fifty_move_cntr = 21;
 
-        let mv = Move::encode_move_quiet(Square::E5, Square::E6, Piece::Pawn);
+        let mv = Move::encode_move(Square::E5, Square::E6);
         pos.make_move(&mv);
 
         assert_eq!(0, pos.game_state.fifty_move_cntr);
@@ -914,7 +929,7 @@ mod tests {
         pos.game_state.fifty_move_cntr = 21;
         let expected_cntr_val = pos.game_state.fifty_move_cntr + 1;
 
-        let mv = Move::encode_move_quiet(Square::C4, Square::D5, Piece::Bishop);
+        let mv = Move::encode_move(Square::C4, Square::D5);
         pos.make_move(&mv);
 
         assert_eq!(expected_cntr_val, pos.game_state.fifty_move_cntr);
@@ -949,7 +964,7 @@ mod tests {
 
         let expected_half_move = pos.game_state.move_cntr.half_move() + 1;
 
-        let mv = Move::encode_move_quiet(Square::C4, Square::D5, Piece::Bishop);
+        let mv = Move::encode_move(Square::C4, Square::D5);
         pos.make_move(&mv);
 
         assert_eq!(expected_half_move, pos.game_state.move_cntr.half_move());
@@ -984,7 +999,7 @@ mod tests {
         ));
 
         // set to some value
-        let mv = Move::encode_move_double_pawn_first(Square::F2, Square::F4);
+        let mv = Move::encode_move(Square::F2, Square::F4);
         pos.make_move(&mv);
 
         assert_eq!(pos.game_state.en_pass_sq.unwrap(), Square::F3);
@@ -1028,7 +1043,7 @@ mod tests {
         ));
 
         // set to some value
-        let mv = Move::encode_move_double_pawn_first(Square::D7, Square::D5);
+        let mv = Move::encode_move(Square::D7, Square::D5);
         pos.make_move(&mv);
 
         assert_eq!(pos.game_state.en_pass_sq, Some(Square::D6));
@@ -1400,7 +1415,7 @@ mod tests {
                 Colour::Black
             ));
 
-            let mv = Move::encode_move_with_promotion_capture(Square::E7, Square::F8, target);
+            let mv = Move::encode_move_with_promotion(Square::E7, Square::F8, target);
             pos.make_move(&mv);
 
             assert!(is_sq_empty(&pos, Square::E7));
@@ -1445,7 +1460,7 @@ mod tests {
                 Colour::White
             ));
 
-            let mv = Move::encode_move_with_promotion_capture(Square::D2, Square::C1, target);
+            let mv = Move::encode_move_with_promotion(Square::D2, Square::C1, target);
             pos.make_move(&mv);
 
             assert!(is_sq_empty(&pos, Square::D2));
@@ -1722,7 +1737,7 @@ mod tests {
         assert!(pos.castle_permissions().is_white_king_set());
         assert!(pos.castle_permissions().is_white_queen_set());
 
-        let mv = Move::encode_move_quiet(Square::E1, Square::E2, Piece::King);
+        let mv = Move::encode_move(Square::E1, Square::E2);
 
         let move_legality = pos.make_move(&mv);
         assert_eq!(move_legality, MoveLegality::Legal);
@@ -1756,7 +1771,7 @@ mod tests {
         assert!(pos.castle_permissions().is_white_king_set());
         assert!(pos.castle_permissions().is_white_queen_set());
 
-        let mv = Move::encode_move_quiet(Square::H1, Square::G1, Piece::Rook);
+        let mv = Move::encode_move(Square::H1, Square::G1);
 
         let move_legality = pos.make_move(&mv);
         assert_eq!(move_legality, MoveLegality::Legal);
@@ -1790,7 +1805,7 @@ mod tests {
         assert!(pos.castle_permissions().is_white_king_set());
         assert!(pos.castle_permissions().is_white_queen_set());
 
-        let mv = Move::encode_move_quiet(Square::A1, Square::B1, Piece::Rook);
+        let mv = Move::encode_move(Square::A1, Square::B1);
 
         let move_legality = pos.make_move(&mv);
         assert_eq!(move_legality, MoveLegality::Legal);
@@ -1824,7 +1839,7 @@ mod tests {
         assert!(pos.castle_permissions().is_black_king_set());
         assert!(pos.castle_permissions().is_black_queen_set());
 
-        let mv = Move::encode_move_quiet(Square::E8, Square::E7, Piece::King);
+        let mv = Move::encode_move(Square::E8, Square::E7);
 
         let move_legality = pos.make_move(&mv);
         assert_eq!(move_legality, MoveLegality::Legal);
@@ -1858,7 +1873,7 @@ mod tests {
         assert!(pos.castle_permissions().is_black_king_set());
         assert!(pos.castle_permissions().is_black_queen_set());
 
-        let mv = Move::encode_move_quiet(Square::H8, Square::G8, Piece::Rook);
+        let mv = Move::encode_move(Square::H8, Square::G8);
 
         let move_legality = pos.make_move(&mv);
         assert_eq!(move_legality, MoveLegality::Legal);
@@ -1892,7 +1907,7 @@ mod tests {
         assert!(pos.castle_permissions().is_black_king_set());
         assert!(pos.castle_permissions().is_black_queen_set());
 
-        let mv = Move::encode_move_quiet(Square::A8, Square::B8, Piece::Rook);
+        let mv = Move::encode_move(Square::A8, Square::B8);
 
         let move_legality = pos.make_move(&mv);
         assert_eq!(move_legality, MoveLegality::Legal);
@@ -1908,9 +1923,9 @@ mod tests {
         let ml = vec![
             Move::encode_move_castle_kingside_white(),
             Move::encode_move_castle_queenside_white(),
-            Move::encode_move_capture(Square::E8, Square::G7, Piece::Knight),
-            Move::encode_move_quiet(Square::B5, Square::B6, Piece::Pawn),
-            Move::encode_move_double_pawn_first(Square::C2, Square::C4),
+            Move::encode_move(Square::E8, Square::G7),
+            Move::encode_move(Square::B5, Square::B6),
+            Move::encode_move(Square::C2, Square::C4),
         ];
 
         let (board1, move_cntr1, castle_permissions1, side_to_move1, en_pass_sq1) =
@@ -1966,9 +1981,9 @@ mod tests {
         let ml = vec![
             Move::encode_move_castle_kingside_black(),
             Move::encode_move_castle_queenside_black(),
-            Move::encode_move_capture(Square::C7, Square::B6, Piece::Bishop),
-            Move::encode_move_quiet(Square::F7, Square::F6, Piece::Pawn),
-            Move::encode_move_double_pawn_first(Square::F7, Square::F6),
+            Move::encode_move(Square::C7, Square::B6),
+            Move::encode_move(Square::F7, Square::F6),
+            Move::encode_move(Square::F7, Square::F6),
         ];
 
         let (board1, move_cntr1, castle_permissions1, side_to_move1, en_pass_sq1) =
@@ -2010,10 +2025,15 @@ mod tests {
         assert_eq!(pos1, pos2);
 
         for mv in ml {
+            println!("board pre-move : {}", pos1.board());
+            println!("making move : {}", mv);
+
             pos1.make_move(&mv);
             assert_ne!(pos1, pos2);
+            println!("board post-move : {}", pos1.board());
 
             pos1.take_move();
+            println!("board after take-move : {}", pos1.board());
 
             assert_eq!(pos1, pos2);
         }
@@ -2048,7 +2068,7 @@ mod tests {
         expected_hash ^= zobrist_keys.en_passant(Square::B3);
         expected_hash ^= zobrist_keys.side();
 
-        let wp_double_mv = Move::encode_move_double_pawn_first(Square::B2, Square::B4);
+        let wp_double_mv = Move::encode_move(Square::B2, Square::B4);
         pos.make_move(&wp_double_mv);
 
         assert!(init_hash != pos.position_hash());
@@ -2084,7 +2104,7 @@ mod tests {
         expected_hash ^= zobrist_keys.en_passant(Square::B6);
         expected_hash ^= zobrist_keys.side();
 
-        let bp_double_mv = Move::encode_move_double_pawn_first(Square::B7, Square::B5);
+        let bp_double_mv = Move::encode_move(Square::B7, Square::B5);
         pos.make_move(&bp_double_mv);
 
         assert!(init_hash != pos.position_hash());
@@ -2119,7 +2139,7 @@ mod tests {
         expected_hash ^= zobrist_keys.piece_square(Piece::Knight, Colour::White, Square::G4);
         expected_hash ^= zobrist_keys.side();
 
-        let wp_double_mv = Move::encode_move_quiet(Square::F2, Square::G4, Piece::Knight);
+        let wp_double_mv = Move::encode_move(Square::F2, Square::G4);
         pos.make_move(&wp_double_mv);
 
         assert!(init_hash != pos.position_hash());
@@ -2153,7 +2173,7 @@ mod tests {
         expected_hash ^= zobrist_keys.piece_square(Piece::Knight, Colour::Black, Square::D7);
         expected_hash ^= zobrist_keys.side();
 
-        let wp_double_mv = Move::encode_move_quiet(Square::D7, Square::F6, Piece::Knight);
+        let wp_double_mv = Move::encode_move(Square::D7, Square::F6);
         pos.make_move(&wp_double_mv);
 
         assert!(init_hash != pos.position_hash());

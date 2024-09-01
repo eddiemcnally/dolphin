@@ -25,6 +25,7 @@ pub struct Material {
 #[derive(Eq, PartialEq)]
 pub struct Board {
     colour_info: [ColourInfo; Colour::NUM_COLOURS],
+    pieces: [Option<Piece>; Board::NUM_SQUARES],
 }
 
 impl Board {
@@ -41,6 +42,9 @@ impl Board {
         self.colour_info[col_off].piece_bb[pce_off].set_bit(sq);
         self.colour_info[col_off].colour_bb.set_bit(sq);
         self.colour_info[col_off].material += piece.value();
+
+        self.pieces[sq.as_index()] = Some(piece);
+
         if piece == Piece::King {
             self.colour_info[colour.as_index()].king_sq = sq;
         }
@@ -53,6 +57,8 @@ impl Board {
         self.colour_info[col_off].piece_bb[pce_off].clear_bit(sq);
         self.colour_info[col_off].colour_bb.clear_bit(sq);
         self.colour_info[col_off].material -= piece.value();
+
+        self.pieces[sq.as_index()] = None;
     }
 
     pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece, colour: Colour) {
@@ -68,6 +74,9 @@ impl Board {
         let col_bb = &mut self.colour_info[col_offset].colour_bb;
         *col_bb ^= from_bb;
         *col_bb ^= to_bb;
+
+        self.pieces[from_sq.as_index()] = None;
+        self.pieces[to_sq.as_index()] = Some(piece);
 
         if piece == Piece::King {
             self.colour_info[col_offset].king_sq = to_sq;
@@ -92,34 +101,7 @@ impl Board {
     }
 
     pub fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
-        if self.get_bitboard().is_clear(sq) {
-            return None;
-        }
-
-        let col_info = if self.colour_info[Colour::White.as_index()]
-            .colour_bb
-            .is_set(sq)
-        {
-            &self.colour_info[Colour::White.as_index()]
-        } else {
-            &self.colour_info[Colour::Black.as_index()]
-        };
-
-        if col_info.piece_bb[Piece::Pawn.as_index()].is_set(sq) {
-            return Some(Piece::Pawn);
-        } else if col_info.piece_bb[Piece::Bishop.as_index()].is_set(sq) {
-            return Some(Piece::Bishop);
-        } else if col_info.piece_bb[Piece::Knight.as_index()].is_set(sq) {
-            return Some(Piece::Knight);
-        } else if col_info.piece_bb[Piece::Rook.as_index()].is_set(sq) {
-            return Some(Piece::Rook);
-        } else if col_info.piece_bb[Piece::Queen.as_index()].is_set(sq) {
-            return Some(Piece::Queen);
-        } else if col_info.piece_bb[Piece::King.as_index()].is_set(sq) {
-            return Some(Piece::King);
-        }
-
-        None
+        self.pieces[sq.as_index()]
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
@@ -208,6 +190,7 @@ impl Default for Board {
     fn default() -> Self {
         Board {
             colour_info: [ColourInfo::default(); Colour::NUM_COLOURS],
+            pieces: [None; Board::NUM_SQUARES],
         }
     }
 }

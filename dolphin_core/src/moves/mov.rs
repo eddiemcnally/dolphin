@@ -1,55 +1,48 @@
 use crate::board::piece::Piece;
 use crate::board::square::Square;
+use enumn::N;
 use std::fmt;
 
-#[derive(Eq, PartialEq, Copy, Clone, Hash)]
+#[rustfmt::skip]
+#[derive(Eq, PartialEq, Copy, Clone, Hash, N)]
+enum PromotionTypes {
+    Bishop  = 0b0000_0000_0000_0000,
+    Knight  = 0b0100_0000_0000_0000,
+    Rook    = 0b1000_0000_0000_0000,
+    Queen   = 0b1100_0000_0000_0000,
+}
+
+#[rustfmt::skip]
+#[derive(Eq, PartialEq, Copy, Clone, Hash, N)]
 pub enum MoveType {
-    Quiet,
-    DoublePawn,
-    KingCastle,
-    QueenCastle,
-    Capture,
-    EnPassant,
-    PromoteBishop,
-    PromoteKnight,
-    PromoteRook,
-    PromoteQueen,
-    PromoteBishopCapture,
-    PromoteKnightCapture,
-    PromoteRookCapture,
-    PromoteQueenCapture,
+    Normal      = 0b0000_0000_0000_0000,
+    Promotion   = 0b0001_0000_0000_0000,
+    EnPassant   = 0b0010_0000_0000_0000,
+    Castle      = 0b0011_0000_0000_0000,
 }
 
-impl MoveType {
-    pub const fn decode_promotion_role(&self) -> Option<Piece> {
-        match self {
-            MoveType::PromoteBishop | MoveType::PromoteBishopCapture => Some(Piece::Bishop),
-            MoveType::PromoteKnight | MoveType::PromoteKnightCapture => Some(Piece::Knight),
-            MoveType::PromoteRook | MoveType::PromoteRookCapture => Some(Piece::Rook),
-            MoveType::PromoteQueen | MoveType::PromoteQueenCapture => Some(Piece::Queen),
-            _ => None,
-        }
-    }
-
-    pub const fn is_capture(&self) -> bool {
-        matches!(
-            self,
-            MoveType::Capture
-                | MoveType::EnPassant
-                | MoveType::PromoteBishopCapture
-                | MoveType::PromoteKnightCapture
-                | MoveType::PromoteQueenCapture
-                | MoveType::PromoteRookCapture
-        )
-    }
+enum BitShift {
+    FromSq = 0,
+    ToSq = 6,
 }
 
-#[derive(Eq, PartialEq, Copy, Clone, Hash)]
+#[rustfmt::skip]
+enum BitMask{
+    FromSq      = 0b0000_0000_0011_1111,
+    ToSq        = 0b0000_1111_1100_0000,
+    MoveType    = 0b0011_0000_0000_0000,
+    PromoTarget = 0b1100_0000_0000_0000,
+}
+
+// Move bits (copied from StockFish)
+// xxxx xxxx xxxx xxxx
+// ---- ---- --xx xxxx  source (from) square
+// ---- xxxx xx-- ----  target (to) square
+// --XX ---- ---- ----  Promotion target (00 bishop, 01 knight, 10 rook, 11 Queen)
+// xx-- ---- ---- ----  Flags (01 promotion, 10 en passant, 11 castling)
+#[derive(Eq, PartialEq, Copy, Clone, Hash, Default)]
 pub struct Move {
-    from_sq: Square,
-    to_sq: Square,
-    move_type: MoveType,
-    pce_to_move: Piece,
+    bits: u16,
 }
 
 #[derive(Eq, PartialEq, Copy, Clone, Hash)]
@@ -76,36 +69,23 @@ pub type Score = i16;
 
 impl Move {
     pub fn from_sq(&self) -> Square {
-        self.from_sq
+        let bits = (self.bits & BitMask::FromSq as u16) >> BitShift::FromSq as u16;
+        Square::new(bits as u8).unwrap()
     }
 
     pub fn to_sq(&self) -> Square {
-        self.to_sq
+        let bits = (self.bits & BitMask::ToSq as u16) >> BitShift::ToSq as u16;
+        Square::new(bits as u8).unwrap()
     }
 
     pub fn move_type(&self) -> MoveType {
-        self.move_type
+        let bits = self.bits & BitMask::MoveType as u16;
+        MoveType::n(bits).expect("Invalid move type")
     }
 
-    pub fn piece_to_move(&self) -> Piece {
-        self.pce_to_move
-    }
-
-    pub const fn encode_move_quiet(from_sq: Square, to_sq: Square, pce_to_move: Piece) -> Move {
+    pub const fn encode_move(from_sq: Square, to_sq: Square) -> Move {
         Move {
-            from_sq,
-            to_sq,
-            move_type: MoveType::Quiet,
-            pce_to_move,
-        }
-    }
-
-    pub const fn encode_move_capture(from_sq: Square, to_sq: Square, pce_to_move: Piece) -> Move {
-        Move {
-            from_sq,
-            to_sq,
-            move_type: MoveType::Capture,
-            pce_to_move,
+            bits: Self::encode_from_to_sq(from_sq, to_sq),
         }
     }
 
@@ -115,38 +95,18 @@ impl Move {
         promotion_role: Piece,
     ) -> Move {
         let mt = match promotion_role {
-            Piece::Knight => MoveType::PromoteKnight,
-            Piece::Bishop => MoveType::PromoteBishop,
-            Piece::Rook => MoveType::PromoteRook,
-            Piece::Queen => MoveType::PromoteQueen,
+            Piece::Knight => PromotionTypes::Knight,
+            Piece::Bishop => PromotionTypes::Bishop,
+            Piece::Rook => PromotionTypes::Rook,
+            Piece::Queen => PromotionTypes::Queen,
             _ => panic!("Invalid promotion piece"),
         };
-        Move {
-            from_sq,
-            to_sq,
-            move_type: mt,
-            pce_to_move: Piece::Pawn,
-        }
-    }
 
-    pub const fn encode_move_with_promotion_capture(
-        from_sq: Square,
-        to_sq: Square,
-        promotion_role: Piece,
-    ) -> Move {
-        let mt = match promotion_role {
-            Piece::Knight => MoveType::PromoteKnightCapture,
-            Piece::Bishop => MoveType::PromoteBishopCapture,
-            Piece::Rook => MoveType::PromoteRookCapture,
-            Piece::Queen => MoveType::PromoteQueenCapture,
-            _ => panic!("Invalid promotion piece"),
-        };
-        Move {
-            from_sq,
-            to_sq,
-            move_type: mt,
-            pce_to_move: Piece::Pawn,
-        }
+        let mut bits = Self::encode_from_to_sq(from_sq, to_sq);
+        bits |= mt as u16;
+        bits |= MoveType::Promotion as u16;
+
+        Move { bits }
     }
 
     /// Encodes an En Passant move given the "from" and "to" squares
@@ -157,76 +117,77 @@ impl Move {
     /// * `to_sq`           - the to square
     ///
     pub const fn encode_move_en_passant(from_sq: Square, to_sq: Square) -> Move {
-        Move {
-            from_sq,
-            to_sq,
-            move_type: MoveType::EnPassant,
-            pce_to_move: Piece::Pawn,
-        }
-    }
+        let mut bits = Self::encode_from_to_sq(from_sq, to_sq);
+        bits |= MoveType::EnPassant as u16;
 
-    /// Encodes a Double Pawn first move
-    ///
-    /// # Arguments
-    ///
-    /// * `from_sq`         - the from squareClone,
-    /// * `to_sq`           - the to square
-    ///
-    pub const fn encode_move_double_pawn_first(from_sq: Square, to_sq: Square) -> Move {
-        Move {
-            from_sq,
-            to_sq,
-            move_type: MoveType::DoublePawn,
-            pce_to_move: Piece::Pawn,
-        }
+        Move { bits }
     }
 
     /// Encodes a White King-side castle move
     ///
     pub const fn encode_move_castle_kingside_white() -> Move {
-        Move {
-            from_sq: Square::E1,
-            to_sq: Square::G1,
-            move_type: MoveType::KingCastle,
-            pce_to_move: Piece::King,
-        }
+        let mut bits = Self::encode_from_to_sq(Square::E1, Square::G1);
+        bits |= MoveType::Castle as u16;
+
+        Move { bits }
     }
 
     /// Encodes a Black King-side castle move
     ///
     pub const fn encode_move_castle_kingside_black() -> Move {
-        Move {
-            from_sq: Square::E8,
-            to_sq: Square::G8,
-            move_type: MoveType::KingCastle,
-            pce_to_move: Piece::King,
-        }
+        let mut bits = Self::encode_from_to_sq(Square::E8, Square::G8);
+        bits |= MoveType::Castle as u16;
+
+        Move { bits }
     }
 
     /// Encodes a White Queen-side castle move
     ///
     pub const fn encode_move_castle_queenside_white() -> Move {
-        Move {
-            from_sq: Square::E1,
-            to_sq: Square::C1,
-            move_type: MoveType::QueenCastle,
-            pce_to_move: Piece::King,
-        }
+        let mut bits = Self::encode_from_to_sq(Square::E1, Square::C1);
+        bits |= MoveType::Castle as u16;
+
+        Move { bits }
     }
 
     /// Encodes a Black Queen-side castle move
     ///
     pub const fn encode_move_castle_queenside_black() -> Move {
-        Move {
-            from_sq: Square::E8,
-            to_sq: Square::C8,
-            move_type: MoveType::QueenCastle,
-            pce_to_move: Piece::King,
-        }
+        let mut bits = Self::encode_from_to_sq(Square::E8, Square::C8);
+        bits |= MoveType::Castle as u16;
+
+        Move { bits }
     }
 
     pub fn print_move(&self) {
-        println!("From {:?}, To {:?}", self.from_sq, self.to_sq);
+        let (from_sq, to_sq) = self.decode_from_to_sq();
+        println!("From {:?}, To {:?}", from_sq, to_sq);
+    }
+
+    const fn encode_from_to_sq(from_sq: Square, to_sq: Square) -> u16 {
+        let mut bits = (from_sq.as_index() as u16) << BitShift::FromSq as usize;
+        bits = bits | ((to_sq.as_index() as u16) << BitShift::ToSq as usize);
+        bits
+    }
+
+    pub fn decode_from_to_sq(&self) -> (Square, Square) {
+        let from_sq = (self.bits & BitMask::FromSq as u16) >> BitShift::FromSq as usize;
+        let to_sq = (self.bits & BitMask::ToSq as u16) >> BitShift::ToSq as usize;
+        (
+            Square::new(from_sq as u8).expect("Bad from_sq"),
+            Square::new(to_sq as u8).expect("bad to_sq"),
+        )
+    }
+
+    pub fn decode_promotion_piece(&self) -> Piece {
+        let pp = self.bits & BitMask::PromoTarget as u16;
+        let promo_type = PromotionTypes::n(pp).expect("Invalid promotion type");
+        match promo_type {
+            PromotionTypes::Bishop => return Piece::Bishop,
+            PromotionTypes::Knight => return Piece::Knight,
+            PromotionTypes::Rook => return Piece::Rook,
+            PromotionTypes::Queen => return Piece::Queen,
+        }
     }
 }
 
@@ -234,28 +195,13 @@ impl fmt::Debug for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_str = String::new();
 
-        debug_str.push_str(&format!("[{}", self.from_sq.file()));
-        debug_str.push_str(&format!("{}->", self.from_sq.rank()));
-        debug_str.push_str(&format!("{}", self.to_sq.file()));
-        debug_str.push_str(&format!("{} ", self.to_sq.rank()));
+        let from_sq = self.from_sq();
+        let to_sq = self.to_sq();
 
-        let mt = match self.move_type {
-            MoveType::Quiet => "Quiet",
-            MoveType::DoublePawn => "DoublePawn",
-            MoveType::KingCastle => "KingCastle",
-            MoveType::QueenCastle => "QueenCastle",
-            MoveType::Capture => "Capture",
-            MoveType::EnPassant => "EnPassant",
-            MoveType::PromoteBishop => "PromoteBishop",
-            MoveType::PromoteKnight => "PromoteKnight",
-            MoveType::PromoteRook => "PromoteRook",
-            MoveType::PromoteQueen => "PromoteQueen",
-            MoveType::PromoteBishopCapture => "PromoteBishopCapture",
-            MoveType::PromoteKnightCapture => "PromoteKnightCapture",
-            MoveType::PromoteRookCapture => "PromoteRookCapture",
-            MoveType::PromoteQueenCapture => "PromoteQueenCapture",
-        };
-        debug_str.push_str(&format!(" : {}]", mt));
+        debug_str.push_str(&format!("[{}", from_sq.file()));
+        debug_str.push_str(&format!("{}->", from_sq.rank()));
+        debug_str.push_str(&format!("{}", to_sq.file()));
+        debug_str.push_str(&format!("{} ", to_sq.rank()));
 
         write!(f, "{}", debug_str)
     }
@@ -264,17 +210,6 @@ impl fmt::Debug for Move {
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self, f)
-    }
-}
-
-impl Default for Move {
-    fn default() -> Move {
-        Move {
-            from_sq: Square::A1,
-            to_sq: Square::B1,
-            move_type: MoveType::Quiet,
-            pce_to_move: Piece::Pawn,
-        }
     }
 }
 
@@ -288,32 +223,32 @@ pub mod tests {
     pub fn encode_decode_king_white_castle() {
         let mv = Move::encode_move_castle_kingside_white();
 
-        assert_eq!(mv.from_sq, Square::E1);
-        assert_eq!(mv.to_sq, Square::G1);
+        assert_eq!(mv.from_sq(), Square::E1);
+        assert_eq!(mv.to_sq(), Square::G1);
     }
 
     #[test]
     pub fn encode_decode_queen_white_castle() {
         let mv = Move::encode_move_castle_queenside_white();
 
-        assert_eq!(mv.from_sq, Square::E1);
-        assert_eq!(mv.to_sq, Square::C1);
+        assert_eq!(mv.from_sq(), Square::E1);
+        assert_eq!(mv.to_sq(), Square::C1);
     }
 
     #[test]
     pub fn encode_decode_king_black_castle() {
         let mv = Move::encode_move_castle_kingside_black();
 
-        assert_eq!(mv.from_sq, Square::E8);
-        assert_eq!(mv.to_sq, Square::G8);
+        assert_eq!(mv.from_sq(), Square::E8);
+        assert_eq!(mv.to_sq(), Square::G8);
     }
 
     #[test]
     pub fn encode_decode_queen_black_castle() {
         let mv = Move::encode_move_castle_queenside_black();
 
-        assert_eq!(mv.from_sq, Square::E8);
-        assert_eq!(mv.to_sq, Square::C8);
+        assert_eq!(mv.from_sq(), Square::E8);
+        assert_eq!(mv.to_sq(), Square::C8);
     }
 
     #[test]
@@ -325,28 +260,30 @@ pub mod tests {
                 }
 
                 // encode
-                let mv = Move::encode_move_quiet(*from_sq, *to_sq, Piece::Bishop);
+                let mv = Move::encode_move(*from_sq, *to_sq);
 
-                assert_eq!(mv.from_sq, *from_sq);
-                assert_eq!(mv.to_sq, *to_sq);
+                assert_eq!(mv.from_sq(), *from_sq);
+                assert_eq!(mv.to_sq(), *to_sq);
             }
         }
     }
 
     #[test]
-    pub fn encode_decode_double_pawn_first_move() {
-        for from_sq in Square::iterator() {
-            for to_sq in Square::iterator() {
-                if *from_sq == *to_sq {
-                    continue;
-                }
+    pub fn encode_decode_promotion_piece() {
+        let from_sq = Square::D2;
+        let to_sq = Square::D1;
 
-                let mv = Move::encode_move_double_pawn_first(*from_sq, *to_sq);
+        let mut mv = Move::encode_move_with_promotion(from_sq, to_sq, Piece::Bishop);
+        assert_eq!(mv.decode_promotion_piece(), Piece::Bishop);
 
-                assert_eq!(mv.from_sq, *from_sq);
-                assert_eq!(mv.to_sq, *to_sq);
-            }
-        }
+        mv = Move::encode_move_with_promotion(from_sq, to_sq, Piece::Knight);
+        assert_eq!(mv.decode_promotion_piece(), Piece::Knight);
+
+        mv = Move::encode_move_with_promotion(from_sq, to_sq, Piece::Rook);
+        assert_eq!(mv.decode_promotion_piece(), Piece::Rook);
+
+        mv = Move::encode_move_with_promotion(from_sq, to_sq, Piece::Queen);
+        assert_eq!(mv.decode_promotion_piece(), Piece::Queen);
     }
 
     #[test]
@@ -359,53 +296,8 @@ pub mod tests {
 
                 let mv = Move::encode_move_en_passant(*from_sq, *to_sq);
 
-                assert_eq!(mv.from_sq, *from_sq);
-                assert_eq!(mv.to_sq, *to_sq);
-            }
-        }
-    }
-
-    #[test]
-    pub fn encode_decode_promotion_move_non_capture() {
-        let target_promotions = [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
-
-        for from_sq in Square::iterator() {
-            for to_sq in Square::iterator() {
-                if *from_sq == *to_sq {
-                    continue;
-                }
-
-                for role in target_promotions.iter() {
-                    let mv = Move::encode_move_with_promotion(*from_sq, *to_sq, *role);
-
-                    let decoded_role = mv.move_type.decode_promotion_role();
-                    assert_eq!(decoded_role.unwrap(), *role);
-
-                    assert_eq!(mv.from_sq, *from_sq);
-                    assert_eq!(mv.to_sq, *to_sq);
-                }
-            }
-        }
-    }
-
-    #[test]
-    pub fn encode_decode_promotion_move_capture() {
-        let target_promotions = [Piece::Bishop, Piece::Knight, Piece::Rook, Piece::Queen];
-
-        for from_sq in Square::iterator() {
-            for to_sq in Square::iterator() {
-                if *from_sq == *to_sq {
-                    continue;
-                }
-
-                for role in target_promotions.iter() {
-                    let mv = Move::encode_move_with_promotion_capture(*from_sq, *to_sq, *role);
-
-                    let decoded_role = mv.move_type.decode_promotion_role();
-                    assert_eq!(decoded_role.unwrap(), *role);
-                    assert_eq!(mv.from_sq, *from_sq);
-                    assert_eq!(mv.to_sq, *to_sq);
-                }
+                assert_eq!(mv.from_sq(), *from_sq);
+                assert_eq!(mv.to_sq(), *to_sq);
             }
         }
     }

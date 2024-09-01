@@ -85,7 +85,6 @@ impl MoveList {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::board::piece::Piece;
     use crate::board::square::Square;
     use crate::moves::mov::Move;
     use crate::moves::move_list::MoveList;
@@ -111,11 +110,11 @@ pub mod tests {
     #[test]
     pub fn push_moves_contains_as_expected() {
         let mvs = [
-            Move::encode_move_quiet(Square::H7, Square::H5, Piece::Pawn),
-            Move::encode_move_quiet(Square::B4, Square::C5, Piece::Bishop),
-            Move::encode_move_quiet(Square::A3, Square::A2, Piece::Queen),
-            Move::encode_move_quiet(Square::D6, Square::E8, Piece::King),
-            Move::encode_move_quiet(Square::B6, Square::B7, Piece::Knight),
+            Move::encode_move(Square::H7, Square::H5),
+            Move::encode_move(Square::B4, Square::C5),
+            Move::encode_move(Square::A3, Square::A2),
+            Move::encode_move(Square::D6, Square::E8),
+            Move::encode_move(Square::B6, Square::B7),
         ];
 
         let mut ml = MoveList::new();
@@ -131,11 +130,11 @@ pub mod tests {
     #[test]
     pub fn push_moves_iterator_as_expected() {
         let mvs = [
-            Move::encode_move_quiet(Square::H7, Square::H5, Piece::Pawn),
-            Move::encode_move_quiet(Square::B4, Square::C5, Piece::Bishop),
-            Move::encode_move_quiet(Square::A3, Square::A2, Piece::Queen),
-            Move::encode_move_quiet(Square::D6, Square::E8, Piece::King),
-            Move::encode_move_quiet(Square::B6, Square::B7, Piece::Knight),
+            Move::encode_move(Square::H7, Square::H5),
+            Move::encode_move(Square::B4, Square::C5),
+            Move::encode_move(Square::A3, Square::A2),
+            Move::encode_move(Square::D6, Square::E8),
+            Move::encode_move(Square::B6, Square::B7),
         ];
 
         let mut ml = MoveList::new();
@@ -154,11 +153,11 @@ pub mod tests {
     #[test]
     pub fn push_moves_len_as_expected() {
         let mvs = [
-            Move::encode_move_quiet(Square::H7, Square::H5, Piece::Pawn),
-            Move::encode_move_quiet(Square::B4, Square::C5, Piece::Bishop),
-            Move::encode_move_quiet(Square::A3, Square::A2, Piece::Queen),
-            Move::encode_move_quiet(Square::D6, Square::E8, Piece::King),
-            Move::encode_move_quiet(Square::B6, Square::B7, Piece::Knight),
+            Move::encode_move(Square::H7, Square::H5),
+            Move::encode_move(Square::B4, Square::C5),
+            Move::encode_move(Square::A3, Square::A2),
+            Move::encode_move(Square::D6, Square::E8),
+            Move::encode_move(Square::B6, Square::B7),
         ];
 
         let mut ml = MoveList::new();

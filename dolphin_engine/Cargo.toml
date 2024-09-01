@@ -8,4 +8,4 @@ edition = "2018"
 
 [dependencies]
 dolphin_core = { path = "../dolphin_core" }
-core_affinity = "0.5.10"
+core_affinity = "0.8.1"
