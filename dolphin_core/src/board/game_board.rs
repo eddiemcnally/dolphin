@@ -45,8 +45,9 @@ impl Board {
 
         self.pieces[sq.as_index()] = Some(piece);
 
-        if piece == Piece::King {
-            self.colour_info[colour.as_index()].king_sq = sq;
+        match piece {
+            Piece::King => self.colour_info[colour.as_index()].king_sq = sq,
+            _ => (),
         }
     }
 
@@ -67,19 +68,19 @@ impl Board {
         let from_bb = Bitboard::from_square(from_sq);
         let to_bb = Bitboard::from_square(to_sq);
 
-        let pce_bb: &mut Bitboard = &mut self.colour_info[col_offset].piece_bb[pce_offset];
-        *pce_bb ^= from_bb;
-        *pce_bb ^= to_bb;
+        let col_info = &mut self.colour_info[col_offset];
 
-        let col_bb = &mut self.colour_info[col_offset].colour_bb;
-        *col_bb ^= from_bb;
-        *col_bb ^= to_bb;
+        col_info.piece_bb[pce_offset] ^= from_bb;
+        col_info.piece_bb[pce_offset] ^= to_bb;
+        col_info.colour_bb ^= from_bb;
+        col_info.colour_bb ^= to_bb;
 
         self.pieces[from_sq.as_index()] = None;
         self.pieces[to_sq.as_index()] = Some(piece);
 
-        if piece == Piece::King {
-            self.colour_info[col_offset].king_sq = to_sq;
+        match piece {
+            Piece::King => self.colour_info[colour.as_index()].king_sq = to_sq,
+            _ => (),
         }
     }
 

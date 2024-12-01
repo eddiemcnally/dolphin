@@ -96,55 +96,44 @@ impl Square {
 
     #[inline(always)]
     pub const fn new(num: u8) -> Option<Square> {
-        debug_assert!(num <= Square::H8.as_index() as u8);
-
-        if num <= Square::H8.0 {
-            return Some(Square(num));
+        match num {
+            0..=63 => Some(Square(num)),
+            _ => None,
         }
-        None
     }
 
-    #[inline(always)]
     pub const fn as_index(self) -> usize {
         self.0 as usize
     }
 
-    #[inline(always)]
     pub fn north_east(self) -> Option<Square> {
         Square::new(self.as_index() as u8 + 9)
     }
 
-    #[inline(always)]
     pub fn north_west(self) -> Option<Square> {
         Square::new(self.as_index() as u8 + 7)
     }
 
-    #[inline(always)]
     pub fn south_west(self) -> Option<Square> {
         Square::new(self.as_index() as u8 - 9)
     }
 
-    #[inline(always)]
     pub fn south_east(self) -> Option<Square> {
         Square::new(self.as_index() as u8 - 7)
     }
 
-    #[inline(always)]
     pub fn north(self) -> Option<Square> {
         Square::new(self.as_index() as u8 + 8)
     }
 
-    #[inline(always)]
     pub fn south(self) -> Option<Square> {
         Square::new(self.as_index() as u8 - 8)
     }
 
-    #[inline(always)]
     pub fn rank(self) -> Rank {
         Rank::new(self.rank_as_u8()).unwrap()
     }
 
-    #[inline(always)]
     pub fn file(self) -> File {
         File::new(self.file_as_u8()).unwrap()
     }

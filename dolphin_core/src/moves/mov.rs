@@ -52,15 +52,15 @@ pub struct ScoredMove {
 }
 
 impl ScoredMove {
-    pub fn new(mv: Move, score: Score) -> ScoredMove {
+    pub const fn new(mv: Move, score: Score) -> ScoredMove {
         ScoredMove { mv, score }
     }
 
-    pub fn get_move(&self) -> Move {
+    pub const fn get_move(&self) -> Move {
         self.mv
     }
 
-    pub fn get_score(&self) -> Score {
+    pub const fn get_score(&self) -> Score {
         self.score
     }
 }
@@ -68,12 +68,12 @@ impl ScoredMove {
 pub type Score = i16;
 
 impl Move {
-    pub fn from_sq(&self) -> Square {
+    pub const fn from_sq(&self) -> Square {
         let bits = (self.bits & BitMask::FromSq as u16) >> BitShift::FromSq as u16;
         Square::new(bits as u8).unwrap()
     }
 
-    pub fn to_sq(&self) -> Square {
+    pub const fn to_sq(&self) -> Square {
         let bits = (self.bits & BitMask::ToSq as u16) >> BitShift::ToSq as u16;
         Square::new(bits as u8).unwrap()
     }
