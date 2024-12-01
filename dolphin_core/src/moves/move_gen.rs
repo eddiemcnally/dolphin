@@ -24,232 +24,251 @@ impl MoveGenerator {
     pub fn generate_moves(&self, pos: &Position, move_list: &mut MoveList) -> u16 {
         let move_cnt_start = move_list.len();
 
-        if pos.side_to_move() == Colour::White {
-            self.generate_white_pawn_moves(pos, move_list);
-
-            // castle moves
-            if pos.castle_permissions().has_white_castle_permission() {
-                self.generate_white_castle_moves(pos, move_list);
+        match pos.side_to_move() {
+            Colour::White => {
+                self.generate_white_moves(pos, move_list);
+                // castle moves
+                if pos.castle_permissions().has_white_castle_permission() {
+                    self.generate_white_castle_moves(pos, move_list);
+                }
             }
-        } else {
-            // pawn
-            self.generate_black_pawn_moves(pos, move_list);
-
-            // castle moves
-            if pos.castle_permissions().has_black_castle_permission() {
-                self.generate_black_castle_moves(pos, move_list);
+            Colour::Black => {
+                self.generate_black_moves(pos, move_list);
+                // castle moves
+                if pos.castle_permissions().has_black_castle_permission() {
+                    self.generate_black_castle_moves(pos, move_list);
+                }
             }
         }
-
-        self.generate_non_sliding_moves(pos, move_list);
-        self.generate_sliding_moves(pos, move_list);
 
         let move_cnt_end = move_list.len();
 
         (move_cnt_end - move_cnt_start) as u16
     }
 
-    fn generate_white_pawn_moves(&self, pos: &Position, move_list: &mut MoveList) {
+    fn generate_white_moves(&self, pos: &Position, move_list: &mut MoveList) {
+        let wbb = pos.board().get_colour_bb(Colour::White);
+
+        for sq in wbb.iterator() {
+            let pce = pos.board().get_piece_on_square(sq).unwrap();
+
+            match pce {
+                Piece::Pawn => self.generate_white_pawn_moves(pos, sq, move_list),
+                Piece::Bishop => self.generate_diagonal_sliding_moves(pos, sq, move_list),
+                Piece::Knight => self.generate_knight_moves(pos, sq, move_list),
+                Piece::Rook => self.generate_vertical_horiz_sliding_moves(pos, sq, move_list),
+                Piece::Queen => {
+                    self.generate_diagonal_sliding_moves(pos, sq, move_list);
+                    self.generate_vertical_horiz_sliding_moves(pos, sq, move_list)
+                }
+                Piece::King => self.generate_king_moves(pos, sq, move_list),
+            }
+        }
+    }
+
+    fn generate_black_moves(&self, pos: &Position, move_list: &mut MoveList) {
+        let bbb = pos.board().get_colour_bb(Colour::Black);
+
+        for sq in bbb.iterator() {
+            let pce = pos.board().get_piece_on_square(sq).unwrap();
+
+            match pce {
+                Piece::Pawn => self.generate_black_pawn_moves(pos, sq, move_list),
+                Piece::Bishop => self.generate_diagonal_sliding_moves(pos, sq, move_list),
+                Piece::Knight => self.generate_knight_moves(pos, sq, move_list),
+                Piece::Rook => self.generate_vertical_horiz_sliding_moves(pos, sq, move_list),
+                Piece::Queen => {
+                    self.generate_diagonal_sliding_moves(pos, sq, move_list);
+                    self.generate_vertical_horiz_sliding_moves(pos, sq, move_list)
+                }
+                Piece::King => self.generate_king_moves(pos, sq, move_list),
+            }
+        }
+    }
+
+    fn generate_white_pawn_moves(&self, pos: &Position, from_sq: Square, move_list: &mut MoveList) {
         let all_bb = pos.board().get_bitboard();
         let all_opposing_bb = pos.board().get_colour_bb(Colour::Black);
-        let wp_bb = pos.board().get_piece_bitboard(Piece::Pawn, Colour::White);
 
-        wp_bb.iterator().for_each(|from_sq| {
-            let rank = from_sq.rank();
+        let rank = from_sq.rank();
 
-            match rank {
-                Rank::R1 | Rank::R8 => (),
-                Rank::R2 | Rank::R3 | Rank::R4 | Rank::R5 | Rank::R6 => {
-                    // quiet move
-                    let quiet_to_sq = from_sq.north().expect("Invalid nort() square");
-                    if all_bb.is_clear(quiet_to_sq) {
-                        let mv = Move::encode_move(from_sq, quiet_to_sq);
-                        move_list.push(mv);
-                    }
-
-                    // capture moves
-                    let capt_mask = pos
-                        .occupancy_masks()
-                        .get_occ_mask_white_pawn_attack_squares(from_sq);
-
-                    (capt_mask & all_opposing_bb).iterator().for_each(|to_sq| {
-                        let mv = Move::encode_move(from_sq, to_sq);
-                        move_list.push(mv);
-                    });
-
-                    // en passant move
-                    if let Some(en_sq) = pos.en_passant_square() {
-                        if capt_mask.is_set(en_sq) {
-                            // en passant sq can be "captured"
-                            let en_pass_mv = Move::encode_move_en_passant(from_sq, en_sq);
-                            move_list.push(en_pass_mv);
-                        }
-                    }
-                }
-                Rank::R7 => {
-                    // TODO - move into a ingle loop
-                    // quiet promotion
-                    let quiet_to_sq = from_sq.north().expect("Invalid north() square");
-                    if all_bb.is_clear(quiet_to_sq) {
-                        // free square ahead
-                        self.encode_promotion_moves(from_sq, quiet_to_sq, move_list);
-                    }
-
-                    // capture promotion
-                    let capt_mask = pos
-                        .occupancy_masks()
-                        .get_occ_mask_white_pawn_attack_squares(from_sq);
-                    let all_opposing_bb = pos.board().get_colour_bb(Colour::Black);
-                    (capt_mask & all_opposing_bb).iterator().for_each(|to_sq| {
-                        self.encode_promotion_moves(from_sq, to_sq, move_list);
-                    });
-                }
-                _ => (),
-            };
-        });
-
-        // do any double pawn first moves
-        (wp_bb & OccupancyMasks::RANK_2_BB)
-            .iterator()
-            .for_each(|from_sq| {
-                // double pawn moves
-                let double_first_move_sq_mask = pos
-                    .occupancy_masks()
-                    .get_occ_mask_white_pawns_double_move_mask(from_sq);
-
-                if (all_bb & double_first_move_sq_mask).is_empty() {
-                    // both squares free
-                    let to_sq = from_sq
-                        .north()
-                        .expect("Invalid north() square")
-                        .north()
-                        .expect("Invalid north/north square");
-
-                    let mv = Move::encode_move(from_sq, to_sq);
+        match rank {
+            Rank::R1 | Rank::R8 => (),
+            Rank::R2 | Rank::R3 | Rank::R4 | Rank::R5 | Rank::R6 => {
+                // quiet move
+                let quiet_to_sq = from_sq.north().expect("Invalid nort() square");
+                if all_bb.is_clear(quiet_to_sq) {
+                    let mv = Move::encode_move(from_sq, quiet_to_sq);
                     move_list.push(mv);
                 }
-            });
+
+                // capture moves
+                let capt_mask = pos
+                    .occupancy_masks()
+                    .get_occ_mask_white_pawn_attack_squares(from_sq);
+
+                (capt_mask & all_opposing_bb).iterator().for_each(|to_sq| {
+                    let mv = Move::encode_move(from_sq, to_sq);
+                    move_list.push(mv);
+                });
+
+                // en passant move
+                if let Some(en_sq) = pos.en_passant_square() {
+                    if capt_mask.is_set(en_sq) {
+                        // en passant sq can be "captured"
+                        let en_pass_mv = Move::encode_move_en_passant(from_sq, en_sq);
+                        move_list.push(en_pass_mv);
+                    }
+                }
+
+                if rank == Rank::R2 {
+                    // double pawn move
+                    let double_first_move_sq_mask = pos
+                        .occupancy_masks()
+                        .get_occ_mask_white_pawns_double_move_mask(from_sq);
+
+                    if (all_bb & double_first_move_sq_mask).is_empty() {
+                        // both squares free
+                        let to_sq = from_sq
+                            .north()
+                            .expect("Invalid north() square")
+                            .north()
+                            .expect("Invalid north/north square");
+
+                        let mv = Move::encode_move(from_sq, to_sq);
+                        move_list.push(mv);
+                    }
+                }
+            }
+            Rank::R7 => {
+                // quiet promotion
+                let quiet_to_sq = from_sq.north().expect("Invalid north() square");
+                if all_bb.is_clear(quiet_to_sq) {
+                    // free square ahead
+                    self.encode_promotion_moves(from_sq, quiet_to_sq, move_list);
+                }
+
+                // capture promotion
+                let capt_mask = pos
+                    .occupancy_masks()
+                    .get_occ_mask_white_pawn_attack_squares(from_sq);
+                let all_opposing_bb = pos.board().get_colour_bb(Colour::Black);
+                (capt_mask & all_opposing_bb).iterator().for_each(|to_sq| {
+                    self.encode_promotion_moves(from_sq, to_sq, move_list);
+                });
+            }
+            _ => (),
+        };
     }
 
-    fn generate_black_pawn_moves(&self, pos: &Position, move_list: &mut MoveList) {
+    fn generate_black_pawn_moves(&self, pos: &Position, from_sq: Square, move_list: &mut MoveList) {
         let all_bb = pos.board().get_bitboard();
         let all_opposing_bb = pos.board().get_colour_bb(Colour::White);
-        let bp_bb = pos.board().get_piece_bitboard(Piece::Pawn, Colour::Black);
 
-        bp_bb.iterator().for_each(|from_sq| {
-            let rank = from_sq.rank();
+        let rank = from_sq.rank();
 
-            match rank {
-                Rank::R1 | Rank::R8 => (),
-                Rank::R3 | Rank::R4 | Rank::R5 | Rank::R6 | Rank::R7 => {
-                    // quiet moves + capture move
-                    let quiet_to_sq = from_sq.south().expect("Invalid south() square");
-                    if !all_bb.is_set(quiet_to_sq) {
-                        let mv = Move::encode_move(from_sq, quiet_to_sq);
-                        move_list.push(mv);
-                    }
-
-                    let capt_mask = pos
-                        .occupancy_masks()
-                        .get_occ_mask_black_pawn_attack_squares(from_sq);
-
-                    (capt_mask & all_opposing_bb).iterator().for_each(|to_sq| {
-                        let mv = Move::encode_move(from_sq, to_sq);
-                        move_list.push(mv);
-                    });
-
-                    // en passant move
-                    if let Some(en_sq) = pos.en_passant_square() {
-                        if capt_mask.is_set(en_sq) {
-                            // en passant sq can be "captured"
-                            let en_pass_mv = Move::encode_move_en_passant(from_sq, en_sq);
-                            move_list.push(en_pass_mv);
-                        }
-                    }
-                }
-                Rank::R2 => {
-                    // quiet promotion
-                    let quiet_to_sq = from_sq.south().expect("Invalid south() square");
-                    if !all_bb.is_set(quiet_to_sq) {
-                        // free square ahead
-                        self.encode_promotion_moves(from_sq, quiet_to_sq, move_list);
-                    }
-
-                    // capture promotion
-                    let capt_mask = pos
-                        .occupancy_masks()
-                        .get_occ_mask_black_pawn_attack_squares(from_sq);
-                    let all_opposing_bb = pos.board().get_colour_bb(Colour::White);
-                    let capt_bb = capt_mask & all_opposing_bb;
-                    capt_bb.iterator().for_each(|to_sq| {
-                        self.encode_promotion_moves(from_sq, to_sq, move_list);
-                    });
-                }
-                _ => (),
-            };
-        });
-
-        // do any double pawn first moves
-        (bp_bb & OccupancyMasks::RANK_7_BB)
-            .iterator()
-            .for_each(|from_sq| {
-                let double_first_move_sq_mask = pos
-                    .occupancy_masks()
-                    .get_occ_mask_black_pawns_double_move_mask(from_sq);
-
-                if (all_bb & double_first_move_sq_mask).is_empty() {
-                    // both squares free
-                    let to_sq = from_sq
-                        .south()
-                        .expect("Invalid south() square")
-                        .south()
-                        .expect("Invalud south/south square");
-
-                    let mv = Move::encode_move(from_sq, to_sq);
+        match rank {
+            Rank::R1 | Rank::R8 => (),
+            Rank::R3 | Rank::R4 | Rank::R5 | Rank::R6 | Rank::R7 => {
+                // quiet moves + capture move
+                let quiet_to_sq = from_sq.south().expect("Invalid south() square");
+                if !all_bb.is_set(quiet_to_sq) {
+                    let mv = Move::encode_move(from_sq, quiet_to_sq);
                     move_list.push(mv);
                 }
-            });
+
+                let capt_mask = pos
+                    .occupancy_masks()
+                    .get_occ_mask_black_pawn_attack_squares(from_sq);
+
+                (capt_mask & all_opposing_bb).iterator().for_each(|to_sq| {
+                    let mv = Move::encode_move(from_sq, to_sq);
+                    move_list.push(mv);
+                });
+
+                // en passant move
+                if let Some(en_sq) = pos.en_passant_square() {
+                    if capt_mask.is_set(en_sq) {
+                        // en passant sq can be "captured"
+                        let en_pass_mv = Move::encode_move_en_passant(from_sq, en_sq);
+                        move_list.push(en_pass_mv);
+                    }
+                }
+
+                if rank == Rank::R7 {
+                    let double_first_move_sq_mask = pos
+                        .occupancy_masks()
+                        .get_occ_mask_black_pawns_double_move_mask(from_sq);
+
+                    if (all_bb & double_first_move_sq_mask).is_empty() {
+                        // both squares free
+                        let to_sq = from_sq
+                            .south()
+                            .expect("Invalid south() square")
+                            .south()
+                            .expect("Invalud south/south square");
+
+                        let mv = Move::encode_move(from_sq, to_sq);
+                        move_list.push(mv);
+                    }
+                }
+            }
+            Rank::R2 => {
+                // quiet promotion
+                let quiet_to_sq = from_sq.south().expect("Invalid south() square");
+                if !all_bb.is_set(quiet_to_sq) {
+                    // free square ahead
+                    self.encode_promotion_moves(from_sq, quiet_to_sq, move_list);
+                }
+
+                // capture promotion
+                let capt_mask = pos
+                    .occupancy_masks()
+                    .get_occ_mask_black_pawn_attack_squares(from_sq);
+                let all_opposing_bb = pos.board().get_colour_bb(Colour::White);
+                let capt_bb = capt_mask & all_opposing_bb;
+                capt_bb.iterator().for_each(|to_sq| {
+                    self.encode_promotion_moves(from_sq, to_sq, move_list);
+                });
+            }
+            _ => (),
+        };
     }
 
-    fn generate_sliding_moves(&self, pos: &Position, move_list: &mut MoveList) {
-        // rank/file moves
-        [Piece::Rook, Piece::Queen].into_iter().for_each(|piece| {
-            pos.board()
-                .get_piece_bitboard(piece, pos.side_to_move())
-                .iterator()
-                .for_each(|from_sq| {
-                    let rank_file_to_sq = self.hyperbola_quintessence(
-                        pos,
-                        pos.occupancy_masks()
-                            .get_horizontal_mask(from_sq)
-                            .into_u64(),
-                        pos.occupancy_masks().get_vertical_mask(from_sq).into_u64(),
-                        from_sq,
-                    );
-                    self.gen_capt_or_quiet_moves(move_list, from_sq, rank_file_to_sq);
-                });
-        });
-
-        // diagonal/anti-diagonal moves
-        [Piece::Bishop, Piece::Queen].into_iter().for_each(|piece| {
-            pos.board()
-                .get_piece_bitboard(piece, pos.side_to_move())
-                .iterator()
-                .for_each(|from_sq| {
-                    let diag_to_sq = self.hyperbola_quintessence(
-                        pos,
-                        pos.occupancy_masks().get_diagonal_mask(from_sq).into_u64(),
-                        pos.occupancy_masks()
-                            .get_antidiagonal_mask(from_sq)
-                            .into_u64(),
-                        from_sq,
-                    );
-                    self.gen_capt_or_quiet_moves(move_list, from_sq, diag_to_sq);
-                });
-        });
+    fn generate_diagonal_sliding_moves(
+        &self,
+        pos: &Position,
+        from_sq: Square,
+        move_list: &mut MoveList,
+    ) {
+        let diag_to_sq = self.hyperbola_quintessence(
+            pos,
+            pos.occupancy_masks().get_diagonal_mask(from_sq).into_u64(),
+            pos.occupancy_masks()
+                .get_antidiagonal_mask(from_sq)
+                .into_u64(),
+            from_sq,
+        );
+        self.gen_capt_or_quiet_moves(move_list, from_sq, diag_to_sq);
     }
 
-    #[inline(always)]
+    fn generate_vertical_horiz_sliding_moves(
+        &self,
+        pos: &Position,
+        from_sq: Square,
+        move_list: &mut MoveList,
+    ) {
+        let rank_file_to_sq = self.hyperbola_quintessence(
+            pos,
+            pos.occupancy_masks()
+                .get_horizontal_mask(from_sq)
+                .into_u64(),
+            pos.occupancy_masks().get_vertical_mask(from_sq).into_u64(),
+            from_sq,
+        );
+        self.gen_capt_or_quiet_moves(move_list, from_sq, rank_file_to_sq);
+    }
+
     fn gen_capt_or_quiet_moves(
         &self,
         move_list: &mut MoveList,
@@ -262,7 +281,6 @@ impl MoveGenerator {
         });
     }
 
-    #[inline(always)]
     fn hyperbola_quintessence(
         &self,
         pos: &Position,
@@ -293,37 +311,45 @@ impl MoveGenerator {
         Bitboard::new(all_moves & !col_bb)
     }
 
-    fn generate_non_sliding_moves(&self, pos: &Position, move_list: &mut MoveList) {
+    fn generate_knight_moves(&self, pos: &Position, from_sq: Square, move_list: &mut MoveList) {
+        let occ_mask = pos.occupancy_masks().get_occupancy_mask_knight(from_sq);
+
+        self.generate_non_sliding_moves(pos, from_sq, occ_mask, move_list);
+    }
+
+    fn generate_king_moves(&self, pos: &Position, from_sq: Square, move_list: &mut MoveList) {
+        let occ_mask = pos.occupancy_masks().get_occupancy_mask_king(from_sq);
+
+        self.generate_non_sliding_moves(pos, from_sq, occ_mask, move_list);
+    }
+
+    fn generate_non_sliding_moves(
+        &self,
+        pos: &Position,
+        from_sq: Square,
+        occupancy_mask: Bitboard,
+        move_list: &mut MoveList,
+    ) {
         let opposite_side = pos.side_to_move().flip_side();
         let opp_occ_sq_bb = pos.board().get_colour_bb(opposite_side);
         let unoccupied_squares_bb = !pos.board().get_bitboard();
 
-        [Piece::King, Piece::Knight].into_iter().for_each(|piece| {
-            let pce_bb = pos.board().get_piece_bitboard(piece, pos.side_to_move());
-
-            pce_bb.iterator().for_each(|from_sq| {
-                let occ_mask = if piece == Piece::Knight {
-                    pos.occupancy_masks().get_occupancy_mask_knight(from_sq)
-                } else {
-                    pos.occupancy_masks().get_occupancy_mask_king(from_sq)
-                };
-
-                // generate capture moves
-                // AND'ing with opposite colour pieces with the occupancy mask, will
-                // give all pieces that can be captured by the piece on this square
-                (opp_occ_sq_bb & occ_mask).iterator().for_each(|to_sq| {
-                    let mv = Move::encode_move(from_sq, to_sq);
-                    move_list.push(mv);
-                });
-
-                // generate quiet moves
-                let quiet_move_bb = unoccupied_squares_bb & occ_mask;
-                quiet_move_bb.iterator().for_each(|to_sq| {
-                    let mov = Move::encode_move(from_sq, to_sq);
-                    move_list.push(mov);
-                });
+        // generate capture moves
+        // AND'ing with opposite colour pieces with the occupancy mask, will
+        // give all pieces that can be captured by the piece on this square
+        (opp_occ_sq_bb & occupancy_mask)
+            .iterator()
+            .for_each(|to_sq| {
+                let mv = Move::encode_move(from_sq, to_sq);
+                move_list.push(mv);
             });
-        })
+
+        // generate quiet moves
+        let quiet_move_bb = unoccupied_squares_bb & occupancy_mask;
+        quiet_move_bb.iterator().for_each(|to_sq| {
+            let mov = Move::encode_move(from_sq, to_sq);
+            move_list.push(mov);
+        });
     }
 
     fn generate_white_castle_moves(&self, pos: &Position, move_list: &mut MoveList) {

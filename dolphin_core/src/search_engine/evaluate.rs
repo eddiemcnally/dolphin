@@ -79,33 +79,34 @@ const KING_SQ_VALUE: [i8; Board::NUM_SQUARES] = [
     -30,    -40,    -40,    -50,    -50,    -40,    -40,    -30, 
 ];
 
-static PIECE_MAP: [(Piece, &[i8; Board::NUM_SQUARES]); 6] = [
-    (Piece::Pawn, &PAWN_SQ_VALUE),
-    (Piece::Bishop, &BISHOP_SQ_VALUE),
-    (Piece::Knight, &KNIGHT_SQ_VALUE),
-    (Piece::Rook, &ROOK_SQ_VALUE),
-    (Piece::Queen, &QUEEN_SQ_VALUE),
-    (Piece::King, &KING_SQ_VALUE),
-];
-
 pub fn evaluate_board(board: &Board, side_to_move: Colour) -> Score {
     let mut score = board.get_net_material();
 
     // white
-    PIECE_MAP.iter().for_each(|(pce, map)| {
-        board
-            .get_piece_bitboard(*pce, Colour::White)
-            .iterator()
-            .for_each(|sq| score += map[sq.as_index()] as Score);
-    });
+    for sq in board.get_colour_bb(Colour::White).iterator() {
+        let pce = board.get_piece_on_square(sq).unwrap();
+        match pce {
+            Piece::Pawn => score += PAWN_SQ_VALUE[sq.as_index()] as Score,
+            Piece::Bishop => score += BISHOP_SQ_VALUE[sq.as_index()] as Score,
+            Piece::Knight => score += KNIGHT_SQ_VALUE[sq.as_index()] as Score,
+            Piece::Rook => score += ROOK_SQ_VALUE[sq.as_index()] as Score,
+            Piece::Queen => score += QUEEN_SQ_VALUE[sq.as_index()] as Score,
+            Piece::King => score += KING_SQ_VALUE[sq.as_index()] as Score,
+        }
+    }
 
-    // black (note negative score, and mirror'ed table lookup)
-    PIECE_MAP.iter().for_each(|(pce, map)| {
-        board
-            .get_piece_bitboard(*pce, Colour::Black)
-            .iterator()
-            .for_each(|sq| score -= map[63 - sq.as_index()] as Score);
-    });
+    // black
+    for sq in board.get_colour_bb(Colour::Black).iterator() {
+        let pce = board.get_piece_on_square(sq).unwrap();
+        match pce {
+            Piece::Pawn => score -= PAWN_SQ_VALUE[63 - sq.as_index()] as Score,
+            Piece::Bishop => score -= BISHOP_SQ_VALUE[63 - sq.as_index()] as Score,
+            Piece::Knight => score -= KNIGHT_SQ_VALUE[63 - sq.as_index()] as Score,
+            Piece::Rook => score -= ROOK_SQ_VALUE[63 - sq.as_index()] as Score,
+            Piece::Queen => score -= QUEEN_SQ_VALUE[63 - sq.as_index()] as Score,
+            Piece::King => score -= KING_SQ_VALUE[63 - sq.as_index()] as Score,
+        }
+    }
 
     if side_to_move == Colour::White {
         score

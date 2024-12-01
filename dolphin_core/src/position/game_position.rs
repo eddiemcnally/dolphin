@@ -126,12 +126,6 @@ impl<'a> Position<'a> {
             pos.game_state.position_hash ^= pos.zobrist_keys.en_passant(en_passant_sq.unwrap());
         }
 
-        // validate position
-        let bk_bb = pos.board().get_piece_bitboard(Piece::King, Colour::Black);
-        assert!(!bk_bb.is_empty());
-        let wk_bb = pos.board().get_piece_bitboard(Piece::King, Colour::White);
-        assert!(!wk_bb.is_empty());
-
         pos
     }
 
