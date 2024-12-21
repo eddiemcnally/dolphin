@@ -102,6 +102,7 @@ impl Square {
         }
     }
 
+    #[inline(always)]
     pub const fn as_index(self) -> usize {
         self.0 as usize
     }

@@ -2,7 +2,6 @@ use std::fmt;
 use std::slice::Iter;
 
 #[derive(Eq, PartialEq, Copy, Clone, Default)]
-#[repr(u8)]
 pub enum Colour {
     #[default]
     White,

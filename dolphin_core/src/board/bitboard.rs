@@ -25,6 +25,7 @@ impl Bitboard {
         self.0
     }
 
+    #[inline(always)]
     pub fn from_square(sq: Square) -> Bitboard {
         to_mask(sq)
     }

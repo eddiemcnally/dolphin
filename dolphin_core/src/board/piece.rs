@@ -16,10 +16,11 @@ pub enum Piece {
 impl Piece {
     pub const NUM_PIECE_TYPES: usize = 6;
 
+    #[inline(always)]
     pub const fn as_index(&self) -> usize {
         *self as usize
     }
-
+    #[inline(always)]
     pub const fn value(self) -> Score {
         match self {
             Piece::Pawn => PieceValue::Pawn as Score,

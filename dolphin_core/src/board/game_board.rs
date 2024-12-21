@@ -36,12 +36,9 @@ impl Board {
     }
 
     pub fn add_piece(&mut self, piece: Piece, colour: Colour, sq: Square) {
-        let pce_off = piece.as_index();
-        let col_off = colour.as_index();
-
-        self.colour_info[col_off].piece_bb[pce_off].set_bit(sq);
-        self.colour_info[col_off].colour_bb.set_bit(sq);
-        self.colour_info[col_off].material += piece.value();
+        self.colour_info[colour.as_index()].piece_bb[piece.as_index()].set_bit(sq);
+        self.colour_info[colour.as_index()].colour_bb.set_bit(sq);
+        self.colour_info[colour.as_index()].material += piece.value();
 
         self.pieces[sq.as_index()] = Some(piece);
 
@@ -52,26 +49,21 @@ impl Board {
     }
 
     pub fn remove_piece(&mut self, piece: Piece, colour: Colour, sq: Square) {
-        let pce_off = piece.as_index();
-        let col_off = colour.as_index();
-
-        self.colour_info[col_off].piece_bb[pce_off].clear_bit(sq);
-        self.colour_info[col_off].colour_bb.clear_bit(sq);
-        self.colour_info[col_off].material -= piece.value();
+        self.colour_info[colour.as_index()].piece_bb[piece.as_index()].clear_bit(sq);
+        self.colour_info[colour.as_index()].colour_bb.clear_bit(sq);
+        self.colour_info[colour.as_index()].material -= piece.value();
 
         self.pieces[sq.as_index()] = None;
     }
 
     pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece, colour: Colour) {
-        let col_offset = colour.as_index();
-        let pce_offset = piece.as_index();
         let from_bb = Bitboard::from_square(from_sq);
         let to_bb = Bitboard::from_square(to_sq);
 
-        let col_info = &mut self.colour_info[col_offset];
+        let col_info = &mut self.colour_info[colour.as_index()];
 
-        col_info.piece_bb[pce_offset] ^= from_bb;
-        col_info.piece_bb[pce_offset] ^= to_bb;
+        col_info.piece_bb[piece.as_index()] ^= from_bb;
+        col_info.piece_bb[piece.as_index()] ^= to_bb;
         col_info.colour_bb ^= from_bb;
         col_info.colour_bb ^= to_bb;
 

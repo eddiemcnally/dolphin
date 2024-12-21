@@ -6,6 +6,8 @@ use crate::board::rank::Rank;
 use crate::board::square::Square;
 use crate::position::castle_permissions::CastlePermission;
 use crate::position::move_counter::MoveCounter;
+use std::backtrace::Backtrace;
+use std::process;
 
 // FEN fields
 // [0] = piece positions
@@ -84,7 +86,11 @@ fn get_side_to_move(side: &str) -> Colour {
     match side.trim() {
         "w" => Colour::White,
         "b" => Colour::Black,
-        _ => panic!("Unexpected side-to-move. Parsed character '{}'", side),
+        _ => {
+            eprintln!("Unexpected side-to-move. Parsed character '{}'", side);
+            eprintln!("Custom backtrace: {}", Backtrace::force_capture());
+            process::exit(1);
+        }
     }
 }
 
@@ -151,13 +157,6 @@ mod tests {
         let piece_pos: Vec<&str> = fen.split(' ').collect();
         let side_to_move = get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
         assert_eq!(side_to_move, Colour::Black);
-    }
-    #[test]
-    #[should_panic]
-    pub fn side_to_move_invalid_panics() {
-        let fen = "1n1k2bp/1PppQpb1/N1p4p/1B2P1K1/1RB2P2/pPR1Np2/P1r1rP1P/P2q3n X - - 0 1";
-        let piece_pos: Vec<&str> = fen.split(' ').collect();
-        get_side_to_move(piece_pos[FEN_SIDE_TO_MOVE]);
     }
 
     #[test]

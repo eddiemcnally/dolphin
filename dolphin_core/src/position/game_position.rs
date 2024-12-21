@@ -13,8 +13,8 @@ use crate::position::move_counter::MoveCounter;
 use crate::position::position_history::PositionHistory;
 use crate::position::zobrist_keys::ZobristHash;
 use crate::position::zobrist_keys::ZobristKeys;
-use core::panic;
 use std::fmt;
+use std::process;
 
 // something to avoid bugs with bool states
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
@@ -402,7 +402,10 @@ impl<'a> Position<'a> {
                 self.move_piece_on_board(Piece::King, Colour::Black, Square::E8, Square::C8);
                 self.move_piece_on_board(Piece::Rook, Colour::Black, Square::A8, Square::D8);
             }
-            _ => panic!("Invalid castle move"),
+            _ => {
+                eprintln!("Invalid Castle move");
+                process::exit(1);
+            }
         }
 
         self.clear_castle_permissions_for_colour(colour);
@@ -440,7 +443,10 @@ impl<'a> Position<'a> {
                 self.board
                     .move_piece(Square::D8, Square::A8, Piece::Rook, Colour::Black);
             }
-            _ => panic!("Invalid castle move"),
+            _ => {
+                eprintln!("Invalid castle move");
+                process::exit(1);
+            }
         }
     }
 
@@ -469,7 +475,8 @@ impl<'a> Position<'a> {
                     Colour::Black => &CASTLE_SQUARES_QUEEN_BLACK,
                 }
             } else {
-                panic!("Invalid move test");
+                eprintln!("Invalid move");
+                process::exit(1);
             };
 
             let is_invalid_castle = self.attack_checker.is_castle_squares_attacked(
@@ -714,6 +721,8 @@ mod tests {
     use crate::io::fen;
     use crate::moves::mov::*;
     use crate::position::attack_checker::AttackChecker;
+    use crate::position::game_position::process;
+
     use crate::position::game_position::MoveLegality;
     use crate::position::game_position::Position;
     use crate::position::zobrist_keys::ZobristKeys;
@@ -880,7 +889,8 @@ mod tests {
         if let Some((piece, _colour)) = pos.board.get_piece_and_colour_on_square(Square::E5) {
             assert_eq!(piece, Piece::Pawn);
         } else {
-            panic!("piece not found");
+            eprintln!("Piece not found");
+            process::exit(1);
         }
 
         assert!(pos.game_state.move_cntr.half_move() == 5);
@@ -919,7 +929,8 @@ mod tests {
         if let Some((piece, _colour)) = pos.board.get_piece_and_colour_on_square(Square::C4) {
             assert_eq!(piece, Piece::Bishop);
         } else {
-            panic!("piece not found");
+            eprintln!("Piece not found");
+            process::exit(1);
         }
 
         assert!(pos.game_state.move_cntr.half_move() == 5);
@@ -959,7 +970,8 @@ mod tests {
         if let Some((piece, _colour)) = pos.board.get_piece_and_colour_on_square(Square::C4) {
             assert_eq!(piece, Piece::Bishop);
         } else {
-            panic!("piece not found");
+            eprintln!("Piece not found");
+            process::exit(1);
         }
 
         let expected_half_move = pos.game_state.move_cntr.half_move() + 1;

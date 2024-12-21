@@ -2,15 +2,7 @@ use crate::board::piece::Piece;
 use crate::board::square::Square;
 use enumn::N;
 use std::fmt;
-
-#[rustfmt::skip]
-#[derive(Eq, PartialEq, Copy, Clone, Hash, N)]
-enum PromotionTypes {
-    Bishop  = 0b0000_0000_0000_0000,
-    Knight  = 0b0100_0000_0000_0000,
-    Rook    = 0b1000_0000_0000_0000,
-    Queen   = 0b1100_0000_0000_0000,
-}
+use std::process;
 
 #[rustfmt::skip]
 #[derive(Eq, PartialEq, Copy, Clone, Hash, N)]
@@ -19,6 +11,15 @@ pub enum MoveType {
     Promotion   = 0b0001_0000_0000_0000,
     EnPassant   = 0b0010_0000_0000_0000,
     Castle      = 0b0011_0000_0000_0000,
+}
+
+#[rustfmt::skip]
+#[derive(Eq, PartialEq, Copy, Clone, Hash, N)]
+enum PromotionTypes {
+    Bishop  = 0b0000_0000_0000_0000,
+    Knight  = 0b0100_0000_0000_0000,
+    Rook    = 0b1000_0000_0000_0000,
+    Queen   = 0b1100_0000_0000_0000,
 }
 
 enum BitShift {
@@ -89,7 +90,7 @@ impl Move {
         }
     }
 
-    pub const fn encode_move_with_promotion(
+    pub fn encode_move_with_promotion(
         from_sq: Square,
         to_sq: Square,
         promotion_role: Piece,
@@ -99,7 +100,10 @@ impl Move {
             Piece::Bishop => PromotionTypes::Bishop,
             Piece::Rook => PromotionTypes::Rook,
             Piece::Queen => PromotionTypes::Queen,
-            _ => panic!("Invalid promotion piece"),
+            _ => {
+                eprintln!("Invalid promotion piece");
+                process::exit(1);
+            }
         };
 
         let mut bits = Self::encode_from_to_sq(from_sq, to_sq);
