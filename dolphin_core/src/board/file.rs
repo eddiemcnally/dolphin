@@ -14,37 +14,32 @@ impl File {
     pub const G: File = File(6);
     pub const H: File = File(7);
 
+    #[inline(always)]
     pub const fn new(num: u8) -> Option<File> {
         match num {
             0..=7 => Some(File(num)),
             _ => None,
         }
     }
-
+    #[inline(always)]
     pub const fn as_index(self) -> usize {
         self.0 as usize
     }
 
     pub const fn add_one(self) -> Option<File> {
-        File::new(self.0 + 1)
+        File::new(self.0.wrapping_add(1))
     }
 
     pub const fn subtract_one(self) -> Option<File> {
-        match self.0 {
-            1..=7 => Some(File(self.0 - 1)),
-            _ => None,
-        }
+        File::new(self.0.wrapping_sub(1))
     }
 
     pub const fn add_two(self) -> Option<File> {
-        File::new(self.0 + 2)
+        File::new(self.0.wrapping_add(2))
     }
 
     pub const fn subtract_two(self) -> Option<File> {
-        match self.0 {
-            2..=7 => Some(File(self.0 - 2)),
-            _ => None,
-        }
+        File::new(self.0.wrapping_sub(2))
     }
 
     pub fn from_char(file: char) -> Option<File> {

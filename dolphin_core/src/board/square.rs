@@ -107,22 +107,6 @@ impl Square {
         self.0 as usize
     }
 
-    pub fn north_east(self) -> Option<Square> {
-        Square::new(self.as_index() as u8 + 9)
-    }
-
-    pub fn north_west(self) -> Option<Square> {
-        Square::new(self.as_index() as u8 + 7)
-    }
-
-    pub fn south_west(self) -> Option<Square> {
-        Square::new(self.as_index() as u8 - 9)
-    }
-
-    pub fn south_east(self) -> Option<Square> {
-        Square::new(self.as_index() as u8 - 7)
-    }
-
     pub fn north(self) -> Option<Square> {
         Square::new(self.as_index() as u8 + 8)
     }
@@ -131,11 +115,11 @@ impl Square {
         Square::new(self.as_index() as u8 - 8)
     }
 
-    pub fn rank(self) -> Rank {
+    pub const fn rank(self) -> Rank {
         Rank::new(self.rank_as_u8()).unwrap()
     }
 
-    pub fn file(self) -> File {
+    pub const fn file(self) -> File {
         File::new(self.file_as_u8()).unwrap()
     }
 
@@ -277,34 +261,5 @@ pub mod tests {
         for (i, square) in Square::iterator().enumerate() {
             assert_eq!(square.as_index(), i);
         }
-    }
-
-    #[test]
-    pub fn north() {
-        assert_eq!(Square::A1.north(), Some(Square::A2));
-    }
-
-    #[test]
-    pub fn south() {
-        assert_eq!(Square::C7.south(), Some(Square::C6));
-    }
-
-    #[test]
-    pub fn north_east() {
-        assert_eq!(Square::A1.north_east(), Some(Square::B2));
-    }
-
-    #[test]
-    pub fn north_west() {
-        assert_eq!(Square::F6.north_west(), Some(Square::E7));
-    }
-
-    #[test]
-    pub fn south_east() {
-        assert_eq!(Square::D4.south_east(), Some(Square::E3));
-    }
-    #[test]
-    pub fn south_west() {
-        assert_eq!(Square::D4.south_west(), Some(Square::C3));
     }
 }

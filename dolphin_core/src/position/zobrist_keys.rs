@@ -54,7 +54,13 @@ impl ZobristKeys {
         let pce_offset = piece.as_index();
         let sq_offset = square.as_index();
         let col_offset = colour.as_index();
-        self.piece_keys[col_offset][sq_offset][pce_offset]
+        unsafe {
+            *self
+                .piece_keys
+                .get_unchecked(col_offset)
+                .get_unchecked(sq_offset)
+                .get_unchecked(pce_offset)
+        }
     }
 
     pub fn en_passant(&self, square: Square) -> ZobristHash {

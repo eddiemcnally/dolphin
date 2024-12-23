@@ -36,12 +36,10 @@ impl Board {
     }
 
     pub fn add_piece(&mut self, piece: Piece, colour: Colour, sq: Square) {
-        self.colour_info[colour.as_index()].piece_bb[piece.as_index()].set_bit(sq);
-        self.colour_info[colour.as_index()].colour_bb.set_bit(sq);
+        self.flip_piece_bits(piece, colour, sq);
+
         self.colour_info[colour.as_index()].material += piece.value();
-
         self.pieces[sq.as_index()] = Some(piece);
-
         match piece {
             Piece::King => self.colour_info[colour.as_index()].king_sq = sq,
             _ => (),
@@ -49,23 +47,15 @@ impl Board {
     }
 
     pub fn remove_piece(&mut self, piece: Piece, colour: Colour, sq: Square) {
-        self.colour_info[colour.as_index()].piece_bb[piece.as_index()].clear_bit(sq);
-        self.colour_info[colour.as_index()].colour_bb.clear_bit(sq);
-        self.colour_info[colour.as_index()].material -= piece.value();
+        self.flip_piece_bits(piece, colour, sq);
 
+        self.colour_info[colour.as_index()].material -= piece.value();
         self.pieces[sq.as_index()] = None;
     }
 
     pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece, colour: Colour) {
-        let from_bb = Bitboard::from_square(from_sq);
-        let to_bb = Bitboard::from_square(to_sq);
-
-        let col_info = &mut self.colour_info[colour.as_index()];
-
-        col_info.piece_bb[piece.as_index()] ^= from_bb;
-        col_info.piece_bb[piece.as_index()] ^= to_bb;
-        col_info.colour_bb ^= from_bb;
-        col_info.colour_bb ^= to_bb;
+        self.flip_piece_bits(piece, colour, from_sq);
+        self.flip_piece_bits(piece, colour, to_sq);
 
         self.pieces[from_sq.as_index()] = None;
         self.pieces[to_sq.as_index()] = Some(piece);
@@ -74,6 +64,14 @@ impl Board {
             Piece::King => self.colour_info[colour.as_index()].king_sq = to_sq,
             _ => (),
         }
+    }
+
+    #[inline(always)]
+    fn flip_piece_bits(&mut self, piece: Piece, colour: Colour, sq: Square) {
+        let bb = Bitboard::from_square(sq);
+
+        (&mut self.colour_info[colour.as_index()]).piece_bb[piece.as_index()] ^= bb;
+        (&mut self.colour_info[colour.as_index()]).colour_bb ^= bb;
     }
 
     pub fn get_piece_and_colour_on_square(&self, sq: Square) -> Option<(Piece, Colour)> {
@@ -98,7 +96,7 @@ impl Board {
     }
 
     pub fn is_sq_empty(&self, sq: Square) -> bool {
-        self.get_bitboard().is_clear(sq)
+        self.get_bitboard().is_set(sq) == false
     }
 
     pub fn get_piece_bitboard(&self, piece: Piece, colour: Colour) -> Bitboard {

@@ -81,7 +81,19 @@ impl Move {
 
     pub fn move_type(&self) -> MoveType {
         let bits = self.bits & BitMask::MoveType as u16;
-        MoveType::n(bits).expect("Invalid move type")
+
+        const NORMAL: u16 = MoveType::Normal as u16;
+        const PROMOTE: u16 = MoveType::Promotion as u16;
+        const EN_PASSANT: u16 = MoveType::EnPassant as u16;
+        const CASTLE: u16 = MoveType::Castle as u16;
+
+        match bits {
+            NORMAL => MoveType::Normal,
+            PROMOTE => MoveType::Promotion,
+            EN_PASSANT => MoveType::EnPassant,
+            CASTLE => MoveType::Castle,
+            _ => panic!("Invalid move type"),
+        }
     }
 
     pub const fn encode_move(from_sq: Square, to_sq: Square) -> Move {

@@ -25,7 +25,6 @@ impl Bitboard {
         self.0
     }
 
-    #[inline(always)]
     pub fn from_square(sq: Square) -> Bitboard {
         to_mask(sq)
     }
@@ -45,17 +44,8 @@ impl Bitboard {
         (self.0 & mask.0) != 0
     }
 
-    pub fn is_clear(self, sq: Square) -> bool {
-        let mask = to_mask(sq);
-        (self.0 & mask.0) == 0
-    }
-
     pub const fn is_empty(self) -> bool {
         self.0 == 0
-    }
-
-    pub const fn is_not_empty(self) -> bool {
-        !self.is_empty()
     }
 
     pub fn north_east(&self) -> Bitboard {

@@ -62,7 +62,7 @@ impl MoveGenerator {
                 Rank::R2 | Rank::R3 | Rank::R4 | Rank::R5 | Rank::R6 => {
                     // quiet move
                     let quiet_to_sq = from_sq.north().expect("Invalid nort() square");
-                    if all_bb.is_clear(quiet_to_sq) {
+                    if !all_bb.is_set(quiet_to_sq) {
                         let mv = Move::encode_move(from_sq, quiet_to_sq);
                         move_list.push(mv);
                     }
@@ -89,8 +89,9 @@ impl MoveGenerator {
                 Rank::R7 => {
                     // TODO - move into a ingle loop
                     // quiet promotion
+
                     let quiet_to_sq = from_sq.north().expect("Invalid north() square");
-                    if all_bb.is_clear(quiet_to_sq) {
+                    if !all_bb.is_set(quiet_to_sq) {
                         // free square ahead
                         self.encode_promotion_moves(from_sq, quiet_to_sq, move_list);
                     }
@@ -226,7 +227,7 @@ impl MoveGenerator {
                         pos.occupancy_masks().get_vertical_mask(from_sq).into_u64(),
                         from_sq,
                     );
-                    self.gen_capt_or_quiet_moves(move_list, from_sq, rank_file_to_sq);
+                    self.gen_multiple_moves(move_list, from_sq, rank_file_to_sq);
                 });
         });
 
@@ -244,18 +245,13 @@ impl MoveGenerator {
                             .into_u64(),
                         from_sq,
                     );
-                    self.gen_capt_or_quiet_moves(move_list, from_sq, diag_to_sq);
+                    self.gen_multiple_moves(move_list, from_sq, diag_to_sq);
                 });
         });
     }
 
     #[inline(always)]
-    fn gen_capt_or_quiet_moves(
-        &self,
-        move_list: &mut MoveList,
-        from_sq: Square,
-        to_sq_bb: Bitboard,
-    ) {
+    fn gen_multiple_moves(&self, move_list: &mut MoveList, from_sq: Square, to_sq_bb: Bitboard) {
         to_sq_bb.iterator().for_each(|to_sq| {
             let mv = Move::encode_move(from_sq, to_sq);
             move_list.push(mv);

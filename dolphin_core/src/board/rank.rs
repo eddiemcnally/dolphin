@@ -14,38 +14,34 @@ impl Rank {
     pub const R7: Rank = Rank(6);
     pub const R8: Rank = Rank(7);
 
+    #[inline(always)]
     pub const fn new(num: u8) -> Option<Rank> {
         match num {
             0..=7 => Some(Rank(num)),
             _ => None,
         }
     }
-
+    #[inline(always)]
     pub const fn as_index(self) -> usize {
         self.0 as usize
     }
 
     pub const fn add_one(self) -> Option<Rank> {
-        Rank::new(self.0 + 1)
+        Rank::new(self.0.wrapping_add(1))
     }
 
     pub const fn add_two(self) -> Option<Rank> {
-        Rank::new(self.0 + 2)
+        Rank::new(self.0.wrapping_add(2))
     }
 
     pub const fn subtract_one(self) -> Option<Rank> {
-        match self.0 {
-            1..=7 => Some(Rank(self.0 - 1)),
-            _ => None,
-        }
+        Rank::new(self.0.wrapping_sub(1))
     }
 
     pub const fn subtract_two(self) -> Option<Rank> {
-        match self.0 {
-            2..=7 => Some(Rank(self.0 - 2)),
-            _ => None,
-        }
+        Rank::new(self.0.wrapping_sub(2))
     }
+
     pub fn from_char(rank: char) -> Option<Rank> {
         match rank {
             '1' => Some(Rank::R1),

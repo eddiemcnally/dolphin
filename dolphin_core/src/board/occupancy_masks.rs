@@ -344,42 +344,42 @@ pub mod tests {
         let mut bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::A2);
         assert!(bb.is_set(Square::A3));
         assert!(bb.is_set(Square::A4));
-        assert!(bb.is_clear(Square::A2));
+        assert!(!bb.is_set(Square::A2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::B2);
         assert!(bb.is_set(Square::B3));
         assert!(bb.is_set(Square::B4));
-        assert!(bb.is_clear(Square::B2));
+        assert!(!bb.is_set(Square::B2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::C2);
         assert!(bb.is_set(Square::C3));
         assert!(bb.is_set(Square::C4));
-        assert!(bb.is_clear(Square::C2));
+        assert!(!bb.is_set(Square::C2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::D2);
         assert!(bb.is_set(Square::D3));
         assert!(bb.is_set(Square::D4));
-        assert!(bb.is_clear(Square::D2));
+        assert!(!bb.is_set(Square::D2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::E2);
         assert!(bb.is_set(Square::E3));
         assert!(bb.is_set(Square::E4));
-        assert!(bb.is_clear(Square::E2));
+        assert!(!bb.is_set(Square::E2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::F2);
         assert!(bb.is_set(Square::F3));
         assert!(bb.is_set(Square::F4));
-        assert!(bb.is_clear(Square::F2));
+        assert!(!bb.is_set(Square::F2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::G2);
         assert!(bb.is_set(Square::G3));
         assert!(bb.is_set(Square::G4));
-        assert!(bb.is_clear(Square::G2));
+        assert!(!bb.is_set(Square::G2));
 
         bb = masks.get_occ_mask_white_pawns_double_move_mask(Square::H2);
         assert!(bb.is_set(Square::H3));
         assert!(bb.is_set(Square::H4));
-        assert!(bb.is_clear(Square::H2));
+        assert!(!bb.is_set(Square::H2));
     }
 
     #[test]
@@ -389,41 +389,41 @@ pub mod tests {
         let mut bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::A7);
         assert!(bb.is_set(Square::A6));
         assert!(bb.is_set(Square::A5));
-        assert!(bb.is_clear(Square::A7));
+        assert!(!bb.is_set(Square::A7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::B7);
         assert!(bb.is_set(Square::B6));
         assert!(bb.is_set(Square::B5));
-        assert!(bb.is_clear(Square::B7));
+        assert!(!bb.is_set(Square::B7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::C7);
         assert!(bb.is_set(Square::C6));
         assert!(bb.is_set(Square::C5));
-        assert!(bb.is_clear(Square::C7));
+        assert!(!bb.is_set(Square::C7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::D7);
         assert!(bb.is_set(Square::D6));
         assert!(bb.is_set(Square::D5));
-        assert!(bb.is_clear(Square::D7));
+        assert!(!bb.is_set(Square::D7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::E7);
         assert!(bb.is_set(Square::E6));
         assert!(bb.is_set(Square::E5));
-        assert!(bb.is_clear(Square::E7));
+        assert!(!bb.is_set(Square::E7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::F7);
         assert!(bb.is_set(Square::F6));
         assert!(bb.is_set(Square::F5));
-        assert!(bb.is_clear(Square::F7));
+        assert!(!bb.is_set(Square::F7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::G7);
         assert!(bb.is_set(Square::G6));
         assert!(bb.is_set(Square::G5));
-        assert!(bb.is_clear(Square::G7));
+        assert!(!bb.is_set(Square::G7));
 
         bb = masks.get_occ_mask_black_pawns_double_move_mask(Square::H7);
         assert!(bb.is_set(Square::H6));
         assert!(bb.is_set(Square::H5));
-        assert!(bb.is_clear(Square::H7));
+        assert!(!bb.is_set(Square::H7));
     }
 }
