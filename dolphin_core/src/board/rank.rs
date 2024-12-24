@@ -1,45 +1,49 @@
+use num_enum::TryFromPrimitive;
 use std::fmt;
 use std::slice::Iter;
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
-pub struct Rank(u8);
+#[derive(Eq, PartialEq, Hash, Clone, Copy, Default, TryFromPrimitive)]
+#[repr(u8)]
+pub enum Rank {
+    #[default]
+    R1,
+    R2,
+    R3,
+    R4,
+    R5,
+    R6,
+    R7,
+    R8,
+}
 
 impl Rank {
-    pub const R1: Rank = Rank(0);
-    pub const R2: Rank = Rank(1);
-    pub const R3: Rank = Rank(2);
-    pub const R4: Rank = Rank(3);
-    pub const R5: Rank = Rank(4);
-    pub const R6: Rank = Rank(5);
-    pub const R7: Rank = Rank(6);
-    pub const R8: Rank = Rank(7);
-
     #[inline(always)]
-    pub const fn new(num: u8) -> Option<Rank> {
-        match num {
-            0..=7 => Some(Rank(num)),
-            _ => None,
+    pub fn new(num: u8) -> Option<Rank> {
+        let res = Rank::try_from(num);
+        match res {
+            Ok(r) => Some(r),
+            Err(_) => None,
         }
     }
     #[inline(always)]
     pub const fn as_index(self) -> usize {
-        self.0 as usize
+        self as usize
     }
 
-    pub const fn add_one(self) -> Option<Rank> {
-        Rank::new(self.0.wrapping_add(1))
+    pub fn add_one(self) -> Option<Rank> {
+        Rank::new((self as u8).saturating_add(1))
     }
 
-    pub const fn add_two(self) -> Option<Rank> {
-        Rank::new(self.0.wrapping_add(2))
+    pub fn add_two(self) -> Option<Rank> {
+        Rank::new((self as u8).saturating_add(2))
     }
 
-    pub const fn subtract_one(self) -> Option<Rank> {
-        Rank::new(self.0.wrapping_sub(1))
+    pub fn subtract_one(self) -> Option<Rank> {
+        Rank::new((self as u8).wrapping_sub(1))
     }
 
-    pub const fn subtract_two(self) -> Option<Rank> {
-        Rank::new(self.0.wrapping_sub(2))
+    pub fn subtract_two(self) -> Option<Rank> {
+        Rank::new((self as u8).wrapping_sub(2))
     }
 
     pub fn from_char(rank: char) -> Option<Rank> {
@@ -65,7 +69,6 @@ impl Rank {
             Rank::R6 => '6',
             Rank::R7 => '7',
             Rank::R8 => '8',
-            _ => '-',
         }
     }
 

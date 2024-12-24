@@ -1,45 +1,49 @@
+use num_enum::TryFromPrimitive;
 use std::fmt;
 use std::slice::Iter;
 
-#[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
-pub struct File(u8);
+#[derive(Eq, PartialEq, Hash, Clone, Copy, Default, TryFromPrimitive)]
+#[repr(u8)]
+pub enum File {
+    #[default]
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+}
 
 impl File {
-    pub const A: File = File(0);
-    pub const B: File = File(1);
-    pub const C: File = File(2);
-    pub const D: File = File(3);
-    pub const E: File = File(4);
-    pub const F: File = File(5);
-    pub const G: File = File(6);
-    pub const H: File = File(7);
-
     #[inline(always)]
-    pub const fn new(num: u8) -> Option<File> {
-        match num {
-            0..=7 => Some(File(num)),
-            _ => None,
+    pub fn new(num: u8) -> Option<File> {
+        let res = File::try_from(num);
+        match res {
+            Ok(f) => Some(f),
+            Err(_) => None,
         }
     }
     #[inline(always)]
     pub const fn as_index(self) -> usize {
-        self.0 as usize
+        self as usize
     }
 
-    pub const fn add_one(self) -> Option<File> {
-        File::new(self.0.wrapping_add(1))
+    pub fn add_one(self) -> Option<File> {
+        File::new((self as u8).saturating_add(1))
     }
 
-    pub const fn subtract_one(self) -> Option<File> {
-        File::new(self.0.wrapping_sub(1))
+    pub fn subtract_one(self) -> Option<File> {
+        File::new((self as u8).wrapping_sub(1))
     }
 
-    pub const fn add_two(self) -> Option<File> {
-        File::new(self.0.wrapping_add(2))
+    pub fn add_two(self) -> Option<File> {
+        File::new((self as u8).saturating_add(2))
     }
 
-    pub const fn subtract_two(self) -> Option<File> {
-        File::new(self.0.wrapping_sub(2))
+    pub fn subtract_two(self) -> Option<File> {
+        File::new((self as u8).wrapping_sub(2))
     }
 
     pub fn from_char(file: char) -> Option<File> {
@@ -65,7 +69,6 @@ impl File {
             File::F => 'f',
             File::G => 'g',
             File::H => 'h',
-            _ => '-',
         }
     }
     pub fn iterator() -> Iter<'static, File> {

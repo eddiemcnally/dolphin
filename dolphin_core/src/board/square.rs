@@ -115,11 +115,11 @@ impl Square {
         Square::new(self.as_index() as u8 - 8)
     }
 
-    pub const fn rank(self) -> Rank {
+    pub fn rank(self) -> Rank {
         Rank::new(self.rank_as_u8()).unwrap()
     }
 
-    pub const fn file(self) -> File {
+    pub fn file(self) -> File {
         File::new(self.file_as_u8()).unwrap()
     }
 

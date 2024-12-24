@@ -105,7 +105,6 @@ impl MoveGenerator {
                         self.encode_promotion_moves(from_sq, to_sq, move_list);
                     });
                 }
-                _ => (),
             };
         });
 
@@ -186,7 +185,6 @@ impl MoveGenerator {
                         self.encode_promotion_moves(from_sq, to_sq, move_list);
                     });
                 }
-                _ => (),
             };
         });
 
