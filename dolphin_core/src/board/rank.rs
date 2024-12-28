@@ -31,19 +31,25 @@ impl Rank {
     }
 
     pub fn add_one(self) -> Option<Rank> {
-        Rank::new((self as u8).saturating_add(1))
+        Rank::new(self as u8 + 1)
     }
 
     pub fn add_two(self) -> Option<Rank> {
-        Rank::new((self as u8).saturating_add(2))
+        Rank::new(self as u8 + 2)
     }
 
     pub fn subtract_one(self) -> Option<Rank> {
-        Rank::new((self as u8).wrapping_sub(1))
+        match self {
+            Rank::R1 => None,
+            _ => Rank::new(self as u8 - 1),
+        }
     }
 
     pub fn subtract_two(self) -> Option<Rank> {
-        Rank::new((self as u8).wrapping_sub(2))
+        match self {
+            Rank::R1 | Rank::R2 => None,
+            _ => Rank::new(self as u8 - 2),
+        }
     }
 
     pub fn from_char(rank: char) -> Option<Rank> {

@@ -16,6 +16,7 @@ pub enum Piece {
 impl Piece {
     pub const NUM_PIECE_TYPES: usize = 6;
 
+    #[inline(always)]
     pub const fn as_index(&self) -> usize {
         *self as usize
     }

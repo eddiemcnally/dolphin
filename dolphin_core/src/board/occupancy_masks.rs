@@ -125,6 +125,7 @@ impl OccupancyMasks {
     // Bitboards representing commonly used ranks
     pub const RANK_2_BB: Bitboard = Bitboard::new(0x0000_0000_0000_FF00);
     pub const RANK_2_TO_6_BB: Bitboard = Bitboard::new(0x0000_FFFF_FFFF_FF00);
+    pub const RANK_3_TO_7_BB: Bitboard = Bitboard::new(0x00FF_FFFF_FFFF_0000);
     pub const RANK_7_BB: Bitboard = Bitboard::new(0x00FF_0000_0000_0000);
 
     fn populate_knight_occupancy_mask_array(occ_mask: &mut Box<OccupancyMasks>) {

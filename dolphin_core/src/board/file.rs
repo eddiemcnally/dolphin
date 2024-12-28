@@ -25,25 +25,32 @@ impl File {
             Err(_) => None,
         }
     }
+
     #[inline(always)]
     pub const fn as_index(self) -> usize {
         self as usize
     }
 
     pub fn add_one(self) -> Option<File> {
-        File::new((self as u8).saturating_add(1))
+        File::new(self as u8 + 1)
     }
 
     pub fn subtract_one(self) -> Option<File> {
-        File::new((self as u8).wrapping_sub(1))
+        match self {
+            File::A => None,
+            _ => File::new(self as u8 - 1),
+        }
     }
 
     pub fn add_two(self) -> Option<File> {
-        File::new((self as u8).saturating_add(2))
+        File::new(self as u8 + 2)
     }
 
     pub fn subtract_two(self) -> Option<File> {
-        File::new((self as u8).wrapping_sub(2))
+        match self {
+            File::A | File::B => None,
+            _ => File::new(self as u8 - 2),
+        }
     }
 
     pub fn from_char(file: char) -> Option<File> {

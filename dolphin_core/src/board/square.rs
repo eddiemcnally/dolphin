@@ -107,22 +107,91 @@ impl Square {
         self.0 as usize
     }
 
+    #[inline(always)]
     pub fn north(self) -> Option<Square> {
-        Square::new(self.as_index() as u8 + 8)
+        let rank_plus_1 = self.rank().add_one();
+        let file = self.file();
+
+        match rank_plus_1 {
+            Some(rank_plus_1) => Square::from_rank_file(rank_plus_1, file),
+            _ => None,
+        }
     }
 
+    #[inline(always)]
     pub fn south(self) -> Option<Square> {
-        Square::new(self.as_index() as u8 - 8)
+        let rank_minus_1 = self.rank().subtract_one();
+        let file = self.file();
+
+        match rank_minus_1 {
+            Some(rank_minus_1) => Square::from_rank_file(rank_minus_1, file),
+            _ => None,
+        }
     }
 
+    #[inline(always)]
+    pub fn north_east(self) -> Option<Square> {
+        let rank_plus_1 = self.rank().add_one();
+        let file_plus_1 = self.file().add_one();
+
+        match (rank_plus_1, file_plus_1) {
+            (Some(rank_plus_1), Some(file_plus_1)) => {
+                Square::from_rank_file(rank_plus_1, file_plus_1)
+            }
+            (_, _) => None,
+        }
+    }
+
+    #[inline(always)]
+    pub fn south_east(self) -> Option<Square> {
+        let rank_minus_1 = self.rank().subtract_one();
+        let file_plus_1 = self.file().add_one();
+
+        match (rank_minus_1, file_plus_1) {
+            (Some(rank_minus_1), Some(file_plus_1)) => {
+                Square::from_rank_file(rank_minus_1, file_plus_1)
+            }
+            (_, _) => None,
+        }
+    }
+
+    #[inline(always)]
+    pub fn south_west(self) -> Option<Square> {
+        let rank_minus_1 = self.rank().subtract_one();
+        let file_minus_1 = self.file().subtract_one();
+
+        match (rank_minus_1, file_minus_1) {
+            (Some(rank_minus_1), Some(file_minus_1)) => {
+                Square::from_rank_file(rank_minus_1, file_minus_1)
+            }
+            (_, _) => None,
+        }
+    }
+
+    #[inline(always)]
+    pub fn north_west(self) -> Option<Square> {
+        let rank_plus_1 = self.rank().add_one();
+        let file_minus_1 = self.file().subtract_one();
+
+        match (rank_plus_1, file_minus_1) {
+            (Some(rank_plus_1), Some(file_minus_1)) => {
+                Square::from_rank_file(rank_plus_1, file_minus_1)
+            }
+            (_, _) => None,
+        }
+    }
+
+    #[inline(always)]
     pub fn rank(self) -> Rank {
         Rank::new(self.rank_as_u8()).unwrap()
     }
 
+    #[inline(always)]
     pub fn file(self) -> File {
         File::new(self.file_as_u8()).unwrap()
     }
 
+    #[inline(always)]
     pub fn from_rank_file(rank: Rank, file: File) -> Option<Square> {
         let sq = (rank.as_index() << 3) + file.as_index();
         Square::new(sq as u8)
@@ -207,6 +276,150 @@ pub mod tests {
         assert!(Square::A1.file() == File::A);
         assert!(Square::E5.file() == File::E);
         assert!(Square::D4.file() == File::D);
+    }
+
+    #[test]
+    pub fn north() {
+        assert!(Square::A1.north() == Some(Square::A2));
+        assert!(Square::B1.north() == Some(Square::B2));
+        assert!(Square::C1.north() == Some(Square::C2));
+        assert!(Square::D1.north() == Some(Square::D2));
+        assert!(Square::E1.north() == Some(Square::E2));
+        assert!(Square::F1.north() == Some(Square::F2));
+        assert!(Square::G1.north() == Some(Square::G2));
+        assert!(Square::H1.north() == Some(Square::H2));
+
+        assert!(Square::A7.north() == Some(Square::A8));
+        assert!(Square::B7.north() == Some(Square::B8));
+        assert!(Square::C7.north() == Some(Square::C8));
+        assert!(Square::D7.north() == Some(Square::D8));
+        assert!(Square::E7.north() == Some(Square::E8));
+        assert!(Square::F7.north() == Some(Square::F8));
+        assert!(Square::G7.north() == Some(Square::G8));
+        assert!(Square::H7.north() == Some(Square::H8));
+
+        assert!(Square::A8.north() == None);
+        assert!(Square::B8.north() == None);
+        assert!(Square::C8.north() == None);
+        assert!(Square::D8.north() == None);
+        assert!(Square::E8.north() == None);
+        assert!(Square::F8.north() == None);
+        assert!(Square::G8.north() == None);
+        assert!(Square::H8.north() == None);
+    }
+
+    #[test]
+    pub fn south() {
+        assert!(Square::A1.south() == None);
+        assert!(Square::B1.south() == None);
+        assert!(Square::C1.south() == None);
+        assert!(Square::D1.south() == None);
+        assert!(Square::E1.south() == None);
+        assert!(Square::F1.south() == None);
+        assert!(Square::G1.south() == None);
+        assert!(Square::H1.south() == None);
+
+        assert!(Square::A8.south() == Some(Square::A7));
+        assert!(Square::B8.south() == Some(Square::B7));
+        assert!(Square::C8.south() == Some(Square::C7));
+        assert!(Square::D8.south() == Some(Square::D7));
+        assert!(Square::E8.south() == Some(Square::E7));
+        assert!(Square::F8.south() == Some(Square::F7));
+        assert!(Square::G8.south() == Some(Square::G7));
+        assert!(Square::H8.south() == Some(Square::H7));
+
+        assert!(Square::A2.south() == Some(Square::A1));
+        assert!(Square::B2.south() == Some(Square::B1));
+        assert!(Square::C2.south() == Some(Square::C1));
+        assert!(Square::D2.south() == Some(Square::D1));
+        assert!(Square::E2.south() == Some(Square::E1));
+        assert!(Square::F2.south() == Some(Square::F1));
+        assert!(Square::G2.south() == Some(Square::G1));
+        assert!(Square::H2.south() == Some(Square::H1));
+    }
+
+    #[test]
+    pub fn north_east() {
+        assert!(Square::A1.north_east() == Some(Square::B2));
+        assert!(Square::B1.north_east() == Some(Square::C2));
+        assert!(Square::C1.north_east() == Some(Square::D2));
+        assert!(Square::D1.north_east() == Some(Square::E2));
+        assert!(Square::E1.north_east() == Some(Square::F2));
+        assert!(Square::F1.north_east() == Some(Square::G2));
+        assert!(Square::G1.north_east() == Some(Square::H2));
+        assert!(Square::H1.north_east() == None);
+
+        assert!(Square::A8.north_east() == None);
+        assert!(Square::B8.north_east() == None);
+        assert!(Square::C8.north_east() == None);
+        assert!(Square::D8.north_east() == None);
+        assert!(Square::E8.north_east() == None);
+        assert!(Square::F8.north_east() == None);
+        assert!(Square::G8.north_east() == None);
+        assert!(Square::H8.north_east() == None);
+    }
+
+    #[test]
+    pub fn north_west() {
+        assert!(Square::A1.north_west() == None);
+        assert!(Square::B1.north_west() == Some(Square::A2));
+        assert!(Square::C1.north_west() == Some(Square::B2));
+        assert!(Square::D1.north_west() == Some(Square::C2));
+        assert!(Square::E1.north_west() == Some(Square::D2));
+        assert!(Square::F1.north_west() == Some(Square::E2));
+        assert!(Square::G1.north_west() == Some(Square::F2));
+        assert!(Square::H1.north_west() == Some(Square::G2));
+
+        assert!(Square::A8.north_west() == None);
+        assert!(Square::B8.north_west() == None);
+        assert!(Square::C8.north_west() == None);
+        assert!(Square::D8.north_west() == None);
+        assert!(Square::E8.north_west() == None);
+        assert!(Square::F8.north_west() == None);
+        assert!(Square::G8.north_west() == None);
+        assert!(Square::H8.north_west() == None);
+    }
+
+    #[test]
+    pub fn south_east() {
+        assert!(Square::A1.south_east() == None);
+        assert!(Square::B1.south_east() == None);
+        assert!(Square::C1.south_east() == None);
+        assert!(Square::D1.south_east() == None);
+        assert!(Square::E1.south_east() == None);
+        assert!(Square::F1.south_east() == None);
+        assert!(Square::G1.south_east() == None);
+        assert!(Square::H1.south_east() == None);
+
+        assert!(Square::A8.south_east() == Some(Square::B7));
+        assert!(Square::B8.south_east() == Some(Square::C7));
+        assert!(Square::C8.south_east() == Some(Square::D7));
+        assert!(Square::D8.south_east() == Some(Square::E7));
+        assert!(Square::E8.south_east() == Some(Square::F7));
+        assert!(Square::F8.south_east() == Some(Square::G7));
+        assert!(Square::G8.south_east() == Some(Square::H7));
+        assert!(Square::H8.south_east() == None);
+    }
+
+    #[test]
+    pub fn south_west() {
+        assert!(Square::A8.south_west() == None);
+        assert!(Square::B8.south_west() == Some(Square::A7));
+        assert!(Square::C8.south_west() == Some(Square::B7));
+        assert!(Square::D8.south_west() == Some(Square::C7));
+        assert!(Square::E8.south_west() == Some(Square::D7));
+        assert!(Square::F8.south_west() == Some(Square::E7));
+        assert!(Square::G8.south_west() == Some(Square::F7));
+        assert!(Square::H8.south_west() == Some(Square::G7));
+
+        assert!(Square::A1.south_west() == None);
+        assert!(Square::B1.south_west() == None);
+        assert!(Square::C1.south_west() == None);
+        assert!(Square::D1.south_west() == None);
+        assert!(Square::E1.south_west() == None);
+        assert!(Square::F1.south_west() == None);
+        assert!(Square::G1.south_west() == None);
+        assert!(Square::H1.south_west() == None);
     }
 
     #[test]

@@ -11,10 +11,12 @@ pub enum Colour {
 impl Colour {
     pub const NUM_COLOURS: usize = 2;
 
+    #[inline(always)]
     pub const fn as_index(self) -> usize {
         self as usize
     }
 
+    #[inline(always)]
     pub const fn flip_side(self) -> Colour {
         match self {
             Colour::White => Colour::Black,

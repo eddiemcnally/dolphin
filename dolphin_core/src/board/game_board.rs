@@ -99,7 +99,7 @@ impl Board {
         self.get_bitboard().is_set(sq) == false
     }
 
-    pub fn get_piece_bitboard(&self, piece: Piece, colour: Colour) -> Bitboard {
+    pub const fn get_piece_bitboard(&self, piece: Piece, colour: Colour) -> Bitboard {
         self.colour_info[colour.as_index()].piece_bb[piece.as_index()]
     }
 
@@ -112,7 +112,7 @@ impl Board {
             | self.colour_info[colour.as_index()].piece_bb[Piece::Queen.as_index()]
     }
 
-    pub fn get_knight_bb_for_colour(&self, colour: Colour) -> Bitboard {
+    pub const fn get_knight_bb_for_colour(&self, colour: Colour) -> Bitboard {
         self.colour_info[colour.as_index()].piece_bb[Piece::Knight.as_index()]
     }
 

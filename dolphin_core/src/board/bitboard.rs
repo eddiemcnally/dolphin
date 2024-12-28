@@ -17,29 +17,35 @@ pub struct BitboardIterator(u64);
 pub struct Bitboard(u64);
 
 impl Bitboard {
+    #[inline(always)]
     pub const fn new(bb: u64) -> Bitboard {
         Bitboard(bb)
     }
 
+    #[inline(always)]
     pub const fn into_u64(&self) -> u64 {
         self.0
     }
 
-    pub fn from_square(sq: Square) -> Bitboard {
+    #[inline(always)]
+    pub const fn from_square(sq: Square) -> Bitboard {
         to_mask(sq)
     }
 
-    pub fn set_bit(&mut self, sq: Square) {
+    #[inline(always)]
+    pub const fn set_bit(&mut self, sq: Square) {
         let mask = to_mask(sq);
         self.0 |= mask.0
     }
 
-    pub fn clear_bit(&mut self, sq: Square) {
+    #[inline(always)]
+    pub const fn clear_bit(&mut self, sq: Square) {
         let mask = to_mask(sq);
         self.0 &= !mask.0
     }
 
-    pub fn is_set(self, sq: Square) -> bool {
+    #[inline(always)]
+    pub const fn is_set(self, sq: Square) -> bool {
         let mask = to_mask(sq);
         (self.0 & mask.0) != 0
     }
@@ -48,28 +54,40 @@ impl Bitboard {
         self.0 == 0
     }
 
-    pub fn north_east(&self) -> Bitboard {
-        (*self & !FILE_H_BB) << 9
+    #[inline(always)]
+    pub const fn north_east(&self) -> Bitboard {
+        let num = (self.0 & !FILE_H_BB.into_u64()) << 9;
+        Bitboard(num)
     }
 
-    pub fn south_east(&self) -> Bitboard {
-        (*self & !FILE_H_BB) >> 7
+    #[inline(always)]
+    pub const fn south_east(&self) -> Bitboard {
+        let num = (self.0 & !FILE_H_BB.into_u64()) >> 7;
+        Bitboard(num)
     }
 
-    pub fn south(&self) -> Bitboard {
-        *self >> 8
+    #[inline(always)]
+    pub const fn south(&self) -> Bitboard {
+        let num = self.0 >> 8;
+        Bitboard(num)
     }
 
-    pub fn north(&self) -> Bitboard {
-        *self << 8
+    #[inline(always)]
+    pub const fn north(&self) -> Bitboard {
+        let num = self.0 << 8;
+        Bitboard(num)
     }
 
-    pub fn north_west(&self) -> Bitboard {
-        (*self & !FILE_A_BB) << 7
+    #[inline(always)]
+    pub const fn north_west(&self) -> Bitboard {
+        let num = (self.0 & !FILE_A_BB.into_u64()) << 7;
+        Bitboard(num)
     }
 
-    pub fn south_west(&self) -> Bitboard {
-        (*self & !FILE_A_BB) >> 9
+    #[inline(always)]
+    pub const fn south_west(&self) -> Bitboard {
+        let num = (self.0 & !FILE_A_BB.into_u64()) >> 9;
+        Bitboard(num)
     }
 
     pub fn display_squares(&self) {
@@ -84,19 +102,23 @@ impl Bitboard {
         println!("{:#X}", self.0);
     }
 
+    #[inline(always)]
     pub fn iterator(&self) -> BitboardIterator {
         BitboardIterator(self.0)
     }
 
+    #[inline(always)]
     pub const fn reverse_bits(&self) -> Bitboard {
         Bitboard(self.0.reverse_bits())
     }
 
+    #[inline(always)]
     pub const fn overflowing_mul(&self, rhs: u64) -> (u64, bool) {
         let (result, overflowed) = u64::overflowing_mul(self.0, rhs);
         (result, overflowed)
     }
 
+    #[inline(always)]
     pub const fn overflowing_sub(&self, rhs: u64) -> (u64, bool) {
         let (result, overflowed) = u64::overflowing_sub(self.0, rhs);
         (result, overflowed)
@@ -104,8 +126,9 @@ impl Bitboard {
 }
 
 #[inline(always)]
-fn to_mask(sq: Square) -> Bitboard {
-    Bitboard::new(1).shl(sq.as_index() as u8)
+const fn to_mask(sq: Square) -> Bitboard {
+    let num = 0x01 << sq.as_index();
+    Bitboard(num)
 }
 
 impl BitAnd for Bitboard {
@@ -169,6 +192,7 @@ impl Shr<u8> for Bitboard {
 }
 
 impl BitboardIterator {
+    #[inline(always)]
     pub fn new(num: u64) -> BitboardIterator {
         BitboardIterator(num)
     }
@@ -177,6 +201,7 @@ impl BitboardIterator {
 impl Iterator for BitboardIterator {
     type Item = Square;
 
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.0 > 0 {
             let sq = Square::new(self.0.trailing_zeros() as u8);
