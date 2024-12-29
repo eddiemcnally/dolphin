@@ -1,4 +1,5 @@
 use crate::board::bitboard::Bitboard;
+use crate::board::colour::Colour;
 use crate::board::file::File;
 use crate::board::game_board::Board;
 use crate::board::rank::Rank;
@@ -91,29 +92,12 @@ impl OccupancyMasks {
         bb
     }
 
-    pub fn get_occ_mask_white_pawns_attacking_sq(&self, sq: &Square) -> Bitboard {
+    pub fn get_occ_mask_pawns_attacking_sq(&self, colour: &Colour, sq: &Square) -> Bitboard {
         let bb = sq.get_square_as_bb();
-        bb.south_east() | bb.south_west()
-    }
-    pub fn get_occ_mask_black_pawns_attacking_sq(&self, sq: &Square) -> Bitboard {
-        let bb = sq.get_square_as_bb();
-        bb.north_east() | bb.north_west()
-    }
-    pub fn get_occ_mask_white_pawn_capture_non_first_double_move(&self, sq: &Square) -> Bitboard {
-        let bb = sq.get_square_as_bb();
-        bb.north_east() | bb.north_west()
-    }
-    pub fn get_occ_mask_black_pawn_capture_non_first_double_move(&self, sq: &Square) -> Bitboard {
-        let bb = sq.get_square_as_bb();
-        bb.south_east() | bb.south_west()
-    }
-    pub fn get_occ_mask_white_pawn_attack_squares(&self, pawn_sq: &Square) -> Bitboard {
-        let bb = pawn_sq.get_square_as_bb();
-        bb.north_east() | bb.north_west()
-    }
-    pub fn get_occ_mask_black_pawn_attack_squares(&self, pawn_sq: &Square) -> Bitboard {
-        let bb = pawn_sq.get_square_as_bb();
-        bb.south_east() | bb.south_west()
+        match colour {
+            Colour::White => bb.south_east() | bb.south_west(),
+            Colour::Black => bb.north_east() | bb.north_west(),
+        }
     }
 
     // bitboards for squares between castle squares (eg White King side = f1 and g1)

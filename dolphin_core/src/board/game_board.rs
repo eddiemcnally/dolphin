@@ -103,19 +103,6 @@ impl Board {
         self.colour_info[colour.as_index()].piece_bb[piece.as_index()]
     }
 
-    pub fn get_rook_and_queen_bb_for_colour(&self, colour: &Colour) -> Bitboard {
-        self.colour_info[colour.as_index()].piece_bb[Piece::Rook.as_index()]
-            | self.colour_info[colour.as_index()].piece_bb[Piece::Queen.as_index()]
-    }
-    pub fn get_bishop_and_queen_bb_for_colour(&self, colour: &Colour) -> Bitboard {
-        self.colour_info[colour.as_index()].piece_bb[Piece::Bishop.as_index()]
-            | self.colour_info[colour.as_index()].piece_bb[Piece::Queen.as_index()]
-    }
-
-    pub const fn get_knight_bb_for_colour(&self, colour: &Colour) -> Bitboard {
-        self.colour_info[colour.as_index()].piece_bb[Piece::Knight.as_index()]
-    }
-
     pub const fn get_colour_bb(&self, colour: &Colour) -> Bitboard {
         self.colour_info[colour.as_index()].colour_bb
     }

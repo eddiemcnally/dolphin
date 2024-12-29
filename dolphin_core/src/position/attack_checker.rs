@@ -23,7 +23,8 @@ impl AttackChecker {
         match attacking_side {
             Colour::White => {
                 let pawn_bb = board.get_piece_bitboard(&Piece::Pawn, &Colour::White);
-                let wp_attacking_square = occ_masks.get_occ_mask_white_pawns_attacking_sq(&sq);
+                let wp_attacking_square =
+                    occ_masks.get_occ_mask_pawns_attacking_sq(&Colour::White, &sq);
                 if !(pawn_bb & wp_attacking_square).is_empty() {
                     return true;
                 }
@@ -35,7 +36,9 @@ impl AttackChecker {
                     }
                 }
 
-                let horiz_vert_bb = board.get_rook_and_queen_bb_for_colour(&Colour::White);
+                let horiz_vert_bb = board.get_piece_bitboard(&Piece::Rook, &Colour::White)
+                    | board.get_piece_bitboard(&Piece::Queen, &Colour::White);
+
                 let all_pce_bb = board.get_bitboard();
                 // check to see if the sqaure being attacked shares a rank or file
                 // with any of the rooks or queens before doing a detailed analysis
@@ -54,7 +57,8 @@ impl AttackChecker {
                     return true;
                 }
 
-                let diag_bb = board.get_bishop_and_queen_bb_for_colour(&Colour::White);
+                let diag_bb = board.get_piece_bitboard(&Piece::Bishop, &Colour::White)
+                    | board.get_piece_bitboard(&Piece::Queen, &Colour::White);
                 // check to see if the sqaure being attacked shares a diagonal
                 // with any of the bishops or queens before doing a detailed analysis
                 // of potential blocking pieces
@@ -74,7 +78,8 @@ impl AttackChecker {
             }
             Colour::Black => {
                 let pawn_bb = board.get_piece_bitboard(&Piece::Pawn, &Colour::Black);
-                let bp_attacking_square = occ_masks.get_occ_mask_black_pawns_attacking_sq(&sq);
+                let bp_attacking_square =
+                    occ_masks.get_occ_mask_pawns_attacking_sq(&Colour::Black, &sq);
                 if !(pawn_bb & bp_attacking_square).is_empty() {
                     return true;
                 }
@@ -86,7 +91,9 @@ impl AttackChecker {
                     }
                 }
 
-                let horiz_vert_bb = board.get_rook_and_queen_bb_for_colour(&Colour::Black);
+                let horiz_vert_bb = board.get_piece_bitboard(&Piece::Rook, &Colour::Black)
+                    | board.get_piece_bitboard(&Piece::Queen, &Colour::Black);
+
                 let all_pce_bb = board.get_bitboard();
                 // check to see if the sqaure being attacked shares a rank or file
                 // with any of the rooks or queens before doing a detailed analysis
@@ -105,7 +112,8 @@ impl AttackChecker {
                     return true;
                 }
 
-                let diag_bb = board.get_bishop_and_queen_bb_for_colour(&Colour::Black);
+                let diag_bb = board.get_piece_bitboard(&Piece::Bishop, &Colour::Black)
+                    | board.get_piece_bitboard(&Piece::Queen, &Colour::Black);
                 // check to see if the sqaure being attacked shares a diagonal
                 // with any of the bishops or queens before doing a detailed analysis
                 // of potential blocking pieces
