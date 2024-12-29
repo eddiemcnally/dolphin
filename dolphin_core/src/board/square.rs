@@ -96,108 +96,85 @@ impl Square {
 
     #[inline(always)]
     pub const fn new(num: u8) -> Option<Square> {
-        match num {
-            0..=63 => Some(Square(num)),
-            _ => None,
-        }
+        debug_assert!(num <= 63);
+        Some(Square(num & 0x3F))
     }
 
     #[inline(always)]
-    pub const fn as_index(self) -> usize {
+    pub const fn as_index(&self) -> usize {
         self.0 as usize
     }
 
-    #[inline(always)]
-    pub fn north(self) -> Option<Square> {
-        let rank_plus_1 = self.rank().add_one();
-        let file = self.file();
+    pub fn north(&self) -> Option<Square> {
+        let bb = Bitboard::new(0x01 << self.as_index()).north();
+        match bb.into_u64() {
+            0 => None,
+            _ => self.sq_from_bb(&bb),
+        }
+    }
 
-        match rank_plus_1 {
-            Some(rank_plus_1) => Square::from_rank_file(rank_plus_1, file),
-            _ => None,
+    pub fn south(&self) -> Option<Square> {
+        let bb = Bitboard::new(0x01 << self.as_index()).south();
+        match bb.into_u64() {
+            0 => None,
+            _ => self.sq_from_bb(&bb),
+        }
+    }
+
+    pub fn north_east(&self) -> Option<Square> {
+        let bb = Bitboard::new(0x01 << self.as_index()).north_east();
+        match bb.into_u64() {
+            0 => None,
+            _ => self.sq_from_bb(&bb),
+        }
+    }
+
+    pub fn south_east(&self) -> Option<Square> {
+        let bb = Bitboard::new(0x01 << self.as_index()).south_east();
+        match bb.into_u64() {
+            0 => None,
+            _ => self.sq_from_bb(&bb),
+        }
+    }
+
+    pub fn south_west(&self) -> Option<Square> {
+        let bb = Bitboard::new(0x01 << self.as_index()).south_west();
+        match bb.into_u64() {
+            0 => None,
+            _ => self.sq_from_bb(&bb),
+        }
+    }
+
+    pub fn north_west(&self) -> Option<Square> {
+        let bb = Bitboard::new(0x01 << self.as_index()).north_west();
+        match bb.into_u64() {
+            0 => None,
+            _ => self.sq_from_bb(&bb),
         }
     }
 
     #[inline(always)]
-    pub fn south(self) -> Option<Square> {
-        let rank_minus_1 = self.rank().subtract_one();
-        let file = self.file();
-
-        match rank_minus_1 {
-            Some(rank_minus_1) => Square::from_rank_file(rank_minus_1, file),
-            _ => None,
-        }
+    fn sq_from_bb(&self, bb: &Bitboard) -> Option<Square> {
+        Square::new(bb.into_u64().trailing_zeros() as u8)
     }
 
     #[inline(always)]
-    pub fn north_east(self) -> Option<Square> {
-        let rank_plus_1 = self.rank().add_one();
-        let file_plus_1 = self.file().add_one();
-
-        match (rank_plus_1, file_plus_1) {
-            (Some(rank_plus_1), Some(file_plus_1)) => {
-                Square::from_rank_file(rank_plus_1, file_plus_1)
-            }
-            (_, _) => None,
-        }
-    }
-
-    #[inline(always)]
-    pub fn south_east(self) -> Option<Square> {
-        let rank_minus_1 = self.rank().subtract_one();
-        let file_plus_1 = self.file().add_one();
-
-        match (rank_minus_1, file_plus_1) {
-            (Some(rank_minus_1), Some(file_plus_1)) => {
-                Square::from_rank_file(rank_minus_1, file_plus_1)
-            }
-            (_, _) => None,
-        }
-    }
-
-    #[inline(always)]
-    pub fn south_west(self) -> Option<Square> {
-        let rank_minus_1 = self.rank().subtract_one();
-        let file_minus_1 = self.file().subtract_one();
-
-        match (rank_minus_1, file_minus_1) {
-            (Some(rank_minus_1), Some(file_minus_1)) => {
-                Square::from_rank_file(rank_minus_1, file_minus_1)
-            }
-            (_, _) => None,
-        }
-    }
-
-    #[inline(always)]
-    pub fn north_west(self) -> Option<Square> {
-        let rank_plus_1 = self.rank().add_one();
-        let file_minus_1 = self.file().subtract_one();
-
-        match (rank_plus_1, file_minus_1) {
-            (Some(rank_plus_1), Some(file_minus_1)) => {
-                Square::from_rank_file(rank_plus_1, file_minus_1)
-            }
-            (_, _) => None,
-        }
-    }
-
-    #[inline(always)]
-    pub fn rank(self) -> Rank {
+    pub fn rank(&self) -> Rank {
         Rank::new(self.rank_as_u8()).unwrap()
     }
 
     #[inline(always)]
-    pub fn file(self) -> File {
+    pub fn file(&self) -> File {
         File::new(self.file_as_u8()).unwrap()
     }
 
     #[inline(always)]
-    pub fn from_rank_file(rank: Rank, file: File) -> Option<Square> {
+    pub fn from_rank_file(rank: &Rank, file: &File) -> Option<Square> {
         let sq = (rank.as_index() << 3) + file.as_index();
         Square::new(sq as u8)
     }
 
-    pub fn get_square_as_bb(self) -> Bitboard {
+    pub fn get_square_as_bb(&self) -> Bitboard {
         Bitboard::new(0x01u64 << (self.as_index()))
     }
 
@@ -207,24 +184,24 @@ impl Square {
 
         if let Some(file) = File::from_char(f) {
             if let Some(rank) = Rank::from_char(r) {
-                return Square::from_rank_file(rank, file);
+                return Square::from_rank_file(&rank, &file);
             }
         }
         None
     }
 
-    pub fn same_rank(self, other: Square) -> bool {
+    pub fn same_rank(&self, other: &Square) -> bool {
         self.rank_as_u8() == other.rank_as_u8()
     }
 
-    pub fn same_file(self, other: Square) -> bool {
+    pub fn same_file(&self, other: &Square) -> bool {
         self.file_as_u8() == other.file_as_u8()
     }
 
-    const fn rank_as_u8(self) -> u8 {
+    const fn rank_as_u8(&self) -> u8 {
         self.as_index() as u8 >> 3
     }
-    const fn file_as_u8(self) -> u8 {
+    const fn file_as_u8(&self) -> u8 {
         self.as_index() as u8 & 0x07
     }
 
@@ -441,10 +418,10 @@ pub mod tests {
         for square in map {
             let rank = square.rank();
             let file = square.file();
-            let sq = Square::from_rank_file(rank, file);
+            let sq = Square::from_rank_file(&rank, &file);
             assert_eq!(*square, sq.expect("Invalid square"));
         }
-        assert!(Square::from_rank_file(Rank::R3, File::G) == Some(Square::G3));
+        assert!(Square::from_rank_file(&Rank::R3, &File::G) == Some(Square::G3));
     }
 
     #[test]
@@ -462,11 +439,11 @@ pub mod tests {
 
     #[test]
     pub fn from_rank_file() {
-        assert!(Square::from_rank_file(Rank::R1, File::A) == Some(Square::A1));
-        assert!(Square::from_rank_file(Rank::R8, File::A) == Some(Square::A8));
+        assert!(Square::from_rank_file(&Rank::R1, &File::A) == Some(Square::A1));
+        assert!(Square::from_rank_file(&Rank::R8, &File::A) == Some(Square::A8));
 
-        assert!(Square::from_rank_file(Rank::R1, File::H) == Some(Square::H1));
-        assert!(Square::from_rank_file(Rank::R8, File::H) == Some(Square::H8));
+        assert!(Square::from_rank_file(&Rank::R1, &File::H) == Some(Square::H1));
+        assert!(Square::from_rank_file(&Rank::R8, &File::H) == Some(Square::H8));
     }
 
     #[test]

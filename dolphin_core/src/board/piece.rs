@@ -21,7 +21,7 @@ impl Piece {
         *self as usize
     }
 
-    pub const fn value(self) -> Score {
+    pub const fn value(&self) -> Score {
         match self {
             Piece::Pawn => PieceValue::Pawn as Score,
             Piece::Bishop => PieceValue::Bishop as Score,
@@ -51,7 +51,7 @@ impl Piece {
         }
     }
 
-    pub fn label(piece: Piece, colour: Colour) -> char {
+    pub fn label(piece: &Piece, colour: &Colour) -> char {
         let c = match piece {
             Piece::Pawn => 'P',
             Piece::Bishop => 'B',
@@ -146,19 +146,19 @@ pub mod tests {
     #[test]
     pub fn label() {
         // white
-        assert_eq!(Piece::label(Piece::Pawn, Colour::White), 'P');
-        assert_eq!(Piece::label(Piece::Bishop, Colour::White), 'B');
-        assert_eq!(Piece::label(Piece::Knight, Colour::White), 'N');
-        assert_eq!(Piece::label(Piece::Rook, Colour::White), 'R');
-        assert_eq!(Piece::label(Piece::Queen, Colour::White), 'Q');
-        assert_eq!(Piece::label(Piece::King, Colour::White), 'K');
+        assert_eq!(Piece::label(&Piece::Pawn, &Colour::White), 'P');
+        assert_eq!(Piece::label(&Piece::Bishop, &Colour::White), 'B');
+        assert_eq!(Piece::label(&Piece::Knight, &Colour::White), 'N');
+        assert_eq!(Piece::label(&Piece::Rook, &Colour::White), 'R');
+        assert_eq!(Piece::label(&Piece::Queen, &Colour::White), 'Q');
+        assert_eq!(Piece::label(&Piece::King, &Colour::White), 'K');
 
         // black
-        assert_eq!(Piece::label(Piece::Pawn, Colour::Black), 'p');
-        assert_eq!(Piece::label(Piece::Bishop, Colour::Black), 'b');
-        assert_eq!(Piece::label(Piece::Knight, Colour::Black), 'n');
-        assert_eq!(Piece::label(Piece::Rook, Colour::Black), 'r');
-        assert_eq!(Piece::label(Piece::Queen, Colour::Black), 'q');
-        assert_eq!(Piece::label(Piece::King, Colour::Black), 'k');
+        assert_eq!(Piece::label(&Piece::Pawn, &Colour::Black), 'p');
+        assert_eq!(Piece::label(&Piece::Bishop, &Colour::Black), 'b');
+        assert_eq!(Piece::label(&Piece::Knight, &Colour::Black), 'n');
+        assert_eq!(Piece::label(&Piece::Rook, &Colour::Black), 'r');
+        assert_eq!(Piece::label(&Piece::Queen, &Colour::Black), 'q');
+        assert_eq!(Piece::label(&Piece::King, &Colour::Black), 'k');
     }
 }

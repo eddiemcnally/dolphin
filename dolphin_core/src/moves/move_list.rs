@@ -21,17 +21,17 @@ impl MoveList {
         }
     }
 
-    pub fn push(&mut self, mov: Move) {
+    pub fn push(&mut self, mov: &Move) {
         debug_assert!(
             self.count < MOVE_LIST_LEN,
             "Attempt to add past end of move list"
         );
 
-        self.ml[self.count] = mov;
+        self.ml[self.count] = *mov;
         self.count += 1;
     }
 
-    pub fn contains(&self, mov: Move) -> bool {
+    pub fn contains(&self, mov: &Move) -> bool {
         self.ml[0..self.count].contains(&mov)
     }
 
@@ -47,34 +47,13 @@ impl MoveList {
         self.ml[offset]
     }
 
-    pub fn get_offset_for_move(&self, mv: Move) -> Option<usize> {
-        (0..self.len()).find(|&i| self.ml[i] == mv)
+    pub fn get_offset_for_move(&self, mv: &Move) -> Option<usize> {
+        (0..self.len()).find(|&i| self.ml[i] == *mv)
     }
 
     pub fn iterator(&self) -> std::slice::Iter<'_, Move> {
         self.ml[0..self.count].iter()
     }
-
-    // pub fn sort_by_score(&mut self, sort_from_offset: usize) {
-    //     if self.count == 0 {
-    //         return;
-    //     }
-
-    //     if sort_from_offset == self.count - 1 {
-    //         // starting at the end, nothing to sort
-    //         return;
-    //     }
-
-    //     let mut high = sort_from_offset;
-
-    //     // find entry with highest score
-    //     for i in (sort_from_offset + 1)..self.count {
-    //         if self.ml[i].get_score() > self.ml[high].get_score() {
-    //             high = i;
-    //         }
-    //     }
-    //     self.ml.swap(high, sort_from_offset);
-    // }
 
     pub fn print(&self) {
         for mov in self.iterator() {
@@ -110,36 +89,36 @@ pub mod tests {
     #[test]
     pub fn push_moves_contains_as_expected() {
         let mvs = [
-            Move::encode_move(Square::H7, Square::H5),
-            Move::encode_move(Square::B4, Square::C5),
-            Move::encode_move(Square::A3, Square::A2),
-            Move::encode_move(Square::D6, Square::E8),
-            Move::encode_move(Square::B6, Square::B7),
+            Move::encode_move(&Square::H7, &Square::H5),
+            Move::encode_move(&Square::B4, &Square::C5),
+            Move::encode_move(&Square::A3, &Square::A2),
+            Move::encode_move(&Square::D6, &Square::E8),
+            Move::encode_move(&Square::B6, &Square::B7),
         ];
 
         let mut ml = MoveList::new();
         for mv in mvs.iter() {
-            ml.push(*mv);
+            ml.push(mv);
         }
 
         for mv in mvs.iter() {
-            assert!(ml.contains(*mv));
+            assert!(ml.contains(mv));
         }
     }
 
     #[test]
     pub fn push_moves_iterator_as_expected() {
         let mvs = [
-            Move::encode_move(Square::H7, Square::H5),
-            Move::encode_move(Square::B4, Square::C5),
-            Move::encode_move(Square::A3, Square::A2),
-            Move::encode_move(Square::D6, Square::E8),
-            Move::encode_move(Square::B6, Square::B7),
+            Move::encode_move(&Square::H7, &Square::H5),
+            Move::encode_move(&Square::B4, &Square::C5),
+            Move::encode_move(&Square::A3, &Square::A2),
+            Move::encode_move(&Square::D6, &Square::E8),
+            Move::encode_move(&Square::B6, &Square::B7),
         ];
 
         let mut ml = MoveList::new();
         for mv in mvs.iter() {
-            ml.push(*mv);
+            ml.push(mv);
         }
 
         let mut counter = 0;
@@ -153,16 +132,16 @@ pub mod tests {
     #[test]
     pub fn push_moves_len_as_expected() {
         let mvs = [
-            Move::encode_move(Square::H7, Square::H5),
-            Move::encode_move(Square::B4, Square::C5),
-            Move::encode_move(Square::A3, Square::A2),
-            Move::encode_move(Square::D6, Square::E8),
-            Move::encode_move(Square::B6, Square::B7),
+            Move::encode_move(&Square::H7, &Square::H5),
+            Move::encode_move(&Square::B4, &Square::C5),
+            Move::encode_move(&Square::A3, &Square::A2),
+            Move::encode_move(&Square::D6, &Square::E8),
+            Move::encode_move(&Square::B6, &Square::B7),
         ];
 
         let mut ml = MoveList::new();
         for mv in mvs.iter() {
-            ml.push(*mv);
+            ml.push(mv);
         }
         assert_eq!(ml.len(), mvs.len());
     }

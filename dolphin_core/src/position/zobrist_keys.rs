@@ -51,7 +51,7 @@ impl ZobristKeys {
     }
 
     #[inline(always)]
-    pub fn piece_square(&self, piece: Piece, colour: Colour, square: Square) -> ZobristHash {
+    pub fn piece_square(&self, piece: &Piece, colour: &Colour, square: &Square) -> ZobristHash {
         unsafe {
             *self
                 .piece_keys
@@ -61,7 +61,7 @@ impl ZobristKeys {
         }
     }
 
-    pub fn en_passant(&self, square: Square) -> ZobristHash {
+    pub fn en_passant(&self, square: &Square) -> ZobristHash {
         let sq_offset = square.as_index();
         self.en_passant_sq_keys[sq_offset]
     }
@@ -136,7 +136,7 @@ pub mod tests {
         for pce in pieces.iter() {
             for col in colours.iter() {
                 for sq in Square::iterator() {
-                    let hash = keys.piece_square(*pce, *col, *sq);
+                    let hash = keys.piece_square(pce, col, sq);
                     v.push(hash);
                 }
             }
@@ -160,7 +160,7 @@ pub mod tests {
         let mut v: Vec<ZobristHash> = Vec::new();
 
         for sq in Square::iterator() {
-            let hash = keys.en_passant(*sq);
+            let hash = keys.en_passant(sq);
             v.push(hash);
         }
 

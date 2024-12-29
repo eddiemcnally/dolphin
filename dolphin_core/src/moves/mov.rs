@@ -53,8 +53,11 @@ pub struct ScoredMove {
 }
 
 impl ScoredMove {
-    pub const fn new(mv: Move, score: Score) -> ScoredMove {
-        ScoredMove { mv, score }
+    pub const fn new(mv: &Move, score: &Score) -> ScoredMove {
+        ScoredMove {
+            mv: *mv,
+            score: *score,
+        }
     }
 
     pub const fn get_move(&self) -> Move {
@@ -96,16 +99,16 @@ impl Move {
         }
     }
 
-    pub const fn encode_move(from_sq: Square, to_sq: Square) -> Move {
+    pub const fn encode_move(from_sq: &Square, to_sq: &Square) -> Move {
         Move {
             bits: Self::encode_from_to_sq(from_sq, to_sq),
         }
     }
 
     pub fn encode_move_with_promotion(
-        from_sq: Square,
-        to_sq: Square,
-        promotion_role: Piece,
+        from_sq: &Square,
+        to_sq: &Square,
+        promotion_role: &Piece,
     ) -> Move {
         let mt = match promotion_role {
             Piece::Knight => PromotionTypes::Knight,
@@ -132,7 +135,7 @@ impl Move {
     /// * `from_sq`         - the from square
     /// * `to_sq`           - the to square
     ///
-    pub const fn encode_move_en_passant(from_sq: Square, to_sq: Square) -> Move {
+    pub const fn encode_move_en_passant(from_sq: &Square, to_sq: &Square) -> Move {
         let mut bits = Self::encode_from_to_sq(from_sq, to_sq);
         bits |= MoveType::EnPassant as u16;
 
@@ -142,7 +145,7 @@ impl Move {
     /// Encodes a White King-side castle move
     ///
     pub const fn encode_move_castle_kingside_white() -> Move {
-        let mut bits = Self::encode_from_to_sq(Square::E1, Square::G1);
+        let mut bits = Self::encode_from_to_sq(&Square::E1, &Square::G1);
         bits |= MoveType::Castle as u16;
 
         Move { bits }
@@ -151,7 +154,7 @@ impl Move {
     /// Encodes a Black King-side castle move
     ///
     pub const fn encode_move_castle_kingside_black() -> Move {
-        let mut bits = Self::encode_from_to_sq(Square::E8, Square::G8);
+        let mut bits = Self::encode_from_to_sq(&Square::E8, &Square::G8);
         bits |= MoveType::Castle as u16;
 
         Move { bits }
@@ -160,7 +163,7 @@ impl Move {
     /// Encodes a White Queen-side castle move
     ///
     pub const fn encode_move_castle_queenside_white() -> Move {
-        let mut bits = Self::encode_from_to_sq(Square::E1, Square::C1);
+        let mut bits = Self::encode_from_to_sq(&Square::E1, &Square::C1);
         bits |= MoveType::Castle as u16;
 
         Move { bits }
@@ -169,7 +172,7 @@ impl Move {
     /// Encodes a Black Queen-side castle move
     ///
     pub const fn encode_move_castle_queenside_black() -> Move {
-        let mut bits = Self::encode_from_to_sq(Square::E8, Square::C8);
+        let mut bits = Self::encode_from_to_sq(&Square::E8, &Square::C8);
         bits |= MoveType::Castle as u16;
 
         Move { bits }
@@ -180,7 +183,7 @@ impl Move {
         println!("From {:?}, To {:?}", from_sq, to_sq);
     }
 
-    const fn encode_from_to_sq(from_sq: Square, to_sq: Square) -> u16 {
+    const fn encode_from_to_sq(from_sq: &Square, to_sq: &Square) -> u16 {
         let mut bits = (from_sq.as_index() as u16) << BitShift::FromSq as usize;
         bits = bits | ((to_sq.as_index() as u16) << BitShift::ToSq as usize);
         bits
@@ -276,7 +279,7 @@ pub mod tests {
                 }
 
                 // encode
-                let mv = Move::encode_move(*from_sq, *to_sq);
+                let mv = Move::encode_move(from_sq, to_sq);
 
                 assert_eq!(mv.from_sq(), *from_sq);
                 assert_eq!(mv.to_sq(), *to_sq);
@@ -289,16 +292,16 @@ pub mod tests {
         let from_sq = Square::D2;
         let to_sq = Square::D1;
 
-        let mut mv = Move::encode_move_with_promotion(from_sq, to_sq, Piece::Bishop);
+        let mut mv = Move::encode_move_with_promotion(&from_sq, &to_sq, &Piece::Bishop);
         assert_eq!(mv.decode_promotion_piece(), Piece::Bishop);
 
-        mv = Move::encode_move_with_promotion(from_sq, to_sq, Piece::Knight);
+        mv = Move::encode_move_with_promotion(&from_sq, &to_sq, &Piece::Knight);
         assert_eq!(mv.decode_promotion_piece(), Piece::Knight);
 
-        mv = Move::encode_move_with_promotion(from_sq, to_sq, Piece::Rook);
+        mv = Move::encode_move_with_promotion(&from_sq, &to_sq, &Piece::Rook);
         assert_eq!(mv.decode_promotion_piece(), Piece::Rook);
 
-        mv = Move::encode_move_with_promotion(from_sq, to_sq, Piece::Queen);
+        mv = Move::encode_move_with_promotion(&from_sq, &to_sq, &Piece::Queen);
         assert_eq!(mv.decode_promotion_piece(), Piece::Queen);
     }
 
@@ -310,7 +313,7 @@ pub mod tests {
                     continue;
                 }
 
-                let mv = Move::encode_move_en_passant(*from_sq, *to_sq);
+                let mv = Move::encode_move_en_passant(from_sq, to_sq);
 
                 assert_eq!(mv.from_sq(), *from_sq);
                 assert_eq!(mv.to_sq(), *to_sq);

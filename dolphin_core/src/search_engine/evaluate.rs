@@ -94,7 +94,7 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> Score {
     // white
     PIECE_MAP.iter().for_each(|(pce, map)| {
         board
-            .get_piece_bitboard(*pce, Colour::White)
+            .get_piece_bitboard(pce, &Colour::White)
             .iterator()
             .for_each(|sq| score += map[sq.as_index()] as Score);
     });
@@ -102,7 +102,7 @@ pub fn evaluate_board(board: &Board, side_to_move: Colour) -> Score {
     // black (note negative score, and mirror'ed table lookup)
     PIECE_MAP.iter().for_each(|(pce, map)| {
         board
-            .get_piece_bitboard(*pce, Colour::Black)
+            .get_piece_bitboard(pce, &Colour::Black)
             .iterator()
             .for_each(|sq| score -= map[63 - sq.as_index()] as Score);
     });

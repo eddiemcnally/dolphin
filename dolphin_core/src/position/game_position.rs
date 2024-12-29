@@ -102,8 +102,8 @@ impl<'a> Position<'a> {
 
         // generate position hash
         pos.board.get_bitboard().iterator().for_each(|sq| {
-            if let Some((piece, colour)) = pos.board().get_piece_and_colour_on_square(sq) {
-                pos.game_state.position_hash ^= pos.zobrist_keys.piece_square(piece, colour, sq);
+            if let Some((piece, colour)) = pos.board().get_piece_and_colour_on_square(&sq) {
+                pos.game_state.position_hash ^= pos.zobrist_keys.piece_square(&piece, &colour, &sq);
             };
         });
 
@@ -123,13 +123,13 @@ impl<'a> Position<'a> {
         }
 
         if let Some(_enp) = en_passant_sq {
-            pos.game_state.position_hash ^= pos.zobrist_keys.en_passant(en_passant_sq.unwrap());
+            pos.game_state.position_hash ^= pos.zobrist_keys.en_passant(&en_passant_sq.unwrap());
         }
 
         // validate position
-        let bk_bb = pos.board().get_piece_bitboard(Piece::King, Colour::Black);
+        let bk_bb = pos.board().get_piece_bitboard(&Piece::King, &Colour::Black);
         assert!(!bk_bb.is_empty());
-        let wk_bb = pos.board().get_piece_bitboard(Piece::King, Colour::White);
+        let wk_bb = pos.board().get_piece_bitboard(&Piece::King, &Colour::White);
         assert!(!wk_bb.is_empty());
 
         pos
@@ -177,31 +177,31 @@ impl<'a> Position<'a> {
             self.move_counter().half_move() as usize - self.game_state.fifty_move_cntr as usize;
 
         self.position_history
-            .contains_position_hash(self.position_hash(), start_offset)
+            .contains_position_hash(&self.position_hash(), start_offset)
     }
 
     pub fn is_king_sq_attacked(&self) -> bool {
-        let king_sq = self.board.get_king_sq(self.side_to_move());
+        let king_sq = self.board.get_king_sq(&self.side_to_move());
         let opp_side = self.side_to_move().flip_side();
         self.attack_checker
-            .is_sq_attacked(self.occ_masks, self.board(), king_sq, opp_side)
+            .is_sq_attacked(self.occ_masks, self.board(), &king_sq, &opp_side)
     }
 
     fn save_game_state(&mut self, mv: &Move) -> Option<Piece> {
         match mv.move_type() {
             MoveType::Normal | MoveType::Promotion => {
                 let to_sq = mv.to_sq();
-                let capt_pce = self.board.get_piece_on_square(to_sq);
-                self.position_history.push(&self.game_state, mv, capt_pce);
+                let capt_pce = self.board.get_piece_on_square(&to_sq);
+                self.position_history.push(&self.game_state, mv, &capt_pce);
                 return capt_pce;
             }
             MoveType::EnPassant => {
                 self.position_history
-                    .push(&self.game_state, mv, Some(Piece::Pawn));
+                    .push(&self.game_state, mv, &Some(Piece::Pawn));
                 return Some(Piece::Pawn);
             }
             MoveType::Castle => {
-                self.position_history.push(&self.game_state, mv, None);
+                self.position_history.push(&self.game_state, mv, &None);
                 return None;
             }
         }
@@ -211,9 +211,9 @@ impl<'a> Position<'a> {
         let capt_pce = self.save_game_state(mv);
         let pce_to_move = self
             .board
-            .get_piece_on_square(mv.from_sq())
+            .get_piece_on_square(&mv.from_sq())
             .expect("Unepxected empty square");
-        self.update_move_counters(capt_pce, pce_to_move);
+        self.update_move_counters(&capt_pce, &pce_to_move);
 
         match mv.move_type() {
             MoveType::Normal => self.do_normal_move(mv),
@@ -223,9 +223,9 @@ impl<'a> Position<'a> {
         }
 
         // update some states based on the move
-        self.update_en_passant_sq(mv, pce_to_move);
+        self.update_en_passant_sq(mv, &pce_to_move);
         if self.game_state.castle_perm.has_castle_permission() {
-            self.update_castle_perms(mv, pce_to_move, capt_pce);
+            self.update_castle_perms(mv, &pce_to_move, &capt_pce);
         }
 
         let move_legality = self.get_move_legality(mv);
@@ -237,26 +237,26 @@ impl<'a> Position<'a> {
     fn do_normal_move(&mut self, mv: &Move) {
         let (from_sq, to_sq) = mv.decode_from_to_sq();
 
-        if let Some(pce) = self.board.get_piece_on_square(to_sq) {
+        if let Some(pce) = self.board.get_piece_on_square(&to_sq) {
             // capture
-            self.remove_piece_from_board(pce, self.side_to_move().flip_side(), to_sq);
+            self.remove_piece_from_board(&pce, &self.side_to_move().flip_side(), &to_sq);
         };
 
         let pce_to_move = self
             .board
-            .get_piece_on_square(from_sq)
+            .get_piece_on_square(&from_sq)
             .expect("Expecting piece on from sq");
 
-        self.move_piece_on_board(pce_to_move, self.side_to_move(), from_sq, to_sq);
+        self.move_piece_on_board(&pce_to_move, &self.side_to_move(), &from_sq, &to_sq);
 
-        if self.is_double_pawn_move(mv, pce_to_move) {
-            let s = self.find_en_passant_sq(mv.from_sq(), self.side_to_move());
+        if self.is_double_pawn_move(mv, &pce_to_move) {
+            let s = self.find_en_passant_sq(&mv.from_sq(), &self.side_to_move());
             self.game_state.en_pass_sq = Some(s);
-            self.game_state.position_hash ^= self.zobrist_keys.en_passant(s);
+            self.game_state.position_hash ^= self.zobrist_keys.en_passant(&s);
         }
     }
 
-    fn find_en_passant_sq(&self, from_sq: Square, col: Colour) -> Square {
+    fn find_en_passant_sq(&self, from_sq: &Square, col: &Colour) -> Square {
         // use the *from_sq* to find the en passant sq
         match col {
             Colour::White => from_sq.north().expect("Invalid north() en passant square"),
@@ -267,16 +267,16 @@ impl<'a> Position<'a> {
     fn do_promotion_move(&mut self, mv: &Move) {
         let (from_sq, to_sq) = mv.decode_from_to_sq();
 
-        if let Some(pce) = self.board.get_piece_on_square(to_sq) {
+        if let Some(pce) = self.board.get_piece_on_square(&to_sq) {
             // capture
-            self.remove_piece_from_board(pce, self.side_to_move().flip_side(), to_sq);
+            self.remove_piece_from_board(&pce, &self.side_to_move().flip_side(), &to_sq);
         }
 
         // remove the pawn being moved
-        self.remove_piece_from_board(Piece::Pawn, self.side_to_move(), from_sq);
+        self.remove_piece_from_board(&Piece::Pawn, &self.side_to_move(), &from_sq);
         // add the promoted piece
         let promo_pce = mv.decode_promotion_piece();
-        self.add_piece_to_board(promo_pce, self.side_to_move(), to_sq)
+        self.add_piece_to_board(&promo_pce, &self.side_to_move(), &to_sq)
     }
 
     fn do_en_passant(&mut self, mv: &Move) {
@@ -288,11 +288,11 @@ impl<'a> Position<'a> {
         };
 
         self.remove_piece_from_board(
-            Piece::Pawn,
-            col_to_capt,
-            capt_sq.expect("Invalid capture square"),
+            &Piece::Pawn,
+            &col_to_capt,
+            &capt_sq.expect("Invalid capture square"),
         );
-        self.move_piece_on_board(Piece::Pawn, col_to_move, mv.from_sq(), mv.to_sq());
+        self.move_piece_on_board(&Piece::Pawn, &col_to_move, &mv.from_sq(), &mv.to_sq());
     }
 
     pub fn take_move(&mut self) {
@@ -303,52 +303,52 @@ impl<'a> Position<'a> {
         self.game_state = gs;
 
         match mv.move_type() {
-            MoveType::Normal => self.reverse_normal_move(&mv, capt_pce),
-            MoveType::Promotion => self.reverse_promotion_move(&mv, capt_pce),
+            MoveType::Normal => self.reverse_normal_move(&mv, &capt_pce),
+            MoveType::Promotion => self.reverse_promotion_move(&mv, &capt_pce),
             MoveType::EnPassant => self.reverse_en_passant_move(&mv),
             MoveType::Castle => self.reverse_castle_move(&mv),
         }
     }
 
-    fn reverse_normal_move(&mut self, mv: &Move, capt_pce: Option<Piece>) {
+    fn reverse_normal_move(&mut self, mv: &Move, capt_pce: &Option<Piece>) {
         let pce_moved = self
             .board
-            .get_piece_on_square(mv.to_sq())
+            .get_piece_on_square(&mv.to_sq())
             .expect("Unexpected empty square");
 
         // revert move
         self.board
-            .move_piece(mv.to_sq(), mv.from_sq(), pce_moved, self.side_to_move());
+            .move_piece(&mv.to_sq(), &mv.from_sq(), &pce_moved, &self.side_to_move());
 
         if capt_pce.is_some() {
             // add back the captured piece
             self.board.add_piece(
-                capt_pce.unwrap(),
-                self.side_to_move().flip_side(),
-                mv.to_sq(),
+                &capt_pce.unwrap(),
+                &self.side_to_move().flip_side(),
+                &mv.to_sq(),
             );
         }
 
-        if self.is_double_pawn_move(mv, pce_moved) {
+        if self.is_double_pawn_move(mv, &pce_moved) {
             self.game_state.en_pass_sq = None;
         }
     }
-    fn reverse_promotion_move(&mut self, mv: &Move, capt_pce: Option<Piece>) {
+    fn reverse_promotion_move(&mut self, mv: &Move, capt_pce: &Option<Piece>) {
         // remove promoted piece
         let prom_piece = mv.decode_promotion_piece();
         self.board
-            .remove_piece(prom_piece, self.side_to_move(), mv.to_sq());
+            .remove_piece(&prom_piece, &self.side_to_move(), &mv.to_sq());
 
         // put the moved piece back to it's original square
         self.board
-            .add_piece(Piece::Pawn, self.side_to_move(), mv.from_sq());
+            .add_piece(&Piece::Pawn, &self.side_to_move(), &mv.from_sq());
 
         // replace the captured piece
         if capt_pce.is_some() {
             self.board.add_piece(
-                capt_pce.unwrap(),
-                self.side_to_move().flip_side(),
-                mv.to_sq(),
+                &capt_pce.unwrap(),
+                &self.side_to_move().flip_side(),
+                &mv.to_sq(),
             );
         }
     }
@@ -357,21 +357,21 @@ impl<'a> Position<'a> {
         match self.side_to_move() {
             Colour::White => {
                 self.board
-                    .move_piece(mv.to_sq(), mv.from_sq(), Piece::Pawn, Colour::White);
+                    .move_piece(&mv.to_sq(), &mv.from_sq(), &Piece::Pawn, &Colour::White);
 
                 let capt_sq = mv.to_sq().south();
                 self.board.add_piece(
-                    Piece::Pawn,
-                    Colour::Black,
-                    capt_sq.expect("Invalid capture square"),
+                    &Piece::Pawn,
+                    &Colour::Black,
+                    &capt_sq.expect("Invalid capture square"),
                 );
             }
             Colour::Black => {
                 self.board
-                    .move_piece(mv.to_sq(), mv.from_sq(), Piece::Pawn, Colour::Black);
+                    .move_piece(&mv.to_sq(), &mv.from_sq(), &Piece::Pawn, &Colour::Black);
 
                 let capt_sq = mv.to_sq().north().expect("Invalid north() square");
-                self.board.add_piece(Piece::Pawn, Colour::White, capt_sq);
+                self.board.add_piece(&Piece::Pawn, &Colour::White, &capt_sq);
             }
         }
     }
@@ -384,23 +384,23 @@ impl<'a> Position<'a> {
         match (from_sq, to_sq) {
             (Square::E1, Square::G1) => {
                 // white king castle
-                self.move_piece_on_board(Piece::King, Colour::White, Square::E1, Square::G1);
-                self.move_piece_on_board(Piece::Rook, Colour::White, Square::H1, Square::F1);
+                self.move_piece_on_board(&Piece::King, &Colour::White, &Square::E1, &Square::G1);
+                self.move_piece_on_board(&Piece::Rook, &Colour::White, &Square::H1, &Square::F1);
             }
             (Square::E8, Square::G8) => {
                 // black king castle
-                self.move_piece_on_board(Piece::King, Colour::Black, Square::E8, Square::G8);
-                self.move_piece_on_board(Piece::Rook, Colour::Black, Square::H8, Square::F8);
+                self.move_piece_on_board(&Piece::King, &Colour::Black, &Square::E8, &Square::G8);
+                self.move_piece_on_board(&Piece::Rook, &Colour::Black, &Square::H8, &Square::F8);
             }
             (Square::E1, Square::C1) => {
                 // white queen castle
-                self.move_piece_on_board(Piece::King, Colour::White, Square::E1, Square::C1);
-                self.move_piece_on_board(Piece::Rook, Colour::White, Square::A1, Square::D1);
+                self.move_piece_on_board(&Piece::King, &Colour::White, &Square::E1, &Square::C1);
+                self.move_piece_on_board(&Piece::Rook, &Colour::White, &Square::A1, &Square::D1);
             }
             (Square::E8, Square::C8) => {
                 // black queen castle
-                self.move_piece_on_board(Piece::King, Colour::Black, Square::E8, Square::C8);
-                self.move_piece_on_board(Piece::Rook, Colour::Black, Square::A8, Square::D8);
+                self.move_piece_on_board(&Piece::King, &Colour::Black, &Square::E8, &Square::C8);
+                self.move_piece_on_board(&Piece::Rook, &Colour::Black, &Square::A8, &Square::D8);
             }
             _ => {
                 eprintln!("Invalid Castle move");
@@ -408,7 +408,7 @@ impl<'a> Position<'a> {
             }
         }
 
-        self.clear_castle_permissions_for_colour(colour);
+        self.clear_castle_permissions_for_colour(&colour);
     }
 
     fn reverse_castle_move(&mut self, mv: &Move) {
@@ -418,30 +418,30 @@ impl<'a> Position<'a> {
             (Square::E1, Square::G1) => {
                 // white king castle
                 self.board
-                    .move_piece(Square::G1, Square::E1, Piece::King, Colour::White);
+                    .move_piece(&Square::G1, &Square::E1, &Piece::King, &Colour::White);
                 self.board
-                    .move_piece(Square::F1, Square::H1, Piece::Rook, Colour::White);
+                    .move_piece(&Square::F1, &Square::H1, &Piece::Rook, &Colour::White);
             }
             (Square::E8, Square::G8) => {
                 // black king castle
                 self.board
-                    .move_piece(Square::G8, Square::E8, Piece::King, Colour::Black);
+                    .move_piece(&Square::G8, &Square::E8, &Piece::King, &Colour::Black);
                 self.board
-                    .move_piece(Square::F8, Square::H8, Piece::Rook, Colour::Black);
+                    .move_piece(&Square::F8, &Square::H8, &Piece::Rook, &Colour::Black);
             }
             (Square::E1, Square::C1) => {
                 // white queen castle
                 self.board
-                    .move_piece(Square::C1, Square::E1, Piece::King, Colour::White);
+                    .move_piece(&Square::C1, &Square::E1, &Piece::King, &Colour::White);
                 self.board
-                    .move_piece(Square::D1, Square::A1, Piece::Rook, Colour::White);
+                    .move_piece(&Square::D1, &Square::A1, &Piece::Rook, &Colour::White);
             }
             (Square::E8, Square::C8) => {
                 // black queen castle
                 self.board
-                    .move_piece(Square::C8, Square::E8, Piece::King, Colour::Black);
+                    .move_piece(&Square::C8, &Square::E8, &Piece::King, &Colour::Black);
                 self.board
-                    .move_piece(Square::D8, Square::A8, Piece::Rook, Colour::Black);
+                    .move_piece(&Square::D8, &Square::A8, &Piece::Rook, &Colour::Black);
             }
             _ => {
                 eprintln!("Invalid castle move");
@@ -452,13 +452,15 @@ impl<'a> Position<'a> {
 
     fn get_move_legality(&self, mv: &Move) -> MoveLegality {
         // check if move results in king being in check
-        let king_sq = self.board().get_king_sq(self.game_state.side_to_move);
+        let king_sq = self.board().get_king_sq(&self.game_state.side_to_move);
         let attacking_side = self.game_state.side_to_move.flip_side();
 
-        if self
-            .attack_checker
-            .is_sq_attacked(self.occ_masks, self.board(), king_sq, attacking_side)
-        {
+        if self.attack_checker.is_sq_attacked(
+            self.occ_masks,
+            self.board(),
+            &king_sq,
+            &attacking_side,
+        ) {
             return MoveLegality::Illegal;
         }
 
@@ -483,7 +485,7 @@ impl<'a> Position<'a> {
                 self.occ_masks,
                 self.board(),
                 squares_to_check,
-                attacking_side,
+                &attacking_side,
             );
 
             if is_invalid_castle {
@@ -495,8 +497,8 @@ impl<'a> Position<'a> {
         MoveLegality::Legal
     }
 
-    fn is_double_pawn_move(&self, mv: &Move, pce_moved: Piece) -> bool {
-        if pce_moved != Piece::Pawn {
+    fn is_double_pawn_move(&self, mv: &Move, pce_moved: &Piece) -> bool {
+        if *pce_moved != Piece::Pawn {
             return false;
         }
 
@@ -510,25 +512,25 @@ impl<'a> Position<'a> {
         }
     }
 
-    fn update_en_passant_sq(&mut self, mv: &Move, pce_moved: Piece) {
+    fn update_en_passant_sq(&mut self, mv: &Move, pce_moved: &Piece) {
         // clear en passant
         if self.game_state.en_pass_sq.is_some() && !self.is_double_pawn_move(mv, pce_moved) {
             self.game_state.position_hash ^= self
                 .zobrist_keys
-                .en_passant(self.game_state.en_pass_sq.unwrap());
+                .en_passant(&self.game_state.en_pass_sq.unwrap());
             self.game_state.en_pass_sq = None;
         }
     }
 
     // remove castle permissions based on the move
-    fn update_castle_perms(&mut self, mv: &Move, pce_moved: Piece, capt_pce: Option<Piece>) {
+    fn update_castle_perms(&mut self, mv: &Move, pce_moved: &Piece, capt_pce: &Option<Piece>) {
         if mv.move_type() == MoveType::Castle {
             // permissions already adjusted when move made
             return;
         }
 
         // check if rook has just been captured
-        if capt_pce == Some(Piece::Rook) {
+        if *capt_pce == Some(Piece::Rook) {
             match mv.to_sq() {
                 Square::A1 => self.game_state.castle_perm.clear_queen_white(),
                 Square::H1 => self.game_state.castle_perm.clear_king_white(),
@@ -564,43 +566,41 @@ impl<'a> Position<'a> {
         }
     }
 
-    // fn find_en_passant_sq(&self, from_sq: Square, col: Colour) -> Square {
-    //     // use the *from_sq* to find the en passant sq
-    //     match col {
-    //         Colour::White => from_sq.north().expect("Invalid north() en passant square"),
-    //         Colour::Black => from_sq.south().expect("Invalid south() en passant square"),
-    //     }
-    // }
-
-    fn remove_piece_from_board(&mut self, pce: Piece, colour: Colour, sq: Square) {
-        self.board.remove_piece(pce, colour, sq);
-        self.game_state.position_hash ^= self.zobrist_keys.piece_square(pce, colour, sq);
+    fn remove_piece_from_board(&mut self, pce: &Piece, colour: &Colour, sq: &Square) {
+        self.board.remove_piece(&pce, &colour, &sq);
+        self.game_state.position_hash ^= self.zobrist_keys.piece_square(&pce, &colour, &sq);
     }
 
-    fn add_piece_to_board(&mut self, pce: Piece, colour: Colour, sq: Square) {
-        self.board.add_piece(pce, colour, sq);
-        self.game_state.position_hash ^= self.zobrist_keys.piece_square(pce, colour, sq);
+    fn add_piece_to_board(&mut self, pce: &Piece, colour: &Colour, sq: &Square) {
+        self.board.add_piece(&pce, &colour, &sq);
+        self.game_state.position_hash ^= self.zobrist_keys.piece_square(&pce, &colour, &sq);
     }
 
-    fn move_piece_on_board(&mut self, pce: Piece, colour: Colour, from_sq: Square, to_sq: Square) {
-        self.game_state.position_hash ^= self.zobrist_keys.piece_square(pce, colour, from_sq);
-        self.game_state.position_hash ^= self.zobrist_keys.piece_square(pce, colour, to_sq);
-        self.board.move_piece(from_sq, to_sq, pce, colour);
+    fn move_piece_on_board(
+        &mut self,
+        pce: &Piece,
+        colour: &Colour,
+        from_sq: &Square,
+        to_sq: &Square,
+    ) {
+        self.game_state.position_hash ^= self.zobrist_keys.piece_square(&pce, &colour, &from_sq);
+        self.game_state.position_hash ^= self.zobrist_keys.piece_square(&pce, &colour, &to_sq);
+        self.board.move_piece(&from_sq, &to_sq, &pce, &colour);
     }
 
-    fn update_move_counters(&mut self, capt_pce: Option<Piece>, pce_moved: Piece) {
+    fn update_move_counters(&mut self, capt_pce: &Option<Piece>, pce_moved: &Piece) {
         let full_move_incr = self.game_state.move_cntr.incr_half_move();
 
         if full_move_incr {
             // handle 50 move rule
-            if capt_pce.is_some() || pce_moved == Piece::Pawn {
+            if capt_pce.is_some() || *pce_moved == Piece::Pawn {
                 self.game_state.fifty_move_cntr = 0;
             } else {
                 self.game_state.fifty_move_cntr += 1;
             }
         }
     }
-    fn clear_castle_permissions_for_colour(&mut self, col: Colour) {
+    fn clear_castle_permissions_for_colour(&mut self, col: &Colour) {
         match col {
             Colour::White => {
                 self.game_state.castle_perm.clear_white_king_and_queen();
@@ -751,7 +751,7 @@ mod tests {
 
         let before_hash = pos.game_state.position_hash;
 
-        let mv = Move::encode_move(Square::E5, Square::E6);
+        let mv = Move::encode_move(&Square::E5, &Square::E6);
 
         // check before move
         assert!(is_piece_on_square_as_expected(
@@ -763,7 +763,7 @@ mod tests {
 
         pos.make_move(&mv);
 
-        assert!(pos.board().is_sq_empty(Square::E5));
+        assert!(pos.board().is_sq_empty(&Square::E5));
         assert!(is_piece_on_square_as_expected(
             &pos,
             Square::E6,
@@ -796,7 +796,7 @@ mod tests {
 
         // initially no history
         assert_eq!(pos.position_history.len(), 0);
-        let mv = Move::encode_move(Square::E5, Square::E6);
+        let mv = Move::encode_move(&Square::E5, &Square::E6);
         pos.make_move(&mv);
 
         // history updated
@@ -826,7 +826,7 @@ mod tests {
 
         // initially correct side
         assert_eq!(pos.game_state.side_to_move, Colour::White);
-        let mv = Move::encode_move(Square::E5, Square::E6);
+        let mv = Move::encode_move(&Square::E5, &Square::E6);
         pos.make_move(&mv);
 
         assert_eq!(pos.game_state.side_to_move, Colour::Black);
@@ -859,7 +859,7 @@ mod tests {
         // set to some random value
         pos.game_state.fifty_move_cntr = 21;
 
-        let mv = Move::encode_move(Square::B5, Square::C6);
+        let mv = Move::encode_move(&Square::B5, &Square::C6);
         pos.make_move(&mv);
 
         assert_eq!(0, pos.game_state.fifty_move_cntr);
@@ -886,7 +886,7 @@ mod tests {
             &attack_checker,
         );
 
-        if let Some((piece, _colour)) = pos.board.get_piece_and_colour_on_square(Square::E5) {
+        if let Some((piece, _colour)) = pos.board.get_piece_and_colour_on_square(&Square::E5) {
             assert_eq!(piece, Piece::Pawn);
         } else {
             eprintln!("Piece not found");
@@ -899,7 +899,7 @@ mod tests {
         // set to some value
         pos.game_state.fifty_move_cntr = 21;
 
-        let mv = Move::encode_move(Square::E5, Square::E6);
+        let mv = Move::encode_move(&Square::E5, &Square::E6);
         pos.make_move(&mv);
 
         assert_eq!(0, pos.game_state.fifty_move_cntr);
@@ -926,7 +926,7 @@ mod tests {
             &attack_checker,
         );
 
-        if let Some((piece, _colour)) = pos.board.get_piece_and_colour_on_square(Square::C4) {
+        if let Some((piece, _colour)) = pos.board.get_piece_and_colour_on_square(&Square::C4) {
             assert_eq!(piece, Piece::Bishop);
         } else {
             eprintln!("Piece not found");
@@ -940,7 +940,7 @@ mod tests {
         pos.game_state.fifty_move_cntr = 21;
         let expected_cntr_val = pos.game_state.fifty_move_cntr + 1;
 
-        let mv = Move::encode_move(Square::C4, Square::D5);
+        let mv = Move::encode_move(&Square::C4, &Square::D5);
         pos.make_move(&mv);
 
         assert_eq!(expected_cntr_val, pos.game_state.fifty_move_cntr);
@@ -967,7 +967,7 @@ mod tests {
             &attack_checker,
         );
 
-        if let Some((piece, _colour)) = pos.board.get_piece_and_colour_on_square(Square::C4) {
+        if let Some((piece, _colour)) = pos.board.get_piece_and_colour_on_square(&Square::C4) {
             assert_eq!(piece, Piece::Bishop);
         } else {
             eprintln!("Piece not found");
@@ -976,7 +976,7 @@ mod tests {
 
         let expected_half_move = pos.game_state.move_cntr.half_move() + 1;
 
-        let mv = Move::encode_move(Square::C4, Square::D5);
+        let mv = Move::encode_move(&Square::C4, &Square::D5);
         pos.make_move(&mv);
 
         assert_eq!(expected_half_move, pos.game_state.move_cntr.half_move());
@@ -1011,7 +1011,7 @@ mod tests {
         ));
 
         // set to some value
-        let mv = Move::encode_move(Square::F2, Square::F4);
+        let mv = Move::encode_move(&Square::F2, &Square::F4);
         pos.make_move(&mv);
 
         assert_eq!(pos.game_state.en_pass_sq.unwrap(), Square::F3);
@@ -1055,7 +1055,7 @@ mod tests {
         ));
 
         // set to some value
-        let mv = Move::encode_move(Square::D7, Square::D5);
+        let mv = Move::encode_move(&Square::D7, &Square::D5);
         pos.make_move(&mv);
 
         assert_eq!(pos.game_state.en_pass_sq, Some(Square::D6));
@@ -1319,7 +1319,7 @@ mod tests {
         );
 
         assert_eq!(pos.en_passant_square(), Some(Square::B3));
-        let mv = Move::encode_move_en_passant(Square::A4, Square::B3);
+        let mv = Move::encode_move_en_passant(&Square::A4, &Square::B3);
         pos.make_move(&mv);
 
         assert!(is_piece_on_square_as_expected(
@@ -1368,7 +1368,7 @@ mod tests {
         );
 
         assert_eq!(pos.en_passant_square(), Some(Square::D6));
-        let mv = Move::encode_move_en_passant(Square::E5, Square::D6);
+        let mv = Move::encode_move_en_passant(&Square::E5, &Square::D6);
         pos.make_move(&mv);
 
         assert!(is_piece_on_square_as_expected(
@@ -1427,7 +1427,7 @@ mod tests {
                 Colour::Black
             ));
 
-            let mv = Move::encode_move_with_promotion(Square::E7, Square::F8, target);
+            let mv = Move::encode_move_with_promotion(&Square::E7, &Square::F8, &target);
             pos.make_move(&mv);
 
             assert!(is_sq_empty(&pos, Square::E7));
@@ -1472,7 +1472,7 @@ mod tests {
                 Colour::White
             ));
 
-            let mv = Move::encode_move_with_promotion(Square::D2, Square::C1, target);
+            let mv = Move::encode_move_with_promotion(&Square::D2, &Square::C1, &target);
             pos.make_move(&mv);
 
             assert!(is_sq_empty(&pos, Square::D2));
@@ -1511,7 +1511,7 @@ mod tests {
             // check pre-conditions
             assert!(is_sq_empty(&pos, Square::D1));
 
-            let mv = Move::encode_move_with_promotion(Square::D2, Square::D1, target);
+            let mv = Move::encode_move_with_promotion(&Square::D2, &Square::D1, &target);
             pos.make_move(&mv);
 
             assert!(is_sq_empty(&pos, Square::D2));
@@ -1551,7 +1551,7 @@ mod tests {
             // check pre-conditions
             assert!(is_sq_empty(&pos, Square::B8));
 
-            let mv = Move::encode_move_with_promotion(Square::B7, Square::B8, target);
+            let mv = Move::encode_move_with_promotion(&Square::B7, &Square::B8, &target);
             pos.make_move(&mv);
 
             assert!(is_sq_empty(&pos, Square::B7));
@@ -1749,7 +1749,7 @@ mod tests {
         assert!(pos.castle_permissions().is_white_king_set());
         assert!(pos.castle_permissions().is_white_queen_set());
 
-        let mv = Move::encode_move(Square::E1, Square::E2);
+        let mv = Move::encode_move(&Square::E1, &Square::E2);
 
         let move_legality = pos.make_move(&mv);
         assert_eq!(move_legality, MoveLegality::Legal);
@@ -1783,7 +1783,7 @@ mod tests {
         assert!(pos.castle_permissions().is_white_king_set());
         assert!(pos.castle_permissions().is_white_queen_set());
 
-        let mv = Move::encode_move(Square::H1, Square::G1);
+        let mv = Move::encode_move(&Square::H1, &Square::G1);
 
         let move_legality = pos.make_move(&mv);
         assert_eq!(move_legality, MoveLegality::Legal);
@@ -1817,7 +1817,7 @@ mod tests {
         assert!(pos.castle_permissions().is_white_king_set());
         assert!(pos.castle_permissions().is_white_queen_set());
 
-        let mv = Move::encode_move(Square::A1, Square::B1);
+        let mv = Move::encode_move(&Square::A1, &Square::B1);
 
         let move_legality = pos.make_move(&mv);
         assert_eq!(move_legality, MoveLegality::Legal);
@@ -1851,7 +1851,7 @@ mod tests {
         assert!(pos.castle_permissions().is_black_king_set());
         assert!(pos.castle_permissions().is_black_queen_set());
 
-        let mv = Move::encode_move(Square::E8, Square::E7);
+        let mv = Move::encode_move(&Square::E8, &Square::E7);
 
         let move_legality = pos.make_move(&mv);
         assert_eq!(move_legality, MoveLegality::Legal);
@@ -1885,7 +1885,7 @@ mod tests {
         assert!(pos.castle_permissions().is_black_king_set());
         assert!(pos.castle_permissions().is_black_queen_set());
 
-        let mv = Move::encode_move(Square::H8, Square::G8);
+        let mv = Move::encode_move(&Square::H8, &Square::G8);
 
         let move_legality = pos.make_move(&mv);
         assert_eq!(move_legality, MoveLegality::Legal);
@@ -1919,7 +1919,7 @@ mod tests {
         assert!(pos.castle_permissions().is_black_king_set());
         assert!(pos.castle_permissions().is_black_queen_set());
 
-        let mv = Move::encode_move(Square::A8, Square::B8);
+        let mv = Move::encode_move(&Square::A8, &Square::B8);
 
         let move_legality = pos.make_move(&mv);
         assert_eq!(move_legality, MoveLegality::Legal);
@@ -1935,9 +1935,9 @@ mod tests {
         let ml = vec![
             Move::encode_move_castle_kingside_white(),
             Move::encode_move_castle_queenside_white(),
-            Move::encode_move(Square::E8, Square::G7),
-            Move::encode_move(Square::B5, Square::B6),
-            Move::encode_move(Square::C2, Square::C4),
+            Move::encode_move(&Square::E8, &Square::G7),
+            Move::encode_move(&Square::B5, &Square::B6),
+            Move::encode_move(&Square::C2, &Square::C4),
         ];
 
         let (board1, move_cntr1, castle_permissions1, side_to_move1, en_pass_sq1) =
@@ -1993,9 +1993,9 @@ mod tests {
         let ml = vec![
             Move::encode_move_castle_kingside_black(),
             Move::encode_move_castle_queenside_black(),
-            Move::encode_move(Square::C7, Square::B6),
-            Move::encode_move(Square::F7, Square::F6),
-            Move::encode_move(Square::F7, Square::F6),
+            Move::encode_move(&Square::C7, &Square::B6),
+            Move::encode_move(&Square::F7, &Square::F6),
+            Move::encode_move(&Square::F7, &Square::F6),
         ];
 
         let (board1, move_cntr1, castle_permissions1, side_to_move1, en_pass_sq1) =
@@ -2075,12 +2075,12 @@ mod tests {
         let init_hash = pos.position_hash();
 
         let mut expected_hash =
-            init_hash ^ zobrist_keys.piece_square(Piece::Pawn, Colour::White, Square::B2);
-        expected_hash ^= zobrist_keys.piece_square(Piece::Pawn, Colour::White, Square::B4);
-        expected_hash ^= zobrist_keys.en_passant(Square::B3);
+            init_hash ^ zobrist_keys.piece_square(&Piece::Pawn, &Colour::White, &Square::B2);
+        expected_hash ^= zobrist_keys.piece_square(&Piece::Pawn, &Colour::White, &Square::B4);
+        expected_hash ^= zobrist_keys.en_passant(&Square::B3);
         expected_hash ^= zobrist_keys.side();
 
-        let wp_double_mv = Move::encode_move(Square::B2, Square::B4);
+        let wp_double_mv = Move::encode_move(&Square::B2, &Square::B4);
         pos.make_move(&wp_double_mv);
 
         assert!(init_hash != pos.position_hash());
@@ -2111,12 +2111,12 @@ mod tests {
         let init_hash = pos.position_hash();
 
         let mut expected_hash =
-            init_hash ^ zobrist_keys.piece_square(Piece::Pawn, Colour::Black, Square::B7);
-        expected_hash ^= zobrist_keys.piece_square(Piece::Pawn, Colour::Black, Square::B5);
-        expected_hash ^= zobrist_keys.en_passant(Square::B6);
+            init_hash ^ zobrist_keys.piece_square(&Piece::Pawn, &Colour::Black, &Square::B7);
+        expected_hash ^= zobrist_keys.piece_square(&Piece::Pawn, &Colour::Black, &Square::B5);
+        expected_hash ^= zobrist_keys.en_passant(&Square::B6);
         expected_hash ^= zobrist_keys.side();
 
-        let bp_double_mv = Move::encode_move(Square::B7, Square::B5);
+        let bp_double_mv = Move::encode_move(&Square::B7, &Square::B5);
         pos.make_move(&bp_double_mv);
 
         assert!(init_hash != pos.position_hash());
@@ -2147,11 +2147,11 @@ mod tests {
         let init_hash = pos.position_hash();
 
         let mut expected_hash =
-            init_hash ^ zobrist_keys.piece_square(Piece::Knight, Colour::White, Square::F2);
-        expected_hash ^= zobrist_keys.piece_square(Piece::Knight, Colour::White, Square::G4);
+            init_hash ^ zobrist_keys.piece_square(&Piece::Knight, &Colour::White, &Square::F2);
+        expected_hash ^= zobrist_keys.piece_square(&Piece::Knight, &Colour::White, &Square::G4);
         expected_hash ^= zobrist_keys.side();
 
-        let wp_double_mv = Move::encode_move(Square::F2, Square::G4);
+        let wp_double_mv = Move::encode_move(&Square::F2, &Square::G4);
         pos.make_move(&wp_double_mv);
 
         assert!(init_hash != pos.position_hash());
@@ -2181,11 +2181,11 @@ mod tests {
         let init_hash = pos.position_hash();
 
         let mut expected_hash =
-            init_hash ^ zobrist_keys.piece_square(Piece::Knight, Colour::Black, Square::F6);
-        expected_hash ^= zobrist_keys.piece_square(Piece::Knight, Colour::Black, Square::D7);
+            init_hash ^ zobrist_keys.piece_square(&Piece::Knight, &Colour::Black, &Square::F6);
+        expected_hash ^= zobrist_keys.piece_square(&Piece::Knight, &Colour::Black, &Square::D7);
         expected_hash ^= zobrist_keys.side();
 
-        let wp_double_mv = Move::encode_move(Square::D7, Square::F6);
+        let wp_double_mv = Move::encode_move(&Square::D7, &Square::F6);
         pos.make_move(&wp_double_mv);
 
         assert!(init_hash != pos.position_hash());
@@ -2216,15 +2216,15 @@ mod tests {
 
         // remove white pawn on b4
         let mut expected_hash =
-            init_hash ^ zobrist_keys.piece_square(Piece::Pawn, Colour::White, Square::B4);
+            init_hash ^ zobrist_keys.piece_square(&Piece::Pawn, &Colour::White, &Square::B4);
         // move a4->b3
-        expected_hash ^= zobrist_keys.piece_square(Piece::Pawn, Colour::Black, Square::A4);
-        expected_hash ^= zobrist_keys.piece_square(Piece::Pawn, Colour::Black, Square::B3);
-        expected_hash ^= zobrist_keys.en_passant(Square::B3);
+        expected_hash ^= zobrist_keys.piece_square(&Piece::Pawn, &Colour::Black, &Square::A4);
+        expected_hash ^= zobrist_keys.piece_square(&Piece::Pawn, &Colour::Black, &Square::B3);
+        expected_hash ^= zobrist_keys.en_passant(&Square::B3);
         expected_hash ^= zobrist_keys.side();
 
         assert_eq!(pos.en_passant_square(), Some(Square::B3));
-        let mv = Move::encode_move_en_passant(Square::A4, Square::B3);
+        let mv = Move::encode_move_en_passant(&Square::A4, &Square::B3);
         pos.make_move(&mv);
 
         assert!(init_hash != pos.position_hash());
@@ -2255,15 +2255,15 @@ mod tests {
 
         // remove black pawn
         let mut expected_hash =
-            init_hash ^ zobrist_keys.piece_square(Piece::Pawn, Colour::Black, Square::D5);
+            init_hash ^ zobrist_keys.piece_square(&Piece::Pawn, &Colour::Black, &Square::D5);
         // move e5->d6
-        expected_hash ^= zobrist_keys.piece_square(Piece::Pawn, Colour::White, Square::E5);
-        expected_hash ^= zobrist_keys.piece_square(Piece::Pawn, Colour::White, Square::D6);
-        expected_hash ^= zobrist_keys.en_passant(Square::D6);
+        expected_hash ^= zobrist_keys.piece_square(&Piece::Pawn, &Colour::White, &Square::E5);
+        expected_hash ^= zobrist_keys.piece_square(&Piece::Pawn, &Colour::White, &Square::D6);
+        expected_hash ^= zobrist_keys.en_passant(&Square::D6);
         expected_hash ^= zobrist_keys.side();
 
         assert_eq!(pos.en_passant_square(), Some(Square::D6));
-        let mv = Move::encode_move_en_passant(Square::E5, Square::D6);
+        let mv = Move::encode_move_en_passant(&Square::E5, &Square::D6);
         pos.make_move(&mv);
 
         assert!(init_hash != pos.position_hash());
@@ -2271,7 +2271,7 @@ mod tests {
     }
 
     fn is_piece_on_square_as_expected(pos: &Position, sq: Square, pce: Piece, col: Colour) -> bool {
-        if let Some((piece, colour)) = pos.board.get_piece_and_colour_on_square(sq) {
+        if let Some((piece, colour)) = pos.board.get_piece_and_colour_on_square(&sq) {
             if piece != pce {
                 return false;
             }
@@ -2286,7 +2286,7 @@ mod tests {
     }
 
     fn is_sq_empty(pos: &Position, sq: Square) -> bool {
-        let pce = pos.board.get_piece_and_colour_on_square(sq);
+        let pce = pos.board.get_piece_and_colour_on_square(&sq);
         if pce.is_some() {
             return false;
         }

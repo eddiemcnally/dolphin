@@ -17,107 +17,109 @@ impl AttackChecker {
         &self,
         occ_masks: &OccupancyMasks,
         board: &Board,
-        sq: Square,
-        attacking_side: Colour,
+        sq: &Square,
+        attacking_side: &Colour,
     ) -> bool {
         match attacking_side {
             Colour::White => {
-                let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::White);
-                let wp_attacking_square = occ_masks.get_occ_mask_white_pawns_attacking_sq(sq);
+                let pawn_bb = board.get_piece_bitboard(&Piece::Pawn, &Colour::White);
+                let wp_attacking_square = occ_masks.get_occ_mask_white_pawns_attacking_sq(&sq);
                 if !(pawn_bb & wp_attacking_square).is_empty() {
                     return true;
                 }
 
-                let knight_bb = board.get_piece_bitboard(Piece::Knight, Colour::White);
+                let knight_bb = board.get_piece_bitboard(&Piece::Knight, &Colour::White);
                 for from_sq in knight_bb.iterator() {
-                    if occ_masks.get_occupancy_mask_knight(from_sq).is_set(sq) {
+                    if occ_masks.get_occupancy_mask_knight(&from_sq).is_set(&sq) {
                         return true;
                     }
                 }
 
-                let horiz_vert_bb = board.get_rook_and_queen_bb_for_colour(Colour::White);
+                let horiz_vert_bb = board.get_rook_and_queen_bb_for_colour(&Colour::White);
                 let all_pce_bb = board.get_bitboard();
                 // check to see if the sqaure being attacked shares a rank or file
                 // with any of the rooks or queens before doing a detailed analysis
                 // of potential blocking pieces
                 let horiz_vert_sq_mask =
-                    occ_masks.get_vertical_mask(sq) | occ_masks.get_horizontal_mask(sq);
+                    occ_masks.get_vertical_mask(&sq) | occ_masks.get_horizontal_mask(&sq);
                 let shares_rank_or_file = !(horiz_vert_bb & horiz_vert_sq_mask).is_empty();
                 if shares_rank_or_file
                     && self.is_horizontal_or_vertical_attacking(
                         occ_masks,
-                        all_pce_bb,
-                        horiz_vert_bb,
+                        &all_pce_bb,
+                        &horiz_vert_bb,
                         sq,
                     )
                 {
                     return true;
                 }
 
-                let diag_bb = board.get_bishop_and_queen_bb_for_colour(Colour::White);
+                let diag_bb = board.get_bishop_and_queen_bb_for_colour(&Colour::White);
                 // check to see if the sqaure being attacked shares a diagonal
                 // with any of the bishops or queens before doing a detailed analysis
                 // of potential blocking pieces
-                let sq_mask = occ_masks.get_diagonal_mask(sq) | occ_masks.get_antidiagonal_mask(sq);
+                let sq_mask =
+                    occ_masks.get_diagonal_mask(&sq) | occ_masks.get_antidiagonal_mask(&sq);
                 if !(sq_mask & diag_bb).is_empty() {
                     // possible attack, check for blocking pieces
-                    if self.is_diagonally_attacked(occ_masks, sq, diag_bb, all_pce_bb) {
+                    if self.is_diagonally_attacked(occ_masks, sq, &diag_bb, &all_pce_bb) {
                         return true;
                     }
                 }
 
-                let king_sq = board.get_king_sq(Colour::White);
-                if occ_masks.get_occupancy_mask_king(king_sq).is_set(sq) {
+                let king_sq = board.get_king_sq(&Colour::White);
+                if occ_masks.get_occupancy_mask_king(&king_sq).is_set(&sq) {
                     return true;
                 }
             }
             Colour::Black => {
-                let pawn_bb = board.get_piece_bitboard(Piece::Pawn, Colour::Black);
-                let bp_attacking_square = occ_masks.get_occ_mask_black_pawns_attacking_sq(sq);
+                let pawn_bb = board.get_piece_bitboard(&Piece::Pawn, &Colour::Black);
+                let bp_attacking_square = occ_masks.get_occ_mask_black_pawns_attacking_sq(&sq);
                 if !(pawn_bb & bp_attacking_square).is_empty() {
                     return true;
                 }
 
-                let knight_bb = board.get_piece_bitboard(Piece::Knight, Colour::Black);
+                let knight_bb = board.get_piece_bitboard(&Piece::Knight, &Colour::Black);
                 for from_sq in knight_bb.iterator() {
-                    if occ_masks.get_occupancy_mask_knight(from_sq).is_set(sq) {
+                    if occ_masks.get_occupancy_mask_knight(&from_sq).is_set(&sq) {
                         return true;
                     }
                 }
 
-                let horiz_vert_bb = board.get_rook_and_queen_bb_for_colour(Colour::Black);
+                let horiz_vert_bb = board.get_rook_and_queen_bb_for_colour(&Colour::Black);
                 let all_pce_bb = board.get_bitboard();
                 // check to see if the sqaure being attacked shares a rank or file
                 // with any of the rooks or queens before doing a detailed analysis
                 // of potential blocking pieces
                 let horiz_vert_sq_mask =
-                    occ_masks.get_vertical_mask(sq) | occ_masks.get_horizontal_mask(sq);
+                    occ_masks.get_vertical_mask(&sq) | occ_masks.get_horizontal_mask(&sq);
                 let shares_rank_or_file = !(horiz_vert_bb & horiz_vert_sq_mask).is_empty();
                 if shares_rank_or_file
                     && self.is_horizontal_or_vertical_attacking(
                         occ_masks,
-                        all_pce_bb,
-                        horiz_vert_bb,
+                        &all_pce_bb,
+                        &horiz_vert_bb,
                         sq,
                     )
                 {
                     return true;
                 }
 
-                let diag_bb = board.get_bishop_and_queen_bb_for_colour(Colour::Black);
+                let diag_bb = board.get_bishop_and_queen_bb_for_colour(&Colour::Black);
                 // check to see if the sqaure being attacked shares a diagonal
                 // with any of the bishops or queens before doing a detailed analysis
                 // of potential blocking pieces
-                let sq_mask = occ_masks.get_diagonal_mask(sq) | occ_masks.get_antidiagonal_mask(sq);
+                let sq_mask =
+                    occ_masks.get_diagonal_mask(&sq) | occ_masks.get_antidiagonal_mask(&sq);
                 if !(sq_mask & diag_bb).is_empty() {
                     // possible attack, check for blocking pieces
-                    if self.is_diagonally_attacked(occ_masks, sq, diag_bb, all_pce_bb) {
+                    if self.is_diagonally_attacked(occ_masks, sq, &diag_bb, &all_pce_bb) {
                         return true;
                     }
                 }
 
-                let king_sq = board.get_king_sq(Colour::Black);
-                if occ_masks.get_occupancy_mask_king(king_sq).is_set(sq) {
+                let king_sq = board.get_king_sq(&Colour::Black);
+                if occ_masks.get_occupancy_mask_king(&king_sq).is_set(&sq) {
                     return true;
                 }
             }
@@ -130,10 +132,10 @@ impl AttackChecker {
         occ_masks: &OccupancyMasks,
         board: &Board,
         sq_array: &[Square],
-        attacking_side: Colour,
+        attacking_side: &Colour,
     ) -> bool {
         for sq in sq_array {
-            if self.is_sq_attacked(occ_masks, board, *sq, attacking_side) {
+            if self.is_sq_attacked(occ_masks, board, sq, &attacking_side) {
                 return true;
             }
         }
@@ -144,15 +146,15 @@ impl AttackChecker {
     fn is_horizontal_or_vertical_attacking(
         &self,
         occ_masks: &OccupancyMasks,
-        all_piece_bb: Bitboard,
-        attack_pce_bb: Bitboard,
-        attack_sq: Square,
+        all_piece_bb: &Bitboard,
+        attack_pce_bb: &Bitboard,
+        attack_sq: &Square,
     ) -> bool {
         for pce_sq in attack_pce_bb.iterator() {
             if pce_sq.same_rank(attack_sq) || pce_sq.same_file(attack_sq) {
                 // potentially attacking
-                let blocking_pces = occ_masks.get_inbetween_squares(pce_sq, attack_sq);
-                if (blocking_pces & all_piece_bb).is_empty() {
+                let blocking_pces = occ_masks.get_inbetween_squares(&pce_sq, &attack_sq);
+                if (blocking_pces & *all_piece_bb).is_empty() {
                     // no blocking pieces, attacked
                     return true;
                 }
@@ -164,19 +166,19 @@ impl AttackChecker {
     fn is_diagonally_attacked(
         &self,
         occ_masks: &OccupancyMasks,
-        attack_sq: Square,
-        diag_bb: Bitboard,
-        all_pce_bb: Bitboard,
+        attack_sq: &Square,
+        diag_bb: &Bitboard,
+        all_pce_bb: &Bitboard,
     ) -> bool {
         for pce_sq in diag_bb.iterator() {
             // diagonal mask will also work for queen
             if occ_masks
-                .get_occupancy_mask_bishop(pce_sq)
-                .is_set(attack_sq)
+                .get_occupancy_mask_bishop(&pce_sq)
+                .is_set(&attack_sq)
             {
                 // potentially attacking....ie, sharing a diagonal
-                let blocking_pces = occ_masks.get_inbetween_squares(pce_sq, attack_sq);
-                if (blocking_pces & all_pce_bb).is_empty() {
+                let blocking_pces = occ_masks.get_inbetween_squares(&pce_sq, &attack_sq);
+                if (blocking_pces & *all_pce_bb).is_empty() {
                     // no blocking pieces, attacked
                     return true;
                 }
@@ -218,7 +220,12 @@ pub mod tests {
             &attack_checker,
         );
 
-        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::G5, Colour::White));
+        assert!(attack_checker.is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            &Square::G5,
+            &Colour::White
+        ));
     }
 
     #[test]
@@ -241,7 +248,12 @@ pub mod tests {
             &occ_masks,
             &attack_checker,
         );
-        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::H4, Colour::Black));
+        assert!(attack_checker.is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            &Square::H4,
+            &Colour::Black
+        ));
     }
 
     #[test]
@@ -265,7 +277,12 @@ pub mod tests {
             &attack_checker,
         );
 
-        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E5, Colour::White));
+        assert!(attack_checker.is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            &Square::E5,
+            &Colour::White
+        ));
     }
 
     #[test]
@@ -289,7 +306,12 @@ pub mod tests {
             &attack_checker,
         );
 
-        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E3, Colour::Black));
+        assert!(attack_checker.is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            &Square::E3,
+            &Colour::Black
+        ));
     }
 
     #[test]
@@ -313,7 +335,12 @@ pub mod tests {
             &attack_checker,
         );
 
-        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E5, Colour::White));
+        assert!(attack_checker.is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            &Square::E5,
+            &Colour::White
+        ));
     }
 
     #[test]
@@ -337,7 +364,12 @@ pub mod tests {
             &attack_checker,
         );
 
-        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E3, Colour::Black));
+        assert!(attack_checker.is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            &Square::E3,
+            &Colour::Black
+        ));
     }
 
     #[test]
@@ -361,7 +393,12 @@ pub mod tests {
             &attack_checker,
         );
 
-        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E5, Colour::White));
+        assert!(attack_checker.is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            &Square::E5,
+            &Colour::White
+        ));
     }
 
     #[test]
@@ -385,7 +422,12 @@ pub mod tests {
             &attack_checker,
         );
 
-        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E3, Colour::Black));
+        assert!(attack_checker.is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            &Square::E3,
+            &Colour::Black
+        ));
     }
 
     #[test]
@@ -409,7 +451,12 @@ pub mod tests {
             &attack_checker,
         );
 
-        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E5, Colour::White));
+        assert!(attack_checker.is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            &Square::E5,
+            &Colour::White
+        ));
     }
 
     #[test]
@@ -433,7 +480,12 @@ pub mod tests {
             &attack_checker,
         );
 
-        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::E3, Colour::Black));
+        assert!(attack_checker.is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            &Square::E3,
+            &Colour::Black
+        ));
     }
 
     #[test]
@@ -457,7 +509,12 @@ pub mod tests {
             &attack_checker,
         );
 
-        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::B5, Colour::White));
+        assert!(attack_checker.is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            &Square::B5,
+            &Colour::White
+        ));
     }
 
     #[test]
@@ -481,7 +538,12 @@ pub mod tests {
             &attack_checker,
         );
 
-        assert!(attack_checker.is_sq_attacked(&occ_masks, pos.board(), Square::F5, Colour::Black));
+        assert!(attack_checker.is_sq_attacked(
+            &occ_masks,
+            pos.board(),
+            &Square::F5,
+            &Colour::Black
+        ));
     }
 
     #[test]
@@ -511,7 +573,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::Black
+            &Colour::Black
         ));
     }
 
@@ -542,7 +604,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::Black
+            &Colour::Black
         ));
     }
 
@@ -573,7 +635,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::Black
+            &Colour::Black
         ));
     }
 
@@ -604,7 +666,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::Black
+            &Colour::Black
         ));
     }
 
@@ -635,7 +697,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::Black
+            &Colour::Black
         ));
     }
 
@@ -666,7 +728,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::Black
+            &Colour::Black
         ));
     }
 
@@ -697,7 +759,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::Black
+            &Colour::Black
         ));
     }
 
@@ -728,7 +790,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::White
+            &Colour::White
         ));
     }
 
@@ -759,7 +821,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::White
+            &Colour::White
         ));
     }
 
@@ -790,7 +852,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::White
+            &Colour::White
         ));
     }
 
@@ -821,7 +883,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::White
+            &Colour::White
         ));
     }
 
@@ -852,7 +914,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::White
+            &Colour::White
         ));
     }
 
@@ -883,7 +945,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::White
+            &Colour::White
         ));
     }
 
@@ -914,7 +976,7 @@ pub mod tests {
             &occ_masks,
             pos.board(),
             &SQUARE_TO_CHECK,
-            Colour::White
+            &Colour::White
         ));
     }
 }

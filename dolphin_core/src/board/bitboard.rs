@@ -28,29 +28,29 @@ impl Bitboard {
     }
 
     #[inline(always)]
-    pub const fn from_square(sq: Square) -> Bitboard {
+    pub const fn from_square(sq: &Square) -> Bitboard {
         to_mask(sq)
     }
 
     #[inline(always)]
-    pub const fn set_bit(&mut self, sq: Square) {
+    pub const fn set_bit(&mut self, sq: &Square) {
         let mask = to_mask(sq);
         self.0 |= mask.0
     }
 
     #[inline(always)]
-    pub const fn clear_bit(&mut self, sq: Square) {
+    pub const fn clear_bit(&mut self, sq: &Square) {
         let mask = to_mask(sq);
         self.0 &= !mask.0
     }
 
     #[inline(always)]
-    pub const fn is_set(self, sq: Square) -> bool {
+    pub const fn is_set(&self, sq: &Square) -> bool {
         let mask = to_mask(sq);
         (self.0 & mask.0) != 0
     }
 
-    pub const fn is_empty(self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.0 == 0
     }
 
@@ -126,7 +126,7 @@ impl Bitboard {
 }
 
 #[inline(always)]
-const fn to_mask(sq: Square) -> Bitboard {
+const fn to_mask(sq: &Square) -> Bitboard {
     let num = 0x01 << sq.as_index();
     Bitboard(num)
 }
@@ -243,12 +243,12 @@ pub mod tests {
         let mut bb = Bitboard::new(0);
 
         for sq in Square::iterator() {
-            bb.set_bit(*sq);
-            assert!(bb.is_set(*sq));
+            bb.set_bit(sq);
+            assert!(bb.is_set(sq));
             assert!(bb.0 != 0);
 
-            bb.clear_bit(*sq);
-            assert!(!bb.is_set(*sq));
+            bb.clear_bit(sq);
+            assert!(!bb.is_set(sq));
             assert!(bb.0 == 0);
         }
     }
@@ -257,7 +257,7 @@ pub mod tests {
     pub fn pop_bit_all_bits() {
         for sq in Square::iterator() {
             let mut bb = Bitboard::new(0);
-            bb.set_bit(*sq);
+            bb.set_bit(sq);
             for sqq in bb.iterator() {
                 assert_eq!(sqq, *sq);
             }

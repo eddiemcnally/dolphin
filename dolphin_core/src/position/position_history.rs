@@ -92,7 +92,7 @@ impl PositionHistory {
     }
 
     // push
-    pub fn push(&mut self, game_state: &GameState, mv: &Move, capt_pce: Option<Piece>) {
+    pub fn push(&mut self, game_state: &GameState, mv: &Move, capt_pce: &Option<Piece>) {
         debug_assert!(
             self.count <= (PositionHistory::MAX_MOVE_HISTORY - 1) as u16,
             "max length exceeded. {:?}",
@@ -102,7 +102,7 @@ impl PositionHistory {
         let item = Item {
             game_state: *game_state,
             mov: *mv,
-            capt_pce,
+            capt_pce: *capt_pce,
         };
 
         self.history[self.count as usize] = item;
@@ -128,13 +128,13 @@ impl PositionHistory {
         self.len() == 0
     }
 
-    pub fn contains_position_hash(&self, hash: ZobristHash, start_offset: usize) -> bool {
+    pub fn contains_position_hash(&self, hash: &ZobristHash, start_offset: usize) -> bool {
         if start_offset > (self.count - 1).into() {
             panic!("offset is past end of position history");
         }
 
         for i in start_offset..(self.count - 1) as usize {
-            if self.history[i].game_state.get_zobrist_hash() == hash {
+            if self.history[i].game_state.get_zobrist_hash() == *hash {
                 return true;
             }
         }

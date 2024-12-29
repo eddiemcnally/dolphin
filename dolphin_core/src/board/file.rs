@@ -27,29 +27,29 @@ impl File {
     }
 
     #[inline(always)]
-    pub const fn as_index(self) -> usize {
-        self as usize
+    pub const fn as_index(&self) -> usize {
+        *self as usize
     }
 
-    pub fn add_one(self) -> Option<File> {
-        File::new(self as u8 + 1)
+    pub fn add_one(&self) -> Option<File> {
+        File::new(*self as u8 + 1)
     }
 
-    pub fn subtract_one(self) -> Option<File> {
+    pub fn subtract_one(&self) -> Option<File> {
         match self {
             File::A => None,
-            _ => File::new(self as u8 - 1),
+            _ => File::new(*self as u8 - 1),
         }
     }
 
-    pub fn add_two(self) -> Option<File> {
-        File::new(self as u8 + 2)
+    pub fn add_two(&self) -> Option<File> {
+        File::new(*self as u8 + 2)
     }
 
-    pub fn subtract_two(self) -> Option<File> {
+    pub fn subtract_two(&self) -> Option<File> {
         match self {
             File::A | File::B => None,
-            _ => File::new(self as u8 - 2),
+            _ => File::new(*self as u8 - 2),
         }
     }
 

@@ -35,46 +35,46 @@ impl Board {
         Board::default()
     }
 
-    pub fn add_piece(&mut self, piece: Piece, colour: Colour, sq: Square) {
+    pub fn add_piece(&mut self, piece: &Piece, colour: &Colour, sq: &Square) {
         self.flip_piece_bits(piece, colour, sq);
 
         self.colour_info[colour.as_index()].material += piece.value();
-        self.pieces[sq.as_index()] = Some(piece);
+        self.pieces[sq.as_index()] = Some(*piece);
         match piece {
-            Piece::King => self.colour_info[colour.as_index()].king_sq = sq,
+            Piece::King => self.colour_info[colour.as_index()].king_sq = *sq,
             _ => (),
         }
     }
 
-    pub fn remove_piece(&mut self, piece: Piece, colour: Colour, sq: Square) {
+    pub fn remove_piece(&mut self, piece: &Piece, colour: &Colour, sq: &Square) {
         self.flip_piece_bits(piece, colour, sq);
 
         self.colour_info[colour.as_index()].material -= piece.value();
         self.pieces[sq.as_index()] = None;
     }
 
-    pub fn move_piece(&mut self, from_sq: Square, to_sq: Square, piece: Piece, colour: Colour) {
+    pub fn move_piece(&mut self, from_sq: &Square, to_sq: &Square, piece: &Piece, colour: &Colour) {
         self.flip_piece_bits(piece, colour, from_sq);
         self.flip_piece_bits(piece, colour, to_sq);
 
         self.pieces[from_sq.as_index()] = None;
-        self.pieces[to_sq.as_index()] = Some(piece);
+        self.pieces[to_sq.as_index()] = Some(*piece);
 
         match piece {
-            Piece::King => self.colour_info[colour.as_index()].king_sq = to_sq,
+            Piece::King => self.colour_info[colour.as_index()].king_sq = *to_sq,
             _ => (),
         }
     }
 
     #[inline(always)]
-    fn flip_piece_bits(&mut self, piece: Piece, colour: Colour, sq: Square) {
+    fn flip_piece_bits(&mut self, piece: &Piece, colour: &Colour, sq: &Square) {
         let bb = Bitboard::from_square(sq);
 
         (&mut self.colour_info[colour.as_index()]).piece_bb[piece.as_index()] ^= bb;
         (&mut self.colour_info[colour.as_index()]).colour_bb ^= bb;
     }
 
-    pub fn get_piece_and_colour_on_square(&self, sq: Square) -> Option<(Piece, Colour)> {
+    pub fn get_piece_and_colour_on_square(&self, sq: &Square) -> Option<(Piece, Colour)> {
         if let Some(pce) = self.get_piece_on_square(sq) {
             let colour = if self.colour_info[Colour::White.as_index()]
                 .colour_bb
@@ -91,32 +91,32 @@ impl Board {
         None
     }
 
-    pub fn get_piece_on_square(&self, sq: Square) -> Option<Piece> {
+    pub fn get_piece_on_square(&self, sq: &Square) -> Option<Piece> {
         self.pieces[sq.as_index()]
     }
 
-    pub fn is_sq_empty(&self, sq: Square) -> bool {
+    pub fn is_sq_empty(&self, sq: &Square) -> bool {
         self.get_bitboard().is_set(sq) == false
     }
 
-    pub const fn get_piece_bitboard(&self, piece: Piece, colour: Colour) -> Bitboard {
+    pub const fn get_piece_bitboard(&self, piece: &Piece, colour: &Colour) -> Bitboard {
         self.colour_info[colour.as_index()].piece_bb[piece.as_index()]
     }
 
-    pub fn get_rook_and_queen_bb_for_colour(&self, colour: Colour) -> Bitboard {
+    pub fn get_rook_and_queen_bb_for_colour(&self, colour: &Colour) -> Bitboard {
         self.colour_info[colour.as_index()].piece_bb[Piece::Rook.as_index()]
             | self.colour_info[colour.as_index()].piece_bb[Piece::Queen.as_index()]
     }
-    pub fn get_bishop_and_queen_bb_for_colour(&self, colour: Colour) -> Bitboard {
+    pub fn get_bishop_and_queen_bb_for_colour(&self, colour: &Colour) -> Bitboard {
         self.colour_info[colour.as_index()].piece_bb[Piece::Bishop.as_index()]
             | self.colour_info[colour.as_index()].piece_bb[Piece::Queen.as_index()]
     }
 
-    pub const fn get_knight_bb_for_colour(&self, colour: Colour) -> Bitboard {
+    pub const fn get_knight_bb_for_colour(&self, colour: &Colour) -> Bitboard {
         self.colour_info[colour.as_index()].piece_bb[Piece::Knight.as_index()]
     }
 
-    pub const fn get_colour_bb(&self, colour: Colour) -> Bitboard {
+    pub const fn get_colour_bb(&self, colour: &Colour) -> Bitboard {
         self.colour_info[colour.as_index()].colour_bb
     }
 
@@ -134,10 +134,10 @@ impl Board {
     }
 
     pub fn get_bitboard(&self) -> Bitboard {
-        self.get_colour_bb(Colour::White) | self.get_colour_bb(Colour::Black)
+        self.get_colour_bb(&Colour::White) | self.get_colour_bb(&Colour::Black)
     }
 
-    pub fn get_king_sq(&self, colour: Colour) -> Square {
+    pub fn get_king_sq(&self, colour: &Colour) -> Square {
         self.colour_info[colour.as_index()].king_sq
     }
 }
@@ -152,12 +152,12 @@ impl fmt::Debug for Board {
             debug_str.push('\t');
 
             for f in File::iterator() {
-                let sq = Square::from_rank_file(*r, *f);
+                let sq = Square::from_rank_file(r, f);
 
                 if let Some((piece, colour)) =
-                    self.get_piece_and_colour_on_square(sq.expect("Invalid square"))
+                    self.get_piece_and_colour_on_square(&sq.expect("Invalid square"))
                 {
-                    debug_str.push_str(&Piece::label(piece, colour).to_string());
+                    debug_str.push_str(&Piece::label(&piece, &colour).to_string());
                     debug_str.push('\t');
                 } else {
                     debug_str.push_str(".\t");
@@ -203,13 +203,13 @@ pub mod tests {
 
             for sq in Square::iterator() {
                 assert!(board.get_bitboard().is_empty());
-                board.add_piece(Piece::King, *col, *sq);
+                board.add_piece(&Piece::King, col, sq);
                 assert!(!board.get_bitboard().is_empty());
 
-                assert_eq!(board.get_king_sq(*col), *sq);
+                assert_eq!(board.get_king_sq(col), *sq);
 
                 // remove so state is restored.
-                board.remove_piece(Piece::King, *col, *sq);
+                board.remove_piece(&Piece::King, col, sq);
             }
         }
     }
@@ -222,13 +222,13 @@ pub mod tests {
 
         let map = Square::iterator();
         for square in map {
-            assert!(board.is_sq_empty(*square));
+            assert!(board.is_sq_empty(square));
 
-            board.add_piece(pce, col, *square);
-            assert!(!board.is_sq_empty(*square));
+            board.add_piece(&pce, &col, square);
+            assert!(!board.is_sq_empty(square));
 
-            board.remove_piece(pce, col, *square);
-            assert!(board.is_sq_empty(*square));
+            board.remove_piece(&pce, &col, square);
+            assert!(board.is_sq_empty(square));
         }
     }
 
@@ -245,19 +245,19 @@ pub mod tests {
                     continue;
                 }
 
-                assert!(board.is_sq_empty(*from_sq));
-                assert!(board.is_sq_empty(*to_sq));
+                assert!(board.is_sq_empty(from_sq));
+                assert!(board.is_sq_empty(to_sq));
 
-                board.add_piece(pce, col, *from_sq);
-                assert!(!board.is_sq_empty(*from_sq));
-                assert!(board.is_sq_empty(*to_sq));
+                board.add_piece(&pce, &col, from_sq);
+                assert!(!board.is_sq_empty(from_sq));
+                assert!(board.is_sq_empty(to_sq));
 
-                board.move_piece(*from_sq, *to_sq, pce, col);
-                assert!(board.is_sq_empty(*from_sq));
-                assert!(!board.is_sq_empty(*to_sq));
+                board.move_piece(from_sq, to_sq, &pce, &col);
+                assert!(board.is_sq_empty(from_sq));
+                assert!(!board.is_sq_empty(to_sq));
 
                 // clean up
-                board.remove_piece(pce, col, *to_sq);
+                board.remove_piece(&pce, &col, to_sq);
             }
         }
     }
@@ -269,17 +269,17 @@ pub mod tests {
         let mut board = Board::new();
 
         for square in Square::iterator() {
-            assert!(board.is_sq_empty(*square));
+            assert!(board.is_sq_empty(square));
 
-            board.add_piece(pce, col, *square);
-            assert!(!board.is_sq_empty(*square));
+            board.add_piece(&pce, &col, square);
+            assert!(!board.is_sq_empty(square));
 
-            if let Some((piece, colour)) = board.get_piece_and_colour_on_square(*square) {
+            if let Some((piece, colour)) = board.get_piece_and_colour_on_square(square) {
                 assert_eq!((pce, col), (piece, colour));
             }
 
             // clean up
-            board.remove_piece(pce, col, *square);
+            board.remove_piece(&pce, &col, square);
         }
     }
 
@@ -301,12 +301,12 @@ pub mod tests {
         for pce in pieces.iter() {
             for col in colours.iter() {
                 for square in Square::iterator() {
-                    board.add_piece(*pce, *col, *square);
+                    board.add_piece(pce, col, square);
 
-                    assert!(board.get_piece_bitboard(*pce, *col).is_set(*square));
+                    assert!(board.get_piece_bitboard(pce, col).is_set(square));
 
                     // clean up
-                    board.remove_piece(*pce, *col, *square);
+                    board.remove_piece(pce, col, square);
                 }
             }
         }

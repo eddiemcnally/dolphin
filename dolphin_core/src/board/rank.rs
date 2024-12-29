@@ -26,29 +26,29 @@ impl Rank {
         }
     }
     #[inline(always)]
-    pub const fn as_index(self) -> usize {
-        self as usize
+    pub const fn as_index(&self) -> usize {
+        *self as usize
     }
 
-    pub fn add_one(self) -> Option<Rank> {
-        Rank::new(self as u8 + 1)
+    pub fn add_one(&self) -> Option<Rank> {
+        Rank::new(*self as u8 + 1)
     }
 
-    pub fn add_two(self) -> Option<Rank> {
-        Rank::new(self as u8 + 2)
+    pub fn add_two(&self) -> Option<Rank> {
+        Rank::new(*self as u8 + 2)
     }
 
-    pub fn subtract_one(self) -> Option<Rank> {
+    pub fn subtract_one(&self) -> Option<Rank> {
         match self {
             Rank::R1 => None,
-            _ => Rank::new(self as u8 - 1),
+            _ => Rank::new(*self as u8 - 1),
         }
     }
 
-    pub fn subtract_two(self) -> Option<Rank> {
+    pub fn subtract_two(&self) -> Option<Rank> {
         match self {
             Rank::R1 | Rank::R2 => None,
-            _ => Rank::new(self as u8 - 2),
+            _ => Rank::new(*self as u8 - 2),
         }
     }
 

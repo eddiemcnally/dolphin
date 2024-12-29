@@ -193,7 +193,7 @@ pub mod tests {
         const DEPTH: u8 = 5;
         const TT_ENTRY_TYPE: TransType = TransType::Alpha;
 
-        let target_move = Move::encode_move(Square::A1, Square::A2);
+        let target_move = Move::encode_move(&Square::A1, &Square::A2);
 
         let mut tt = TransTable::new(NUM_TO_TEST);
         // add to TT
